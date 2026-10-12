@@ -1,0 +1,379 @@
+[
+  {
+    "id": "D4.2.2-01",
+    "objective": "D4.2.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains a virtual network named vnet-prod. The virtual network contains a subnet named snet-web with a virtual machine named vm-web1. The NIC of vm-web1 has private IP address 10.24.1.10. A network security group (NSG) named nsg-web-subnet is associated with snet-web, and an NSG named nsg-web-nic is associated with the network interface of vm-web1.\n\nA jump server in another subnet of the same virtual network has IP address 10.24.5.4. You need to evaluate a new inbound TCP connection from the jump server to vm-web1 on port 443.\n\nnsg-web-subnet inbound rules:\n\n| Priority | Source | Destination | Port | Protocol | Action |\n|---|---|---|---|---|---|\n| 120 | 10.24.5.0/24 | 10.24.1.10 | 443 | TCP | Allow |\n| 300 | 10.24.0.0/16 | 10.24.1.10 | 443 | TCP | Deny |\n\nnsg-web-nic inbound rules:\n\n| Priority | Source | Destination | Port | Protocol | Action |\n|---|---|---|---|---|---|\n| 100 | 10.24.5.4 | 10.24.1.10 | 443 | TCP | Deny |\n| 200 | VirtualNetwork | 10.24.1.10 | 443 | TCP | Allow |\n\nWill the connection be allowed?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Yes. The subnet NSG allows the connection first, and that decision is final for inbound traffic."
+      },
+      {
+        "id": "B",
+        "text": "Yes. The NIC NSG has a `VirtualNetwork` allow rule that matches traffic from the jump server."
+      },
+      {
+        "id": "C",
+        "text": "No. The subnet NSG allows the flow, but the NIC NSG later denies the same inbound flow."
+      },
+      {
+        "id": "D",
+        "text": "No. The subnet NSG denies the connection because priority 300 is evaluated before priority 120."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. No Azure Virtual Network Manager security admin rule applies. The connection is a new TCP session, not return traffic for an already established flow record. Only the NSGs shown and built-in NSG default rules are relevant.",
+    "sections": {
+      "correctAnswer": "**C. No. The subnet NSG allows the flow, but the NIC NSG later denies the same inbound flow.** For inbound traffic, Azure evaluates the subnet-level NSG first and then the NIC-level NSG. A connection that is allowed at the subnet can still be blocked at the network interface.",
+      "technical": "Network security groups can be associated with a subnet, a network interface, or both. When both scopes exist, an inbound packet must survive both evaluations before it reaches the virtual machine. Microsoft documents that NSG rules are processed by priority, with lower numbers processed before higher numbers, and that processing stops when traffic matches a rule in that NSG. The default rules use very high priority numbers, so these custom rules are checked before AllowVNetInBound, AllowAzureLoadBalancerInBound, or DenyAllInBound.\n\nFor this packet, Azure first evaluates nsg-web-subnet because the traffic is entering a VM in snet-web. Priority 120 is checked before priority 300. The source 10.24.5.4 is inside 10.24.5.0/24, the destination and port match, and TCP matches. The subnet NSG decision is therefore Allow. Azure then continues to nsg-web-nic. In that NSG, priority 100 is examined before priority 200. The exact source, destination, TCP protocol, and port 443 all match, so the NIC NSG decision is Deny. The final result for a new inbound connection is Deny because both NSGs must allow the traffic.\n\nThe important distinction is that an allow at one scope means evaluation may continue; it is not a permanent authorization token. A deny at either applicable scope blocks the new flow. If the NIC NSG did not contain the priority 100 deny, the later VirtualNetwork allow could have permitted the traffic. If the subnet NSG had denied the packet, the NIC rules would not need to rescue or repeat the denial.",
+      "wrongOptions": {
+        "A": "The subnet allow is necessary but not sufficient. Inbound traffic associated with both a subnet NSG and a NIC NSG is checked at both places. Misconception: the first allow in the path permanently authorizes the flow. Could be correct when no NIC NSG is associated with the VM or when the NIC NSG also allows the same packet.",
+        "B": "The NIC `VirtualNetwork` allow at priority 200 is never reached because priority 100 denies the same packet first. Misconception: a broad allow can override a more specific deny later in the table. Could be correct when the deny has a higher priority number or does not match the five-tuple.",
+        "D": "Priority 120 is lower than 300, so it is processed first. The subnet NSG allows rather than denies this packet. Misconception: larger priority numbers are more important. Could be correct if the deny used priority 120 and the allow used priority 300."
+      },
+      "plainEnglish": "Think of the packet as a visitor entering an office suite inside a building. The building door is the subnet NSG, and the suite door is the NIC NSG. The building guard checks the visitor list first and says this visitor may go toward suite 10.24.1.10 on the web door. That does not force the suite guard to admit the visitor. The suite guard has a more specific note saying that this exact visitor, 10.24.5.4, must not enter through the HTTPS door. Because the visitor has to pass both guards, the trip fails at the second checkpoint.\n\nPriority numbers are like line numbers in each guard's notebook. The guard reads the smaller number first. After finding the first matching line, the guard stops reading that notebook. The subnet guard stops at the allow line. The NIC guard stops at the deny line. The result is denied, even though one notebook contained an allow.",
+      "analogy": "Imagine a bank branch inside a secure office tower. The tower lobby guard lets a courier in because couriers from a trusted company are permitted. The bank's own door guard then refuses that specific courier because the bank has a local block list.\n\n| Analogy | Azure reality |\n|---|---|\n| Office tower lobby | Subnet NSG evaluation |\n| Bank suite door | NIC NSG evaluation |\n| Courier company allow | Subnet rule allowing 10.24.5.0/24 |\n| Specific courier block | NIC rule denying 10.24.5.4 |\n| Door check sequence | Inbound order: subnet NSG, then NIC NSG |\n\n**Where the analogy breaks down:** Azure does not remember human identities at these rules. It evaluates source and destination addresses, ports, protocol, and direction for new flows, and stateful reply behavior is more precise than a door story.",
+      "jargon": [
+        {
+          "term": "Network security group (NSG)",
+          "definition": "An Azure resource containing allow and deny rules that filter inbound or outbound traffic for supported resources in a virtual network."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A range of IP addresses inside a virtual network. An NSG on a subnet affects network interfaces placed in that subnet."
+        },
+        {
+          "term": "Network interface (NIC)",
+          "definition": "The Azure networking resource attached to a VM that holds private IP configuration and can have its own NSG association."
+        },
+        {
+          "term": "Inbound traffic",
+          "definition": "Network traffic whose destination is the protected VM or NIC."
+        },
+        {
+          "term": "Priority",
+          "definition": "A rule ordering number from 100 through 4096 for custom NSG rules; smaller numbers are evaluated earlier."
+        },
+        {
+          "term": "VirtualNetwork service tag",
+          "definition": "A Microsoft-managed label representing address prefixes considered part of the virtual network context for NSG matching."
+        },
+        {
+          "term": "Five-tuple",
+          "definition": "The source address, source port, destination address, destination port, and protocol values used to decide whether a rule matches traffic."
+        },
+        {
+          "term": "HTTPS",
+          "definition": "The common name for HTTP over TLS, commonly using TCP port 443 for encrypted web traffic."
+        }
+      ],
+      "watchOut": "- Inbound traffic with both NSG scopes is evaluated at the subnet before the NIC.\n- Lower priority numbers win inside the same NSG.\n- An allow at one scope does not override a deny at another scope.\n- Default rules remain present, but custom rules with lower priority numbers are examined before them.\n- Existing stateful flow records can behave differently from attempts to start a brand-new connection.",
+      "productionTip": {
+        "official": "Microsoft documents NSG rule priority processing, first match behavior, stateful flow records, and the ability to associate NSGs with subnets and network interfaces. For troubleshooting, view effective security rules on the VM network interface to see rules from both scopes together.",
+        "recommendation": "Keep deny rules narrow and intentional. When a subnet NSG represents a shared baseline, document NIC-level exceptions so operations teams know that a subnet allow may still be blocked closer to a VM."
+      },
+      "memoryTrick": "For inbound traffic, remember **street gate then house door**: the subnet is checked before the NIC. This is a simplification because security admin rules, platform traffic considerations, and existing flow records can affect a real troubleshooting session.",
+      "examTip": "Clue words are **inbound**, **subnet NSG**, **NIC NSG**, and the priority numbers. First find the earliest matching rule inside the subnet NSG. Then repeat the process for the NIC NSG. A harder version may include a default allow rule; that default helps only if no earlier custom rule denies the same packet."
+    },
+    "sources": [
+      {
+        "title": "Azure network security groups overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+      },
+      {
+        "title": "Diagnose a virtual machine network traffic filter problem",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.2.2-02",
+    "objective": "D4.2.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You manage a virtual network named vnet-app. A virtual machine named vm-api1 has private IP address 10.31.2.7 in subnet snet-api. The subnet has NSG nsg-api-subnet, and the VM network interface has NSG nsg-api-nic.\n\nThe application on vm-api1 must initiate an outbound HTTPS connection to 198.51.100.40 on TCP port 443.\n\nnsg-api-nic outbound rules:\n\n| Priority | Source | Destination | Port | Protocol | Action |\n|---|---|---|---|---|---|\n| 110 | 10.31.2.7 | 198.51.100.40 | 443 | TCP | Allow |\n| 400 | 10.31.2.0/24 | Internet | 443 | TCP | Deny |\n\nnsg-api-subnet outbound rules:\n\n| Priority | Source | Destination | Port | Protocol | Action |\n|---|---|---|---|---|---|\n| 100 | 10.31.2.0/24 | 198.51.100.40 | 443 | TCP | Deny |\n| 250 | 10.31.2.0/24 | Internet | 443 | TCP | Allow |\n\nWill the connection from vm-api1 to 198.51.100.40 be allowed?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Yes. The NIC NSG allows the flow at priority 110, and outbound traffic is evaluated only at the NIC."
+      },
+      {
+        "id": "B",
+        "text": "Yes. The subnet NSG has a broader Internet allow at priority 250 that covers port 443."
+      },
+      {
+        "id": "C",
+        "text": "No. The NIC NSG denies Internet traffic at priority 400 before checking priority 110."
+      },
+      {
+        "id": "D",
+        "text": "No. The NIC NSG allows the flow, but the subnet NSG then denies the same destination and port."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The destination represents an internet-routable address for this scenario. No security admin rule, Azure Firewall, route appliance, or existing flow record changes the NSG decision.",
+    "sections": {
+      "correctAnswer": "**D. No. The NIC NSG allows the flow, but the subnet NSG then denies the same destination and port.** Outbound evaluation uses the reverse scope order from inbound: NIC first, then subnet. The packet must be allowed by every applicable NSG to start a new connection.",
+      "technical": "For outbound traffic from a VM that has both a NIC NSG and a subnet NSG, Azure evaluates the NIC-associated NSG before the subnet-associated NSG. Within each NSG, priority still controls the first matching rule. Lower priority numbers are processed earlier, and evaluation stops in that NSG after the first matching rule. The packet is not fully authorized until every applicable NSG in the outbound direction allows it.\n\nFor this packet, the source is 10.31.2.7, the destination is 198.51.100.40, the protocol is TCP, and the destination port is 443. Azure checks nsg-api-nic first because the packet leaves the NIC. Priority 110 matches the exact source, destination, and port, so the NIC decision is Allow. The priority 400 NIC deny is not processed because the first match has already stopped NIC-level evaluation. Azure then checks nsg-api-subnet. Priority 100 matches the source range, exact destination, protocol, and port, so the subnet decision is Deny. The broader priority 250 Internet allow is skipped.\n\nThe final outcome is Deny. A broad Internet allow does not combine with a specific deny after the fact. The documented default outbound rule AllowInternetOutBound is lower precedence than these custom rules and cannot rescue a packet that a priority 100 rule already denied. NSG statefulness matters after a connection has been allowed and a flow record exists; because this is a new connection, current rules decide whether that flow record is created.",
+      "wrongOptions": {
+        "A": "Outbound traffic is checked at the NIC first, but not only at the NIC when a subnet NSG is also associated. Misconception: a successful first check ends the whole path. Could be correct when the subnet has no NSG or also permits the packet.",
+        "B": "The subnet allow at priority 250 is less preferred than the subnet deny at priority 100. Misconception: a broad Internet allow overrides a specific deny. Could be correct if the deny were removed, did not match the address, or had a higher priority number.",
+        "C": "The NIC deny at priority 400 is not reached because priority 110 matches first. Misconception: deny rules always outrank allow rules regardless of priority. Could be correct if the NIC deny used a smaller priority number."
+      },
+      "plainEnglish": "The VM is trying to call an external address. Azure checks the rule book attached directly to the VM's network card first. That book says this exact call to 198.51.100.40 on the secure web port is allowed. Then Azure checks the rule book attached to the subnet. That second book has an earlier line saying calls from the subnet to that same external address on port 443 are denied. Since the connection has to pass both books, the second denial wins.\n\nEach book is read independently. The NIC book stops after priority 110, and the subnet book stops after priority 100. You do not add up every allow and deny across every line. You find the first matching line in each applicable NSG and then require every scope to allow the new flow.",
+      "analogy": "Picture a delivery truck leaving a factory. The loading dock supervisor approves a route to a customer. Before the truck exits the industrial park, the park gate officer checks a separate restriction list and blocks trucks going to that same customer.\n\n| Analogy | Azure reality |\n|---|---|\n| Loading dock approval | NIC outbound NSG allow |\n| Industrial park gate | Subnet outbound NSG evaluation |\n| Customer address | Destination IP 198.51.100.40 |\n| Route category to public roads | Internet service tag matching |\n| Block at final gate | Subnet rule at priority 100 denies |\n\n**Where the analogy breaks down:** Azure applies deterministic rule evaluation to packet metadata. Response traffic for already allowed flows is handled by NSG statefulness, not by a guard remembering a truck.",
+      "jargon": [
+        {
+          "term": "Outbound traffic",
+          "definition": "Network traffic initiated by a protected resource and leaving its network interface toward another destination."
+        },
+        {
+          "term": "Internet service tag",
+          "definition": "A built-in NSG label that represents public internet address space for rule matching."
+        },
+        {
+          "term": "Destination port",
+          "definition": "The port number on the receiving endpoint, such as TCP 443 for HTTPS."
+        },
+        {
+          "term": "TCP",
+          "definition": "Transmission Control Protocol, a connection-oriented protocol used by many applications including HTTPS."
+        },
+        {
+          "term": "Custom NSG rule",
+          "definition": "A rule created by an administrator with a chosen priority between 100 and 4096."
+        },
+        {
+          "term": "Flow record",
+          "definition": "Azure state information for an allowed connection so return traffic does not need a separate opposite-direction rule."
+        },
+        {
+          "term": "CIDR block",
+          "definition": "A compact notation for an IP address range, such as `10.31.2.0/24`."
+        },
+        {
+          "term": "HTTPS",
+          "definition": "Encrypted web traffic commonly sent to TCP destination port 443."
+        }
+      ],
+      "watchOut": "- Outbound order is NIC NSG first, then subnet NSG.\n- A deny wins only when it is the first matching rule at that NSG scope.\n- The default outbound Internet allow can be overridden by custom rules.\n- Both scopes must allow a new flow.\n- Existing connections can continue after rule changes until their flow records expire or close.",
+      "productionTip": {
+        "official": "Microsoft states that NSGs are stateful and that rules are evaluated by priority until a match is found. Effective security rules show the aggregation of NSG rules on the NIC and subnet.",
+        "recommendation": "Place broad outbound restrictions at the subnet when they represent a workload boundary. Avoid splitting exact allows and exact denies across scopes unless ownership and troubleshooting notes are documented."
+      },
+      "memoryTrick": "For outbound traffic, use **NIC leaves first, subnet leaves last**. This rule of thumb does not include firewalls, user-defined routes, or Virtual Network Manager security admin rules.",
+      "examTip": "When you see **outbound** plus two NSGs, reverse the inbound sequence. Read the NIC table first, then the subnet table. A harder item may include `AllowInternetOutBound`; remember a custom deny with a lower number overrides it."
+    },
+    "sources": [
+      {
+        "title": "Azure network security groups overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+      },
+      {
+        "title": "Diagnose a virtual machine network traffic filter problem",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.2.2-03",
+    "objective": "D4.2.2",
+    "type": "multiple",
+    "difficulty": "foundation",
+    "prompt": "You have a virtual network named vnet-core with address space 10.50.0.0/16. Subnet snet-app contains vm-app1 at 10.50.2.4. An NSG named nsg-app is associated only with snet-app; no NSG is associated with the NIC of vm-app1.\n\nnsg-app has no custom inbound rules. Therefore, only Azure's default inbound rules apply:\n\n| Priority | Name | Source | Destination | Ports | Protocol | Action |\n|---|---|---|---|---|---|---|\n| 65000 | AllowVNetInBound | VirtualNetwork | VirtualNetwork | 0-65535 | Any | Allow |\n| 65001 | AllowAzureLoadBalancerInBound | AzureLoadBalancer | 0.0.0.0/0 | 0-65535 | Any | Allow |\n| 65500 | DenyAllInBound | 0.0.0.0/0 | 0.0.0.0/0 | 0-65535 | Any | Deny |\n\nWhich two inbound attempts to vm-app1 are allowed by the NSG? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "TCP 3389 from an internet client at `203.0.113.8` to `10.50.2.4`"
+      },
+      {
+        "id": "B",
+        "text": "TCP 443 from another VM in `vnet-core` at `10.50.9.7` to `10.50.2.4`"
+      },
+      {
+        "id": "C",
+        "text": "An Azure Load Balancer health probe source represented by the `AzureLoadBalancer` service tag to `10.50.2.4`"
+      },
+      {
+        "id": "D",
+        "text": "TCP 22 from an internet client at `198.51.100.11` to `10.50.2.4`"
+      },
+      {
+        "id": "E",
+        "text": "ICMP from an internet client at `192.0.2.45` to `10.50.2.4`"
+      }
+    ],
+    "correct": [
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The `VirtualNetwork` and `AzureLoadBalancer` values are built-in NSG service tags documented by Microsoft. No peering, on-premises route, security admin rule, or NIC NSG changes this default inbound behavior.",
+    "sections": {
+      "correctAnswer": "**B. TCP 443 from another VM in `vnet-core` at `10.50.9.7` to `10.50.2.4`** and **C. An Azure Load Balancer health probe source represented by the `AzureLoadBalancer` service tag to `10.50.2.4`**. With no custom inbound rules, default NSG rules allow virtual network traffic and Azure Load Balancer probe traffic before the final default inbound deny.",
+      "technical": "Every NSG includes default inbound rules that cannot be removed. They use high priority numbers so administrator-created rules can be processed first. In this question there are no custom inbound rules and no NIC NSG, so the subnet NSG default table is the whole NSG decision for a new inbound flow.\n\nEvaluation is simple. Azure compares the packet to AllowVNetInBound at priority 65000. If both source and destination fit the VirtualNetwork tag and the port and protocol match, traffic is allowed. If not, Azure compares it with AllowAzureLoadBalancerInBound at priority 65001, which allows traffic from the Azure Load Balancer service tag to any destination and port. If neither default allow matches, DenyAllInBound at priority 65500 denies all remaining inbound traffic.\n\nOption B is allowed because 10.50.9.7 and 10.50.2.4 are in the same virtual network address space for this scenario, so the packet matches AllowVNetInBound. The port number does not matter because the default rule covers all destination ports and protocol Any. Option C is allowed because the documented default rule permits the AzureLoadBalancer service tag, which is why load balancer health probes can reach backend VMs unless custom rules change the behavior.\n\nThe public internet options fail. Those clients are not represented by VirtualNetwork or AzureLoadBalancer in this scenario. They fall to the catch-all inbound denial, whether they try RDP, SSH, or ICMP. Public access requires an explicit custom allow rule with a lower priority number than 65500 and an appropriately narrow source.",
+      "wrongOptions": {
+        "A": "An internet client is not allowed merely because the destination port is a common administrative port. Misconception: Azure opens RDP automatically for VMs. Could be correct when a custom inbound rule explicitly allows TCP 3389 from the required source range.",
+        "D": "The default inbound rules do not permit public SSH from arbitrary internet addresses. Misconception: Linux management ports are treated differently from Windows management ports. Could be correct if a narrow SSH allow rule or private access method is configured.",
+        "E": "Protocol Any in `DenyAllInBound` includes ICMP, and the source is public internet rather than the virtual network or load balancer tag. Misconception: ping-like traffic is exempt from NSG filtering. Could be correct if a custom rule allows ICMP from the source."
+      },
+      "plainEnglish": "With only the default inbound rules, the NSG is friendly to traffic that comes from inside the virtual network and to Azure Load Balancer probes. It is not friendly to strangers on the internet. The first default rule says other machines in this private network may talk to this VM. The second says Azure's load-balancing probe system may also reach it. The last says everything else trying to come inbound is blocked.\n\nThat means the VM in the same virtual network can connect on port 443, and the Azure Load Balancer probe source is also allowed. The three public internet examples do not match either friendly category. It does not matter whether the public client tries RDP, SSH, or ICMP; without a custom allow rule, it runs into the catch-all inbound denial.",
+      "analogy": "A company campus has a default visitor policy for a lab building. Employees already on the campus can enter, and the facilities inspection team can enter. Everyone else at the public street entrance is turned away unless a manager files a special access request.\n\n| Analogy | Azure reality |\n|---|---|\n| Employees on campus | VirtualNetwork source traffic |\n| Facilities inspection team | AzureLoadBalancer probe traffic |\n| Public street visitors | Internet-sourced inbound attempts |\n| Special access request | Custom inbound allow rule |\n| Final guard refusal | DenyAllInBound default rule |\n\n**Where the analogy breaks down:** The Azure service tags are sets of address prefixes maintained by Microsoft, not badges shown by people. Routing and load balancer configuration must still send traffic toward the VM before the NSG can evaluate it.",
+      "jargon": [
+        {
+          "term": "Default security rule",
+          "definition": "An Azure-created NSG rule that exists automatically in each NSG and uses high priority numbers."
+        },
+        {
+          "term": "`AllowVNetInBound`",
+          "definition": "The default inbound rule at priority 65000 allowing traffic from `VirtualNetwork` to `VirtualNetwork`."
+        },
+        {
+          "term": "`AllowAzureLoadBalancerInBound`",
+          "definition": "The default inbound rule at priority 65001 allowing traffic from the Azure Load Balancer service tag."
+        },
+        {
+          "term": "`DenyAllInBound`",
+          "definition": "The default inbound rule at priority 65500 denying remaining inbound traffic."
+        },
+        {
+          "term": "Service tag",
+          "definition": "A Microsoft-defined name used in NSG rules to represent changing groups of IP prefixes."
+        },
+        {
+          "term": "RDP",
+          "definition": "Remote Desktop Protocol, commonly using TCP port 3389 for Windows remote sign-in."
+        },
+        {
+          "term": "SSH",
+          "definition": "Secure Shell, commonly using TCP port 22 for command-line access."
+        },
+        {
+          "term": "ICMP",
+          "definition": "Internet Control Message Protocol, often associated with ping diagnostics and subject to NSG rules."
+        },
+        {
+          "term": "Health probe",
+          "definition": "Traffic sent by Azure Load Balancer to check whether a backend instance should receive load-balanced traffic."
+        }
+      ],
+      "watchOut": "- Default inbound rules allow virtual-network and Azure Load Balancer sources, not arbitrary public clients.\n- You cannot delete the default rules, but lower-number custom rules can override their practical effect.\n- Protocol Any includes TCP, UDP, and ICMP.\n- Public IP assignment and NSG allowance are different requirements.\n- A NIC NSG added later would introduce another required allow.",
+      "productionTip": {
+        "official": "Microsoft lists the exact default inbound rules and explains that `VirtualNetwork`, `AzureLoadBalancer`, and `Internet` are service tags. Default rules use the lowest precedence so custom rules can be processed first.",
+        "recommendation": "Avoid opening RDP or SSH broadly to the internet. Use Bastion, VPN, just-in-time access, or narrow source ranges, and review effective rules after every NSG change."
+      },
+      "memoryTrick": "The default inbound story is **VNet yes, load balancer yes, everyone else no**. This shortcut fails once custom rules, NIC NSGs, peering details, or security admin rules are added.",
+      "examTip": "The key clue is **no custom inbound rules**. Match the source against the two default allow tags, then send unmatched inbound packets to `DenyAllInBound`. A tougher question may add one custom deny above 65000 to block part of the virtual network."
+    },
+    "sources": [
+      {
+        "title": "Azure network security groups overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+      },
+      {
+        "title": "Diagnose a virtual machine network traffic filter problem",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.2.2-04",
+    "objective": "D4.2.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You are troubleshooting access to a VM named vm-ops1. The VM is running and has one NIC named nic-ops1 in subnet snet-ops. An operator says that adding an allow rule to the NIC NSG should have opened SSH from the corporate public IP range, but the connection still fails.\n\nThe Azure portal **Effective security rules** view for nic-ops1 shows these relevant inbound rules:\n\n| NSG source | Priority | Name | Source | Destination | Port | Protocol | Action |\n|---|---:|---|---|---|---|---|---|\n| Subnet NSG | 140 | DenyCorpSSHSubnet | 203.0.113.0/24 | 10.60.4.8 | 22 | TCP | Deny |\n| Subnet NSG | 65000 | AllowVNetInBound | VirtualNetwork | VirtualNetwork | 0-65535 | Any | Allow |\n| NIC NSG | 100 | AllowCorpSSHNic | 203.0.113.0/24 | 10.60.4.8 | 22 | TCP | Allow |\n| NIC NSG | 65500 | DenyAllInBound | 0.0.0.0/0 | 0.0.0.0/0 | 0-65535 | Any | Deny |\n\nA new inbound TCP connection is attempted from 203.0.113.15 to 10.60.4.8 on port 22.\n\nWhat is the result, and what should you conclude from the effective security rules?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Allowed, because the effective security rules view lists the NIC allow at priority 100."
+      },
+      {
+        "id": "B",
+        "text": "Denied, because the subnet NSG denies the inbound packet before the NIC NSG is evaluated."
+      },
+      {
+        "id": "C",
+        "text": "Allowed, because the NIC rule has a lower priority number than the subnet deny rule."
+      },
+      {
+        "id": "D",
+        "text": "Denied, because the default `DenyAllInBound` always overrides custom SSH allow rules."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The VM is running, so effective security rules are available. The displayed rules are sufficient for the packet in question, and no existing SSH session or separate firewall product changes the result.",
+    "sections": {
+      "correctAnswer": "**B. Denied, because the subnet NSG denies the inbound packet before the NIC NSG is evaluated.** The effective security rules view aggregates rules from both scopes, but priority numbers are not compared across different NSGs as one combined list. Inbound traffic must pass the subnet NSG first.",
+      "technical": "Effective security rules are a diagnostic view for a network interface. Microsoft describes the view as showing the aggregation of rules from the NSG associated with the network interface and the NSG associated with the subnet that contains that interface. This is the right tool when a VM has connectivity problems caused by conflicting NSGs.\n\nAn aggregated display does not mean Azure sorts every rule from every NSG into one universal priority list. Rule priority is evaluated inside each NSG at the appropriate point in the traffic path. For inbound traffic, Azure evaluates the subnet NSG first. Inside that subnet NSG, the first matching rule wins. Priority 140 DenyCorpSSHSubnet matches source 203.0.113.15, destination 10.60.4.8, TCP, and port 22. Because the subnet NSG denies the packet, the packet is blocked before it can be admitted to the VM network interface.\n\nThe NIC NSG priority 100 allow is visible in the effective rules view, but it cannot override a deny that occurred earlier at the subnet scope. The NIC default DenyAllInBound is not the cause either; the custom subnet deny already decided the new flow. The correct troubleshooting conclusion is that the operator changed only the later layer. To make the connection work, the subnet rule must be removed, narrowed, or preceded by an intentional subnet allow that complies with policy. The safest production fix depends on why the subnet deny exists, not just on opening SSH quickly.",
+      "wrongOptions": {
+        "A": "The NIC allow exists, but inbound traffic never reaches it when the subnet NSG blocks first. Misconception: visible effective rules are evaluated as one flat list. Could be correct if the subnet NSG had no matching deny and the NIC allow were the first matching NIC rule.",
+        "C": "Priority numbers are not compared across separate NSGs to decide the whole path. Misconception: all effective rules become a single priority table. Could be correct only when comparing two rules inside the same NSG and direction.",
+        "D": "Custom allow rules can override default deny rules when they are at the applicable scope and match first. Misconception: default deny rules are absolute. Could be correct for packets that have no earlier matching allow in the relevant NSG."
+      },
+      "plainEnglish": "The effective security rules page is like a combined report showing both rule books that can affect the network card. The report is not saying Azure reads every line in the report from top to bottom as one giant list. For a connection coming into the VM, Azure first reads the subnet rule book. That book says corporate SSH to this VM is denied. Since the packet is rejected at the subnet boundary, the later rule book on the NIC does not get a chance to help.\n\nThe operator's change was incomplete. They opened a door on the VM's own network card, but a hallway gate before that door is still locked. The diagnostic value of the effective security rules view is that it shows which gate owns the denial. You can see the blocking line comes from the subnet NSG, not from the NIC NSG.",
+      "analogy": "A data center badge report lists both campus gate rules and room door rules. A technician has a badge that would open the server room door, but the campus gate has a rule denying that technician's badge category. The room badge rule is real, yet it cannot help because the technician never reaches the room.\n\n| Analogy | Azure reality |\n|---|---|\n| Badge report | Effective security rules view |\n| Campus gate | Subnet NSG for inbound traffic |\n| Server room door | NIC NSG for inbound traffic |\n| Technician category block | DenyCorpSSHSubnet |\n| Room badge allow | AllowCorpSSHNic |\n\n**Where the analogy breaks down:** Azure's report includes protocol and port details. Azure also distinguishes new flows from existing flow records, while a physical guard usually decides each entry attempt independently.",
+      "jargon": [
+        {
+          "term": "Effective security rules",
+          "definition": "An Azure diagnostic view on a network interface that shows NSG rules from the interface and its subnet."
+        },
+        {
+          "term": "Azure portal",
+          "definition": "Microsoft web-based management interface for Azure resources."
+        },
+        {
+          "term": "SSH",
+          "definition": "Secure Shell, a protocol commonly used for remote command-line access over TCP port 22."
+        },
+        {
+          "term": "Corporate public IP range",
+          "definition": "A public IP block owned or used by an organization, often permitted for administration rules."
+        },
+        {
+          "term": "Running state",
+          "definition": "The VM condition needed for some network diagnostic outputs, including effective security rules, to be returned."
+        },
+        {
+          "term": "Aggregation",
+          "definition": "A combined display of rules from multiple NSG associations; it is a troubleshooting summary, not a universal evaluation table."
+        },
+        {
+          "term": "Scope",
+          "definition": "The place where the NSG is applied, such as a subnet or a network interface."
+        },
+        {
+          "term": "Inbound SSH",
+          "definition": "A new TCP connection initiated from outside the VM toward port 22 on the VM."
+        }
+      ],
+      "watchOut": "- Effective security rules do not erase scope order.\n- Compare priorities only within the same NSG and direction.\n- Fixing the NIC NSG is not enough if the subnet NSG blocks first.\n- The VM must be running before effective security rules are shown.\n- Respect the intent of a subnet deny before removing it.",
+      "productionTip": {
+        "official": "Microsoft troubleshooting guidance directs you to view effective security rules on a VM network interface and notes that rules are an aggregation of NSGs associated with the NIC and subnet. Different NSGs can conflict and affect VM connectivity.",
+        "recommendation": "For emergency access, record the requested packet details and the NSG scope changed. Prefer time-limited, source-specific subnet exceptions over broad management-port openings."
+      },
+      "memoryTrick": "Effective rules are a **map, not a merger**. The view maps applicable rules, but it does not merge separate NSGs into one priority contest.",
+      "examTip": "The exam clue is the **NSG source** column. Do not let the NIC priority 100 distract you. A harder version may ask which rule to change; choose the subnet NSG rule because the matching inbound deny occurs first."
+    },
+    "sources": [
+      {
+        "title": "Azure network security groups overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+      },
+      {
+        "title": "Diagnose a virtual machine network traffic filter problem",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

@@ -1,0 +1,945 @@
+[
+  {
+    "id": "D1.3.6-01",
+    "objective": "D1.3.6",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription named `Sub1` that contains two resource groups named `rg-prod` and `rg-dev`. All development resources are tagged `Environment=Dev`.\n\nThe finance team wants a monthly spending target for only the development resources. The target must reset every calendar month and must send notifications when spending approaches the target. Production resources must not be included.\n\nWhat should you create?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A budget at the `Sub1` subscription scope with no filters and an annual reset period"
+      },
+      {
+        "id": "B",
+        "text": "A budget at the `Sub1` subscription scope filtered to `Environment=Dev` with a monthly reset period"
+      },
+      {
+        "id": "C",
+        "text": "A budget at the tenant root scope filtered to `rg-dev` with a billing-year reset period"
+      },
+      {
+        "id": "D",
+        "text": "An Azure Advisor alert for the Cost category at the `rg-dev` resource group"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. `Sub1` is a supported Cost Management subscription, development resources have the `Environment=Dev` tag applied directly, and the finance team has permission to manage budgets at the selected scope.",
+    "sources": [
+      {
+        "title": "Tutorial - Create and manage budgets - Microsoft Cost Management",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets"
+      },
+      {
+        "title": "Group and filter options in Cost Analysis and Budgets",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/group-filter"
+      },
+      {
+        "title": "Understand Cost Management data",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/understand-cost-mgt-data"
+      }
+    ],
+    "verified": "2026-10",
+    "sections": {
+      "correctAnswer": "**B. A budget at the `Sub1` subscription scope filtered to `Environment=Dev` with a monthly reset period**. Budgets can be created at supported scopes and then narrowed with filters such as tags or resource groups, and a monthly reset period matches the requested monthly target.",
+      "technical": "A Cost Management budget is evaluated inside a scope, optionally narrowed by filters, and reset on the selected cadence. Supported Azure RBAC scopes for budgets include management group, subscription, and resource group. A subscription-scope budget can be filtered by a tag value such as `Environment=Dev`, so the budget can include development charges without including production charges in the same subscription. The reset period controls when the budget begins counting from zero again. Monthly reset matches a calendar-month spending target, while annual reset would compare against a year-long target. Cost Management tag data is based on usage records and is subject to refresh delays, so a tag-filtered budget is only as accurate as the tagging and cost data that reach Cost Management. The budget is a monitoring and notification feature. It can notify or trigger actions, but it is not a hard spending cap and does not itself block production or development resources.\n\nThe most important design decision is the level where the budget is created. If the budget is created directly on `rg-dev`, the resource group is already the scope and a tag filter might not be necessary. In this question, the development boundary is expressed as a tag and the finance team wants a target for all development resources in the subscription, so subscription plus tag filter is a clean answer. If some development resources are untagged, they will be missed, which is an operational tagging problem rather than a different budget type.",
+      "wrongOptions": {
+        "A": "This includes production costs and uses the wrong reset period. Misconception: A budget name or broad scope can infer the intended resources.. Could be correct when: the requirement is total subscription spending for a full year.",
+        "C": "Tenant root is broader than needed and the reset period does not meet the monthly requirement. Misconception: The highest hierarchy is always the best cost scope.. Could be correct when: a documented higher billing or management scope is intentionally required.",
+        "D": "Advisor alerts notify about new recommendations, not spending against a monthly tagged budget. Misconception: Advisor Cost and Cost Management budgets are the same feature.. Could be correct when: the goal is notification for new optimization recommendations."
+      },
+      "plainEnglish": "A budget is like a spending envelope. You first decide what area the envelope covers, then you can narrow it with labels. Here, the resources have a label that says they are development resources. A subscription budget filtered to that label counts the development costs without mixing in production costs. The monthly reset means the envelope starts over each month. If you used an annual budget, the finance team would not get the monthly comparison they asked for. If you skipped the filter, the budget would report the whole subscription rather than the development slice.",
+      "analogy": "Imagine a household account that pays for groceries, school supplies, and fuel. You want a monthly limit only for school supplies, so you sort receipts by the school-supplies label and total those receipts each month.\n\n| Analogy | Azure reality |\n|---|---|\n| Household account | Azure subscription |\n| Receipt label | Resource tag |\n| Monthly school limit | Monthly budget |\n| Sorting receipts | Budget filter |\n\n**Where the analogy breaks down:** Azure costs arrive through processed usage records, so labels and totals may appear after a delay rather than immediately at purchase time.",
+      "jargon": [
+        {
+          "term": "Budget",
+          "definition": "A Cost Management spending target that evaluates processed cost or usage against configured thresholds."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary a cost view, budget, export, alert, or role applies to, such as a subscription or resource group."
+        },
+        {
+          "term": "Filter",
+          "definition": "A condition that narrows cost data to a subset, such as a tag, resource group, service, or meter."
+        },
+        {
+          "term": "Reset period",
+          "definition": "The budget window after which evaluated cost starts from zero again, such as monthly, quarterly, or annually."
+        },
+        {
+          "term": "Tag",
+          "definition": "A name-value label applied to Azure resources, often used for ownership and cost allocation."
+        },
+        {
+          "term": "Cost Analysis",
+          "definition": "A Cost Management experience for exploring, grouping, and filtering Azure costs."
+        }
+      ],
+      "watchOut": "- Budget scope defines the largest area; filters narrow it.\n- Tags must exist in Cost Management usage data before tag-filtered reporting is reliable.\n- A budget sends notifications but does not enforce a hard spending cap.\n- Monthly and annual reset periods answer different questions.",
+      "productionTip": {
+        "official": "Microsoft documents budgets at supported scopes and documents group and filter dimensions, including tags and resource groups, for Cost Analysis and Budgets.",
+        "recommendation": "Use a standard tagging policy before relying on tag-filtered budgets. Review untagged costs regularly so resources do not escape financial accountability."
+      },
+      "memoryTrick": "Budget formula: **scope first, filter second, reset third**. This is a simplification because permissions, currency, and data latency still matter.",
+      "examTip": "Clue words are **only development resources**, **tagged**, and **monthly**. Choose the option that uses a budget, narrows the counted charges by tag, and resets at the requested cadence. A harder version may swap the tag for a resource group filter or compare billing-month and calendar-month reset periods."
+    }
+  },
+  {
+    "id": "D1.3.6-02",
+    "objective": "D1.3.6",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a subscription budget named `AppBudget` with a budget amount of 10,000 USD for the current month.\n\nThe application team wants two notifications:\n\n- Notify the team when the actual accrued cost reaches 80 percent of the budget.\n- Notify the team earlier if Azure predicts that the month-end cost will exceed the budget.\n\nWhich two budget alert configurations should you use? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "An actual cost threshold at 80 percent of the budget"
+      },
+      {
+        "id": "B",
+        "text": "A forecasted cost threshold at 100 percent of the budget"
+      },
+      {
+        "id": "C",
+        "text": "A credit alert at 80 percent of the Azure Prepayment balance"
+      },
+      {
+        "id": "D",
+        "text": "A department spending quota alert at 100 percent of the quota"
+      },
+      {
+        "id": "E",
+        "text": "An Advisor alert for recommendations with a Cost category"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The budget exists at a supported scope, cost data is flowing, and the team wants budget notifications rather than billing-credit or Advisor-recommendation notifications.",
+    "sources": [
+      {
+        "title": "Tutorial - Create and manage budgets - Microsoft Cost Management",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets"
+      },
+      {
+        "title": "Monitor usage and spending with cost alerts in Cost Management",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/cost-mgt-alerts-monitor-usage-spending"
+      },
+      {
+        "title": "Manage Azure costs with automation",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/manage-automation"
+      }
+    ],
+    "verified": "2026-10",
+    "sections": {
+      "correctAnswer": "**A. An actual cost threshold at 80 percent of the budget** and **B. A forecasted cost threshold at 100 percent of the budget**. Actual thresholds react to accrued processed costs, while forecasted thresholds warn when projected spend is likely to cross the configured budget threshold.",
+      "technical": "Budget alerts can be based on actual cost or forecasted cost. Actual cost alerts are generated when the accrued cost processed by Cost Management reaches or exceeds the configured percentage of the budget. Forecasted alerts use cost predictions to warn that spending trends are likely to exceed the configured threshold by the end of the budget period. In this case, 80 percent actual cost means a notification when processed cost reaches about 8,000 USD. A 100 percent forecasted threshold warns when the projected month-end cost is expected to exceed the 10,000 USD budget. These are budget alert conditions, not billing credit, EA department quota, or Advisor recommendation events. Budget evaluation is not continuous real-time processing; it depends on Cost Management data availability and budget evaluation timing.\n\nNotice that both required notifications belong to the same budget but serve different audiences and timing. The 80 percent actual threshold is useful for accountability because it indicates the team has already consumed most of the target. The forecasted threshold is useful for intervention because the team may still have time to reduce consumption before the period ends. On a real subscription, you would also confirm the recipients, optional action group, and the budget reset date so the alerts align with the team's reporting cycle.",
+      "wrongOptions": {
+        "C": "Credit alerts monitor Azure Prepayment consumption, not an application budget threshold. Misconception: Any cost percentage alert can satisfy a budget requirement.. Could be correct when: an EA customer needs notifications at documented Azure Prepayment thresholds.",
+        "D": "Department spending quota alerts are for EA department quotas, not this named subscription budget. Misconception: Department quotas and budgets are interchangeable.. Could be correct when: an Enterprise Agreement department quota is the object being monitored.",
+        "E": "Advisor alerts notify about new Advisor recommendations, not actual or forecasted budget spend. Misconception: Advisor Cost alerts and Cost Management budget alerts are the same.. Could be correct when: the team wants notification for new optimization recommendations."
+      },
+      "plainEnglish": "There are two warning styles. Actual cost means the money has already been spent and processed in the cost system. Forecasted cost means Azure looks at the spending trend and predicts where the month may end. The team asked for both: an 80 percent actual warning and an early warning if the full budget is likely to be exceeded. Credit, quota, and Advisor alerts are useful, but they answer different questions.",
+      "analogy": "Think about a road trip fuel plan. An actual alert says you already used 80 percent of your planned fuel. A forecast alert says your current route is likely to use more fuel than planned before the trip ends.\n\n| Analogy | Azure reality |\n|---|---|\n| Planned fuel | Budget amount |\n| Fuel already used | Actual cost |\n| Trip prediction | Forecasted cost |\n| Warning level | Budget threshold |\n\n**Where the analogy breaks down:** Azure budget calculations use delayed cost records and scheduled evaluations rather than a live fuel sensor.",
+      "jargon": [
+        {
+          "term": "Budget",
+          "definition": "A Cost Management spending target that evaluates processed cost or usage against configured thresholds."
+        },
+        {
+          "term": "Actual cost",
+          "definition": "Cost that has already accrued and been processed into Cost Management."
+        },
+        {
+          "term": "Forecasted cost",
+          "definition": "A prediction of future cost based on current spend trends and historical data."
+        },
+        {
+          "term": "Cost alert",
+          "definition": "A Cost Management or billing alert related to spending, credit, quotas, budgets, or anomalies."
+        },
+        {
+          "term": "Credit alert",
+          "definition": "An Enterprise Agreement alert for Azure Prepayment credit consumption."
+        },
+        {
+          "term": "Department spending quota",
+          "definition": "An Enterprise Agreement department spending limit that can generate quota alerts."
+        },
+        {
+          "term": "Azure Advisor",
+          "definition": "A service that analyzes Azure usage and configuration and provides optimization recommendations."
+        }
+      ],
+      "watchOut": "- Actual and forecasted budget alerts answer different timing questions.\n- Budget alert percentages are percentages of the budget amount.\n- Budget emails can lag behind usage because data processing is delayed.\n- Credit and department quota alerts are not normal budget thresholds.",
+      "productionTip": {
+        "official": "Microsoft documents actual and forecasted budget alerts and also documents credit and department spending quota alerts as separate Cost Management alert types.",
+        "recommendation": "Use actual thresholds for accountability and forecasted thresholds for early intervention. Send alerts to a team alias or action group rather than to one individual."
+      },
+      "memoryTrick": "**Actual means already happened; forecast means likely to happen.** This is simplified because both depend on delayed Cost Management evaluation.",
+      "examTip": "Map each requirement to a trigger before reading distractors. Words such as **reaches** and **accrued** point to actual cost. Words such as **predicts**, **likely**, and **month-end** point to forecasted cost. A harder version may add action groups or multiple threshold percentages."
+    }
+  },
+  {
+    "id": "D1.3.6-03",
+    "objective": "D1.3.6",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a resource group named `rg-lab` used for training labs. It contains virtual machines that students sometimes forget to stop.\n\nYou create a monthly budget for `rg-lab` and configure a 90 percent threshold. You need an automated response that can start a workflow to stop or deallocate lab virtual machines when the threshold is met.\n\nWhich additional configuration should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add an action group to the budget alert and connect it to automation such as a webhook, Logic App, Azure Function, or runbook"
+      },
+      {
+        "id": "B",
+        "text": "Set the budget amount to the maximum allowed value so Azure automatically blocks new charges"
+      },
+      {
+        "id": "C",
+        "text": "Create a Cost Analysis view grouped by resource and save it as a shared view"
+      },
+      {
+        "id": "D",
+        "text": "Dismiss the related Azure Advisor recommendations so the budget can enforce the spending limit"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The budget is at subscription or resource group scope, and the automation has its own permissions to stop or deallocate virtual machines.",
+    "sources": [
+      {
+        "title": "Tutorial - Create and manage budgets - Microsoft Cost Management",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-acm-create-budgets"
+      },
+      {
+        "title": "Monitor usage and spending with cost alerts in Cost Management",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/cost-mgt-alerts-monitor-usage-spending"
+      },
+      {
+        "title": "Manage Azure costs with automation",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/manage-automation"
+      }
+    ],
+    "verified": "2026-10",
+    "sections": {
+      "correctAnswer": "**A. Add an action group to the budget alert and connect it to automation such as a webhook, Logic App, Azure Function, or runbook**. Budgets notify and can call action groups, but they do not stop resources or prevent consumption by themselves.",
+      "technical": "A Cost Management budget is a monitoring and notification mechanism. Microsoft documents that budget notifications are triggered when thresholds are exceeded, but resources are not affected and consumption is not stopped. To automate a response, attach an action group to a supported budget. The action group can notify people or call automation endpoints such as webhooks, Logic Apps, Azure Functions, or runbooks. The operational workflow then stops or deallocates virtual machines if its managed identity or account has the required resource permissions. The flow is cost data ingestion, budget evaluation, alert generation, action group invocation, and automation execution. The stop action is therefore separate from the budget itself and must handle delays, retries, exceptions, and safety rules such as excluding protected machines.\n\nThis timing matters for labs. A virtual machine can continue to accrue cost between the moment students create usage, the time Cost Management receives the records, the daily budget evaluation, and the workflow execution. The automation should therefore be treated as a guardrail, not as guaranteed prevention of every extra charge. In production, teams often pair budget automation with scheduled shutdown, Azure Policy, and clear resource-owner tags so the budget workflow is a backstop instead of the only control.",
+      "wrongOptions": {
+        "B": "Changing the amount changes alert timing; it does not make a budget a hard cap. Misconception: Budgets are spending limits like prepaid card limits.. Could be correct when: the task is only to change when budget alerts fire.",
+        "C": "A saved view helps investigate cost, but it cannot run a stop workflow. Misconception: Reporting views and alert actions have the same effect.. Could be correct when: the goal is visual analysis of which resources cost the most.",
+        "D": "Advisor recommendation status does not give budgets enforcement power. Misconception: Advisor state controls Cost Management budget enforcement.. Could be correct when: a recommendation is irrelevant and should be suppressed after review."
+      },
+      "plainEnglish": "A budget is an alarm, not a brake pedal. It can say that spending is near the target, but it cannot by itself turn off machines. An action group is the bridge between the alarm and something that can act. That workflow can contain rules such as stopping only lab machines and skipping machines with an exemption tag. Without the action group and workflow, the budget only warns people.",
+      "analogy": "A smoke detector makes noise, but it does not carry water. If it is connected to sprinklers or a response system, something can happen automatically.\n\n| Analogy | Azure reality |\n|---|---|\n| Smoke detector | Budget alert |\n| Alarm threshold | 90 percent threshold |\n| Sprinkler controller | Action group |\n| Response routine | Runbook, Logic App, or Function |\n\n**Where the analogy breaks down:** Smoke alarms can react immediately, while budget alerts depend on delayed cost data and scheduled budget evaluation.",
+      "jargon": [
+        {
+          "term": "Budget",
+          "definition": "A Cost Management spending target that evaluates processed cost or usage against configured thresholds."
+        },
+        {
+          "term": "Action group",
+          "definition": "An Azure Monitor object that defines notification and action receivers for alerts."
+        },
+        {
+          "term": "Logic App",
+          "definition": "An Azure workflow service used to automate integrations and operational processes."
+        },
+        {
+          "term": "Runbook",
+          "definition": "An automation script, often in Azure Automation, for repeatable operations."
+        },
+        {
+          "term": "Cost Analysis",
+          "definition": "A Cost Management experience for exploring, grouping, and filtering Azure costs."
+        },
+        {
+          "term": "Azure Advisor",
+          "definition": "A service that analyzes Azure usage and configuration and provides optimization recommendations."
+        },
+        {
+          "term": "VM",
+          "definition": "Virtual machine, an Azure compute resource that runs an operating system and applications."
+        }
+      ],
+      "watchOut": "- Budgets do not stop, delete, resize, or deny resources by themselves.\n- Action groups need correctly configured receivers.\n- Automation needs RBAC permission to stop VMs.\n- Budget automation can be delayed by cost data latency.",
+      "productionTip": {
+        "official": "Microsoft documents that budgets can trigger action groups and that budget thresholds do not affect resources or stop consumption by themselves.",
+        "recommendation": "For lab environments, use tags such as `AutoStop=true`, a safe runbook, and an exception tag. Log every automated stop action so cost controls do not become hidden outages."
+      },
+      "memoryTrick": "**Budget equals bell; action group equals button; automation equals hands.** This is simplified because the action can fail or arrive late.",
+      "examTip": "When a question says a budget should **stop**, **shut down**, or **automate**, look for action groups plus automation. If an answer says the budget alone stops resources, rule it out. A harder version may ask which identity and role the automation needs."
+    }
+  },
+  {
+    "id": "D1.3.6-04",
+    "objective": "D1.3.6",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You manage cost governance for three Azure environments.\n\n| Environment | Agreement type | Requirement |\n|---|---|---|\n| `SubA` | Pay-as-you-go | Alert when spending reaches a configured monthly budget |\n| `EA-Dept1` | Enterprise Agreement | Alert department owners when department spending reaches a quota threshold |\n| `SubB` | Pay-as-you-go | Alert when Cost Management detects an unusual daily cost pattern |\n\nWhich statement correctly describes the alert types you should use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use budget alerts for all three requirements because every Cost Management alert is a budget alert"
+      },
+      {
+        "id": "B",
+        "text": "Use credit alerts for `SubA`, department spending quota alerts for `EA-Dept1`, and Advisor alerts for `SubB`"
+      },
+      {
+        "id": "C",
+        "text": "Use a budget alert for `SubA`, a department spending quota alert for `EA-Dept1`, and an anomaly alert for `SubB`"
+      },
+      {
+        "id": "D",
+        "text": "Use Advisor recommendation digests for `SubA`, budget alerts for `EA-Dept1`, and credit alerts for `SubB`"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The EA department has a quota configured, and Cost Management anomaly detection is available for the subscription.",
+    "sources": [
+      {
+        "title": "Monitor usage and spending with cost alerts in Cost Management",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/cost-mgt-alerts-monitor-usage-spending"
+      },
+      {
+        "title": "Identify anomalies and unexpected changes in cost",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/understand/analyze-unexpected-charges"
+      }
+    ],
+    "verified": "2026-10",
+    "sections": {
+      "correctAnswer": "**C. Use a budget alert for `SubA`, a department spending quota alert for `EA-Dept1`, and an anomaly alert for `SubB`**. These alert types match the three different triggers: budget threshold, EA department quota threshold, and unusual cost pattern detection.",
+      "technical": "Cost Management has several cost-related alert families. Budget alerts notify when spending or usage reaches a configured budget condition. Credit alerts notify Enterprise Agreement customers when Azure Prepayment credit is consumed at documented thresholds. Department spending quota alerts notify when an EA department reaches a percentage of its quota. Anomaly alerts notify when Cost Management detects atypical usage patterns from cost and usage trends. The requirements map directly: `SubA` asks for a configured monthly budget threshold, `EA-Dept1` asks for an EA department quota alert, and `SubB` asks for unusual daily cost detection. Advisor alerts and Advisor recommendation digests are separate Advisor features for recommendations, not direct budget, credit, quota, or anomaly threshold monitoring.\n\nThe offer type in the table is a major clue. Pay-as-you-go subscriptions do not use EA department spending quota alerts or Azure Prepayment credit alerts. Enterprise Agreement departments can have quota-related notifications because the EA billing hierarchy includes departments. Anomaly alerts are based on Cost Management's anomaly detection and compare recent cost behavior against expected patterns. A candidate should not select one alert family merely because it contains the word cost; the triggering object and billing context must match the requirement.",
+      "wrongOptions": {
+        "A": "Not every Cost Management alert is a budget alert. Misconception: Cost Management alert equals budget alert.. Could be correct when: every listed requirement is truly a budget-threshold requirement.",
+        "B": "Credit alerts are not for pay-as-you-go budgets, and Advisor alerts are not anomaly alerts. Misconception: Similar cost notifications can be swapped freely.. Could be correct when: the requirements are EA credit, EA department quota, and new Advisor recommendations.",
+        "D": "Digests summarize Advisor recommendations and credit alerts do not apply to a pay-as-you-go anomaly requirement. Misconception: Periodic recommendation summaries are general-purpose cost monitors.. Could be correct when: the goal is a monthly Advisor summary or EA prepayment credit notification."
+      },
+      "plainEnglish": "The requirements describe three different events. A budget alert watches a spending target you set. A department quota alert watches an Enterprise Agreement department limit. An anomaly alert watches for a strange cost pattern. Azure has several cost notification features because finance teams need different signals, and using the wrong family produces the wrong alert.",
+      "analogy": "A building can have one alarm for a planned electricity budget, one for a department supply allowance, and one for unusual night-time power use. They all relate to spending, but each listens to a different sensor.\n\n| Analogy | Azure reality |\n|---|---|\n| Electricity allowance | Budget |\n| Department allowance | EA department quota |\n| Strange power spike | Cost anomaly |\n| Maintenance advice notice | Advisor recommendation |\n\n**Where the analogy breaks down:** Azure alert availability depends on billing offer, scope, permissions, and cloud environment.",
+      "jargon": [
+        {
+          "term": "Cost alert",
+          "definition": "A Cost Management or billing alert related to spending, credit, quotas, budgets, or anomalies."
+        },
+        {
+          "term": "Budget",
+          "definition": "A Cost Management spending target that evaluates processed cost or usage against configured thresholds."
+        },
+        {
+          "term": "Credit alert",
+          "definition": "An Enterprise Agreement alert for Azure Prepayment credit consumption."
+        },
+        {
+          "term": "Department spending quota",
+          "definition": "An Enterprise Agreement department spending limit that can generate quota alerts."
+        },
+        {
+          "term": "Anomaly alert",
+          "definition": "A Cost Management alert sent when unusual cost behavior is detected."
+        },
+        {
+          "term": "Azure Advisor",
+          "definition": "A service that analyzes Azure usage and configuration and provides optimization recommendations."
+        }
+      ],
+      "watchOut": "- Credit and department quota alerts are EA-oriented.\n- Anomaly alerts are about unusual patterns, not fixed budget thresholds.\n- Advisor Cost recommendations are not the same as Cost Management cost alerts.\n- Supported alert features vary by offer category.",
+      "productionTip": {
+        "official": "Microsoft documents budget, credit, and department spending quota alerts, and separately documents anomaly alerts for Cost Management anomaly detection.",
+        "recommendation": "Build a cost monitoring matrix by agreement type. Use budgets for planned accountability, anomaly alerts for unexpected spikes, and EA credit or quota alerts only where the billing model supports them."
+      },
+      "memoryTrick": "**Budget is planned, credit is prepaid, quota is department, anomaly is strange.** This is simplified because eligibility still depends on the Azure offer.",
+      "examTip": "Look for the noun after **alert**: budget, credit, department quota, anomaly, or recommendation. Exam distractors often swap these families. A harder version may ask which alert types are supported for Enterprise Agreement versus pay-as-you-go."
+    }
+  },
+  {
+    "id": "D1.3.6-05",
+    "objective": "D1.3.6",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You are reviewing a Cost Analysis report for a subscription. Management wants to see which business unit is responsible for the largest share of current Azure costs.\n\nMost resources are tagged with `BusinessUnit`, but some older resources are untagged and a few service charges do not support tags in usage data.\n\nWhich grouping should you use first in Cost Analysis?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Group by Location"
+      },
+      {
+        "id": "B",
+        "text": "Group by Meter"
+      },
+      {
+        "id": "C",
+        "text": "Group by Resource type"
+      },
+      {
+        "id": "D",
+        "text": "Group by the `BusinessUnit` tag"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The `BusinessUnit` tag is applied directly to most relevant resources, Cost Management tag data has refreshed, and the goal is business allocation.",
+    "sources": [
+      {
+        "title": "Group and filter options in Cost Analysis and Budgets",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/group-filter"
+      },
+      {
+        "title": "Understand Cost Management data",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/understand-cost-mgt-data"
+      }
+    ],
+    "verified": "2026-10",
+    "sections": {
+      "correctAnswer": "**D. Group by the `BusinessUnit` tag**. Cost Analysis supports grouping by tag values for a specific tag key, which is the most direct allocation method when business units are represented by tags.",
+      "technical": "Cost Analysis can group costs by many dimensions, including resource group, resource, service, meter, location, resource type, and tag. A tag grouping is the correct first choice when the reporting question is ownership, cost center, application, environment, or business unit. The `BusinessUnit` tag is the explicit allocation label in this scenario. Tag reporting still has limitations. Tags must generally be applied directly to resources unless a cost allocation tag inheritance feature is used. Tags are included in usage data only while applied and are not retroactively added to older usage. Some resources and charge records do not support tags in Cost Management data. Cost Analysis may show untagged, tags not available, or tags not supported values. Those categories are cleanup signals, not reasons to choose a technical grouping such as meter.\n\nA well-designed report usually includes both the tag grouping and a cleanup view. The business-unit chart answers management's allocation question, while an untagged or unsupported slice tells the platform team where the tagging policy is failing or where shared-service allocation is needed. If leadership asks for chargeback, you should not silently drop untagged charges. Instead, show them as a separate category and define a remediation or allocation process. This also helps avoid blaming a business unit for shared platform charges that were never taggable.",
+      "wrongOptions": {
+        "A": "Location shows Azure region, not business owner. Misconception: Region is a proxy for department ownership.. Could be correct when: the question asks which regions drive cost.",
+        "B": "Meter is too technical for business-unit allocation. Misconception: The most detailed billing dimension is best for executive reporting.. Could be correct when: investigating exactly which usage meter caused a spike.",
+        "C": "Resource type shows service categories, not organizational responsibility. Misconception: Service category and business ownership are the same.. Could be correct when: the question asks which resource types are most expensive."
+      },
+      "plainEnglish": "A tag is a label. If resources are labeled with the business unit that owns them, sorting costs by that label is the simplest way to answer management's question. Some costs may appear as untagged or unsupported because not every old resource or service charge has usable tag data. That does not make tag grouping wrong; it highlights the part of the environment that needs better tagging or a separate allocation rule.",
+      "analogy": "Imagine a box of receipts. Many have department stickers such as Finance, Sales, or Engineering. To find spending by department, sort by sticker. Receipts without stickers go into an unassigned pile for follow-up.\n\n| Analogy | Azure reality |\n|---|---|\n| Receipt | Usage record |\n| Department sticker | `BusinessUnit` tag |\n| Sorting by sticker | Group by tag |\n| No sticker pile | Untagged costs |\n\n**Where the analogy breaks down:** Azure tags appear in cost data only when services emit them and after Cost Management refreshes.",
+      "jargon": [
+        {
+          "term": "Cost Analysis",
+          "definition": "A Cost Management experience for exploring, grouping, and filtering Azure costs."
+        },
+        {
+          "term": "Tag",
+          "definition": "A name-value label applied to Azure resources, often used for ownership and cost allocation."
+        },
+        {
+          "term": "Meter",
+          "definition": "A billing measurement item used to charge for a specific service usage quantity."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary a cost view, budget, export, alert, or role applies to, such as a subscription or resource group."
+        },
+        {
+          "term": "Filter",
+          "definition": "A condition that narrows cost data to a subset, such as a tag, resource group, service, or meter."
+        }
+      ],
+      "watchOut": "- Tags are not automatically retroactive for historical usage.\n- Not every charge supports tag reporting.\n- Grouping by tag is only as reliable as the tagging process.\n- Use untagged reports to drive remediation rather than hiding them.",
+      "productionTip": {
+        "official": "Microsoft documents tag as a Cost Analysis grouping and filtering property and explains untagged, tags not available, and tags not supported behavior.",
+        "recommendation": "Define mandatory cost allocation tags and enforce them where practical. Review untagged charges weekly and agree on allocation rules for shared or unsupported services."
+      },
+      "memoryTrick": "For ownership reports, **group by the owner label**. This is simplified because unsupported and untagged charges still require handling.",
+      "examTip": "Clue words such as **business unit**, **cost center**, **application owner**, or **environment** point to tags. Clue words such as region, meter, or service type point to other dimensions. A harder question may ask why a tag applied yesterday is missing from Cost Analysis."
+    }
+  },
+  {
+    "id": "D1.3.6-06",
+    "objective": "D1.3.6",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Your organization uses a Microsoft Online Services Program pay-as-you-go subscription named `Sub1`.\n\nA finance analyst named Mei must be able to view subscription billing information, usage details, and costs in the Azure portal. Mei must not be able to create, modify, or delete Azure resources.\n\nWhich role should you assign to Mei at the `Sub1` subscription scope?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Contributor"
+      },
+      {
+        "id": "B",
+        "text": "Billing Reader"
+      },
+      {
+        "id": "C",
+        "text": "Cost Management Contributor"
+      },
+      {
+        "id": "D",
+        "text": "Owner"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The subscription uses the Microsoft Online Services Program billing model, and the Billing Reader role is available in the target cloud.",
+    "sources": [
+      {
+        "title": "Manage access to Azure billing",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/manage-billing-access"
+      },
+      {
+        "title": "Assign access to Cost Management data",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/assign-access-acm-data"
+      }
+    ],
+    "verified": "2026-10",
+    "sections": {
+      "correctAnswer": "**B. Billing Reader**. Billing Reader is intended for read-only access to subscription billing information without granting resource-management permissions.",
+      "technical": "Cost and billing access can involve Azure RBAC roles, Cost Management roles, and billing-account roles depending on account type. For Microsoft Online Services Program subscriptions, Microsoft documents that an account administrator can provide billing information access by assigning Owner, Contributor, Reader, or Billing Reader at subscription scope. Billing Reader is described as read-only access to subscription billing information for users responsible for financial and cost management. The least-privilege evaluation is straightforward: Mei needs to view billing and usage, but must not create, modify, or delete resources. Owner and Contributor are write-capable resource roles and are too broad. Cost Management Contributor can manage Cost Management features such as budgets or exports, so it is broader than read-only viewing. Billing Reader best matches read-only billing access for this billing model. For MCA or EA accounts, billing roles and policies may change the answer.\n\nThe exam often mixes management-plane roles with billing visibility roles. Contributor may sound attractive because it can view many things, but it also allows resource changes. Cost Management Contributor is closer to the service area, but contributor still implies management capability within Cost Management. Billing Reader is narrower for a finance analyst who needs to view subscription billing information. In a real tenant, assign the role to a group, then test the portal experience with a nonprivileged account to confirm the analyst can see costs but cannot change resources.",
+      "wrongOptions": {
+        "A": "Contributor can manage Azure resources, violating read-only requirements. Misconception: Finance users need resource-management rights to see cost data.. Could be correct when: the user must manage Azure resources but not assign RBAC roles.",
+        "C": "Cost Management Contributor can manage cost settings and is broader than needed. Misconception: Any Cost Management contributor role is a read-only finance role.. Could be correct when: the user must create or modify budgets, exports, or cost settings.",
+        "D": "Owner can manage resources and assign access, far beyond billing read-only. Misconception: Billing visibility requires subscription ownership.. Could be correct when: the user is a subscription administrator responsible for resources and access."
+      },
+      "plainEnglish": "Mei needs to look at bills and usage, not change the cloud environment. Giving her Contributor or Owner would be like giving an accountant maintenance keys just to read invoices. Billing Reader is the read-only billing role for this pay-as-you-go scenario. The exact role can differ for other agreement types, which is why the question names the billing model.",
+      "analogy": "An accountant needs to read utility bills but should not be able to rewire the building. Give access to the billing portal, not the building maintenance master key.\n\n| Analogy | Azure reality |\n|---|---|\n| Accountant | Mei |\n| Utility bill | Azure billing details |\n| Billing portal read access | Billing Reader |\n| Maintenance master key | Owner or Contributor |\n\n**Where the analogy breaks down:** Azure billing has multiple agreement types, policies, and scopes, while a utility account is usually simpler.",
+      "jargon": [
+        {
+          "term": "Billing Reader",
+          "definition": "A role for read-only access to subscription billing information in supported scenarios."
+        },
+        {
+          "term": "Cost Management Reader",
+          "definition": "A role that can view Cost Management data at supported scopes."
+        },
+        {
+          "term": "Cost Management Contributor",
+          "definition": "A role that can view and manage Cost Management settings at supported scopes."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary a cost view, budget, export, alert, or role applies to, such as a subscription or resource group."
+        }
+      ],
+      "watchOut": "- Billing Reader is read-only for billing information in supported scenarios.\n- Cost Management Contributor is too broad for view-only needs.\n- Owner and Contributor violate least privilege.\n- EA and MCA billing scopes can require different roles or policy settings.",
+      "productionTip": {
+        "official": "Microsoft documents Billing Reader as read-only subscription billing access and documents Cost Management Reader or Contributor requirements for Cost Management scopes.",
+        "recommendation": "Assign finance access through groups rather than individuals. Review billing roles together with Azure RBAC assignments to prevent accidental resource write access."
+      },
+      "memoryTrick": "**Reader reads, Contributor changes, Owner grants.** This is simplified because billing roles and Cost Management roles vary by agreement type.",
+      "examTip": "The words **view billing**, **usage details**, and **must not manage resources** point to Billing Reader or a read role, not Contributor or Owner. A harder version may change the agreement to MCA and ask about billing profile or invoice section roles."
+    }
+  },
+  {
+    "id": "D1.3.6-07",
+    "objective": "D1.3.6",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You review Azure Advisor cost recommendations for a subscription. Advisor recommends shutting down several idle virtual machines and resizing several underutilized virtual machines.\n\nSome low-CPU machines are intentionally quiet standby systems. The operations team wants Advisor to show VM and VM scale set right-sizing recommendations only when machines are below a selected average CPU utilization threshold.\n\nWhere should you configure this filter?",
+    "options": [
+      {
+        "id": "A",
+        "text": "In Azure Advisor Configuration, on the VM/Virtual Machine Scale Sets right sizing tab for the subscription"
+      },
+      {
+        "id": "B",
+        "text": "In Cost Analysis, by grouping costs by Meter and filtering CPU meters"
+      },
+      {
+        "id": "C",
+        "text": "In the monthly Cost Management budget alert condition for the subscription"
+      },
+      {
+        "id": "D",
+        "text": "In the Azure Activity log alert rule that captures Advisor recommendation events"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The user has required permissions to edit Advisor configuration, and the goal is to filter Advisor VM and VMSS recommendations.",
+    "sources": [
+      {
+        "title": "Optimize VM or VMSS spend by resizing or shutting down underutilized instances",
+        "url": "https://learn.microsoft.com/en-us/azure/advisor/advisor-cost-recommendations"
+      },
+      {
+        "title": "Azure Advisor portal basics",
+        "url": "https://learn.microsoft.com/en-us/azure/advisor/advisor-get-started"
+      }
+    ],
+    "verified": "2026-10",
+    "sections": {
+      "correctAnswer": "**A. In Azure Advisor Configuration, on the VM/Virtual Machine Scale Sets right sizing tab for the subscription**. Advisor Configuration includes a VM/VMSS right-sizing setting where you can choose an average CPU utilization value by subscription.",
+      "technical": "Azure Advisor cost recommendations include shutdown recommendations for idle virtual machines and resize recommendations for underutilized VMs or VM scale sets. Advisor analyzes utilization metrics and recommends shutdown or a cheaper size when it can fit the workload according to its criteria. Advisor also has configuration for VM and VMSS right-sizing recommendations. From Advisor Configuration, the VM/Virtual Machine Scale Sets right sizing tab lets you select subscriptions and choose an average CPU utilization value. Microsoft documents that this setting filters recommendations but does not change how recommendations are generated. Cost Analysis is reporting, not Advisor tuning. Budgets monitor cost thresholds, not CPU thresholds. Activity log alert rules notify about recommendation events but do not change Advisor right-sizing filters.\n\nThe distinction between filtering and generation is subtle. The CPU setting helps decide which VM and VMSS right-sizing recommendations are shown for the selected subscription. It does not make Advisor collect different raw metrics, and it does not resize or protect the machines. Quiet standby systems may still need explicit operational documentation because low utilization can be valid. If those systems should never be resized, also consider Advisor recommendation status management or resource-level exception practices after confirming the recommendation is not useful. Always validate with Azure Monitor metrics and owner context before acting. The CPU filter is a recommendation-screening setting, not a cost allocation setting.",
+      "wrongOptions": {
+        "B": "Cost Analysis can analyze cost, but it does not configure Advisor recommendation filters. Misconception: Any cost-related view can tune Advisor.. Could be correct when: investigating which usage meters create compute charges.",
+        "C": "A budget alert condition is based on cost thresholds, not Advisor CPU utilization filters. Misconception: Budgets tune all cost optimization signals.. Could be correct when: the goal is spending notification against a budget.",
+        "D": "Activity log alerts can notify about Advisor events, but they do not change Advisor analysis settings. Misconception: Alert rules control the analysis that creates recommendations.. Could be correct when: the team wants notifications for new Advisor recommendations."
+      },
+      "plainEnglish": "Advisor is the service making the recommendation, so Advisor is where you tune the recommendation filter. Cost Analysis tells you what you spent. Budgets warn when spending crosses a target. Activity log alerts can notify you that Advisor created advice. They do not change the VM right-sizing CPU filter.",
+      "analogy": "If a doctor gives health recommendations, you change the doctor's screening threshold in the clinic system, not the hospital bill or pager settings.\n\n| Analogy | Azure reality |\n|---|---|\n| Doctor | Azure Advisor |\n| Screening threshold | Average CPU utilization filter |\n| Hospital bill | Cost Analysis |\n| Pager | Activity log alert |\n\n**Where the analogy breaks down:** Advisor settings filter displayed recommendations and do not directly change VM performance or billing.",
+      "jargon": [
+        {
+          "term": "Azure Advisor",
+          "definition": "A service that analyzes Azure usage and configuration and provides optimization recommendations."
+        },
+        {
+          "term": "Right-sizing",
+          "definition": "Changing resource size or instance count to better match workload needs."
+        },
+        {
+          "term": "VM",
+          "definition": "Virtual machine, an Azure compute resource that runs an operating system and applications."
+        },
+        {
+          "term": "VMSS",
+          "definition": "Virtual machine scale set, a managed group of virtual machine instances."
+        },
+        {
+          "term": "Cost Analysis",
+          "definition": "A Cost Management experience for exploring, grouping, and filtering Azure costs."
+        },
+        {
+          "term": "Budget",
+          "definition": "A Cost Management spending target that evaluates processed cost or usage against configured thresholds."
+        }
+      ],
+      "watchOut": "- The CPU setting filters recommendations; it does not resize machines.\n- Advisor shutdown and resize recommendations use different criteria.\n- Configuration changes can take time to reflect in recommendations.\n- Permissions can disable Advisor configuration options.",
+      "productionTip": {
+        "official": "Microsoft documents Advisor Configuration with a VM/VMSS right sizing tab and a configurable average CPU utilization filter by subscription.",
+        "recommendation": "Tag standby and disaster recovery machines and review recommendations with owners before resizing. Treat Advisor as decision support, not automatic approval."
+      },
+      "memoryTrick": "**Tune Advisor in Advisor.** This is simplified because you may still use Cost Analysis and Azure Monitor metrics to validate the decision.",
+      "examTip": "Clue words are **Advisor**, **VM/VMSS right sizing**, and **CPU utilization threshold**. The tested distinction is Advisor configuration versus Cost Management reporting or alerting. A harder version may ask which metrics Advisor considers for shutdown versus resize."
+    }
+  },
+  {
+    "id": "D1.3.6-08",
+    "objective": "D1.3.6",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You are reviewing Azure Advisor cost recommendations for compute resources. Advisor shows recommendations for right-sizing virtual machines, purchasing reserved instances, and buying an Azure savings plan for compute.\n\nYou plan to act on the recommendations in a sequence that minimizes the chance of overcommitting to reservations or savings plans based on old usage.\n\nWhat should you do first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Buy the savings plan first because it is more flexible than reservations"
+      },
+      {
+        "id": "B",
+        "text": "Buy the reserved instances first because Advisor reservation recommendations have a recommended quantity"
+      },
+      {
+        "id": "C",
+        "text": "Right-size or shut down underutilized resources before buying reservations or savings plans"
+      },
+      {
+        "id": "D",
+        "text": "Dismiss all Advisor recommendations and wait for the next monthly invoice"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The recommendations relate to the same general compute usage pattern, and no business requirement forces an immediate commitment purchase.",
+    "sources": [
+      {
+        "title": "Calculate cost savings in Azure Advisor",
+        "url": "https://learn.microsoft.com/en-us/azure/advisor/advisor-how-to-calculate-total-cost-savings"
+      },
+      {
+        "title": "Azure reservation recommendations",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/reservations/reserved-instance-purchase-recommendations"
+      },
+      {
+        "title": "Savings plan recommendations",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/savings-plan/purchase-recommendations"
+      },
+      {
+        "title": "Cost recommendations - Azure Advisor",
+        "url": "https://learn.microsoft.com/en-us/azure/advisor/advisor-reference-cost-recommendations"
+      }
+    ],
+    "verified": "2026-10",
+    "sections": {
+      "correctAnswer": "**C. Right-size or shut down underutilized resources before buying reservations or savings plans**. Microsoft guidance recommends acting on rightsizing or shutdown first, then reservations, then savings plans so commitment recommendations reflect reduced usage.",
+      "technical": "Advisor cost recommendations can overlap. Underutilized-resource recommendations reduce on-demand usage. Reservation and savings plan recommendations are commitment purchases based on recent eligible usage and cost simulations. If you buy a commitment before reducing waste, the recommendation may reflect usage that should disappear. The recommended order is to right-size or shut down appropriate resources, allow recommendations to refresh, review reservations for stable predictable usage, and then review savings plans for remaining eligible compute spend. Reservation recommendations evaluate historical hourly usage and simulate costs with and without reservations. Savings plan recommendations use actual on-demand eligible usage and simulate commitment levels. Both can be affected by recent purchases, shutdowns, and usage changes.\n\nThis order is about avoiding stale baselines. Suppose Advisor observes a month of oversized virtual machines and recommends a commitment. If you first shrink or remove those machines, the original commitment calculation no longer represents your future demand. Reservations are usually best for predictable resource-specific usage, while savings plans cover a broader set of eligible compute spend. The common exam trap is to buy the discount first because it looks like the fastest saving. Microsoft's guidance emphasizes removing waste before committing. After remediation, recheck recommendations rather than using a downloaded old list. This protects both savings forecasts and actual utilization in the next purchasing review.",
+      "wrongOptions": {
+        "A": "Savings plan flexibility does not remove the risk of buying based on waste. Misconception: Flexibility removes the need to right-size first.. Could be correct when: waste has already been removed and stable eligible spend remains.",
+        "B": "A recommended reservation quantity can be too high if based on machines that should be shut down or resized. Misconception: A recommended quantity is always safe before cleanup.. Could be correct when: the workload has already been rightsized and is stable.",
+        "D": "Dismissing hides recommendations but does not optimize spend or update commitment math. Misconception: Waiting for an invoice is an optimization action.. Could be correct when: a recommendation is documented as not applicable."
+      },
+      "plainEnglish": "First stop wasting money, then decide how much long-term discount to buy. If you buy a discount plan based on today's waste, you may commit to paying for usage you should remove. Shut down or resize first, let the data settle, and then buy commitments for the smaller, realistic workload.",
+      "analogy": "Before buying an annual train pass, decide whether you still commute five days a week. If your schedule changes to two days, the annual pass may be too much.\n\n| Analogy | Azure reality |\n|---|---|\n| Unneeded commute days | Idle or oversized compute |\n| Changed schedule | Right-sizing or shutdown |\n| Annual pass | Reservation |\n| Flexible travel credit | Savings plan |\n\n**Where the analogy breaks down:** Azure commitments have scope, term, eligibility, and refresh rules based on metered usage.",
+      "jargon": [
+        {
+          "term": "Azure Advisor",
+          "definition": "A service that analyzes Azure usage and configuration and provides optimization recommendations."
+        },
+        {
+          "term": "Right-sizing",
+          "definition": "Changing resource size or instance count to better match workload needs."
+        },
+        {
+          "term": "Reserved instance",
+          "definition": "A reservation commitment that can reduce cost for eligible resource usage."
+        },
+        {
+          "term": "Savings plan",
+          "definition": "An Azure compute commitment to a consistent hourly spend for discounted eligible compute usage."
+        },
+        {
+          "term": "VM",
+          "definition": "Virtual machine, an Azure compute resource that runs an operating system and applications."
+        }
+      ],
+      "watchOut": "- Rightsizing can invalidate old reservation and savings plan recommendations.\n- Commitment recommendations can take days to reflect changes.\n- Avoid buying reservations and savings plans at the same time for the same usage.\n- Validate underutilized resources with owners before shutdown.",
+      "productionTip": {
+        "official": "Microsoft documents the Advisor cost-savings order as rightsizing or shutdown first, followed by reservations, then savings plans, and documents how reservation and savings plan recommendations use recent usage.",
+        "recommendation": "Run a monthly FinOps cycle: remove waste, wait for recommendation refresh where appropriate, then approve commitments for stable workloads. Track exceptions for deliberately idle resources."
+      },
+      "memoryTrick": "**Remove waste before buying discounts.** This is simplified because unusual contractual or business deadlines can change real-world timing.",
+      "examTip": "When options include rightsizing, reservations, and savings plans, choose the sequence carefully. The expected Microsoft order is cleanup first, reservations second, savings plans last. A harder version may ask how long to wait after a purchase or usage change."
+    }
+  },
+  {
+    "id": "D1.3.6-09",
+    "objective": "D1.3.6",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You use Azure Advisor to track optimization progress across subscriptions. The Cost category score is lower than expected because several long-standing cost recommendations are active.\n\nYou determine that one recommendation is not applicable to a specific development resource and should not affect the score calculation for that resource.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a Cost Management budget with a higher amount for the development resource"
+      },
+      {
+        "id": "B",
+        "text": "Export the recommendation list to CSV and remove the row from the spreadsheet"
+      },
+      {
+        "id": "C",
+        "text": "Postpone or dismiss the Advisor recommendation for that resource after documenting the reason"
+      },
+      {
+        "id": "D",
+        "text": "Create a Cost Analysis view grouped by Resource type"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. You have permission to manage Advisor recommendation status for the affected resource, and the recommendation is genuinely not applicable.",
+    "sources": [
+      {
+        "title": "Advisor score",
+        "url": "https://learn.microsoft.com/en-us/azure/advisor/advisor-score"
+      },
+      {
+        "title": "Azure Advisor portal basics",
+        "url": "https://learn.microsoft.com/en-us/azure/advisor/advisor-get-started"
+      }
+    ],
+    "verified": "2026-10",
+    "sections": {
+      "correctAnswer": "**C. Postpone or dismiss the Advisor recommendation for that resource after documenting the reason**. Advisor score documentation states that postponed or dismissed recommendations are removed from score calculation with the next refresh.",
+      "technical": "Advisor score measures optimization progress by category and overall. The Cost category score is influenced by recommendations, assessed resources, weights, and the cost of affected resources. Microsoft documents that recommendations with greater effect and long-standing recommendations can affect the Cost score, and that resources with recommendations that are postponed or dismissed are removed from score calculation with the next refresh. The correct process is to verify that the recommendation is not relevant, postpone or dismiss it in Advisor for the resource, document the reason, and wait for the score refresh. Changing a budget or Cost Analysis view does not alter Advisor score. Editing a CSV export changes only an offline copy, not the source recommendation state.\n\nDo not use dismissal as a shortcut for improving a score. Advisor score is intended to help prioritize optimization, so suppressing valid recommendations hides work rather than completing it. A good exception record should say why the recommendation does not apply, who approved the exception, and when it should be reviewed again. For development resources, a time-limited exception is often safer than a permanent dismissal because usage patterns can change after a project becomes production or is abandoned. If a recommendation was actually implemented through another valid design, marking it complete or documenting the alternative remediation is better than silently ignoring it. The score should reflect real health, not cosmetic cleanup. This is why the answer changes Advisor state rather than changing budget data. Budgets, invoices, and CSV files can support the discussion, but they do not participate in the Advisor score calculation. Access also matters, because users need sufficient permission to manage recommendation status. Wait for refresh before judging the score, especially after recent status changes in production.",
+      "wrongOptions": {
+        "A": "A budget amount affects budget alerting, not Advisor score. Misconception: Raising a budget improves the Advisor Cost score.. Could be correct when: reducing false budget alerts is the actual task.",
+        "B": "A CSV export is only a copy and does not update Advisor. Misconception: Editing exported data changes the source service.. Could be correct when: creating a custom offline report that excludes exceptions.",
+        "D": "A Cost Analysis view can show costs but cannot change recommendation state. Misconception: Cost reporting views and Advisor score use the same control plane.. Could be correct when: investigating which resource types contribute to cost."
+      },
+      "plainEnglish": "Advisor score is like a report card based on Advisor recommendations. If advice truly does not apply to one resource, mark it that way in Advisor. Crossing it off in a spreadsheet or changing a budget does not change the report card. Document the reason because dismissing advice can hide useful information.",
+      "analogy": "If an assignment was excused, the teacher must mark it excused in the gradebook. Crossing it off a printed report does not change the grade.\n\n| Analogy | Azure reality |\n|---|---|\n| Gradebook | Advisor recommendation system |\n| Report card | Advisor score |\n| Excused assignment | Dismissed recommendation |\n| Printed report | CSV export |\n\n**Where the analogy breaks down:** Advisor score is calculated from cloud assessments, weights, costs, and refresh timing rather than human grades.",
+      "jargon": [
+        {
+          "term": "Advisor score",
+          "definition": "A percentage in Azure Advisor that tracks optimization progress overall and by category."
+        },
+        {
+          "term": "Azure Advisor",
+          "definition": "A service that analyzes Azure usage and configuration and provides optimization recommendations."
+        },
+        {
+          "term": "Cost Analysis",
+          "definition": "A Cost Management experience for exploring, grouping, and filtering Azure costs."
+        },
+        {
+          "term": "Budget",
+          "definition": "A Cost Management spending target that evaluates processed cost or usage against configured thresholds."
+        }
+      ],
+      "watchOut": "- Dismissing recommendations can hide useful advice; document exceptions.\n- Advisor score may not change immediately after remediation or dismissal.\n- Budgets and Cost Analysis do not control Advisor score.\n- Advisor score only covers resources Advisor assessed.",
+      "productionTip": {
+        "official": "Microsoft documents Advisor score behavior, including exclusion of postponed or dismissed recommendations from score calculation after refresh.",
+        "recommendation": "Use a formal exception process for dismissed cost recommendations with an owner, reason, expiry date, and periodic review."
+      },
+      "memoryTrick": "**To change Advisor score, change Advisor state.** This is simplified because score also depends on weights, assessed resources, and refresh timing.",
+      "examTip": "Clue words are **Advisor score** and **not applicable recommendation**. Rule out Cost Management budgets and Cost Analysis reporting. A harder version may ask why the score has not changed immediately after remediation."
+    }
+  },
+  {
+    "id": "D1.3.6-10",
+    "objective": "D1.3.6",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You manage Azure Advisor notifications for a large subscription.\n\nYou need to implement both of the following:\n\n- Send an immediate notification when Advisor detects a new high-impact Cost recommendation.\n- Send a periodic summary of active Cost recommendations to the FinOps team every month.\n\nWhich two configurations should you create? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "An Advisor alert scoped to the subscription, configured for Cost recommendations with the appropriate impact level and an action group"
+      },
+      {
+        "id": "B",
+        "text": "An Advisor recommendation digest with Frequency set to monthly, Recommendation Category set to cost, and an action group for the FinOps team"
+      },
+      {
+        "id": "C",
+        "text": "A Cost Management budget with a forecasted threshold of 100 percent and no recipients"
+      },
+      {
+        "id": "D",
+        "text": "A department spending quota alert for the subscription"
+      },
+      {
+        "id": "E",
+        "text": "A Cost Analysis saved view grouped by Resource"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Advisor recommendations are available, action groups have the desired receivers, and the team wants Advisor recommendation notifications.",
+    "sources": [
+      {
+        "title": "Create Advisor alerts for new recommendations using Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/advisor/advisor-alerts-portal"
+      },
+      {
+        "title": "Recommendation digest for Azure Advisor",
+        "url": "https://learn.microsoft.com/en-us/azure/advisor/advisor-recommendations-digest"
+      },
+      {
+        "title": "Azure Advisor portal basics",
+        "url": "https://learn.microsoft.com/en-us/azure/advisor/advisor-get-started"
+      }
+    ],
+    "verified": "2026-10",
+    "sections": {
+      "correctAnswer": "**A. An Advisor alert scoped to the subscription, configured for Cost recommendations with the appropriate impact level and an action group** and **B. An Advisor recommendation digest with Frequency set to monthly, Recommendation Category set to cost, and an action group for the FinOps team**. Advisor alerts handle new recommendation events, while recommendation digests send periodic summaries of active recommendations.",
+      "technical": "Azure Advisor provides two notification mechanisms that fit this scenario. Advisor alerts use activity log recommendation events to notify when new recommendations are available. When creating an Advisor alert, you choose a subscription, optionally a resource group, and conditions such as category, impact level, or recommendation type. The action is delivered through an action group. Advisor recommendation digests are periodic summaries of active recommendations. Digest parameters include frequency, recommendation category, language, action groups, and digest name. Frequency can be weekly, bi-weekly, or monthly, and categories include cost, operational excellence, performance, reliability, and security. Budget alerts, department quota alerts, and Cost Analysis views do not provide immediate or monthly Advisor recommendation notifications.\n\nThe difference is operational tempo. An alert is useful when someone should react soon to a newly detected recommendation, such as a high-impact cost item. A digest is useful when the team wants a scheduled backlog summary for planning and governance. Both can use action groups, but the trigger and payload are different. In production, send immediate alerts to the team that triages cloud operations and send monthly digests to FinOps stakeholders who review trends, exceptions, and progress. This separation keeps urgent items visible without turning every recommendation into an interruption. It also lets the monthly review include dismissed, postponed, and completed work as governance context for leaders. Do not substitute budget emails for this workflow.",
+      "wrongOptions": {
+        "C": "A budget forecast warns about projected spend, not new Advisor recommendations, and no recipients would notify no one. Misconception: Forecasted budget emails and Advisor recommendation notifications are interchangeable.. Could be correct when: the requirement is early warning that spending may exceed a budget.",
+        "D": "A department quota alert is an EA quota feature, not an Advisor recommendation notification. Misconception: All cost governance notifications use quota alerts.. Could be correct when: an EA department quota threshold must notify department owners.",
+        "E": "A saved Cost Analysis view is a report, not an Advisor alert or digest. Misconception: Saved reports are notification rules.. Could be correct when: the team needs a reusable cost investigation report."
+      },
+      "plainEnglish": "Use two Advisor features because the team wants two rhythms. The alert is the doorbell: it rings when a new matching recommendation appears. The digest is the monthly newsletter: it summarizes active recommendations on a schedule. Budgets and Cost Analysis are valuable, but they do different jobs.",
+      "analogy": "A maintenance team can have an urgent text for new high-impact issues and a monthly report of all open maintenance tasks.\n\n| Analogy | Azure reality |\n|---|---|\n| Urgent text | Advisor alert |\n| Monthly report | Recommendation digest |\n| Cost issue | Cost recommendation |\n| Contact list | Action group |\n\n**Where the analogy breaks down:** Advisor alert events are activity log events routed through Azure Monitor action groups, not simple text messages.",
+      "jargon": [
+        {
+          "term": "Azure Advisor",
+          "definition": "A service that analyzes Azure usage and configuration and provides optimization recommendations."
+        },
+        {
+          "term": "Recommendation digest",
+          "definition": "A periodic Advisor notification summarizing active recommendations."
+        },
+        {
+          "term": "Action group",
+          "definition": "An Azure Monitor object that defines notification and action receivers for alerts."
+        },
+        {
+          "term": "Cost Analysis",
+          "definition": "A Cost Management experience for exploring, grouping, and filtering Azure costs."
+        },
+        {
+          "term": "Budget",
+          "definition": "A Cost Management spending target that evaluates processed cost or usage against configured thresholds."
+        }
+      ],
+      "watchOut": "- Advisor alerts are for new recommendations; digests summarize active recommendations.\n- Digests can be weekly, bi-weekly, or monthly.\n- Both alerts and digests use action groups.\n- Budget alerts are not Advisor recommendation alerts.",
+      "productionTip": {
+        "official": "Microsoft documents Advisor alerts with category, impact level, recommendation type, and action groups, and documents Advisor recommendation digests with frequency, category, language, and action groups.",
+        "recommendation": "Send high-impact cost Advisor alerts to an operations triage channel and monthly digests to a broader FinOps audience to avoid alert fatigue."
+      },
+      "memoryTrick": "**Alert now, digest later.** This is simplified because both require correct scope, category, action group, and permissions.",
+      "examTip": "The phrase **new recommendation** points to Advisor alerts. The phrase **periodic summary** points to Advisor recommendation digests. A harder version may ask which condition fields can be used for Advisor alerts or which digest frequencies are available."
+    }
+  },
+  {
+    "id": "D1.3.6-11",
+    "objective": "D1.3.6",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are building a monthly FinOps reporting pipeline for an Azure subscription. The pipeline must:\n\n- Automatically place detailed cost and usage files in an Azure Storage account for downstream processing.\n- Avoid confusing the finance team by claiming that today's Cost Management numbers are real-time final invoice values.\n\nWhich two statements should you include in the design? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a Cost Management export and configure the destination storage account, container, directory path, format, and schedule"
+      },
+      {
+        "id": "B",
+        "text": "Use Cost Analysis only, because it is the feature that writes recurring cost files to storage by default"
+      },
+      {
+        "id": "C",
+        "text": "State that cost and usage data is delayed and estimated during the open billing period until invoice finalization"
+      },
+      {
+        "id": "D",
+        "text": "State that Cost Management data is updated every second and should match the final invoice immediately"
+      },
+      {
+        "id": "E",
+        "text": "Use an Advisor recommendation digest because it exports unaggregated cost and usage rows to storage"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The subscription is a supported Cost Management account type, the team can create exports, and downstream systems can process CSV or Parquet files from Azure Storage.",
+    "sources": [
+      {
+        "title": "Tutorial - Create and manage Cost Management exports",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-improved-exports"
+      },
+      {
+        "title": "Understand Cost Management data",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/understand-cost-mgt-data"
+      },
+      {
+        "title": "Manage Azure costs with automation",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/manage-automation"
+      }
+    ],
+    "verified": "2026-10",
+    "sections": {
+      "correctAnswer": "**A. Create a Cost Management export and configure the destination storage account, container, directory path, format, and schedule** and **C. State that cost and usage data is delayed and estimated during the open billing period until invoice finalization**. Exports automate file delivery to storage, and Cost Management data has documented latency and estimation behavior.",
+      "technical": "Cost Management Exports automate delivery of cost-management datasets to Azure Storage. When creating an export, you define the dataset and destination, including storage type, storage account, container, directory path, format such as CSV or Parquet, compression, and schedule. Exports can run daily or monthly depending on dataset options. Cost data is not real time. For Enterprise Agreement and Microsoft Customer Agreement subscriptions, cost and usage data is typically available within 8 to 24 hours. Pay-as-you-go subscriptions can take up to 72 hours. Estimated charges for the current billing period are updated several times per day and can change as usage is processed. The current period is finalized after billing-period processing and invoice issuance. A good pipeline uses exports for durable ingestion and labels current-period data as estimated.\n\nThe storage destination details are part of the design, not an afterthought. The export job needs a storage account, container, path, file format, and schedule that downstream tools can rely on. If a storage firewall is used, additional prerequisites may apply. The finance communication is equally important: a dashboard based on an export can be very useful and still not be a final invoice. Labeling data freshness prevents disputes when late-arriving usage changes a previous day's totals.",
+      "wrongOptions": {
+        "B": "Cost Analysis is mainly interactive reporting and does not write recurring detailed files to storage by default. Misconception: Every portal cost view is an export pipeline.. Could be correct when: a user only needs to manually inspect or share a cost view.",
+        "D": "Cost Management data is not updated every second and is not final during the open billing period. Misconception: Cloud cost reporting is a real-time final ledger.. Could be correct when: a hypothetical real-time metering system is being described, not Cost Management.",
+        "E": "Advisor digests summarize recommendations; they do not export unaggregated cost rows. Misconception: Advisor notification features are data export features.. Could be correct when: the requirement is a periodic summary of Advisor recommendations."
+      },
+      "plainEnglish": "Use exports when you want Azure to drop cost files into storage on a schedule. Also tell finance that the numbers are not instant and final. Azure services send usage records at different times, and billing data is processed before it appears. During the current month, values are estimates and can change before the invoice is issued.",
+      "analogy": "A store can send a nightly sales file to headquarters, but today's totals may still change if refunds or late transactions arrive.\n\n| Analogy | Azure reality |\n|---|---|\n| Nightly sales file | Cost Management export |\n| Headquarters folder | Azure Storage container |\n| Open daily totals | Estimated current cost |\n| Final statement | Issued invoice |\n\n**Where the analogy breaks down:** Azure cost data comes from many independent services and billing systems, not one store register.",
+      "jargon": [
+        {
+          "term": "Cost Management export",
+          "definition": "A scheduled job that writes selected Cost Management datasets to Azure Storage."
+        },
+        {
+          "term": "Azure Storage",
+          "definition": "Azure service for storing data such as blobs and files."
+        },
+        {
+          "term": "Cost Analysis",
+          "definition": "A Cost Management experience for exploring, grouping, and filtering Azure costs."
+        },
+        {
+          "term": "Open billing period",
+          "definition": "The current billing cycle before charges have been finalized and invoiced."
+        },
+        {
+          "term": "Recommendation digest",
+          "definition": "A periodic Advisor notification summarizing active recommendations."
+        }
+      ],
+      "watchOut": "- Exports are scheduled in UTC; avoid assuming local run time.\n- Current billing-period charges are estimates and can change.\n- Pay-as-you-go data can take longer to appear than EA or MCA data.\n- Storage permissions and firewall settings can affect export delivery.",
+      "productionTip": {
+        "official": "Microsoft documents Cost Management Exports to Azure Storage and documents cost data latency, current-period estimation, and invoice finalization behavior.",
+        "recommendation": "Design cost pipelines with freshness labels such as `estimated`, `closed period`, and `invoice reconciled`. Include late-arriving data handling rather than treating today's export as a hard real-time control."
+      },
+      "memoryTrick": "**Exports move files; latency moves expectations.** This is simplified because exact availability depends on offer type, service timing, export schedule, and billing closure.",
+      "examTip": "For reporting-pipeline questions, choose **Exports** when data must be written to Storage. For accuracy questions, remember Cost Management is delayed and current-period values are estimated. A harder version may compare Exports, Cost Details API, and Cost Analysis."
+    }
+  }
+]

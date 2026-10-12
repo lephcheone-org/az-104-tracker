@@ -1,0 +1,800 @@
+[
+  {
+    "id": "D2.1.1-01",
+    "objective": "D2.1.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains a storage account named `stapp01`. The account currently accepts traffic from any network.\n\nYou need to allow access through the storage account public endpoint only from explicitly configured virtual networks, IP address ranges, resource instances, and exceptions. You do not want to require a private endpoint for every client yet.\n\nWhich setting should you configure first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set **Public network access** to **Disabled**"
+      },
+      {
+        "id": "B",
+        "text": "Set the storage account network rule **default action** to **Deny**"
+      },
+      {
+        "id": "C",
+        "text": "Add a private endpoint for the blob service"
+      },
+      {
+        "id": "D",
+        "text": "Set the storage account network rule **default action** to **Allow**"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The storage account uses standard Azure Storage public endpoints and no network security perimeter. Authorization requirements such as Microsoft Entra roles, shared keys, or SAS tokens are separate from this network filtering question.",
+    "sections": {
+      "correctAnswer": "**B. Set the storage account network rule default action to Deny**. Storage network rules are effective when the public endpoint is enabled but the default action is Deny; then only explicitly allowed virtual networks, IP ranges, resource instances, and exceptions can reach the public endpoint.",
+      "technical": "Azure Storage firewall configuration has two related ideas that are easy to mix up: whether the public endpoint is available, and what the firewall does with traffic that reaches that public endpoint.\n\nThe public network access choices in the portal map to these outcomes:\n\n| Portal choice | Practical effect |\n|---|---|\n| Enabled from all networks | Public endpoint accepts requests from any network, subject to normal authorization |\n| Enabled from selected networks | Public endpoint stays enabled, but the default network rule denies traffic that is not explicitly allowed |\n| Disabled | Public endpoint is not available for normal public network traffic; access is through private endpoints and other documented higher-precedence exceptions |\n\nFor this scenario, the requirement says to keep using selected public endpoint paths such as virtual network rules and IP rules. Microsoft documentation states that network rules have no effect unless the default action is set to Deny. After that, the firewall allows traffic only from configured sources. Clients from allowed sources must still pass storage authorization; the firewall is not a replacement for identity or data permissions.\n\nThe evaluation order to remember for exam purposes is:\n\n1. Decide whether public network access is enabled or disabled.\n2. If public access is enabled with selected networks, evaluate explicit allows such as virtual network rules, IP network rules, resource instance rules, and trusted service exceptions.\n3. If no explicit allow applies and the default action is Deny, the data-plane request to the public endpoint is blocked.\n4. If a client uses an approved private endpoint, that path is handled separately from the public endpoint firewall.\n\nSo the first configuration step is to move from an open default to a Deny default, then add the required allows before or during the change window.",
+      "wrongOptions": {
+        "A": "Setting Public network access to Disabled blocks public endpoint access rather than allowing selected virtual network and IP rules through the public endpoint. Misconception: Disabled means enabled only for selected networks. Could be correct when the design intentionally requires private endpoint access only, with public endpoint access shut down.",
+        "C": "A private endpoint can provide private access, but creating one does not configure the selected-networks behavior for the public endpoint and does not automatically block the public endpoint. Misconception: Any private endpoint automatically replaces firewall rules. Could be correct when a specific subnet must use Private Link for one storage service such as blob or file.",
+        "D": "Default action Allow keeps the public endpoint open to clients from any network, subject to authorization. Network rules are not restrictive in that state. Misconception: Adding allow rules matters even when the default is already Allow. Could be correct only when the requirement is to permit all networks and avoid network-level restrictions."
+      },
+      "plainEnglish": "A storage account has a public front door. By default, that front door accepts visitors from everywhere. If you want only named visitors to use that public front door, you do not close the front door completely. Instead, you change the default response to no and then write down the approved networks and services.\n\nThat is what default action Deny does. It says, do not let a request in just because it reached the public address. After that, rules such as allow this subnet or allow this public office IP address become meaningful. Turning public network access off is a stronger move: it says the public front door should not be used, so clients need a private endpoint path instead.",
+      "analogy": "Imagine a building lobby with a security desk.\n\n| Analogy | Azure reality |\n|---|---|\n| Building lobby public entrance | Storage account public endpoint |\n| Let everyone enter | Default action Allow |\n| Stop everyone unless on the list | Default action Deny with selected networks |\n| Approved visitor list | Virtual network, IP, resource instance, and exception rules |\n| Private employee tunnel | Private endpoint |\n\n**Where the analogy breaks down:** Azure still checks data authorization after the network check. A visitor on the list is not automatically allowed to open every locked room; storage permissions, keys, or tokens still matter.",
+      "jargon": [
+        {
+          "term": "Azure Storage firewall",
+          "definition": "A network filter for Azure Storage public endpoints that can allow or deny data-plane requests based on configured network sources."
+        },
+        {
+          "term": "Public endpoint",
+          "definition": "The publicly resolvable service address for a storage service, such as a blob or file endpoint."
+        },
+        {
+          "term": "Public network access",
+          "definition": "A storage account setting that controls whether the public endpoint is enabled for all networks, selected networks, disabled, or secured by a perimeter."
+        },
+        {
+          "term": "Default action",
+          "definition": "The network rule set decision used when no more specific allow rule applies; for selected networks it should be Deny."
+        },
+        {
+          "term": "Virtual network rule",
+          "definition": "A storage firewall rule that allows traffic from a specific Azure virtual network subnet through the public endpoint."
+        },
+        {
+          "term": "IP network rule",
+          "definition": "A storage firewall rule that allows traffic from a specific public IPv4 address or CIDR range."
+        },
+        {
+          "term": "Resource instance rule",
+          "definition": "A network rule that allows a specific Azure resource instance to reach the storage account public endpoint."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A network interface in a virtual network that connects privately to a specific storage service through Azure Private Link."
+        }
+      ],
+      "watchOut": "- Network rules are restrictive only when the default action is Deny.\n- Public network access Disabled is not the same as Enabled from selected networks.\n- Creating a private endpoint does not automatically close the public endpoint.\n- A firewall allow does not grant data access by itself; authorization is still required.\n- Microsoft notes that firewall setting changes can remain in effect briefly after saving a more permissive setting.",
+      "productionTip": {
+        "official": "Microsoft documents that storage accounts accept connections from any network by default, and that to allow only specific virtual networks or IP address ranges you set the default action to Deny. The same article warns that changing this setting can affect application connectivity and that allowed networks or private endpoints should be prepared first.",
+        "recommendation": "Recommendation: add or verify the required allow rules, test from an approved client, then switch the default action to Deny during a controlled change. Keep a rollback command ready and monitor storage metrics or application logs for 403 failures after the change."
+      },
+      "memoryTrick": "Selected networks means **public endpoint on, default no**. This is a simplification because private endpoints and trusted-service precedence can still create allowed paths outside ordinary public IP and subnet rules.",
+      "examTip": "Clue words are **selected virtual networks and IP addresses**, **public endpoint**, and **not private endpoint for every client**. Those words point to default action Deny, not Public network access Disabled. A harder version may show an Azure CLI command and ask why an IP rule does not work; look for whether `--default-action Deny` was ever configured."
+    },
+    "sources": [
+      {
+        "title": "Azure Storage firewall rules and network access",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+      },
+      {
+        "title": "Set the default public network access rule: Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-set-default-access"
+      },
+      {
+        "title": "Guidelines & limitations: Azure Storage firewall",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-limitations"
+      },
+      {
+        "title": "Use private endpoints - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.1-02",
+    "objective": "D2.1.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stdata01` in the East US region. You have a virtual network named `vnet-app` in the West US region. The virtual network contains a subnet named `snet-app`.\n\nApplications in `snet-app` must access `stdata01` through the storage account public endpoint. You will restrict the storage account to selected networks. You need to prepare the subnet and add the correct network rule.\n\nWhich two actions should you perform? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable the `Microsoft.Storage.Global` service endpoint on `snet-app`"
+      },
+      {
+        "id": "B",
+        "text": "Enable the `Microsoft.Sql` service endpoint on `snet-app`"
+      },
+      {
+        "id": "C",
+        "text": "Add an IP network rule for the private address range of `snet-app`"
+      },
+      {
+        "id": "D",
+        "text": "Add a virtual network rule for the `snet-app` subnet"
+      },
+      {
+        "id": "E",
+        "text": "Set Public network access to Disabled before adding the subnet rule"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The application remains in Azure Virtual Network `vnet-app`, the storage account public endpoint is used, and normal storage authorization is already configured. The requirement is network reachability, not SAS token or access-key management.",
+    "sections": {
+      "correctAnswer": "**A. Enable the `Microsoft.Storage.Global` service endpoint on `snet-app`** and **D. Add a virtual network rule for the `snet-app` subnet**. Cross-region virtual network access to Azure Storage through service endpoints uses `Microsoft.Storage.Global`, and the storage account must have a virtual network rule that allows the subnet.",
+      "technical": "A storage virtual network rule is not just an address range entry. It relies on the identity of a virtual network subnet being presented to the storage service by a service endpoint. For Azure Storage, Microsoft documents two endpoint names:\n\n| Endpoint | Use |\n|---|---|\n| `Microsoft.Storage` | Storage accounts in the same region as the virtual network |\n| `Microsoft.Storage.Global` | Storage accounts in any region |\n\nIn this scenario, the virtual network is in West US and the storage account is in East US. Because the regions differ, `Microsoft.Storage.Global` is the endpoint that supports the cross-region path. After the service endpoint is enabled on `snet-app`, you add a virtual network rule to the storage account for that subnet. If the storage account is set to selected networks, the default action is Deny, and traffic from other subnets is blocked unless another rule or exception allows it.\n\nThere are a few scope and tooling details that often appear on exams:\n\n1. A storage account can have up to 400 virtual network rules.\n2. The virtual network can be in any subscription, any Microsoft Entra tenant, and any Azure region.\n3. The Azure portal does not show subnets in a different Microsoft Entra tenant; PowerShell, Azure CLI, or REST API is required for those cross-tenant rules.\n4. The rule applies to the named subnet identity, not merely to a reusable subnet name. If a subnet is deleted and recreated with the same name, access must be explicitly authorized again.\n\nThe rule allows network access to the public endpoint. It does not grant data permissions, and it does not turn the path into a private endpoint.",
+      "wrongOptions": {
+        "B": "`Microsoft.Sql` is the service endpoint for Azure SQL services, not Azure Storage. Misconception: Any service endpoint enables any platform service. Could be correct when the protected resource is Azure SQL Database or another service that specifically uses the SQL endpoint.",
+        "C": "IP network rules allow public internet IPv4 ranges, not private RFC 1918 subnet ranges such as addresses inside a virtual network. Misconception: A subnet can be represented in a storage firewall by its private CIDR range. Could be correct for a public on-premises NAT range or another valid public IPv4 range outside same-region Azure limitations.",
+        "E": "Public network access Disabled is too restrictive for this requirement because virtual network rules govern access through the public endpoint. Misconception: Disabled is required before storage firewalls are secure. Could be correct when all clients must use private endpoints and public endpoint traffic should not be accepted."
+      },
+      "plainEnglish": "Azure Storage can trust a specific subnet, but the subnet must first show Azure Storage who it is. A service endpoint is the feature that lets the subnet identify itself to the storage service. Because the storage account is in a different region from the virtual network, use the global storage endpoint option.\n\nAfter the subnet can identify itself, you still need to put that subnet on the storage account's allowed list. These are two different steps: enable the endpoint on the subnet, and add the subnet rule on the storage account. Adding a private IP range is the wrong idea because Storage firewall IP rules are for public internet addresses, not internal virtual network addresses.",
+      "analogy": "Think of a company branch office that needs access to a locked warehouse in another city.\n\n| Analogy | Azure reality |\n|---|---|\n| Branch office badge system | Service endpoint on the subnet |\n| Badge system valid in any city | `Microsoft.Storage.Global` |\n| Warehouse approved-branch list | Storage virtual network rule |\n| Office internal desk numbers | Private subnet IP addresses |\n| Warehouse public reception desk | Storage public endpoint |\n\n**Where the analogy breaks down:** The Azure service endpoint changes how Azure identifies traffic to the platform service; it is not literally issuing user badges and it does not replace storage data authorization.",
+      "jargon": [
+        {
+          "term": "Virtual network",
+          "definition": "An isolated Azure network containing subnets and resources such as virtual machines or private endpoints."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A named range inside a virtual network where Azure resources are placed and network features can be enabled."
+        },
+        {
+          "term": "Service endpoint",
+          "definition": "A subnet feature that provides optimized connectivity and extends virtual network identity to a supported Azure service."
+        },
+        {
+          "term": "`Microsoft.Storage`",
+          "definition": "The Azure Storage service endpoint name used for storage accounts in the same region as the virtual network."
+        },
+        {
+          "term": "`Microsoft.Storage.Global`",
+          "definition": "The Azure Storage cross-region service endpoint name used to reach storage accounts in any region."
+        },
+        {
+          "term": "Virtual network rule",
+          "definition": "A storage account firewall rule that allows requests from a specific subnet that has the appropriate storage service endpoint enabled."
+        },
+        {
+          "term": "Microsoft Entra tenant",
+          "definition": "An identity directory boundary for users, groups, applications, and some Azure resource relationships."
+        },
+        {
+          "term": "RFC 1918",
+          "definition": "The standard defining private IPv4 address ranges such as 10.0.0.0/8, 172.16.0.0/12, and 192.168.0.0/16."
+        }
+      ],
+      "watchOut": "- Same-region Azure Storage service endpoints use `Microsoft.Storage`; cross-region access uses `Microsoft.Storage.Global`.\n- Only one of those storage endpoint types can be associated with a subnet at a time.\n- IP rules are not how you allow Azure VNet private address ranges.\n- Portal subnet selection is limited for cross-tenant virtual networks; CLI, PowerShell, or REST can use the fully qualified subnet ID.\n- Deleting and recreating a subnet with the same name does not preserve the old network rule access.",
+      "productionTip": {
+        "official": "Microsoft documents that virtual network rules require a service endpoint on the subnet and that the portal can create endpoints automatically when selecting target subnets. It also documents the same-region `Microsoft.Storage` endpoint and the any-region `Microsoft.Storage.Global` endpoint.",
+        "recommendation": "Recommendation: treat service endpoint changes as network changes. Enable the endpoint, add the subnet rule, set the default action to Deny only after testing from a VM or app in the subnet, and document cross-tenant subnet IDs because the portal may not show them later."
+      },
+      "memoryTrick": "For storage service endpoints, **plain Storage is local; Global crosses regions**. This shortcut is specific to Azure Storage service endpoints and does not mean every Azure service has a global endpoint name.",
+      "examTip": "The exam clue is the combination of **virtual network subnet**, **public endpoint**, and **different region**. Choose the storage service endpoint plus the virtual network rule. A harder version might place the VNet in another tenant; the technical answer remains possible, but the portal option is no longer sufficient."
+    },
+    "sources": [
+      {
+        "title": "Azure Storage firewall rules and network access",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+      },
+      {
+        "title": "Create a virtual network rule for Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+      },
+      {
+        "title": "Azure virtual network service endpoints",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoints-overview"
+      },
+      {
+        "title": "Guidelines & limitations: Azure Storage firewall",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-limitations"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.1-03",
+    "objective": "D2.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `starchive01` that is configured for selected networks. An on-premises file-processing server must upload blobs to the account over the internet. The server is behind a corporate firewall that performs NAT. The network team gives you the following possible source addresses.\n\n| Candidate | Address |\n|---|---|\n| 1 | `10.40.8.0/24` |\n| 2 | `172.20.5.11` |\n| 3 | `203.0.113.48` |\n| 4 | `203.0.113.52/31` |\n\nWhich candidate should you add as an Azure Storage IP network rule?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Candidate 1"
+      },
+      {
+        "id": "B",
+        "text": "Candidate 2"
+      },
+      {
+        "id": "C",
+        "text": "Candidate 3"
+      },
+      {
+        "id": "D",
+        "text": "Candidate 4"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The listed public documentation rules are being tested, and `203.0.113.48` represents the organization's internet-facing NAT IPv4 address for the scenario. The storage account is not in the same Azure region as an Azure client that would make IP rules ineffective.",
+    "sections": {
+      "correctAnswer": "**C. Candidate 3**. Azure Storage IP network rules are for public internet IPv4 addresses or supported CIDR ranges; `203.0.113.48` is the only candidate that is not a private RFC 1918 address and not an unsupported small CIDR range.",
+      "technical": "Storage IP network rules are intended for clients and services that are not represented by an Azure virtual network rule. A common example is an on-premises network whose outbound traffic is translated to one or more public NAT addresses. The rule must use the public source address that Azure Storage sees, not the private address that the server uses inside the corporate network.\n\nMicrosoft documents these key restrictions for IP network rules:\n\n| Rule area | Documented behavior |\n|---|---|\n| Address type | Public internet IP addresses only |\n| Private ranges | RFC 1918 ranges such as 10.x.x.x, 172.16-31.x.x, and 192.168.x.x are not allowed |\n| CIDR size | `/31` and `/32` prefix sizes are not supported as CIDR ranges; use individual IP rules instead |\n| IP version | Storage firewall rules support IPv4 configuration |\n| Quantity | Each storage account supports up to 400 IP network rules |\n\nCandidate 1 is private RFC 1918 space. Candidate 2 is also private because 172.20.5.11 falls within 172.16.0.0 through 172.31.255.255. Candidate 4 uses a `/31` range, which the storage firewall limitation page says is not supported as a small address range. Candidate 3 is the only valid single public IPv4 address option in the list.\n\nFor ExpressRoute with Microsoft peering, the same principle applies: identify the NAT public IP addresses used for Microsoft peering and allow those public addresses. Do not add the internal server address.",
+      "wrongOptions": {
+        "A": "`10.40.8.0/24` is an RFC 1918 private range. Storage IP network rules are for public internet IP addresses, not private LAN ranges. Misconception: Azure Storage can see the server's internal address through NAT. Could be correct for an internal firewall rule inside the corporate network, not for an Azure Storage IP network rule.",
+        "B": "`172.20.5.11` is inside the private 172.16.0.0 to 172.31.255.255 range, so it is not a valid storage IP rule source. Misconception: Only 10.x and 192.168.x addresses are private. Could be correct in a local routing table or on-premises firewall rule where private addressing is valid.",
+        "D": "`203.0.113.52/31` is public-looking, but Microsoft documents that `/31` and `/32` small CIDR ranges are not supported as CIDR ranges for storage IP rules. Misconception: Any valid CIDR notation is accepted. Could be correct if the address were entered as individual IP address rules, subject to using the actual public NAT addresses."
+      },
+      "plainEnglish": "Your server may have a private office address, but Azure Storage sees the address that leaves your company network and appears on the internet. That is usually a NAT address on the company firewall or ExpressRoute Microsoft peering path.\n\nStorage firewall IP rules do not accept private office addresses like 10.x.x.x or 172.20.x.x. They need the public address Azure sees. They also reject very tiny CIDR ranges such as `/31` and `/32` as ranges. In this list, the only acceptable entry is the single public IPv4 address.",
+      "analogy": "A package delivery company does not use your desk number inside the office building. It uses the building's street address.\n\n| Analogy | Azure reality |\n|---|---|\n| Desk number | Private RFC 1918 server address |\n| Building street address | Public NAT IP address |\n| Delivery company allowed-address list | Storage IP network rule |\n| A range format the clerk refuses | Unsupported `/31` or `/32` CIDR range |\n| Corporate mailroom | NAT or ExpressRoute Microsoft peering edge |\n\n**Where the analogy breaks down:** Network packets are translated and evaluated automatically. Also, Azure has special same-region and service endpoint behaviors that a postal analogy does not capture.",
+      "jargon": [
+        {
+          "term": "IP network rule",
+          "definition": "A storage firewall rule that allows requests from a public IPv4 address or supported public CIDR range."
+        },
+        {
+          "term": "NAT",
+          "definition": "Network Address Translation, a process that changes private source addresses to public addresses for outbound traffic."
+        },
+        {
+          "term": "RFC 1918",
+          "definition": "The standard defining private IPv4 ranges that are not routed on the public internet."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as `203.0.113.0/24`, for describing an IP address range."
+        },
+        {
+          "term": "`/31`",
+          "definition": "A CIDR prefix that describes two IPv4 addresses; Azure Storage firewall documentation says `/31` ranges are not supported as small address ranges."
+        },
+        {
+          "term": "ExpressRoute",
+          "definition": "An Azure service that provides private connectivity between on-premises networks and Microsoft cloud services."
+        },
+        {
+          "term": "Microsoft peering",
+          "definition": "An ExpressRoute peering type used to reach Microsoft public services, where NAT public IP addresses may be used."
+        },
+        {
+          "term": "IPv4",
+          "definition": "The common 32-bit internet protocol address format, such as `203.0.113.48`."
+        }
+      ],
+      "watchOut": "- Add the public source address Azure Storage sees, not the server's private address.\n- 172.16.0.0 through 172.31.255.255 is private, even though not every 172.x address is private.\n- `/31` and `/32` CIDR ranges are not supported as storage IP rule ranges; use individual IP rules where appropriate.\n- A storage account supports up to 400 IP network rules, so summarize public ranges carefully.\n- IP rules have documented limitations for same-region Azure clients and some Azure service traffic; use virtual network rules or other supported mechanisms there.",
+      "productionTip": {
+        "official": "Microsoft documents that IP network rules accept public internet IPv4 addresses and supported CIDR ranges, with private RFC 1918 ranges disallowed. For on-premises access, Microsoft tells you to identify the internet-facing IP addresses or the NAT addresses used for ExpressRoute Microsoft peering.",
+        "recommendation": "Recommendation: ask the network team for the exact egress NAT addresses, add the smallest practical public ranges, and validate from the real host with logging enabled. Track the rule count because large branch networks can approach the 400-rule limit quickly."
+      },
+      "memoryTrick": "Storage IP rules want the **outside address**, not the **inside address**. This is a simplification because Azure-hosted same-region traffic and service endpoints can change which network mechanism is appropriate.",
+      "examTip": "When a question gives 10.x, 172.16-31.x, or 192.168.x addresses, eliminate them for Storage IP firewall rules. If the scenario says ExpressRoute or NAT, look for the public NAT address. A harder question may ask why a SAS restricted to an IP still fails; the answer is that SAS IP restrictions do not bypass the storage firewall."
+    },
+    "sources": [
+      {
+        "title": "Azure Storage firewall rules and network access",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+      },
+      {
+        "title": "Create an IP network rule for Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-ip-address-range"
+      },
+      {
+        "title": "Guidelines & limitations: Azure Storage firewall",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-limitations"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.1-04",
+    "objective": "D2.1.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You have a storage account named `stlanding01` that is configured for selected networks. You have an Azure Data Factory factory named `adf-ingest` in the same Microsoft Entra tenant. The factory cannot be isolated by adding its outbound IP addresses or a virtual network subnet rule.\n\nOnly `adf-ingest` should be allowed through the storage account firewall. The factory's managed identity must write data to a blob container after the network path is allowed.\n\nWhich two actions should you perform? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable Public network access from all networks on `stlanding01`"
+      },
+      {
+        "id": "B",
+        "text": "Create a resource instance network rule for the `adf-ingest` resource ID and tenant ID"
+      },
+      {
+        "id": "C",
+        "text": "Add the private IP address range of the Data Factory service to IP network rules"
+      },
+      {
+        "id": "D",
+        "text": "Enable the broad **Allow Azure services on the trusted services list** exception only"
+      },
+      {
+        "id": "E",
+        "text": "Assign an appropriate storage data role to the `adf-ingest` managed identity"
+      }
+    ],
+    "correct": [
+      "B",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. Azure Data Factory is a supported service for resource instance rules based on managed identity access, and the blob container authorization model uses Microsoft Entra authorization. The question focuses on firewall admission plus required authorization, not on pipeline authoring.",
+    "sections": {
+      "correctAnswer": "**B. Create a resource instance network rule for the `adf-ingest` resource ID and tenant ID** and **E. Assign an appropriate storage data role to the `adf-ingest` managed identity**. The resource instance rule allows that specific Azure resource through the public endpoint firewall, and a data role is still required for the managed identity to write blob data.",
+      "technical": "Azure Storage provides several network allow mechanisms. IP rules work for public client ranges. Virtual network rules work for subnets with storage service endpoints. Trusted service exceptions are broad exceptions for documented Azure services and operations outside your network boundary. Resource instance rules are narrower: they allow traffic from specific Azure resource instances when those resources cannot be isolated through virtual network or IP rules.\n\nA resource instance rule uses the resource ID and tenant ID of the allowed instance. Microsoft documents that resource instances must be in the same Microsoft Entra tenant as the storage account, although they can be in any subscription in that tenant. The rule provides access to the storage account public endpoint. It does not, by itself, grant permission to read or write storage data.\n\nThat separation matters:\n\n1. The storage firewall asks, \"May traffic from this source reach the public endpoint?\"\n2. The storage authorization system asks, \"May this identity perform this data operation?\"\n3. For managed identity based access, the identity needs an appropriate Azure role or other supported data permission for the storage data operation.\n\nThe trusted services exception can be useful, but it is not the least-specific-instance answer here. The prompt says only `adf-ingest` should be allowed, so a resource instance network rule plus a managed identity data permission is the precise combination.",
+      "wrongOptions": {
+        "A": "Enabling access from all networks removes the network restriction and allows any network path to try storage authorization. Misconception: Data authorization alone is enough to satisfy a firewall requirement. Could be correct only for a storage account intentionally left open at the network layer, which is not this scenario.",
+        "C": "Azure Data Factory service traffic is not represented by a private RFC 1918 range that you can add to storage IP network rules. Misconception: Every Azure service can be allowed by adding a service private IP range. Could be correct for an on-premises NAT public IP range or another valid public client range.",
+        "D": "The trusted services exception is broader than allowing one named Data Factory instance, and by itself it does not grant the managed identity data write permission. Misconception: Trusted services means every trusted service instance automatically has data access. Could be correct when the requirement is to permit a documented trusted service category for its supported operations and broad exception scope is acceptable."
+      },
+      "plainEnglish": "There are two gates. The first gate is the network firewall: can this Azure service reach the storage account at all? A resource instance rule is like putting one named Azure resource on the firewall guest list.\n\nThe second gate is permission to do something with the data. Even if the factory reaches the storage account, it still needs an identity permission to write blobs. The managed identity is the factory's identity, and the storage data role tells Azure what that identity may do. Opening the account to all networks or using a broad trusted-service switch gives more access than the scenario asks for.",
+      "analogy": "A delivery robot needs to enter a warehouse and place boxes on a shelf.\n\n| Analogy | Azure reality |\n|---|---|\n| Robot serial number on the gate list | Resource instance network rule for one Azure resource ID |\n| Same company badge system | Same Microsoft Entra tenant requirement |\n| Gate opens to the warehouse yard | Firewall access to the public endpoint |\n| Shelf stocking permission | Storage data role for the managed identity |\n| Let every approved vendor category enter | Trusted services exception |\n\n**Where the analogy breaks down:** Azure evaluates digital resource IDs, tenants, managed identities, and role assignments. A physical robot gate does not model token issuance or data-plane authorization.",
+      "jargon": [
+        {
+          "term": "Azure Data Factory",
+          "definition": "An Azure service for creating data integration and orchestration pipelines."
+        },
+        {
+          "term": "Resource instance network rule",
+          "definition": "A storage firewall rule that allows traffic from a specific Azure resource instance identified by resource ID and tenant ID."
+        },
+        {
+          "term": "Resource ID",
+          "definition": "The full Azure Resource Manager path that uniquely identifies an Azure resource."
+        },
+        {
+          "term": "Tenant ID",
+          "definition": "The unique identifier of a Microsoft Entra tenant."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An identity managed by Azure for an Azure resource, used to authenticate to services without storing credentials in code."
+        },
+        {
+          "term": "Storage data role",
+          "definition": "An Azure RBAC role with data-plane permissions for storage data, such as reading or writing blobs."
+        },
+        {
+          "term": "Trusted services exception",
+          "definition": "A storage network security exception that allows documented Azure services outside your network boundary to reach a storage account for supported operations."
+        },
+        {
+          "term": "Public endpoint",
+          "definition": "The storage service endpoint controlled by the storage firewall network rules."
+        }
+      ],
+      "watchOut": "- A resource instance rule allows network access to the public endpoint; it does not grant data access.\n- The resource instance must be in the same Microsoft Entra tenant as the storage account.\n- Resource instance rules can be combined with virtual network rules, IP rules, and exceptions.\n- The trusted services exception can be broader than a single resource instance.\n- Prefer resource instance rules when the exam says a specific Azure resource instance must be allowed.",
+      "productionTip": {
+        "official": "Microsoft documents resource instance rules for specific Azure resource instances and states that the rule provides access to the public endpoint but not to the data. The documentation also states that an appropriate Azure role must be assigned to the system-assigned managed identity for data access.",
+        "recommendation": "Recommendation: use resource instance rules for named service instances instead of broad exceptions when supported. Pair the rule with the narrowest storage data role and scope, test the pipeline, and record both the network rule and identity assignment as one dependency."
+      },
+      "memoryTrick": "Resource instance rule opens the **road**; managed identity role opens the **data door**. This is a simplification because some hierarchical namespace scenarios can also involve ACLs.",
+      "examTip": "Clue words are **specific Azure resource instance**, **same tenant**, and **managed identity**. Pick a resource instance network rule and a data permission. A harder version may include the trusted services checkbox; choose it only when the scenario asks for that broader documented exception rather than one named resource instance."
+    },
+    "sources": [
+      {
+        "title": "Azure Storage firewall rules and network access",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+      },
+      {
+        "title": "Create a resource instance network rule for Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-resource-instances"
+      },
+      {
+        "title": "Trusted Azure services for Azure Storage network security",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-trusted-azure-services"
+      },
+      {
+        "title": "Manage network security exceptions for Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-manage-exceptions"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.1-05",
+    "objective": "D2.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `streports01` that is configured for selected networks. Your user account has the Storage Blob Data Reader role for a container in the account.\n\nFrom your home internet connection, you open the Azure portal. You can see the storage account resource and its Networking page, but attempts to browse blob data fail with an authorization or network error. You need to browse the blob data from the portal with the least change to the storage account.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign yourself the Owner role on the storage account"
+      },
+      {
+        "id": "B",
+        "text": "Regenerate the storage account access keys"
+      },
+      {
+        "id": "C",
+        "text": "Connect from a client IP address or network that is allowed by the storage firewall"
+      },
+      {
+        "id": "D",
+        "text": "Change the replication setting of the storage account"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Your data role assignment is valid, and the failure is caused by the storage firewall data-plane restriction on your current client network. The goal is to keep selected-networks firewall behavior rather than opening the account to every network.",
+    "sections": {
+      "correctAnswer": "**C. Connect from a client IP address or network that is allowed by the storage firewall**. Azure Storage firewall rules apply to data-plane operations, and portal data browsing still needs the browser or tool client to be inside the trusted network boundary.",
+      "technical": "Azure Storage has management-plane operations and data-plane operations. Management-plane operations configure the Azure resource, such as viewing the storage account properties or its Networking page. Data-plane operations access data inside the account, such as reading blobs or listing file share contents through storage service APIs.\n\nMicrosoft documents that storage firewall rules apply only to data-plane operations, not to control-plane operations. This explains the symptom: you can view the storage account resource in the Azure portal, but data browsing fails because your home public IP address is not allowed by the storage firewall.\n\nFor portal-based data access, the machine you use still matters. Microsoft specifically notes that to access data by using tools such as the Azure portal, Azure Storage Explorer, and AzCopy, you must be on a machine within the trusted boundary established by the network security rules. That trusted boundary could be:\n\n- a public IPv4 address allowed by an IP network rule;\n- a VM or host in an allowed subnet with the storage service endpoint configured;\n- an environment that resolves and connects through an approved private endpoint; or\n- another documented allowed network path.\n\nGiving yourself more Azure RBAC control-plane power does not move your laptop into the trusted boundary. Regenerating keys changes credentials and can break applications, but it does not change the firewall decision. The least-change fix is to use an allowed client network or add the specific required client public IP if that matches policy.",
+      "wrongOptions": {
+        "A": "Owner is a management-plane role and is far more privilege than needed. It also does not make a blocked client network pass the storage firewall. Misconception: More Azure RBAC permissions overcome network restrictions. Could be correct only when the problem is lack of permission to configure the storage account, not data-plane firewall access.",
+        "B": "Regenerating access keys changes credentials, not the storage firewall network boundary. It may cause outages for applications using the old keys. Misconception: Any storage access failure is a key problem. Could be correct when a key is compromised or rotation is scheduled, not when a known blocked network is the issue.",
+        "D": "Replication settings affect durability and regional copies, not whether your home client IP can pass the storage firewall. Misconception: Geo-redundant storage changes network reachability for portal browsing. Could be correct when the requirement is data resiliency or read access to a secondary endpoint, not firewall admission."
+      },
+      "plainEnglish": "The Azure portal has two kinds of actions. Looking at the storage account's settings is like looking at its file cabinet label in an inventory system. Opening the files inside the cabinet is a different action.\n\nYour account already has permission to read blob data, but your home network is not on the storage account's network allowed list. The portal cannot magically ignore that list when it tries to show the blob contents. Use a computer or network that the storage firewall trusts, such as a corporate network with an allowed public IP or a VM in an allowed subnet.",
+      "analogy": "You can view a library catalog from home, but the rare-books room only opens when you are inside the library building.\n\n| Analogy | Azure reality |\n|---|---|\n| Library catalog | Azure portal management-plane view |\n| Rare-books room | Blob data plane |\n| Library building or approved reader desk | Trusted network boundary |\n| Reader card | Storage data role |\n| Home Wi-Fi | Client network not allowed by the firewall |\n\n**Where the analogy breaks down:** Azure may perform some operations through different APIs, and both network checks and authorization checks must succeed for storage data access.",
+      "jargon": [
+        {
+          "term": "Azure portal",
+          "definition": "The web interface for managing Azure resources and, for some services, browsing data."
+        },
+        {
+          "term": "Management plane",
+          "definition": "The Azure control layer used to create, view, and configure resources."
+        },
+        {
+          "term": "Data plane",
+          "definition": "The service-specific layer used to access data stored inside a resource, such as blobs or files."
+        },
+        {
+          "term": "Storage Blob Data Reader",
+          "definition": "An Azure built-in role that permits reading blob data when network access and other conditions allow it."
+        },
+        {
+          "term": "Trusted boundary",
+          "definition": "The set of networks, resource instances, private endpoints, or exceptions allowed by storage network security settings."
+        },
+        {
+          "term": "Azure Storage Explorer",
+          "definition": "A client tool for browsing and managing storage data that is also subject to storage network restrictions."
+        },
+        {
+          "term": "AzCopy",
+          "definition": "A command-line tool for copying data to and from Azure Storage that must connect from an allowed network when firewalls are configured."
+        },
+        {
+          "term": "Client IP address",
+          "definition": "The public source IP address seen by Azure Storage for a request from your machine or network."
+        }
+      ],
+      "watchOut": "- Seeing the storage account in the portal does not prove you can browse its data.\n- Storage firewalls apply to data-plane operations, including data browsing through tools.\n- Azure RBAC and network rules both need to allow the operation.\n- Do not rotate access keys to fix a network firewall block.\n- Add personal home IP addresses only if policy allows it; they can change and may overexpose administrative access paths.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure Storage firewall rules apply to data-plane operations and that tools such as the Azure portal, Azure Storage Explorer, and AzCopy require the user to be on a machine within the trusted boundary defined by network rules.",
+        "recommendation": "Recommendation: perform storage data administration from approved corporate networks, privileged access workstations, jump hosts, or private endpoint connected environments. Avoid broad temporary firewall openings for convenience, and remove short-lived IP rules after troubleshooting."
+      },
+      "memoryTrick": "Portal visibility is not data visibility. This rule of thumb fails only where an operation is truly management-plane only; actual blob, file, queue, or table data access must still pass the storage data path controls.",
+      "examTip": "If a question says the user can see the storage account but cannot browse data from the portal, separate management plane from data plane. The fix is usually network boundary or data role, not Owner. Here the role already exists, so choose the allowed network path."
+    },
+    "sources": [
+      {
+        "title": "Guidelines & limitations: Azure Storage firewall",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-limitations"
+      },
+      {
+        "title": "Azure Storage firewall rules and network access",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+      },
+      {
+        "title": "Set the default public network access rule: Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-set-default-access"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.1-06",
+    "objective": "D2.1.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a storage account named `stfiles01` that contains an Azure Files share. The storage account is configured for selected networks and currently allows only a subnet used by web servers.\n\nA Windows jump host in another subnet must mount the file share by using SMB. You need to allow the mount without opening the storage account to every network.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Allow the jump host subnet by using a storage virtual network rule, with the appropriate storage service endpoint on the subnet"
+      },
+      {
+        "id": "B",
+        "text": "Do nothing because storage firewalls apply only to REST requests, not SMB"
+      },
+      {
+        "id": "C",
+        "text": "Change the storage account to Enabled from all networks"
+      },
+      {
+        "id": "D",
+        "text": "Add an IP network rule for the jump host's private IP address"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The jump host subnet is in an Azure virtual network, the storage account public endpoint path is acceptable, and file share identity or key authorization is configured separately. The question is about network admission for Azure Files SMB traffic.",
+    "sections": {
+      "correctAnswer": "**A. Allow the jump host subnet by using a storage virtual network rule, with the appropriate storage service endpoint on the subnet**. Azure Storage network rules are enforced on all storage network protocols, including SMB, so the SMB client must come from an allowed network path.",
+      "technical": "Azure Files can be accessed over SMB, and Azure Storage also supports REST APIs for several services. The storage firewall is not limited to REST. Microsoft documentation states that network rules are enforced on all network protocols for Azure Storage, including REST and SMB.\n\nBecause the jump host is in an Azure virtual network subnet, the natural firewall allow method is a virtual network rule. That requires the appropriate Azure Storage service endpoint on the subnet. For same-region storage access use `Microsoft.Storage`; for cross-region storage access use `Microsoft.Storage.Global`. After the endpoint and virtual network rule are configured, requests from that subnet can reach the storage account public endpoint while other unlisted subnets remain blocked.\n\nThe key distinctions are:\n\n1. Protocol does not bypass the firewall. SMB traffic is still subject to the network rule set.\n2. Private Azure subnet addresses are not valid IP network rules. IP network rules are for public internet IPv4 addresses.\n3. Opening the account to all networks would work but would discard the selected-networks security posture.\n4. Network access is separate from Azure Files authorization. The mount also needs the right file share authentication method and permissions, but that is outside this firewall objective.\n\nTherefore, allow the specific subnet rather than weakening the whole storage account.",
+      "wrongOptions": {
+        "B": "Microsoft documents that storage network rules apply to all network protocols for Azure Storage, including SMB. Misconception: The storage firewall protects only REST APIs. Could be correct only for a different product whose firewall does not inspect the protocol in question, not for Azure Storage network rules.",
+        "C": "Enabled from all networks would allow the jump host, but it would also allow requests from any network subject to authorization, which violates the requirement not to open the account broadly. Misconception: Connectivity fixes should use the broadest network setting. Could be correct for a deliberately public storage account where network restriction is not required.",
+        "D": "A jump host's Azure private IP address is not a valid storage IP network rule entry. IP network rules are for public internet IPv4 addresses. Misconception: Any source IP seen on a VM NIC can be placed in the storage firewall IP list. Could be correct for an on-premises or internet client public NAT address."
+      },
+      "plainEnglish": "SMB is the file-sharing protocol Windows uses to mount a file share. The storage firewall still checks where SMB traffic comes from. It does not say, SMB is special, skip the network list.\n\nSince the jump host is in another Azure subnet, add that subnet to the storage account's allowed virtual networks and make sure the subnet has the storage service endpoint enabled. Do not add the VM's private address as an IP rule, because storage IP rules are for public addresses. Do not open the account to everyone when only one subnet needs access.",
+      "analogy": "A secure office has one approved hallway for web servers and another hallway for administrators. The file room does not care whether someone carries a paper form or a laptop; the guard checks the hallway they came from.\n\n| Analogy | Azure reality |\n|---|---|\n| File room | Azure Files share |\n| Carrying files with a laptop | SMB mount traffic |\n| Approved hallway | Allowed virtual network subnet |\n| Guard list | Storage network rules |\n| Letting every hallway in | Enabled from all networks |\n\n**Where the analogy breaks down:** Azure also checks storage identity and file permissions after the network path succeeds, while a physical hallway guard might be the only control in a simple building.",
+      "jargon": [
+        {
+          "term": "Azure Files",
+          "definition": "The Azure Storage service that provides managed file shares accessible through protocols such as SMB."
+        },
+        {
+          "term": "SMB",
+          "definition": "Server Message Block, a network file sharing protocol commonly used by Windows clients to mount file shares."
+        },
+        {
+          "term": "REST",
+          "definition": "Representational State Transfer, an HTTP-based API style used by many Azure Storage operations."
+        },
+        {
+          "term": "Jump host",
+          "definition": "A controlled VM or server administrators use to access resources from an approved network location."
+        },
+        {
+          "term": "Virtual network rule",
+          "definition": "A storage firewall rule that allows a specific Azure subnet after the required storage service endpoint is enabled."
+        },
+        {
+          "term": "Service endpoint",
+          "definition": "A subnet feature that lets traffic to a supported Azure service use virtual network identity on the Azure backbone."
+        },
+        {
+          "term": "Private IP address",
+          "definition": "An address from an internal network range, such as an Azure subnet address, that is not routed on the public internet."
+        },
+        {
+          "term": "Public network access",
+          "definition": "The setting that determines whether the storage public endpoint is open to all networks, selected networks, disabled, or perimeter-secured."
+        }
+      ],
+      "watchOut": "- Storage firewall rules apply to SMB as well as REST.\n- Azure Files identity-based access and network firewall access are separate requirements.\n- Do not use a VM's private subnet address in an IP network rule.\n- A private endpoint for the file sub-resource is another valid architecture, but the option here asks for a public endpoint virtual network rule.\n- If the subnet is in another region, choose the correct storage service endpoint type.",
+      "productionTip": {
+        "official": "Microsoft documents that storage network rules are enforced on all network protocols for Azure Storage, including REST and SMB. It also documents virtual network rules as the mechanism for allowing traffic from specific Azure virtual network subnets.",
+        "recommendation": "Recommendation: for administrative mounts, use a hardened jump host subnet and allow only that subnet or a file private endpoint. Keep identity-based file permissions narrow, and verify the mount from the jump host before removing any temporary access path."
+      },
+      "memoryTrick": "For Storage firewalls, **protocol does not pardon the packet**. This is a simplification because VM disk traffic has documented special behavior, but Azure Files SMB access is controlled by storage network rules.",
+      "examTip": "The clue is **Azure Files** and **SMB**. Do not assume SMB bypasses the storage firewall. If the client is in an Azure subnet, choose a virtual network rule and service endpoint; if the client is on-premises, look for a public NAT IP or private endpoint design."
+    },
+    "sources": [
+      {
+        "title": "Guidelines & limitations: Azure Storage firewall",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-limitations"
+      },
+      {
+        "title": "Azure Storage firewall rules and network access",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+      },
+      {
+        "title": "Create a virtual network rule for Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+      },
+      {
+        "title": "Use private endpoints - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.1-07",
+    "objective": "D2.1.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a general-purpose v2 storage account named `stprivate01`. Public network access for the account is set to Disabled. The account has an approved private endpoint for the blob service in `vnet-data`.\n\nA VM in `vnet-data` resolves `stprivate01.blob.core.windows.net` to the private endpoint IP address and must read blobs. Another VM on the internet must not use the public endpoint.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The VM in `vnet-data` also needs an IP network rule for its private IP address"
+      },
+      {
+        "id": "B",
+        "text": "The private endpoint stops working because Public network access is Disabled"
+      },
+      {
+        "id": "C",
+        "text": "Creating the private endpoint automatically removed all public endpoint access before Public network access was disabled"
+      },
+      {
+        "id": "D",
+        "text": "The VM in `vnet-data` can use the private endpoint, and the public endpoint remains blocked for ordinary internet clients"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The private endpoint is approved for the blob sub-resource, DNS resolution from `vnet-data` is correctly configured, and the VM has valid storage authorization. The storage account is not a general-purpose v1 account.",
+    "sections": {
+      "correctAnswer": "**D. The VM in `vnet-data` can use the private endpoint, and the public endpoint remains blocked for ordinary internet clients**. Storage firewalls control the public endpoint, while approved private endpoint traffic uses Private Link and remains allowed even when public network access is disabled.",
+      "technical": "Private endpoints and storage firewall rules can coexist, but they control different paths. A private endpoint creates a network interface in a virtual network for a specific storage service sub-resource, such as blob or file. Clients in that virtual network use normal storage endpoint names, and DNS resolves the name to the private endpoint IP address. The connection then uses Azure Private Link rather than the ordinary public endpoint path.\n\nMicrosoft documents several important rules:\n\n1. Creating a private link does not automatically block connections on the public endpoint. You must configure the storage firewall or public network access if you want to block the public endpoint.\n2. The storage firewall controls access through the public endpoint. You do not need a storage firewall virtual network rule to allow traffic from a virtual network that has a private endpoint.\n3. When public network access is disabled, traffic from the virtual network associated with the private endpoint is still allowed.\n4. Private endpoints can be used with all protocols supported by the storage account, including REST and SMB.\n5. You need a separate private endpoint for each storage service sub-resource that clients must access, such as blob, file, queue, table, dfs, or web.\n\nTherefore, the VM in `vnet-data` can reach blob storage through the approved blob private endpoint if DNS and authorization are correct. A random internet VM cannot use the public endpoint because public network access is disabled.",
+      "wrongOptions": {
+        "A": "Private endpoint access does not require an IP network rule for the VM's private IP address. Storage IP network rules are for public IPv4 sources on the public endpoint path. Misconception: Every allowed client must appear in the storage firewall IP list. Could be correct for an on-premises public NAT IP reaching the public endpoint, not for private endpoint traffic.",
+        "B": "Microsoft documents that when a private endpoint is configured, traffic from the associated virtual network is allowed even if public network access is disabled. Misconception: Disabling public access disables every network path. Could be correct for a client that has no private endpoint path and depends only on the public endpoint.",
+        "C": "Creating a private endpoint does not automatically block the public endpoint. Public endpoint blocking is a separate firewall or public network access configuration. Misconception: Private Link automatically makes the storage account private-only. Could be correct only after an administrator explicitly disables or restricts public network access."
+      },
+      "plainEnglish": "A storage account can have two kinds of doors. The public door is reachable from the internet if you allow it. A private endpoint is a private door inside your virtual network.\n\nTurning off public network access closes the public door for ordinary internet clients. It does not remove the approved private door. The VM in the virtual network can still use the normal storage name, but DNS points that name to the private address. The internet VM cannot use the public door because you disabled it.",
+      "analogy": "A building has a front street entrance and a private tunnel from a secure campus.\n\n| Analogy | Azure reality |\n|---|---|\n| Street entrance | Storage public endpoint |\n| Close the street entrance | Public network access Disabled |\n| Private campus tunnel | Private endpoint in a virtual network |\n| Tunnel directory sends people underground | Private DNS resolving to private endpoint IP |\n| Separate tunnels for different rooms | Separate private endpoints for blob, file, queue, table, dfs, or web |\n\n**Where the analogy breaks down:** Azure clients keep using the same storage endpoint name, and DNS determines whether the name resolves to a public or private path. A real tunnel usually has a visibly different entrance.",
+      "jargon": [
+        {
+          "term": "General-purpose v2 storage account",
+          "definition": "A current Azure Storage account kind that supports features such as private endpoints; private endpoints are not available for general-purpose v1 accounts."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A network interface in a virtual network that privately connects to an Azure service through Private Link."
+        },
+        {
+          "term": "Private Link",
+          "definition": "Azure technology that provides private connectivity to supported services over the Microsoft backbone network."
+        },
+        {
+          "term": "Blob sub-resource",
+          "definition": "The blob service target on a storage account for which a private endpoint can be created."
+        },
+        {
+          "term": "DNS",
+          "definition": "Domain Name System, the name-resolution system that maps storage endpoint names to IP addresses."
+        },
+        {
+          "term": "Public network access Disabled",
+          "definition": "A storage account state that blocks ordinary public endpoint traffic and permits access through private endpoints and documented higher-precedence paths."
+        },
+        {
+          "term": "Public endpoint",
+          "definition": "The publicly reachable storage service address controlled by public network access and firewall settings."
+        },
+        {
+          "term": "REST",
+          "definition": "An HTTP-based API style supported by Azure Storage services, usable through private endpoints when configured."
+        }
+      ],
+      "watchOut": "- Creating a private endpoint does not automatically disable the public endpoint.\n- Disabling public network access does not break approved private endpoint access.\n- Storage firewall virtual network rules are not required for a subnet that uses a private endpoint to the storage account.\n- Create the private endpoint for the correct sub-resource; blob and file are separate targets.\n- DNS configuration is often the real cause when clients unexpectedly use the public endpoint.",
+      "productionTip": {
+        "official": "Microsoft documents that storage firewalls control public endpoint access and that traffic from an associated virtual network is allowed through a configured private endpoint even if public network access is disabled. The documentation also states that creating a private link does not automatically block public endpoint connections.",
+        "recommendation": "Recommendation: create and test private endpoints and private DNS first, then disable public network access or set defaultAction Deny. Monitor DNS resolution from each network because incorrect DNS can send clients to the public endpoint and cause confusing failures."
+      },
+      "memoryTrick": "Private endpoint is a **separate private door**; the firewall is mainly the **public door guard**. This simplification leaves out trusted-service precedence and DNS details, which can still affect real designs.",
+      "examTip": "When an answer says a private endpoint needs a storage firewall rule, be suspicious. The key distinction is public endpoint versus private endpoint. A harder version may ask which private endpoint sub-resource is needed for Azure Files; the answer would be `file`, not `blob`."
+    },
+    "sources": [
+      {
+        "title": "Use private endpoints - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+      },
+      {
+        "title": "Set the default public network access rule: Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-set-default-access"
+      },
+      {
+        "title": "Guidelines & limitations: Azure Storage firewall",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-limitations"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.1-08",
+    "objective": "D2.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stcli01` in resource group `rg-storage`. The account is already configured with default action Deny. You have a virtual network named `vnet-app` in resource group `rg-network` and a subnet named `snet-api`. The subnet already has the correct Azure Storage service endpoint enabled.\n\nYou need to add a storage account network rule that allows `snet-api` by using Azure CLI. You want a command that works even though the virtual network is in a different resource group from the storage account.\n\nWhich command should you run?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```azurecli\naz storage account update --resource-group rg-storage --name stcli01 --default-action Allow\n```"
+      },
+      {
+        "id": "B",
+        "text": "```azurecli\nsubnetid=$(az network vnet subnet show --resource-group rg-network --vnet-name vnet-app --name snet-api --query id --output tsv)\naz storage account network-rule add --resource-group rg-storage --account-name stcli01 --subnet $subnetid\n```"
+      },
+      {
+        "id": "C",
+        "text": "```azurecli\naz storage account network-rule add --resource-group rg-storage --account-name stcli01 --ip-address 10.8.2.0/24\n```"
+      },
+      {
+        "id": "D",
+        "text": "```azurecli\naz storage account network-rule add --resource-group rg-network --account-name stcli01 --vnet-name vnet-app --subnet snet-api\n```"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Azure CLI is authenticated to subscriptions where the storage account and virtual network are visible. The subnet service endpoint is already enabled, so the remaining task is adding the storage account network rule.",
+    "sections": {
+      "correctAnswer": "**B. `subnetid=$(...)` followed by `az storage account network-rule add --resource-group rg-storage --account-name stcli01 --subnet $subnetid`**. The Azure CLI network-rule command can add a subnet rule by using the subnet resource ID, which works cleanly when the virtual network is in another resource group.",
+      "technical": "The Azure CLI command group `az storage account network-rule` manages storage account network rules. The `add` command can create a rule for an IPv4 address, CIDR range, resource instance, or virtual network subnet. For a subnet, the command supports `--subnet` as a subnet name or ID. If you supply a name, `--vnet-name` must also be supplied, and the command context can become ambiguous when resources are in different groups. Using the full subnet ID is precise.\n\nThe selected command does two things:\n\n```azurecli\nsubnetid=$(az network vnet subnet show --resource-group rg-network --vnet-name vnet-app --name snet-api --query id --output tsv)\naz storage account network-rule add --resource-group rg-storage --account-name stcli01 --subnet $subnetid\n```\n\nThe first line queries the subnet in `rg-network` and stores its Azure Resource Manager ID. The second line adds that subnet ID to the network rules of the storage account in `rg-storage`. The storage account remains default action Deny, so only configured allows and exceptions can reach the public endpoint.\n\nThis command assumes the storage service endpoint is already configured on the subnet. If it were not, Microsoft documentation shows a separate `az network vnet subnet update --service-endpoints` command before adding the storage network rule. Also remember that this is a network allow only; storage data authorization remains separate.",
+      "wrongOptions": {
+        "A": "Changing default action to Allow would open the storage account public endpoint to all networks, which reverses the selected-networks security model instead of adding the one subnet. Misconception: Connectivity should be fixed by relaxing the default. Could be correct only when the requirement is to allow all networks.",
+        "C": "`10.8.2.0/24` is a private subnet range, and Azure Storage IP network rules are for public internet IPv4 addresses, not Azure VNet private ranges. Misconception: A virtual network rule is just an IP CIDR rule. Could be correct if the address were a valid public IPv4 range for an internet or on-premises source.",
+        "D": "The `--resource-group` value for `az storage account network-rule add` identifies the storage account resource group, not the virtual network resource group. With `rg-network`, the command would target a storage account named `stcli01` in the wrong resource group. Misconception: The command's resource group should be the subnet's resource group. Could be correct if the storage account were actually in `rg-network` or if a full subnet ID were used with the correct storage account group."
+      },
+      "plainEnglish": "The storage account lives in one resource group, and the subnet lives in another. To avoid confusion, first ask Azure for the subnet's full ID. That ID is like the subnet's complete mailing address. Then tell the storage account, allow this exact subnet ID.\n\nDo not change the account back to Allow, because that would let every network try to connect. Do not add the subnet's private address range as an IP rule, because Storage IP rules are for public addresses. Also be careful with the `--resource-group` parameter: in this command, it points to the storage account's resource group.",
+      "analogy": "You need to add a branch office to a warehouse access list, but the branch and warehouse are filed in different departments.\n\n| Analogy | Azure reality |\n|---|---|\n| Branch office full address | Subnet resource ID |\n| Warehouse department | Storage account resource group |\n| Warehouse access list | Storage account network rules |\n| Let every branch enter | Default action Allow |\n| Internal office room numbers | Private subnet CIDR not valid for IP rules |\n\n**Where the analogy breaks down:** Azure commands use resource IDs and API calls rather than paper forms, and the subnet must also have the correct storage service endpoint enabled.",
+      "jargon": [
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's cross-platform command-line tool for managing Azure resources."
+        },
+        {
+          "term": "`az storage account network-rule add`",
+          "definition": "The Azure CLI command used to add a storage firewall network rule for an IP address, subnet, or resource instance."
+        },
+        {
+          "term": "Subnet resource ID",
+          "definition": "The full Azure Resource Manager identifier for a subnet, including subscription, resource group, virtual network, and subnet name."
+        },
+        {
+          "term": "`--resource-group`",
+          "definition": "In this storage command, the parameter that specifies the resource group containing the storage account."
+        },
+        {
+          "term": "`--subnet`",
+          "definition": "An Azure CLI parameter that can accept a subnet name or subnet ID for a virtual network storage rule."
+        },
+        {
+          "term": "`--query`",
+          "definition": "An Azure CLI parameter that uses JMESPath syntax to select part of a command's output, such as the subnet ID."
+        },
+        {
+          "term": "Default action Deny",
+          "definition": "The storage network rule setting that blocks public endpoint requests unless a rule or exception allows them."
+        },
+        {
+          "term": "Service endpoint",
+          "definition": "A subnet feature required for Azure Storage virtual network rules when using the public endpoint path."
+        }
+      ],
+      "watchOut": "- For `az storage account network-rule add`, the resource group is the storage account's resource group.\n- A subnet name requires `--vnet-name`; a subnet ID is clearer across resource groups and tenants.\n- The subnet must have the correct storage service endpoint before the virtual network rule works.\n- Do not use private subnet CIDR ranges as storage IP network rules.\n- Keep default action Deny when the goal is selected networks.",
+      "productionTip": {
+        "official": "Microsoft documents `az storage account network-rule add` with `--subnet` for subnet rules and shows a pattern that retrieves a subnet ID before adding it to the storage account. The command reference also documents `--ip-address`, `--resource-id`, and `--tenant-id` for other network rule types.",
+        "recommendation": "Recommendation: use full resource IDs in automation, especially across resource groups, subscriptions, or tenants. Add idempotent checks that list existing rules first, and run validation from an allowed client before removing any previous temporary access rule."
+      },
+      "memoryTrick": "For CLI subnet rules, give Storage the subnet's **full address**, not its private IP range. This is a simplification because same-resource-group examples can use names, but resource IDs are safer in scripts.",
+      "examTip": "Look at which resource group each resource is in. In a storage network-rule command, `-g` or `--resource-group` belongs to the storage account. If the VNet is elsewhere, retrieve the subnet ID and pass it to `--subnet`. A harder version may add a missing service endpoint, requiring a subnet update command before this rule."
+    },
+    "sources": [
+      {
+        "title": "az storage account network-rule",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/storage/account/network-rule?view=azure-cli-latest"
+      },
+      {
+        "title": "Create a virtual network rule for Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-virtual-networks"
+      },
+      {
+        "title": "Azure Storage firewall rules and network access",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security"
+      },
+      {
+        "title": "Create an IP network rule for Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security-ip-address-range"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

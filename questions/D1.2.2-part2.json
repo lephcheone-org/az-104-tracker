@@ -1,0 +1,708 @@
+[
+  {
+    "id": "D1.2.2-05",
+    "objective": "D1.2.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a management group named `mg-retail`. It contains 18 Azure subscriptions used by regional retail teams. A Microsoft Entra security group named `Retail-Auditors` must be able to view resources in all current subscriptions under `mg-retail` and in any subscriptions added to that management group later.\n\nYou plan to use Azure CLI to create the role assignment. Which `--scope` value should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`/subscriptions/{subscriptionId}` for each current subscription"
+      },
+      {
+        "id": "B",
+        "text": "`/providers/Microsoft.Management/managementGroups/mg-retail`"
+      },
+      {
+        "id": "C",
+        "text": "`/subscriptions/{subscriptionId}/resourceGroups/mg-retail`"
+      },
+      {
+        "id": "D",
+        "text": "`/providers/Microsoft.Authorization/roleAssignments/mg-retail`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. `mg-retail` is an existing Azure management group, and all target subscriptions are children of that management group. `Retail-Auditors` is represented by a Microsoft Entra security group. No deny assignments or role assignment conditions block Reader access.",
+    "sections": {
+      "correctAnswer": "**B. `/providers/Microsoft.Management/managementGroups/mg-retail`**. Azure CLI expects the management group scope string in the `/providers/Microsoft.Management/managementGroups/{managementGroupName}` format, and a role assignment at that scope is inherited by subscriptions under the management group.",
+      "technical": "A role assignment always combines a security principal, a role definition, and a scope. The role definition answers what can be done, and the scope answers where it applies. For command-line tools, Microsoft documents scope as a slash-separated resource ID-style string.\n\nFor this scenario, the correct scope is the management group, not each subscription. The documented management group scope format is:\n\n```text\n/providers/Microsoft.Management/managementGroups/{managementGroupName}\n```\n\nThe command would use a scope like this:\n\n```azurecli\naz role assignment create --assignee \"{groupObjectId}\" --role \"Reader\" --scope \"/providers/Microsoft.Management/managementGroups/mg-retail\"\n```\n\nAzure RBAC scopes are hierarchical: management group, subscription, resource group, and resource. A role assignment at a parent scope is inherited by child scopes. Assigning Reader to `Retail-Auditors` at `mg-retail` therefore covers current child subscriptions and later subscriptions that are placed under that management group. The Reader role allows viewing Azure resources but does not grant write or access-management permissions.\n\nThis is different from a subscription scope string such as `/subscriptions/{subscriptionId}`. Subscription scope would need one assignment per subscription and would not automatically include a future subscription unless it also received a role assignment or inherited one from a parent management group.",
+      "wrongOptions": {
+        "A": "A subscription scope string is valid for one subscription, but it does not represent the `mg-retail` management group. It would require many assignments and would miss later subscriptions unless repeated. Misconception: Azure CLI can target several subscriptions by using one placeholder subscription scope. Could be correct when the auditors needed access to only one named subscription or when each subscription needed a different principal or role.",
+        "C": "This string describes a resource group named `mg-retail` inside one subscription, not a management group. Management groups are above subscriptions and use the `Microsoft.Management/managementGroups` provider path. Misconception: A management group is just a resource group with a broader name. Could be correct if there really were a resource group named `mg-retail` and access should apply only inside that one subscription resource group.",
+        "D": "`Microsoft.Authorization/roleAssignments` appears in role assignment resource IDs, but it is not the scope you grant access to. The scope should identify the management group, subscription, resource group, or resource being protected. Misconception: The `roleAssignments` provider path is where every assignment scope begins. Could be correct only as part of the generated role assignment resource ID, not as the requested access scope."
+      },
+      "plainEnglish": "Azure permissions work like permissions on folders. A management group is a folder that can contain many subscription folders. If auditors need read-only access to every subscription in that folder, you put the read-only permission on the management group folder.\n\nWhen you use Azure CLI, you cannot just type the friendly name by itself. You must use the official scope path. For a management group, that path starts with `/providers/Microsoft.Management/managementGroups/` and ends with the management group name. Putting the role there means Azure passes the permission down to the subscriptions under it.",
+      "analogy": "A retailer has one regional filing cabinet named `mg-retail`. Each drawer is a subscription. The audit team needs permission to inspect every drawer currently in the cabinet and any drawer added later.\n\n| Analogy | Azure reality |\n|---|---|\n| Filing cabinet | Management group `mg-retail` |\n| Drawer | Azure subscription |\n| Inspection badge | Reader role |\n| Badge label format | Azure CLI scope string |\n| Future drawer | Future subscription under the management group |\n\n**Where the analogy breaks down:** Azure evaluates tokens, inherited role assignments, deny assignments, and optional conditions. A physical badge does not model command syntax or authorization caches.",
+      "jargon": [
+        {
+          "term": "Management group",
+          "definition": "An Azure governance container above subscriptions. Role assignments at a management group can be inherited by child subscriptions."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "A command-line tool for managing Azure resources. For RBAC assignments it uses commands such as `az role assignment create`."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where an Azure role assignment applies, such as a management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Scope string",
+          "definition": "The slash-separated identifier used by command-line tools to identify an Azure RBAC scope."
+        },
+        {
+          "term": "Microsoft Entra security group",
+          "definition": "A group object in Microsoft Entra ID whose members can receive Azure RBAC permissions through one assignment."
+        },
+        {
+          "term": "Reader",
+          "definition": "A built-in Azure role that grants read access to Azure resources without granting write or access-management permissions."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where access assigned at a parent scope also applies to child scopes."
+        },
+        {
+          "term": "Subscription",
+          "definition": "An Azure billing and management boundary that can contain resource groups and resources."
+        }
+      ],
+      "watchOut": "- Management group scopes do not start with `/subscriptions`.\n- A management group role assignment can affect many subscriptions, so use it only when the requirement really spans that group.\n- The friendly display name and the management group identifier can differ; use the management group name or ID required by the command.\n- Reader is still inherited; check parent scopes when troubleshooting unexpected read access.\n- This question is about the command-line scope format, not about creating the management group itself.",
+      "productionTip": {
+        "official": "Microsoft documents four Azure RBAC scope levels and the management group command-line format `/providers/Microsoft.Management/managementGroups/{managementGroupName}`. The Azure CLI role assignment command uses `--scope` with that string when assigning at management group scope.",
+        "recommendation": "Use a dedicated audit group and assign Reader at the lowest management group that contains exactly the audit estate. Document why the management group scope is needed and review child subscriptions regularly so inherited access does not expand accidentally."
+      },
+      "memoryTrick": "Management group scope starts with **Management**, not **subscriptions**: `/providers/Microsoft.Management/managementGroups/name`. The shortcut fails for subscription, resource group, and resource scopes, which use different paths.",
+      "examTip": "Clue words are **many subscriptions**, **future subscriptions**, **management group**, and **Azure CLI scope**. Eliminate any answer beginning with `/subscriptions` because that targets a subscription or something below it. A harder version might show both `az role assignment create` and `New-AzRoleAssignment`; the management group scope string is the same idea in both tools."
+    },
+    "sources": [
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      },
+      {
+        "title": "Assign Azure roles using Azure CLI - Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli"
+      },
+      {
+        "title": "Steps to assign an Azure role - Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.2-06",
+    "objective": "D1.2.2",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a virtual network named `vnet-prod` in a resource group named `rg-network`. The virtual network contains a subnet named `snet-app`.\n\nA Microsoft Entra group named `NetReaders` must be able to view the subnet configuration only. You have the group object ID and the subscription ID. You want to assign the `Reader` role at the subnet resource scope by using command-line tooling.\n\nWhich two commands use the correct scope format? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "```azurecli\naz role assignment create --assignee \"{groupObjectId}\" --role \"Reader\" --scope \"/subscriptions/{subscriptionId}/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-prod/subnets/snet-app\"\n```"
+      },
+      {
+        "id": "B",
+        "text": "```azurecli\naz role assignment create --assignee \"{groupObjectId}\" --role \"Reader\" --scope \"/subscriptions/{subscriptionId}/resourceGroups/rg-network/subnets/snet-app\"\n```"
+      },
+      {
+        "id": "C",
+        "text": "```powershell\nNew-AzRoleAssignment -ObjectId {groupObjectId} -RoleDefinitionName \"Reader\" -Scope \"/subscriptions/{subscriptionId}/providers/Microsoft.Network/subnets/snet-app\"\n```"
+      },
+      {
+        "id": "D",
+        "text": "```powershell\nNew-AzRoleAssignment -ObjectId {groupObjectId} -RoleDefinitionName \"Reader\" -Scope \"/subscriptions/{subscriptionId}/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-prod/subnets/snet-app\"\n```"
+      },
+      {
+        "id": "E",
+        "text": "```powershell\nNew-AzRoleAssignment -ObjectId {groupObjectId} -RoleDefinitionName \"Reader\" -ResourceGroupName \"rg-network\"\n```"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The subnet resource exists and supports Azure Resource Manager resource ID addressing. `NetReaders` is a Microsoft Entra security group, and you have permission such as Role Based Access Control Administrator or Owner at the subnet scope or a parent scope. No deny assignments or role assignment conditions apply.",
+    "sections": {
+      "correctAnswer": "**A. The Azure CLI command with the full subnet resource ID** and **D. The Azure PowerShell command with the same full subnet resource ID**. Both commands use the documented resource scope pattern: subscription, resource group, provider namespace, parent resource type and name, then child resource type and name.",
+      "technical": "For Azure RBAC, a resource scope is identified by the resource's Azure Resource Manager ID. Microsoft documents the general resource scope pattern as a path under `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{providerName}/...`. Child resources continue the path under their parent resource. A subnet is addressed under its virtual network, so the subnet scope must include both `virtualNetworks/vnet-prod` and `subnets/snet-app`.\n\nThe correct scope is:\n\n```text\n/subscriptions/{subscriptionId}/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-prod/subnets/snet-app\n```\n\nAzure CLI assigns the role by passing that value to `az role assignment create --scope`. Azure PowerShell can assign at the same resource scope by passing the value to `New-AzRoleAssignment -Scope`. The command syntax differs, but the Azure RBAC scope path represents the same resource.\n\nThis assignment grants Reader at only the subnet resource scope. Parent scopes, such as the resource group or virtual network, are broader. Child-resource paths must not skip the provider namespace or parent resource. If a command uses only `-ResourceGroupName`, the assignment is made at resource group scope, not at the subnet itself.",
+      "wrongOptions": {
+        "B": "This path jumps from the resource group directly to `subnets` and omits `/providers/Microsoft.Network/virtualNetworks/vnet-prod`. Azure resource IDs for provider resources include the provider namespace and the parent resource path. Misconception: Child resources can be addressed directly under a resource group by type name. Could be correct only for a top-level resource type that really exists directly under the provider path.",
+        "C": "This path omits the resource group and the parent virtual network. A subnet belongs under a virtual network resource, so the full scope must include `resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-prod`. Misconception: The provider namespace and child type are enough to identify a resource in a subscription. Could be correct for a subscription-level provider resource that is not inside a resource group, but not for this subnet.",
+        "E": "This command targets the resource group by name and does not use the subnet resource ID. That would grant Reader over the resource group scope, which is broader than the subnet-only requirement. Misconception: `-ResourceGroupName` can be combined implicitly with a child resource name that is not supplied. Could be correct when the group should view every resource in `rg-network`."
+      },
+      "plainEnglish": "A subnet is not floating by itself. It sits inside a virtual network, and the virtual network sits inside a resource group inside a subscription. The permission path has to walk through those containers in order.\n\nBoth the Azure CLI and PowerShell answers are correct when they use the complete path to the subnet. The short paths are like writing an address with only the apartment number and forgetting the building, street, and city. Azure cannot treat that as the exact subnet scope.",
+      "analogy": "Imagine mailing a key card to a single office suite. The address must include the country, city, building, floor, and suite. If you stop at the building, the key card applies too broadly; if you skip the building, the address is incomplete.\n\n| Analogy | Azure reality |\n|---|---|\n| Country account number | Subscription ID |\n| Building management folder | Resource group |\n| Building operator | Resource provider `Microsoft.Network` |\n| Building | Virtual network `vnet-prod` |\n| Suite | Subnet `snet-app` |\n| Key card | Reader role assignment |\n\n**Where the analogy breaks down:** Azure resource IDs are strict machine-readable paths. Real postal systems may still deliver with partial addresses, but RBAC scopes should be exact.",
+      "jargon": [
+        {
+          "term": "Resource scope",
+          "definition": "An Azure RBAC scope that targets one specific Azure resource instead of a whole resource group, subscription, or management group."
+        },
+        {
+          "term": "Resource ID",
+          "definition": "The full Azure Resource Manager path that uniquely identifies a resource."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "An Azure service namespace, such as `Microsoft.Network`, that defines resource types."
+        },
+        {
+          "term": "Virtual network",
+          "definition": "An Azure network boundary that contains subnets and supports private connectivity for resources."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A child resource within a virtual network that represents an address range segment."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Command-line tooling that includes `az role assignment create` for Azure RBAC assignments."
+        },
+        {
+          "term": "Azure PowerShell",
+          "definition": "PowerShell modules for Azure administration, including `New-AzRoleAssignment` for Azure RBAC assignments."
+        },
+        {
+          "term": "Object ID",
+          "definition": "The Microsoft Entra identifier of a user, group, service principal, or managed identity object."
+        },
+        {
+          "term": "Reader",
+          "definition": "A built-in Azure role that allows viewing resources but not changing them."
+        }
+      ],
+      "watchOut": "- For child resources, include the parent resource type and name in the scope path.\n- `-ResourceGroupName` in PowerShell assigns at resource group scope; it is not the same as `-Scope` with a resource ID.\n- Scope path casing is often shown as `resourceGroups`; copy the resource ID from the portal when uncertain.\n- The role and the scope are separate choices: Reader at a broad scope can still reveal more than intended.\n- Having the group object ID avoids ambiguity when group display names are duplicated.",
+      "productionTip": {
+        "official": "Microsoft documents `az role assignment create --scope` and `New-AzRoleAssignment -Scope` for resource scopes. The resource scope format includes the subscription, resource group, provider namespace, resource type path, and resource name path.",
+        "recommendation": "When assigning at a resource or child-resource scope, copy the Resource ID from the resource properties or query it rather than typing it from memory. Keep human access in groups such as `NetReaders` so membership changes do not require new RBAC assignments."
+      },
+      "memoryTrick": "A child resource scope must name its parent: subscription -> resource group -> provider -> parent resource -> child resource. This simplification fails for management group and subscription-level provider resources, which have different path shapes.",
+      "examTip": "Clue words are **subnet only**, **command-line tooling**, and **scope format**. Eliminate answers that skip `/providers/Microsoft.Network` or the parent virtual network. A harder version might replace the subnet with a storage container or another child resource; the same principle is to use the complete resource ID."
+    },
+    "sources": [
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      },
+      {
+        "title": "Assign Azure roles using Azure CLI - Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli"
+      },
+      {
+        "title": "Assign Azure roles using Azure PowerShell - Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-powershell"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.2-07",
+    "objective": "D1.2.2",
+    "type": "multiple",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains a resource group named `rg-ops`. The following access requirements must be configured with Azure RBAC.\n\n| Requirement | Detail |\n|---|---|\n| Human operators | Eight administrators must manage virtual machines in `rg-ops`; membership changes monthly |\n| Application workload | An Azure function app must read configuration from resources in `rg-ops` without storing credentials in code |\n\nYou need to minimize ongoing administration and avoid application secrets where possible. Which two security principals should you use for the role assignments? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign the required human role separately to each administrator user account"
+      },
+      {
+        "id": "B",
+        "text": "Assign the required human role to a Microsoft Entra group that contains the administrators"
+      },
+      {
+        "id": "C",
+        "text": "Assign the application role to a shared administrator user account used by the function app"
+      },
+      {
+        "id": "D",
+        "text": "Assign the application role to the function app's managed identity"
+      },
+      {
+        "id": "E",
+        "text": "Assign the application role to the management group that contains the subscription"
+      }
+    ],
+    "correct": [
+      "B",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The function app supports a managed identity and can use Microsoft Entra authentication to call the target Azure service. The exact role definitions are selected separately by least privilege. No deny assignments or role assignment conditions apply.",
+    "sections": {
+      "correctAnswer": "**B. Assign the required human role to a Microsoft Entra group that contains the administrators** and **D. Assign the application role to the function app's managed identity**. Azure RBAC can assign roles to users, groups, service principals, and managed identities; groups reduce human membership administration, and managed identities avoid credentials in application code.",
+      "technical": "Azure RBAC role assignments are made to security principals. Microsoft documents four principal types for role assignment: user, group, service principal, and managed identity. The right principal depends on who or what needs access.\n\nFor the eight human operators, a Microsoft Entra group is the better principal. One role assignment to the group grants the role to the users in the group. Because role assignments are transitive for groups, membership changes can be handled by updating group membership instead of editing Azure RBAC assignments each month. The scope would still be `rg-ops` or a narrower resource scope depending on the exact job.\n\nFor the function app, a managed identity is the better principal when the app can use it. A managed identity is an identity in Microsoft Entra ID that is automatically managed by Azure. It is commonly used by cloud applications to authenticate to Azure services without storing credentials in code. A service principal can also represent an application, but a managed identity is usually preferable for an Azure-hosted resource because Azure manages the credential lifecycle.\n\nThe scope is not a principal. Assigning at a management group or resource group is about where the permission applies, not who receives it. The design still needs least-privilege roles at the narrowest useful scope.",
+      "wrongOptions": {
+        "A": "Direct user assignments can work technically, but they increase administration when the operator list changes monthly. Misconception: RBAC should always be assigned directly to individual users for clarity. Could be correct for an exceptional, temporary, one-person grant where group membership would be slower or less controlled.",
+        "C": "A shared administrator user account for an application is not the right principal and would require storing or handling user credentials. Applications should use an application identity, preferably a managed identity when hosted in Azure and supported. Misconception: An app must sign in as a human user to access Azure resources. Could be correct only for legacy software that cannot use modern application identity, and even then it should be redesigned or tightly controlled.",
+        "E": "A management group is a scope, not a security principal. You can assign a role at management group scope to a user, group, service principal, or managed identity, but the management group itself is not the member receiving access. Misconception: The place where permission applies is the same thing as the identity receiving it. Could be correct as the scope only when the same principal needs access across all subscriptions under that management group."
+      },
+      "plainEnglish": "Azure asks two separate questions. First, who needs access? Second, where should that access work? The operators are people, but because there are eight of them and membership changes often, you put the people in a group and give the group access once.\n\nThe function app is software, not a person. Instead of giving it someone's username and password, you give the app its own Azure-managed identity and assign that identity the needed role. That way the app can prove who it is without a password stored in code.",
+      "analogy": "A building has a night-shift team and an automatic delivery robot. For the people, the security office issues access to the `Night Operators` team list, then updates the list when staff change. For the robot, the office issues a badge built into the robot, not a human employee's badge.\n\n| Analogy | Azure reality |\n|---|---|\n| Night-shift team list | Microsoft Entra group |\n| Individual employees | User accounts |\n| Delivery robot badge | Managed identity |\n| Door area | RBAC scope |\n| Access level | Azure role definition |\n\n**Where the analogy breaks down:** Azure tokens, group claims, and managed identity endpoints are software mechanisms. A physical badge does not show token caching, role propagation, or service-specific authorization.",
+      "jargon": [
+        {
+          "term": "Security principal",
+          "definition": "An identity object that can receive an Azure RBAC role assignment, such as a user, group, service principal, or managed identity."
+        },
+        {
+          "term": "Microsoft Entra group",
+          "definition": "A collection of users or other principals in Microsoft Entra ID that can receive one role assignment for all members."
+        },
+        {
+          "term": "User",
+          "definition": "An individual identity with a profile in Microsoft Entra ID or an invited external directory."
+        },
+        {
+          "term": "Service principal",
+          "definition": "An application or service identity in Microsoft Entra ID used by software to access resources."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "A Microsoft Entra identity automatically managed by Azure for an Azure resource, commonly used to avoid storing credentials."
+        },
+        {
+          "term": "Function app",
+          "definition": "An Azure App Service resource that runs event-driven functions."
+        },
+        {
+          "term": "Transitive group assignment",
+          "definition": "RBAC access that flows to users through group membership, including nested group membership where applicable."
+        },
+        {
+          "term": "Least privilege",
+          "definition": "Granting only the minimum role permissions and scope needed for the job."
+        }
+      ],
+      "watchOut": "- A scope is not a principal; do not confuse who receives access with where access applies.\n- Group assignments simplify recurring human access changes, but group ownership and membership still need governance.\n- Managed identities are best for Azure-hosted workloads that support Microsoft Entra authentication.\n- A service principal object ID is different from an application client ID in some command examples.\n- Direct user assignments can become hard to audit when many people need the same access.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure roles can be assigned to users, groups, service principals, or managed identities. The RBAC overview also states that group role assignments are transitive and that managed identities are automatically managed identities in Microsoft Entra ID.",
+        "recommendation": "Use groups for repeatable human job functions and managed identities for Azure workloads. Name groups after the job and scope, review memberships, and prefer one role assignment per job group rather than many direct user grants."
+      },
+      "memoryTrick": "People in groups, apps with identities. This is a simplification: a single user or a service principal can still be correct in special cases, but the default exam-friendly pattern is group for humans and managed identity for Azure workloads.",
+      "examTip": "Clue words are **membership changes monthly** and **avoid application secrets**. Pick the principal type that reduces administrative churn and removes stored credentials. A harder version might ask for the exact object ID parameter for a service principal or managed identity in Azure CLI or PowerShell."
+    },
+    "sources": [
+      {
+        "title": "What is Azure role-based access control (Azure RBAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"
+      },
+      {
+        "title": "Steps to assign an Azure role - Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+      },
+      {
+        "title": "Assign Azure roles using Azure CLI - Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.2-08",
+    "objective": "D1.2.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a virtual machine named `vm-analytics` in a resource group named `rg-old`. A user named Sami has the `Virtual Machine Contributor` role assigned directly at the `vm-analytics` resource scope.\n\nYou move `vm-analytics` to a resource group named `rg-new` in the same subscription. After the move, Sami reports that they can no longer manage the virtual machine.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Wait for the original resource-scope role assignment to move automatically with the virtual machine"
+      },
+      {
+        "id": "B",
+        "text": "Assign Sami the Reader role at `rg-old` so the original assignment can be inherited"
+      },
+      {
+        "id": "C",
+        "text": "Re-create the `Virtual Machine Contributor` role assignment at the new `vm-analytics` resource scope"
+      },
+      {
+        "id": "D",
+        "text": "Transfer the subscription to a different Microsoft Entra tenant and then assign the role again"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The move operation succeeded, the virtual machine supports movement between the selected resource groups, and Sami has no other inherited role assignment that grants equivalent access. The role was assigned directly at the VM resource scope, not at the subscription or target resource group.",
+    "sections": {
+      "correctAnswer": "**C. Re-create the `Virtual Machine Contributor` role assignment at the new `vm-analytics` resource scope**. Microsoft documents that when a resource with a direct role assignment is moved, the role assignment is not moved and becomes orphaned, so it must be created again after the move.",
+      "technical": "Moving an Azure resource to another resource group or subscription changes the resource ID. A standard resource ID includes the subscription ID, resource group name, provider namespace, resource type, and resource name. Because the resource group portion changes from `rg-old` to `rg-new`, the VM's resource scope path changes.\n\nAzure RBAC role assignments are extension resources tied to a scope. Microsoft documents a specific move behavior: if you move a resource that has an Azure role assigned directly to the resource or to a child resource, the role assignment does not move and becomes orphaned. The documented solution is to re-create the role assignment after the move. Microsoft also recommends removing the old role assignment before the move when possible, even though orphaned assignments are eventually removed automatically.\n\nThe evaluation after the move is therefore:\n\n1. Sami's original role assignment was at the old VM resource ID.\n2. The VM now has a new resource ID because it is in `rg-new`.\n3. The old assignment is no longer attached to the moved resource.\n4. Sami needs a new role assignment at the new VM scope, or at an appropriate parent scope such as `rg-new` if that broader scope is intended.\n\nThis is different from an inherited assignment at subscription scope. An assignment at a parent scope that still contains the moved resource can continue to apply through inheritance, but a direct assignment at the old resource scope does not follow the resource.",
+      "wrongOptions": {
+        "A": "The direct resource-scope role assignment does not move automatically. Waiting does not attach the old assignment to the new resource ID. Misconception: Resource moves carry all attached extension resources and permissions with them. Could be correct for some child resources that move automatically with their parent, but Microsoft documents that direct role assignments do not move this way.",
+        "B": "Assigning Reader at the old resource group does not grant management access to the VM in the new resource group. It also uses the wrong role for managing the VM. Misconception: The original resource group keeps control over a moved resource. Could be correct only when Sami needed read-only access to resources that still remain in `rg-old`.",
+        "D": "Changing the subscription's Microsoft Entra tenant is unrelated and disruptive. It would delete Azure RBAC role assignments and custom roles from the source directory, creating more work rather than solving a same-subscription resource move. Misconception: Any RBAC problem after a move requires a tenant transfer. Could be correct only in a planned directory-consolidation project, not as a fix for a moved VM role assignment."
+      },
+      "plainEnglish": "Sami's permission was attached to the VM's old address. Moving the VM to another resource group gives it a new Azure address. The old permission does not move to that new address.\n\nTo fix the problem, give Sami the same VM management permission again at the VM's new address. If several people need access to everything in the new resource group, you might choose a group and the resource group scope instead, but the key fact is that the old direct VM assignment does not follow the VM.",
+      "analogy": "Sami had a work permit taped to a machine while it sat in Warehouse A. The machine was moved to Warehouse B, but the permit stayed behind in the old paperwork binder. Sami needs a new permit for the machine in its new location.\n\n| Analogy | Azure reality |\n|---|---|\n| Machine | Virtual machine `vm-analytics` |\n| Warehouse A | Resource group `rg-old` |\n| Warehouse B | Resource group `rg-new` |\n| Permit taped to old record | Direct resource-scope role assignment |\n| New permit | Re-created role assignment at the new VM scope |\n\n**Where the analogy breaks down:** Azure role assignments are authorization resources with globally stored RBAC data. They are not paper permits, and inherited parent-scope assignments can behave differently from direct resource assignments.",
+      "jargon": [
+        {
+          "term": "Virtual Machine Contributor",
+          "definition": "A built-in Azure role for managing virtual machines without granting every permission in the subscription."
+        },
+        {
+          "term": "Resource move",
+          "definition": "An Azure Resource Manager operation that moves supported resources between resource groups or subscriptions."
+        },
+        {
+          "term": "Resource ID",
+          "definition": "The full Azure path identifying a resource, including its subscription, resource group, provider, type, and name."
+        },
+        {
+          "term": "Resource scope",
+          "definition": "An Azure RBAC scope attached directly to one Azure resource."
+        },
+        {
+          "term": "Orphaned role assignment",
+          "definition": "A role assignment left referencing a scope or principal that no longer resolves as expected."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where a role assignment at a parent scope applies to child resources."
+        },
+        {
+          "term": "Extension resource",
+          "definition": "An Azure Resource Manager resource that extends another resource's capabilities, such as a role assignment attached to a scope."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical Azure container for resources that are managed together."
+        }
+      ],
+      "watchOut": "- Direct resource-scope role assignments do not move with the resource.\n- Moving a resource changes its resource ID when the resource group or subscription changes.\n- Parent-scope inherited assignments are a separate case; check subscription and target resource group assignments before adding duplicates.\n- Remove old direct assignments before a planned move when possible.\n- During resource moves, source and destination resource groups can be locked for changes while resources keep running.",
+      "productionTip": {
+        "official": "Microsoft documents that moving a resource changes the resource ID and that a role assignment directly on the moved resource or its child resource is not moved and becomes orphaned. The documented fix is to re-create the role assignment after the move.",
+        "recommendation": "Before moving production resources, export or list direct role assignments at the resources being moved, remove unnecessary ones, and plan the new assignments at the destination. Prefer group-based assignments at a stable parent scope when that matches the access boundary."
+      },
+      "memoryTrick": "Direct resource role assignments stick to the old resource ID, not to the moving object. This shortcut fails for inherited parent assignments, which may still apply if the parent still contains the moved resource.",
+      "examTip": "Clue words are **assigned directly at the resource scope** and **moved to another resource group**. Choose the answer that re-creates the assignment at the new scope. A harder question might compare a direct VM assignment with a subscription-level inherited assignment; only the direct moved-resource assignment is orphaned."
+    },
+    "sources": [
+      {
+        "title": "Move Azure resources to a new resource group or subscription - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+      },
+      {
+        "title": "Troubleshoot Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/troubleshooting"
+      },
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.2-09",
+    "objective": "D1.2.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Your company plans to transfer an Azure subscription named `Sub-Merger` from Microsoft Entra tenant `TenantA` to Microsoft Entra tenant `TenantB`. The subscription contains many Azure RBAC role assignments and several custom roles.\n\nYou need to plan access after the transfer. What should you expect?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The Azure RBAC role assignments and custom roles are permanently deleted from `TenantA` and must be re-created in `TenantB`"
+      },
+      {
+        "id": "B",
+        "text": "The role assignments move automatically because the Azure subscription ID stays the same"
+      },
+      {
+        "id": "C",
+        "text": "Only role assignments for users are deleted; group and service principal assignments continue working"
+      },
+      {
+        "id": "D",
+        "text": "The role assignments become eligible PIM assignments in `TenantB` until an administrator approves them"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The task is changing the Microsoft Entra directory associated with the subscription, not moving resources between resource groups within the same tenant. The organization can map users, groups, service principals, and managed identities to corresponding objects in the target tenant.",
+    "sections": {
+      "correctAnswer": "**A. The Azure RBAC role assignments and custom roles are permanently deleted from `TenantA` and must be re-created in `TenantB`**. Microsoft documents that when a subscription is transferred to a different Microsoft Entra directory, Azure RBAC role assignments and custom roles are not transferred to the target directory.",
+      "technical": "An Azure subscription is associated with a Microsoft Entra directory. Changing that directory is more than a resource move; it changes the identity authority for the subscription. Azure RBAC role assignments refer to security principals such as users, groups, service principals, and managed identities in the directory. Those objects do not automatically become equivalent objects in the target tenant.\n\nMicrosoft's transfer documentation states that all Azure RBAC role assignments and custom roles are permanently deleted from the source directory and are not transferred to the target directory. The documented recovery action is to re-create resources in the target directory, including role assignments and custom roles. The impact table specifically lists role assignments as impacted and recoverable, with the action to map users, groups, and service principals to corresponding objects in the target directory and re-create the assignments.\n\nManaged identities also require planning. The same documentation lists system-assigned and user-assigned managed identities as impacted, and role assignments for those identities must be re-created. Other services that depend on directory identities can also be affected, so a subscription transfer should be planned as a change project, not as a simple RBAC refresh.\n\nThe subscription ID may remain important for applications, but it does not preserve RBAC assignments across tenants because the referenced security principals belong to the old directory.",
+      "wrongOptions": {
+        "B": "The subscription ID alone does not preserve role assignments across a directory transfer. Microsoft documents that role assignments and custom roles are deleted and not transferred. Misconception: RBAC assignments are attached only to the subscription ID and independent of Microsoft Entra tenant identities. Could be correct for some application configuration that keys only on subscription ID, but not for Azure RBAC assignments.",
+        "C": "Assignments for groups and service principals are also impacted because they are security principals in the source directory. Microsoft says all role assignments are permanently deleted. Misconception: Non-user principals are portable between tenants. Could be correct only for access methods deliberately re-created or federated in the target tenant after the transfer.",
+        "D": "A tenant transfer does not convert ordinary RBAC assignments into PIM eligible assignments. Privileged Identity Management has its own eligible and active assignment model and licensing requirements. Misconception: Azure automatically protects lost access by turning it into PIM requests. Could be correct when an administrator explicitly creates eligible Azure resource role assignments in PIM after the transfer."
+      },
+      "plainEnglish": "Think of the subscription as a building whose access list is written in TenantA's employee directory. When the building is moved under TenantB's directory, the old employee IDs no longer match TenantB's directory. Azure does not copy the access list over automatically.\n\nYou must plan a new access list in TenantB. That means finding the matching users, groups, and app identities in TenantB, then creating the needed roles again. Custom roles also need to be re-created.",
+      "analogy": "A company branch moves from one corporate HR system to another after a merger. The old badge numbers are canceled, even if the building remains the same. Security must issue new badges based on the new HR system.\n\n| Analogy | Azure reality |\n|---|---|\n| Old HR system | TenantA |\n| New HR system | TenantB |\n| Branch building | Azure subscription |\n| Badge list | Azure RBAC role assignments |\n| Custom badge categories | Azure custom roles |\n| Issue new badges | Re-create assignments in the target tenant |\n\n**Where the analogy breaks down:** Azure transfers also affect service principals, managed identities, policies, Key Vault settings, and other service integrations. A building badge analogy does not capture every service dependency.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra tenant",
+          "definition": "A dedicated instance of Microsoft Entra ID that stores identities such as users, groups, applications, and service principals."
+        },
+        {
+          "term": "Subscription transfer",
+          "definition": "Changing the Microsoft Entra directory associated with an Azure subscription."
+        },
+        {
+          "term": "Azure RBAC role assignment",
+          "definition": "The attachment of a role definition to a security principal at a specific Azure scope."
+        },
+        {
+          "term": "Custom role",
+          "definition": "An Azure RBAC role definition created by an organization when built-in roles do not match the required permissions."
+        },
+        {
+          "term": "Security principal",
+          "definition": "An identity object such as a user, group, service principal, or managed identity that can receive access."
+        },
+        {
+          "term": "Service principal",
+          "definition": "An application identity in Microsoft Entra ID used by software or automation."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An Azure-managed Microsoft Entra identity for an Azure resource."
+        },
+        {
+          "term": "Recoverable",
+          "definition": "In this context, a deleted configuration can be manually re-created, not that Azure automatically restores it."
+        }
+      ],
+      "watchOut": "- Transferring a subscription to another tenant is not the same as moving a resource to another resource group.\n- All Azure RBAC role assignments are deleted, including assignments to users, groups, service principals, and managed identities.\n- Custom roles must be re-created before their assignments can be restored.\n- Directory-dependent services may require separate remediation.\n- Some subscription transfer scenarios can require downtime, so plan and test carefully.",
+      "productionTip": {
+        "official": "Microsoft's subscription transfer documentation states that all role assignments and custom roles in Azure RBAC are permanently deleted from the source directory and are not transferred. It instructs administrators to map principals and re-create role assignments in the target directory.",
+        "recommendation": "Before a tenant transfer, export role assignments, custom role definitions, managed identity dependencies, and Key Vault or service-specific access settings. Build a target-tenant access map and a rollback or downtime plan before starting the transfer."
+      },
+      "memoryTrick": "New tenant, new identities, new RBAC. This is a simplification because some resource data remains, but directory-based access must be planned and re-created.",
+      "examTip": "Clue words are **different Microsoft Entra directory** and **role assignments/custom roles**. Choose the answer that deletes and re-creates RBAC in the target tenant. A harder version might ask which identities must be mapped: users, groups, service principals, and managed identities."
+    },
+    "sources": [
+      {
+        "title": "Transfer an Azure subscription to a different Microsoft Entra directory",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/transfer-subscription"
+      },
+      {
+        "title": "What is Azure role-based access control (Azure RBAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"
+      },
+      {
+        "title": "Steps to assign an Azure role - Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.2-10",
+    "objective": "D1.2.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a management group named `mg-corp` that contains subscriptions `Sub1` and `Sub2`. Nila is assigned the `Owner` role at the `Sub1` subscription scope only.\n\nNila tries to assign the `Reader` role to an audit group at the `mg-corp` management group scope so the auditors can read both subscriptions. The attempt fails with an authorization error for `Microsoft.Authorization/roleAssignments/write` at the management group scope.\n\nWhat is the most likely reason?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The Owner role cannot create any Azure RBAC role assignments"
+      },
+      {
+        "id": "B",
+        "text": "Reader cannot be assigned at a management group scope"
+      },
+      {
+        "id": "C",
+        "text": "Nila has role-assignment permission only at `Sub1` and child scopes, not at the parent management group scope"
+      },
+      {
+        "id": "D",
+        "text": "Only Microsoft Entra Global Administrators can assign Azure roles at management group scope"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Nila has no other role assignment, PIM activation, delegated RBAC condition, or elevated Global Administrator access. The audit group exists in Microsoft Entra ID. No service outage or role propagation issue is causing the failure.",
+    "sections": {
+      "correctAnswer": "**C. Nila has role-assignment permission only at `Sub1` and child scopes, not at the parent management group scope**. To assign Azure roles, a user needs `Microsoft.Authorization/roleAssignments/write` at the scope where the assignment is being created; a subscription Owner assignment does not grant permissions above that subscription.",
+      "technical": "The Owner role is powerful, but its power is still bounded by scope. Microsoft documents Owner as granting full access to manage resources, including the ability to assign roles in Azure RBAC. Microsoft also documents that to assign roles, you need `Microsoft.Authorization/roleAssignments/write` permissions, such as Owner, User Access Administrator, or Role Based Access Control Administrator, at the scope you are trying to assign the role.\n\nNila is Owner at `Sub1`. That gives Nila role-assignment capability at `Sub1` and child scopes such as resource groups and resources inside `Sub1`. It does not give Nila authority at the parent management group `mg-corp`, and it does not cover sibling subscription `Sub2`. Azure RBAC inheritance flows down from parent to child, not up from child to parent.\n\nThe failure message naming `Microsoft.Authorization/roleAssignments/write` at the management group scope matches this rule. Someone with suitable permission at `mg-corp`, such as Owner, User Access Administrator, or Role Based Access Control Administrator at that management group, must create the audit assignment. Alternatively, the auditors could be assigned separately at `Sub1` and `Sub2` by administrators who have permissions at each subscription, but that is not the same as Nila assigning at the parent management group.\n\nGlobal Administrator is a Microsoft Entra directory role and is not normally required for every management group assignment. A Global Administrator has a documented emergency elevation path, but ordinary Azure RBAC at the target scope is the normal authorization requirement.",
+      "wrongOptions": {
+        "A": "Owner can assign Azure RBAC roles, but only within the scope where Owner applies and below. Misconception: The failure means Owner lacks role assignment capability entirely. Could be correct if the role were Contributor, which can manage resources but cannot assign Azure RBAC roles.",
+        "B": "Reader can be assigned at management group scope. Azure RBAC supports management group, subscription, resource group, and resource scopes. Misconception: Management groups are only for Azure Policy and cannot be RBAC scopes. Could be correct if a specific custom role's assignable scopes did not include the management group, but not for the built-in Reader role in this scenario.",
+        "D": "Global Administrator is not the only role that can assign Azure roles at management group scope. Azure RBAC roles such as Owner, User Access Administrator, or Role Based Access Control Administrator at the target scope can do it. Misconception: Microsoft Entra directory administrator roles are required for all Azure resource access management. Could be correct for the documented emergency elevation scenario when no Azure RBAC administrator exists, but that is not the ordinary requirement."
+      },
+      "plainEnglish": "Nila is the owner of one subscription, not the boss of the folder that contains two subscriptions. Azure permissions flow downward. Being powerful in `Sub1` lets Nila manage access in `Sub1`, but it does not let Nila change permissions on the parent management group or on `Sub2`.\n\nTo give auditors access to both subscriptions from the management group, someone who already has access-management rights at the management group must make the assignment.",
+      "analogy": "Nila manages one store in a shopping mall. She can give staff access to rooms inside her store. She cannot issue a mall-wide badge for every store because she is not the mall manager.\n\n| Analogy | Azure reality |\n|---|---|\n| Mall | Management group `mg-corp` |\n| Store managed by Nila | Subscription `Sub1` |\n| Other store | Subscription `Sub2` |\n| Store manager key | Owner at `Sub1` |\n| Mall-wide badge | Reader at management group scope |\n\n**Where the analogy breaks down:** Azure scopes are evaluated through role assignments, deny assignments, conditions, and tokens. A mall badge analogy does not represent every Azure authorization step.",
+      "jargon": [
+        {
+          "term": "Owner",
+          "definition": "A built-in Azure privileged role that grants full management access and can assign Azure RBAC roles within its scope."
+        },
+        {
+          "term": "Role assignment write",
+          "definition": "The `Microsoft.Authorization/roleAssignments/write` action required to create Azure RBAC assignments."
+        },
+        {
+          "term": "Management group scope",
+          "definition": "An Azure RBAC scope above subscriptions that can grant inherited permissions to child subscriptions."
+        },
+        {
+          "term": "Subscription scope",
+          "definition": "An Azure RBAC scope that covers one subscription and its child resource groups and resources."
+        },
+        {
+          "term": "Sibling subscription",
+          "definition": "Another subscription under the same parent management group, not a child of the current subscription."
+        },
+        {
+          "term": "Role Based Access Control Administrator",
+          "definition": "A built-in Azure role designed to manage Azure RBAC role assignments with fewer permissions than broad resource-management roles."
+        },
+        {
+          "term": "User Access Administrator",
+          "definition": "A built-in Azure role that can manage user access to Azure resources."
+        },
+        {
+          "term": "Global Administrator",
+          "definition": "A Microsoft Entra directory role that is separate from Azure resource roles, with a documented but special Azure access elevation path."
+        }
+      ],
+      "watchOut": "- RBAC scope inheritance flows downward, not upward.\n- Owner can assign roles, but only where the Owner assignment applies.\n- Contributor cannot assign Azure RBAC roles even at its own scope.\n- A management group assignment affects all child subscriptions, so it requires authority at that management group.\n- Check the exact failed scope in authorization errors; it often reveals where permission is missing.",
+      "productionTip": {
+        "official": "Microsoft documents that assigning roles requires `Microsoft.Authorization/roleAssignments/write` at the selected scope and lists Owner, User Access Administrator, and Role Based Access Control Administrator as roles that can provide role-assignment permissions. Troubleshooting guidance says to check the role at the scope you are trying to assign.",
+        "recommendation": "Delegate access management deliberately. Use Role Based Access Control Administrator with conditions where appropriate for limited delegation, and avoid granting broad Owner or User Access Administrator at management group scope unless the administrator truly needs tenant-wide impact within that hierarchy."
+      },
+      "memoryTrick": "You can grant only where your own grant reaches. Subscription Owner reaches down into that subscription, not up to its management group. This simplification can be affected by other assignments, PIM activation, or explicit delegation conditions.",
+      "examTip": "Clue words are **Owner at Sub1 only**, **assign at management group**, and **roleAssignments/write at management group scope**. Rule out answers that ignore scope. A harder version might give Nila Role Based Access Control Administrator at `mg-corp` with a condition limiting which roles or principals she can assign."
+    },
+    "sources": [
+      {
+        "title": "Steps to assign an Azure role - Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-steps"
+      },
+      {
+        "title": "Troubleshoot Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/troubleshooting"
+      },
+      {
+        "title": "Azure built-in roles for Privileged - Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/privileged"
+      },
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.2-11",
+    "objective": "D1.2.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You use Microsoft Entra Privileged Identity Management (PIM) for Azure resources. A user named Alex was added as an **eligible** `Contributor` for resource group `rg-build`. Alex immediately tries to deploy a resource to `rg-build` and receives an authorization error.\n\nThe tenant has the required PIM licensing, and no deny assignment blocks the deployment. What should Alex do before deploying?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Wait up to 10 minutes because eligible assignments always become active automatically"
+      },
+      {
+        "id": "B",
+        "text": "Ask for a direct Reader assignment at `rg-build`"
+      },
+      {
+        "id": "C",
+        "text": "Move `rg-build` to a subscription where Alex is already a Contributor"
+      },
+      {
+        "id": "D",
+        "text": "Activate the eligible Contributor assignment in PIM and complete any required checks such as MFA, justification, or approval"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra PIM for Azure resources is configured and licensed for the tenant. Alex is within the eligible assignment's allowed time window. The PIM role settings may require multifactor authentication, justification, or approval before activation. Normal Azure RBAC propagation delay may still apply after role changes or activation.",
+    "sections": {
+      "correctAnswer": "**D. Activate the eligible Contributor assignment in PIM and complete any required checks such as MFA, justification, or approval**. In PIM, an eligible assignment does not provide usable privileges until the user activates it; active assignments are ready to use without activation.",
+      "technical": "Microsoft Entra Privileged Identity Management adds a just-in-time model over privileged access. For Azure resource roles, PIM supports eligible and active assignment types. Microsoft documents the distinction clearly: eligible assignments require the member to activate the role before using it, while active assignments do not require activation and have the privileges ready to use. Activation may require actions such as multifactor authentication, a business justification, or approval from configured approvers.\n\nAlex was added as eligible Contributor, not active Contributor. Contributor is a role that can manage resources but cannot assign Azure RBAC roles. Until Alex activates the eligible assignment and any required checks are completed, Azure RBAC evaluation does not treat Alex as having active Contributor permissions for the deployment.\n\nThere is a separate timing concept: Azure RBAC changes can take time to be detected. Microsoft troubleshooting guidance says role assignment changes can take up to 10 minutes to take effect, and some managed identity group or role membership changes can take several hours. That propagation delay does not replace PIM activation. Waiting can help only after the required active permission exists or after a role assignment was changed.\n\nPIM itself requires appropriate licensing. Microsoft's PIM overview says using Privileged Identity Management requires licenses, and the licensing fundamentals page describes Microsoft Entra ID Governance and related license prerequisites. Standard Azure RBAC is included in Azure subscriptions, but PIM governance is a licensed Microsoft Entra capability.",
+      "wrongOptions": {
+        "A": "Waiting alone is not enough because eligible assignments do not automatically become active. Propagation delay is real, but it applies after a role assignment or activation change exists. Misconception: Eligible means active after a short cache delay. Could be correct after Alex activates successfully and Azure still needs a few minutes to recognize the changed effective permission.",
+        "B": "Reader would not allow Alex to deploy resources, and it bypasses the intent of just-in-time Contributor access. Misconception: Any role assignment at the resource group will satisfy a deployment authorization check. Could be correct when Alex only needed to view resources in `rg-build`, not create or update them.",
+        "C": "Moving the resource group is unrelated and operationally disruptive. Access should be handled by activating or assigning the correct role at the correct scope, not by moving the resource group. Misconception: Put resources where the user already has broad access instead of granting least-privilege access where needed. Could be correct only in a planned reorganization where moving the resource group is required for governance reasons, not to work around PIM activation."
+      },
+      "plainEnglish": "Eligible means Alex is allowed to ask for the temporary permission when needed. It does not mean Alex already has the permission. Before deploying, Alex must go into PIM, activate the Contributor role, and satisfy any rules the company set, such as proving identity with MFA, typing a reason, or waiting for approval.\n\nIf Alex still gets an error right after activation, a short Azure RBAC propagation delay may be the next thing to check. But the first missing step is activation, not waiting.",
+      "analogy": "Alex has been preapproved to borrow a workshop key, but the key is still in the lockbox. Alex must open the lockbox, sign the log, and maybe get a supervisor's approval before entering the workshop. Simply being on the preapproved list does not open the door.\n\n| Analogy | Azure reality |\n|---|---|\n| Preapproved list | Eligible PIM assignment |\n| Borrowed key | Activated role |\n| Workshop | Resource group `rg-build` |\n| Sign the log | Justification |\n| Supervisor approval | PIM approval workflow |\n| Door system update delay | RBAC propagation delay |\n\n**Where the analogy breaks down:** PIM activation creates time-bound digital access evaluated by Azure RBAC. Physical keys do not model tokens, licensing, role conditions, or cache refresh behavior.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra Privileged Identity Management",
+          "definition": "A Microsoft Entra ID Governance service for managing, controlling, and monitoring privileged access to Microsoft Entra roles and Azure resource roles."
+        },
+        {
+          "term": "PIM",
+          "definition": "The abbreviation for Privileged Identity Management."
+        },
+        {
+          "term": "Eligible assignment",
+          "definition": "A PIM assignment that requires the member to activate the role before using the privileges."
+        },
+        {
+          "term": "Active assignment",
+          "definition": "A PIM assignment whose privileges are ready to use without a separate activation step."
+        },
+        {
+          "term": "Activate",
+          "definition": "The PIM process of turning an eligible assignment into usable time-bound access after required checks are completed."
+        },
+        {
+          "term": "Contributor",
+          "definition": "A built-in Azure role that can manage resources but cannot assign Azure RBAC roles."
+        },
+        {
+          "term": "MFA",
+          "definition": "Multifactor authentication, a sign-in or activation check that requires more than one proof of identity."
+        },
+        {
+          "term": "Justification",
+          "definition": "A reason supplied by a user when activating a privileged role."
+        },
+        {
+          "term": "Approval",
+          "definition": "A PIM workflow step where a designated approver must approve an activation request before access starts."
+        },
+        {
+          "term": "Propagation delay",
+          "definition": "A delay before role assignment or membership changes are detected by Azure authorization systems."
+        },
+        {
+          "term": "Microsoft Entra ID Governance license",
+          "definition": "A licensing family that includes governance capabilities such as PIM, subject to the documented prerequisites and product plans."
+        }
+      ],
+      "watchOut": "- Eligible is not the same as active. Eligible users must activate before using the role.\n- Active PIM assignments are ready to use, but they can still be time-bound.\n- Azure RBAC propagation delay can still occur after changes or activation; Microsoft documents up to 10 minutes for many role assignment changes.\n- Managed identity group or role membership changes can take several hours because of back-end caching.\n- PIM requires appropriate Microsoft Entra licensing; ordinary Azure RBAC alone is included with Azure subscriptions.",
+      "productionTip": {
+        "official": "Microsoft documents eligible and active PIM assignment types for Azure resources and states that eligible assignments require activation before use. Troubleshooting guidance documents RBAC propagation delays, including up to 10 minutes for many role assignment changes.",
+        "recommendation": "Use eligible PIM assignments for privileged human roles such as Owner, Contributor, or User Access Administrator when users do not need constant access. Configure activation duration, MFA, justification, and approval based on risk, and tell operators to activate before planned maintenance windows."
+      },
+      "memoryTrick": "Eligible means **can ask**; active means **can act**. This is a simplification because active access can still be time-limited and Azure may need a short time to recognize recent changes.",
+      "examTip": "Clue words are **PIM**, **eligible**, and **immediately tries**. Pick activation, not a new permanent role or a resource move. A harder version might ask why an activated role still fails for a few minutes; then propagation delay or token refresh becomes the likely explanation."
+    },
+    "sources": [
+      {
+        "title": "Assign Azure resource roles in Privileged Identity Management - Microsoft Entra ID Governance",
+        "url": "https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-assign-roles"
+      },
+      {
+        "title": "What is Privileged Identity Management? - Microsoft Entra ID Governance",
+        "url": "https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure"
+      },
+      {
+        "title": "Troubleshoot Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/troubleshooting"
+      },
+      {
+        "title": "Microsoft Entra ID Governance licensing fundamentals",
+        "url": "https://learn.microsoft.com/en-us/entra/id-governance/licensing-fundamentals"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

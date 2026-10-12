@@ -1,0 +1,491 @@
+[
+  {
+    "id": "D5.1.3-01",
+    "objective": "D5.1.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You use Log Analytics to investigate CPU pressure on Azure virtual machines. You need a KQL query that returns one row per computer for the last hour, calculates the average processor counter value, shows only the columns needed by the operations dashboard, and visualizes the result as a chart.\n\nWhich query should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```kusto\nPerf\n| project Computer, CounterValue\n| render timechart\n| where TimeGenerated > ago(1h)\n```"
+      },
+      {
+        "id": "B",
+        "text": "```kusto\nPerf\n| where TimeGenerated > ago(1h)\n| where ObjectName == \"Processor\" and CounterName == \"% Processor Time\"\n| summarize AvgCpu = avg(CounterValue) by Computer\n| project Computer, AvgCpu\n| render columnchart\n```"
+      },
+      {
+        "id": "C",
+        "text": "```kusto\nPerf\n| summarize AvgCpu = avg(CounterName) by Computer\n| extend TimeGenerated = ago(1h)\n| project Computer, AvgCpu\n```"
+      },
+      {
+        "id": "D",
+        "text": "```kusto\nPerf\n| render columnchart\n| summarize AvgCpu = avg(CounterValue) by Computer\n| where TimeGenerated > ago(1h)\n```"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The `Perf` table contains Windows performance counter records with `TimeGenerated`, `Computer`, `ObjectName`, `CounterName`, and `CounterValue` columns. The requirement is an interactive Log Analytics query, not a scheduled alert rule definition.",
+    "sections": {
+      "correctAnswer": "**B. `Perf | where TimeGenerated > ago(1h) ... | render columnchart`**. It filters the time range first, narrows to the processor counter, aggregates numeric counter values by computer, keeps only the dashboard columns, and places `render` last.",
+      "technical": "A KQL pipeline passes the output of one operator to the next. In Azure Monitor Logs, queries typically start with a table name because that gives the query a clear scope and is more efficient than searching every table. Here the right table is `Perf`, which stores performance counter samples and includes columns such as `TimeGenerated`, `Computer`, `ObjectName`, `CounterName`, and `CounterValue`.\n\nThe required order is deliberate:\n\n1. `where TimeGenerated > ago(1h)` limits the scan to recent rows. Microsoft notes that `where` filters rows for which the predicate is true, and using simple comparisons with constants such as `ago()` is a recommended pattern.\n2. The second `where` keeps only the processor counter of interest. This prevents disk, memory, or network counters from mixing into the calculation.\n3. `summarize AvgCpu = avg(CounterValue) by Computer` groups rows by computer and computes one aggregate value per group.\n4. `project Computer, AvgCpu` selects and orders the output columns.\n5. `render columnchart` asks the user agent to visualize the returned table, and `render` must be the last operator because it adds visualization instructions rather than transforming rows for later pipeline stages.\n\nThis question also tests data types. `CounterValue` is numeric, so `avg(CounterValue)` is valid. `CounterName` is a string label, so averaging it is not meaningful. The `ago(1h)` function subtracts one hour from the current UTC time, making the query move with the time of execution.",
+      "wrongOptions": {
+        "A": "This places `render` before `where`, but `render` must be the last operator in the query. It also omits the CPU counter filter and aggregation. Misconception: visualization can be inserted anywhere in the pipeline. Could be correct when: the query already produces the final tabular result and `render` is appended at the end.",
+        "C": "It tries to average `CounterName`, which is a string, not the numeric counter measurement. It also fabricates a `TimeGenerated` value after summarizing instead of filtering real records by time. Misconception: any column can be aggregated if it appears in the table. Could be correct when: using `summarize` with a numeric expression or a string-appropriate aggregation such as `dcount()`.",
+        "D": "This begins visualization before summarization and then tries to filter on `TimeGenerated` after the summarize result no longer contains that column. Misconception: KQL automatically remembers all original columns after aggregation. Could be correct when: the time filter is placed before summarize and render is last."
+      },
+      "plainEnglish": "A log query is a conveyor belt. First you put only the right boxes on the belt: recent rows and the specific CPU counter. Then you group the boxes by computer and calculate an average. Then you remove all extra labels so the dashboard sees only computer name and average CPU. Finally, you tell the screen how to draw the result. If you ask the screen to draw before the data is ready, or if you try to average a name instead of a number, the query does not match the goal.",
+      "analogy": "A kitchen manager wants average soup temperature by station for the last hour. The sensible workflow is to pull only last-hour thermometer readings, ignore non-soup measurements, average the numbers per station, write a clean two-column report, and then draw a bar chart.\n\n| Analogy | Azure reality |\n|---|---|\n| Thermometer reading sheet | `Perf` table |\n| Last-hour filter | `where TimeGenerated > ago(1h)` |\n| Soup-only check | Counter filters |\n| Average per station | `summarize avg(...) by Computer` |\n| Clean report columns | `project` |\n| Bar chart instruction | `render columnchart` |\n\n**Where the analogy breaks down:** KQL has exact syntax, case-sensitive table and column names, query execution limits, and visualization support that depends on the user agent. A kitchen report does not enforce those parser and rendering rules.",
+      "jargon": [
+        {
+          "term": "Log Analytics",
+          "definition": "The Azure portal tool used to write, run, and inspect Azure Monitor Logs queries."
+        },
+        {
+          "term": "KQL",
+          "definition": "Kusto Query Language, the read-only query language used by Azure Monitor Logs."
+        },
+        {
+          "term": "Perf table",
+          "definition": "An Azure Monitor Logs table that stores performance counter data collected from monitored computers."
+        },
+        {
+          "term": "where",
+          "definition": "A KQL operator that filters input rows to only those matching a true predicate."
+        },
+        {
+          "term": "ago()",
+          "definition": "A KQL function that returns the current UTC time minus a specified timespan."
+        },
+        {
+          "term": "summarize",
+          "definition": "A KQL operator that groups rows and computes aggregate values such as count or average."
+        },
+        {
+          "term": "project",
+          "definition": "A KQL operator that selects, orders, renames, or computes output columns."
+        },
+        {
+          "term": "render",
+          "definition": "A KQL operator that asks the client to visualize query results and must be last."
+        },
+        {
+          "term": "CounterValue",
+          "definition": "The numeric value of a performance counter sample in the `Perf` table."
+        },
+        {
+          "term": "Columnchart",
+          "definition": "A visualization that displays values as vertical columns."
+        }
+      ],
+      "watchOut": "- Put time filters early to reduce the amount of data processed.\n- Use the numeric value column for numeric aggregation.\n- After `summarize`, only group-by columns and aggregate result columns remain.\n- `render` does not reshape data for more query operations; it belongs at the end.\n- KQL names are case sensitive, so `TimeGenerated` and `timegenerated` are different.",
+      "productionTip": {
+        "official": "Microsoft documents Azure Monitor Logs as using KQL, recommends starting with a table name, describes `where` as filtering rows, `summarize` as aggregating grouped content, `project` as selecting columns, and `render` as adding visualization instructions that must be the last operator.",
+        "recommendation": "Build dashboard queries in stages. First return a tiny sample to verify table and column names, then add the time and counter filters, then aggregate, then project only the fields the visualization needs. This keeps dashboards faster and reduces the chance of silently charting the wrong counter family."
+      },
+      "memoryTrick": "Use **Filter, Group, Shape, Show**: `where`, `summarize`, `project`, `render`. This is a simplification because some queries need joins, extends, or sorting, but it fits many AZ-104 operational log questions.",
+      "examTip": "Clue words are **last hour**, **one row per computer**, **average**, **only columns needed**, and **visualizes**. Map them to `where`, `summarize by`, `project`, and final `render`. A harder version may use `bin(TimeGenerated, 5m)` for a time series instead of one row per computer."
+    },
+    "sources": [
+      {
+        "title": "Log queries in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-query-overview"
+      },
+      {
+        "title": "Get started with log queries in Azure Monitor Logs",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+      },
+      {
+        "title": "where operator - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/where-operator?view=microsoft-fabric"
+      },
+      {
+        "title": "summarize operator - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/summarize-operator?view=microsoft-fabric"
+      },
+      {
+        "title": "Project operator - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/project-operator?view=microsoft-fabric"
+      },
+      {
+        "title": "render operator - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/render-operator?view=microsoft-fabric"
+      },
+      {
+        "title": "ago() - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/ago-function?view=microsoft-fabric"
+      },
+      {
+        "title": "Azure Monitor Logs reference - Perf",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/perf"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.1.3-02",
+    "objective": "D5.1.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are creating saved Log Analytics queries for a help desk team. The team needs one query that finds machines that have stopped reporting agent health signals, and another query that lists failed Azure resource management operations in the last day.\n\nWhich two tables should the queries use? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use `Heartbeat` for the missing agent health signal query."
+      },
+      {
+        "id": "B",
+        "text": "Use `Perf` for failed Azure resource management operations."
+      },
+      {
+        "id": "C",
+        "text": "Use `Event` for subscription-level create, update, and delete operation status."
+      },
+      {
+        "id": "D",
+        "text": "Use `AzureActivity` for failed Azure resource management operations."
+      },
+      {
+        "id": "E",
+        "text": "Use `AzureActivity` for one-per-minute agent availability records."
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The workspace receives the relevant data types. The activity log has been exported to the workspace when querying `AzureActivity`; agent health records are available in `Heartbeat` for the monitored machines.",
+    "sections": {
+      "correctAnswer": "**A. Use `Heartbeat` for the missing agent health signal query** and **D. Use `AzureActivity` for failed Azure resource management operations**. `Heartbeat` records agent health signals, while `AzureActivity` contains entries from the Azure Activity log, including subscription-level and management group events.",
+      "technical": "Choosing the right table is the first step in a useful Azure Monitor Logs query. Log Analytics workspaces contain many tables, and KQL is case sensitive, so table names and column names must match the schema. Starting with the correct table also improves relevance and performance because the query engine reads the intended data set rather than searching broadly.\n\nFor agent health, Microsoft documents the `Heartbeat` table as records logged by Log Analytics agents once per minute to report on agent health. A common availability pattern is to summarize the latest heartbeat per computer and then find computers whose latest `TimeGenerated` value is older than the expected window. The exact threshold depends on your operational tolerance, but the table choice is `Heartbeat`, not `AzureActivity` or `Perf`.\n\nFor failed Azure resource management operations, use `AzureActivity`. Microsoft describes that table as entries from the Azure Activity log, which provides insight into subscription-level or management group-level events in Azure. It includes useful columns such as `ActivityStatusValue`, `OperationNameValue`, `ResourceGroup`, `ResourceProviderValue`, and `TimeGenerated`. A query for failures might filter `TimeGenerated > ago(1d)` and `ActivityStatusValue == \"Failed\"`, then project the caller, operation, resource group, and status.\n\nThe `Perf` table is for performance counters, such as processor or memory measurements from monitored computers. The `Event` table contains Windows Event Log events from Windows computers using the Log Analytics agent. Both are useful tables, but neither is the primary table for Azure control plane operation status.",
+      "wrongOptions": {
+        "B": "`Perf` stores performance counter samples; it does not represent Azure Activity log management operation failures. Misconception: all operational troubleshooting information belongs in the performance table. Could be correct when: the requirement is CPU, memory, disk, or other collected counter analysis.",
+        "C": "`Event` contains Windows Event Log records from Windows computers, not Azure subscription-level management operations. Misconception: the generic word `Event` must cover every event in Azure. Could be correct when: investigating Windows application, system, or security event logs collected from a VM.",
+        "E": "`AzureActivity` tracks activity log entries for Azure management events, not one-per-minute agent health pings. Misconception: if a computer is an Azure resource, its agent status is stored in the activity log table. Could be correct when: looking for resource deployment, delete, policy, or administrative operation records."
+      },
+      "plainEnglish": "A table name is like choosing the right folder before searching. If you want to know whether a monitored computer is still checking in, open the folder that stores check-in messages: `Heartbeat`. If you want to know whether Azure failed to create, update, or delete a resource, open the folder that stores management activity: `AzureActivity`. `Perf` is more like a folder of speedometer readings, and `Event` is a folder of Windows machine event messages.",
+      "analogy": "A hospital has different clipboards. Nurses sign a patient-round sheet every minute for critical devices, engineers write equipment gauge readings on a performance sheet, and administrators record building-change approvals in a facilities ledger. Looking for a missed patient round in the facilities ledger wastes time.\n\n| Analogy | Azure reality |\n|---|---|\n| Patient-round sheet | `Heartbeat` |\n| Equipment gauge sheet | `Perf` |\n| Facilities change ledger | `AzureActivity` |\n| Windows incident clipboard | `Event` |\n| Last recorded round time | `TimeGenerated` in `Heartbeat` |\n\n**Where the analogy breaks down:** Azure tables have schemas, retention settings, ingestion delays, and collection prerequisites. A clipboard does not require diagnostic settings or agent deployment before records appear.",
+      "jargon": [
+        {
+          "term": "Heartbeat",
+          "definition": "An Azure Monitor Logs table containing agent health records logged about once per minute."
+        },
+        {
+          "term": "AzureActivity",
+          "definition": "A table containing entries exported from the Azure Activity log for subscription-level or management group events."
+        },
+        {
+          "term": "Perf",
+          "definition": "A table for performance counters from monitored computers."
+        },
+        {
+          "term": "Event",
+          "definition": "A table for Windows Event Log records collected from Windows computers."
+        },
+        {
+          "term": "Log Analytics",
+          "definition": "The Azure portal tool and workspace experience for querying Azure Monitor Logs."
+        },
+        {
+          "term": "KQL",
+          "definition": "Kusto Query Language, the query language used to retrieve and analyze log data."
+        },
+        {
+          "term": "Agent health",
+          "definition": "The state of a monitoring agent as inferred from periodic reporting records."
+        },
+        {
+          "term": "Activity log",
+          "definition": "The Azure Monitor log of Azure resource management operations."
+        },
+        {
+          "term": "TimeGenerated",
+          "definition": "The standard timestamp column that records when the event or sample was generated."
+        },
+        {
+          "term": "ActivityStatusValue",
+          "definition": "A display-friendly status column in `AzureActivity`, with values such as Succeeded or Failed."
+        }
+      ],
+      "watchOut": "- Table names are case sensitive in KQL.\n- `Event` means Windows Event Log records, not all Azure events.\n- `AzureActivity` requires activity log data to be present in the workspace.\n- `Heartbeat` shows monitoring agent check-ins, not application uptime by itself.\n- `Perf` is numeric counter data; it is not a management-audit table.",
+      "productionTip": {
+        "official": "Microsoft's table references describe `Heartbeat` as agent health records, `Perf` as performance counter data, `AzureActivity` as entries from the Azure Activity log, and `Event` as Windows Event Log events collected from Windows computers.",
+        "recommendation": "Build a small internal query catalog that starts with the purpose and then the table, such as `Agent missing heartbeat - Heartbeat` or `Failed deployment operations - AzureActivity`. This helps junior operators avoid broad `search` queries and gives reviewers an easy way to spot table mismatches."
+      },
+      "memoryTrick": "**Heartbeat checks life; AzureActivity checks Azure actions; Perf checks performance; Event checks Windows events.** This sentence is a simplification because real investigations often join or correlate tables after choosing the first evidence source.",
+      "examTip": "Clue words are **agent health signals** and **Azure resource management operations**. The first points to `Heartbeat`; the second points to the activity log table `AzureActivity`. A harder question may ask for Windows service failures from a VM; then `Event` may become the right table if those Windows logs are being collected."
+    },
+    "sources": [
+      {
+        "title": "Get started with log queries in Azure Monitor Logs",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries"
+      },
+      {
+        "title": "Azure Monitor Logs reference - Heartbeat",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/heartbeat"
+      },
+      {
+        "title": "Azure Monitor Logs reference - Perf",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/perf"
+      },
+      {
+        "title": "Azure Monitor Logs reference - AzureActivity",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/azureactivity"
+      },
+      {
+        "title": "Azure Monitor Logs reference - Event",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/event"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.1.3-03",
+    "objective": "D5.1.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have the following KQL query in a Log Analytics workspace.\n\n```kusto\nHeartbeat\n| where TimeGenerated > ago(2h)\n| summarize LastSeen = max(TimeGenerated), Samples = count() by Computer\n| extend MinutesSinceLast = datetime_diff('minute', now(), LastSeen)\n| where Samples < 2 or MinutesSinceLast > 15\n| project Computer, LastSeen, Samples, MinutesSinceLast\n```\n\nAssume the workspace contains heartbeat data for the last two hours. What does the query return?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Every heartbeat row from the last two hours, with the original columns plus `MinutesSinceLast`."
+      },
+      {
+        "id": "B",
+        "text": "One row per computer for all computers, including computers with healthy frequent heartbeats and computers with stale heartbeats."
+      },
+      {
+        "id": "C",
+        "text": "One row per computer only for computers with fewer than two heartbeat samples in the last two hours or whose most recent heartbeat is more than 15 minutes old."
+      },
+      {
+        "id": "D",
+        "text": "A timechart with one point per 15-minute interval because `ago(2h)` automatically bins the results."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The KQL functions and operators are evaluated by Azure Monitor Logs. `Heartbeat` records represent agent health signals, and `TimeGenerated` values are in UTC as stored by Azure Monitor.",
+    "sections": {
+      "correctAnswer": "**C. One row per computer only for computers with fewer than two heartbeat samples in the last two hours or whose most recent heartbeat is more than 15 minutes old**. The query filters to two hours, summarizes by computer, calculates age since the latest sample, filters to suspect computers, and projects four final columns.",
+      "technical": "Read a KQL query from top to bottom, because each pipe sends a new table to the next operator. The first line selects the `Heartbeat` table. The first `where` keeps only records newer than `ago(2h)`, which is the current UTC time minus two hours. That step defines the data set to evaluate.\n\nThe `summarize` line is the major shape change. It groups all remaining rows by `Computer`. For each computer, it calculates `LastSeen` as the maximum `TimeGenerated` and `Samples` as the count of rows in the two-hour window. After this point, the output has one row per computer, not one row per heartbeat. Original columns not included in the group-by list or aggregates are gone.\n\nThe `extend` line adds a calculated column named `MinutesSinceLast`. `datetime_diff('minute', now(), LastSeen)` computes the difference between the current time and the latest heartbeat time in minute units. For recent data, the result represents how many minutes have elapsed since the last heartbeat.\n\nThe second `where` filters the summarized rows. A computer remains in the output if either condition is true: it has fewer than two heartbeat samples in the two-hour window, or its latest heartbeat is more than 15 minutes old. Healthy computers with many recent heartbeat records are removed by this filter.\n\nFinally, `project` returns only `Computer`, `LastSeen`, `Samples`, and `MinutesSinceLast`, in that order. The query contains no `render` operator, so it returns a table, not a chart. It also contains no `bin()` call, so there is no automatic 15-minute grouping.",
+      "wrongOptions": {
+        "A": "After `summarize`, the query no longer has every original heartbeat row. It has one aggregate row per computer. Misconception: `extend` always adds a column to the original raw rows even after aggregation. Could be correct when: `extend` appears before `summarize` and there is no later aggregation reducing rows.",
+        "B": "The summarized data initially has one row per computer, but the later `where` removes computers that have enough samples and a recent heartbeat. Misconception: `summarize by Computer` is the final filter. Could be correct when: the query ended immediately after the `summarize` or projected without the suspect-computer filter.",
+        "D": "`ago(2h)` is a moving time boundary, not a binning function, and the query has no `render` instruction. Misconception: time filters automatically create time buckets or charts. Could be correct when: the query uses `summarize ... by bin(TimeGenerated, 15m)` followed by `render timechart`."
+      },
+      "plainEnglish": "The query first gathers check-in messages from the last two hours. Then it makes a small report for each computer: when did this computer last check in, and how many check-ins did it send? Next it calculates how many minutes have passed since that last check-in. It only keeps computers that look suspicious because they barely checked in or have been quiet for too long. The final answer is a table with four columns, not a graph and not the raw message list.",
+      "analogy": "A school attendance clerk reviews two hours of classroom check-ins. Instead of keeping every check-in slip, the clerk writes one line per student: latest check-in time and number of slips. Then the clerk highlights students with very few slips or no recent slip.\n\n| Analogy | Azure reality |\n|---|---|\n| Check-in slips | `Heartbeat` rows |\n| Two-hour review window | `where TimeGenerated > ago(2h)` |\n| One line per student | `summarize ... by Computer` |\n| Latest check-in | `max(TimeGenerated)` |\n| Highlight suspicious students | second `where` condition |\n\n**Where the analogy breaks down:** KQL aggregation uses exact columns and functions, and heartbeat timing can be affected by ingestion delay, agent outages, and collection configuration. A school attendance sheet does not have those telemetry pipeline concerns.",
+      "jargon": [
+        {
+          "term": "Heartbeat",
+          "definition": "An Azure Monitor Logs table containing periodic agent health records from monitored machines."
+        },
+        {
+          "term": "KQL",
+          "definition": "Kusto Query Language, the query language used by Azure Monitor Logs."
+        },
+        {
+          "term": "where",
+          "definition": "A KQL operator that filters rows by a true-or-false condition."
+        },
+        {
+          "term": "ago()",
+          "definition": "A KQL function that returns the current UTC time minus a timespan."
+        },
+        {
+          "term": "summarize",
+          "definition": "A KQL operator that aggregates rows, often by one or more grouping columns."
+        },
+        {
+          "term": "max()",
+          "definition": "An aggregation function that returns the largest value in a group."
+        },
+        {
+          "term": "count()",
+          "definition": "An aggregation function that counts rows in a group."
+        },
+        {
+          "term": "extend",
+          "definition": "A KQL operator that appends or updates calculated columns."
+        },
+        {
+          "term": "datetime_diff()",
+          "definition": "A KQL function that calculates the difference between two datetime values in a requested unit."
+        },
+        {
+          "term": "project",
+          "definition": "A KQL operator that selects and orders output columns."
+        },
+        {
+          "term": "TimeGenerated",
+          "definition": "The standard column that records when the log row or sample was generated."
+        },
+        {
+          "term": "Computer",
+          "definition": "The table column used here to identify each monitored machine."
+        }
+      ],
+      "watchOut": "- `summarize` changes row granularity; after it, this query is no longer row-per-heartbeat.\n- `ago()` supplies a relative time boundary; it does not create buckets.\n- A later `where` can filter aggregate rows, not only raw log rows.\n- `project` drops every column not named in the projection.\n- No `render` means the default result is a table.",
+      "productionTip": {
+        "official": "Microsoft documents `Heartbeat` as agent health records, `where` as a row filter, `summarize` as producing aggregate rows by group, `extend` as adding calculated columns, `project` as selecting output columns, and `ago()` as subtracting a timespan from current UTC time.",
+        "recommendation": "When writing missing-heartbeat queries, validate the normal heartbeat frequency in your environment before alerting. Use a threshold that tolerates ingestion delay and planned maintenance, and include enough projected columns for responders to know whether the issue is a single stale heartbeat or a longer reporting gap."
+      },
+      "memoryTrick": "After `summarize`, ask **what is one row now?** In this query, one row means one computer. That rule of thumb fails only when a later operator expands data again, which this query does not do.",
+      "examTip": "Clue words in the query are `summarize ... by Computer`, `Samples < 2 or MinutesSinceLast > 15`, and the final `project`. The exam is testing whether you can follow pipeline shape changes. A harder version may add `bin(TimeGenerated, 15m)` and ask how many rows appear per computer per time bucket."
+    },
+    "sources": [
+      {
+        "title": "Azure Monitor Logs reference - Heartbeat",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/heartbeat"
+      },
+      {
+        "title": "where operator - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/where-operator?view=microsoft-fabric"
+      },
+      {
+        "title": "summarize operator - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/summarize-operator?view=microsoft-fabric"
+      },
+      {
+        "title": "extend operator - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/extend-operator?view=microsoft-fabric"
+      },
+      {
+        "title": "Project operator - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/project-operator?view=microsoft-fabric"
+      },
+      {
+        "title": "ago() - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/ago-function?view=microsoft-fabric"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.1.3-04",
+    "objective": "D5.1.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You need to create a Log Analytics query for an Azure operations workbook. The workbook must show the number of failed Azure management operations per hour for the last 24 hours. The output must be suitable for a time chart.\n\nWhich query should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```kusto\nAzureActivity\n| where ActivityStatusValue == \"Failed\"\n| summarize Failures = count() by OperationNameValue\n| render piechart\n```"
+      },
+      {
+        "id": "B",
+        "text": "```kusto\nAzureActivity\n| where TimeGenerated > ago(24h)\n| where ActivityStatusValue == \"Failed\"\n| summarize Failures = count() by bin(TimeGenerated, 1h)\n| render timechart\n```"
+      },
+      {
+        "id": "C",
+        "text": "```kusto\nEvent\n| where TimeGenerated > ago(24h)\n| where ActivityStatusValue == \"Failed\"\n| summarize Failures = count() by bin(TimeGenerated, 1h)\n| render timechart\n```"
+      },
+      {
+        "id": "D",
+        "text": "```kusto\nAzureActivity\n| summarize Failures = count() by ago(24h), ActivityStatusValue\n| where ActivityStatusValue == \"Failed\"\n| render timechart\n```"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Activity log data has been exported to the Log Analytics workspace so the `AzureActivity` table contains the relevant management operations. The workbook supports KQL timechart rendering from a datetime x-axis.",
+    "sections": {
+      "correctAnswer": "**B. `AzureActivity | where TimeGenerated > ago(24h) ... | summarize Failures = count() by bin(TimeGenerated, 1h) | render timechart`**. It uses the activity log table, filters to the last 24 hours and failed operations, groups records into hourly time buckets, and renders a time chart.",
+      "technical": "The requirement has four separate clues. First, the data source is failed Azure management operations. Those are activity log entries, and in a Log Analytics workspace the relevant table is `AzureActivity`. The `Event` table is for Windows Event Log records, so it is not the right source for Azure control plane failures.\n\nSecond, the time window is the last 24 hours. The `ago()` function subtracts a timespan from the current UTC time, so `where TimeGenerated > ago(24h)` keeps recent rows. This filter should appear before aggregation so the count does not include older records.\n\nThird, the status requirement is failed operations. `AzureActivity` includes `ActivityStatusValue`, with display-friendly values such as Started, Succeeded, and Failed. Filtering `ActivityStatusValue == \"Failed\"` keeps the desired records.\n\nFourth, the workbook needs counts per hour suitable for a time chart. The `summarize` operator counts rows and groups them. To group datetime values into hourly buckets, use `bin(TimeGenerated, 1h)`. Microsoft documents `bin()` as rounding values down to an integer multiple of a bin size, and `summarize` documentation says to use `bin()` for ranges such as datetime intervals. The `render timechart` instruction belongs after the final table is produced. The render documentation states that a timechart expects the first column to be datetime and other numeric columns to be y-axis values, which the selected query provides: binned `TimeGenerated` and numeric `Failures`.",
+      "wrongOptions": {
+        "A": "This query ignores the 24-hour window and groups by operation name instead of hourly time buckets. It also asks for a pie chart rather than a time chart. Misconception: any count of failed operations is automatically suitable for a time-based workbook visual. Could be correct when: the requirement is a distribution of failures by operation type, not an hourly trend.",
+        "C": "`Event` is the Windows Event Log table and doesn't contain Azure Activity log columns such as `ActivityStatusValue` for Azure management operations. Misconception: all events can be queried from a table named `Event`. Could be correct when: counting Windows event log failures collected from guest operating systems.",
+        "D": "`ago(24h)` returns one datetime boundary value; it is not a per-hour grouping expression. The query also aggregates all statuses together before filtering by status, which doesn't produce hourly failed-operation counts. Misconception: `ago()` creates the buckets for a time chart. Could be correct when: `ago()` is used in a `where` clause and `bin(TimeGenerated, 1h)` creates the hourly buckets."
+      },
+      "plainEnglish": "The workbook needs a timeline. To make a timeline, first choose the right log book: Azure management actions live in `AzureActivity`. Then tear out only pages from the last day and only rows marked Failed. Next, sort those rows into hourly baskets and count how many are in each basket. The chart can then draw a line over time. If you group by operation name or use the Windows event table, the result may still be information, but it is not the requested hourly failure trend.",
+      "analogy": "A service manager wants a chart of customer complaints per hour for yesterday. The manager first opens the customer complaint register, not the employee time-clock register. Then they keep only yesterday's complaint pages, put each complaint into an hourly tray, count each tray, and draw the trend line.\n\n| Analogy | Azure reality |\n|---|---|\n| Complaint register | `AzureActivity` for management events |\n| Yesterday's pages | `where TimeGenerated > ago(24h)` |\n| Failed complaint status | `ActivityStatusValue == \"Failed\"` |\n| Hourly tray | `bin(TimeGenerated, 1h)` |\n| Trend line | `render timechart` |\n\n**Where the analogy breaks down:** KQL requires exact table columns and datetime functions, and AzureActivity only appears in a workspace if activity log data is exported there. A paper tray does not have ingestion latency or workspace retention settings.",
+      "jargon": [
+        {
+          "term": "AzureActivity",
+          "definition": "The Azure Monitor Logs table containing activity log entries for Azure management operations."
+        },
+        {
+          "term": "ActivityStatusValue",
+          "definition": "A display-friendly status column in AzureActivity, with values such as Started, Succeeded, and Failed."
+        },
+        {
+          "term": "TimeGenerated",
+          "definition": "The timestamp column indicating when a log event or sample was generated."
+        },
+        {
+          "term": "ago()",
+          "definition": "A KQL function that returns current UTC time minus a specified timespan."
+        },
+        {
+          "term": "where",
+          "definition": "A KQL operator that filters rows by a predicate."
+        },
+        {
+          "term": "summarize",
+          "definition": "A KQL operator that groups rows and calculates aggregate values such as counts."
+        },
+        {
+          "term": "count()",
+          "definition": "An aggregation function that counts rows in each group."
+        },
+        {
+          "term": "bin()",
+          "definition": "A KQL function that rounds values down to a specified interval, commonly used for time buckets."
+        },
+        {
+          "term": "render timechart",
+          "definition": "A KQL visualization instruction for showing numeric values over a datetime x-axis."
+        },
+        {
+          "term": "Workbook",
+          "definition": "An Azure Monitor visual reporting experience that can display KQL query results with charts and tables."
+        },
+        {
+          "term": "Management operation",
+          "definition": "An Azure control plane operation such as creating, updating, deleting, or deploying a resource."
+        }
+      ],
+      "watchOut": "- Use `AzureActivity` for Azure management operation status, not the Windows `Event` table.\n- Use `ago()` to define the moving time window and `bin()` to define chart buckets.\n- Apply status and time filters before `summarize` to avoid counting unrelated rows.\n- A timechart needs a datetime x-axis and numeric y-values.\n- Grouping by operation name answers a different question than grouping by hour.",
+      "productionTip": {
+        "official": "Microsoft documents `AzureActivity` as containing activity log entries, `ago()` as subtracting a timespan from current UTC time, `bin()` as rounding values down to an interval, `summarize` as aggregating grouped rows, and `render timechart` as a visualization where the first column is datetime and numeric columns become y-axis values.",
+        "recommendation": "For operational workbooks, keep time range filters explicit in the query even when the workbook also has a time picker, and name aggregate columns clearly, such as `Failures`. If a chart unexpectedly shows one point, inspect whether the query grouped by a constant such as `ago(24h)` instead of binned `TimeGenerated`."
+      },
+      "memoryTrick": "For trend charts, remember **window with `ago`, bucket with `bin`, draw with `render`**. This is a simplification because real workbook queries may also sort, join, or split by resource provider, but the time-series core remains the same.",
+      "examTip": "Clue words are **per hour**, **last 24 hours**, **failed Azure management operations**, and **time chart**. These point to `AzureActivity`, `ago(24h)`, `ActivityStatusValue == \"Failed\"`, `bin(TimeGenerated, 1h)`, and `render timechart`. A harder version might ask for one line per resource provider, which would add `ResourceProviderValue` to the `summarize by` list."
+    },
+    "sources": [
+      {
+        "title": "Azure Monitor Logs reference - AzureActivity",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/azureactivity"
+      },
+      {
+        "title": "Azure Monitor Logs reference - Event",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/event"
+      },
+      {
+        "title": "where operator - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/where-operator?view=microsoft-fabric"
+      },
+      {
+        "title": "summarize operator - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/summarize-operator?view=microsoft-fabric"
+      },
+      {
+        "title": "bin() - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/bin-function?view=microsoft-fabric"
+      },
+      {
+        "title": "ago() - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/ago-function?view=microsoft-fabric"
+      },
+      {
+        "title": "render operator - Kusto",
+        "url": "https://learn.microsoft.com/en-us/kusto/query/render-operator?view=microsoft-fabric"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

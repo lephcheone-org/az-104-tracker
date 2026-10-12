@@ -1,0 +1,771 @@
+[
+  {
+    "id": "D2.1.4-01",
+    "objective": "D2.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains a storage account named `stapp01`. All production applications currently use `key1` in their connection strings. You need to rotate both storage account access keys with no planned downtime. You also need to use Azure CLI for the key regeneration steps.\n\nWhich sequence should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Regenerate `key1`, update all applications to use the new `key1`, and then regenerate `key2`."
+      },
+      {
+        "id": "B",
+        "text": "Update all applications to use `key2`, regenerate `key1`, update all applications to use the new `key1`, and then regenerate `key2`."
+      },
+      {
+        "id": "C",
+        "text": "Regenerate `key1` and `key2` in the same maintenance window, and then restart the applications."
+      },
+      {
+        "id": "D",
+        "text": "Set `AllowSharedKeyAccess` to `false`, regenerate `key1`, and then regenerate `key2`."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The applications authenticate with Shared Key connection strings, currently all use `key1`, and you can update application configuration before regenerating a key.",
+    "sections": {
+      "correctAnswer": "**B. Update all applications to use `key2`, regenerate `key1`, update all applications to use the new `key1`, and then regenerate `key2`**. Azure Storage provides two account keys so one key can keep applications working while the other key is regenerated.",
+      "technical": "A storage account has two 512-bit account access keys named `key1` and `key2`, also called the primary and secondary keys. Either key can authorize Shared Key requests and can sign service SAS or account SAS tokens. Microsoft documents the manual rotation pattern as a staged process: move applications from the key you plan to regenerate, regenerate that key, move applications to the newly generated key, then regenerate the other key. With Azure CLI, regenerate the primary key with `az storage account keys renew --resource-group <resource-group> --account-name stapp01 --key primary`; use `--key secondary` for `key2`. The key rule is that a client using a regenerated key value immediately loses authentication until it is updated. Disabling Shared Key is a separate security control, not a rotation step for applications that still depend on account keys.",
+      "wrongOptions": {
+        "A": "Regenerating `key1` first breaks the applications because they still use the old `key1` value. Misconception: Regenerating a key preserves existing connection strings. Could be correct when no application is using `key1`.",
+        "C": "Regenerating both keys at the same time removes both old credentials and defeats the two-key design. Misconception: A maintenance window makes simultaneous key regeneration safe. Could be correct only for a stopped nonproduction account.",
+        "D": "`AllowSharedKeyAccess=false` rejects Shared Key authorization and would not keep current Shared Key applications online. Misconception: Disabling Shared Key is part of normal zero-downtime rotation. Could be correct after supported workloads migrate to Microsoft Entra authorization."
+      },
+      "plainEnglish": "Think of the two account keys as two working passwords. The apps are using password one. To avoid an outage, first switch the apps to password two while password one is still valid. Then replace password one. After that, switch the apps to the new password one and replace password two. At every point, the apps have at least one valid password. If you replace the password they are using, they cannot sign in until every application is updated.",
+      "analogy": "A hotel has two master cards for the same equipment room. Maintenance workers use card 1 today. Issue card 2, replace card 1, issue the new card 1, and then replace card 2.\n\n| Analogy | Azure reality |\n|---|---|\n| Card 1 | `key1` or primary key |\n| Card 2 | `key2` or secondary key |\n| Replacing a card | Regenerating an access key |\n| Workers keep one valid card | Applications keep one valid connection string |\n\n**Where the analogy breaks down:** Azure keys can also sign SAS tokens and can be listed or regenerated through Azure Resource Manager permissions, which a physical card does not model.",
+      "jargon": [
+        {
+          "term": "Storage account access key",
+          "definition": "A shared secret for a storage account that can authorize Shared Key requests and sign certain SAS tokens."
+        },
+        {
+          "term": "`key1`",
+          "definition": "The first storage account access key, also called the primary key."
+        },
+        {
+          "term": "`key2`",
+          "definition": "The second storage account access key, also called the secondary key."
+        },
+        {
+          "term": "Shared Key authorization",
+          "definition": "An authorization method where a request is signed with a storage account access key."
+        },
+        {
+          "term": "Connection string",
+          "definition": "Application configuration that commonly contains the account name, endpoint, and access key."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's cross-platform command-line tool for managing Azure resources."
+        },
+        {
+          "term": "`az storage account keys renew`",
+          "definition": "The Azure CLI command that regenerates one storage account key."
+        }
+      ],
+      "watchOut": "- Do not regenerate the key currently used by applications until they move to the other key.\n- `primary` and `key1` refer to the same key; `secondary` and `key2` refer to the other key.\n- Regenerating a key can revoke account SAS and service SAS tokens signed with that key.\n- Microsoft recommends using one active key in applications at a time so future rotation is predictable.",
+      "productionTip": {
+        "official": "Microsoft documents that two access keys exist to let you rotate one key while applications continue to use the other. The documented CLI command is `az storage account keys renew` with `--key primary`, `secondary`, `key1`, or `key2`.",
+        "recommendation": "Keep the active key in a centralized secret store so you can switch applications by updating one secret reference. Before rotation, inventory workloads and SAS issuers, then test a real read or write path after each stage."
+      },
+      "memoryTrick": "Rotate keys like changing shoes on a ladder: move your weight to one foot before moving the other. This is a simplification because SAS tokens and hidden clients also need inventory.",
+      "examTip": "Clue words are **all applications currently use `key1`**, **no planned downtime**, and **Azure CLI**. Pick the answer that moves clients away from the key before regenerating it. A harder version might hide the active key in Key Vault or ask which `--key` value matches `key2`."
+    },
+    "sources": [
+      {
+        "title": "Manage account access keys",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+      },
+      {
+        "title": "az storage account keys",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/storage/account/keys?view=azure-cli-latest#az-storage-account-keys-renew"
+      },
+      {
+        "title": "Authorize operations for data access",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/authorize-data-access"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.4-02",
+    "objective": "D2.1.4",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stmedia`. A developer accidentally copied the `key1` value to an unsecured chat channel. The account has several SAS URLs in use. You plan to regenerate only `key1` immediately.\n\nWhich two SAS tokens will be invalidated by regenerating `key1`? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "A user delegation SAS created with Microsoft Entra credentials"
+      },
+      {
+        "id": "B",
+        "text": "An account SAS signed with `key1`"
+      },
+      {
+        "id": "C",
+        "text": "A service SAS signed with `key2`"
+      },
+      {
+        "id": "D",
+        "text": "Any SAS that references a stored access policy"
+      },
+      {
+        "id": "E",
+        "text": "A service SAS signed with `key1`"
+      }
+    ],
+    "correct": [
+      "B",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. Only `key1` is regenerated. No stored access policy is changed or deleted during incident response.",
+    "sections": {
+      "correctAnswer": "**B. An account SAS signed with `key1`** and **E. A service SAS signed with `key1`**. Account SAS and service SAS tokens are signed with a storage account key, so regenerating the specific signing key invalidates those tokens.",
+      "technical": "Azure Storage supports user delegation SAS, service SAS, and account SAS. A user delegation SAS is secured with Microsoft Entra credentials through a user delegation key. A service SAS is signed with a storage account key and grants access to one storage service. An account SAS is also signed with a storage account key and can grant broader account-level access. When `key1` is regenerated, the old shared secret behind `key1` is gone. Azure Storage checks the SAS signature against the key that signed it, so a service SAS or account SAS signed with old `key1` fails. A SAS signed with `key2` is unaffected because `key2` did not change. A stored access policy can revoke or change a service SAS when the policy changes, but this question asks only about regenerating `key1`.",
+      "wrongOptions": {
+        "A": "A user delegation SAS is secured with Microsoft Entra credentials, not `key1` or `key2`. Misconception: All SAS tokens are account-key based. Could be correct when discussing service or account SAS instead.",
+        "C": "A service SAS signed with `key2` depends on `key2`, not `key1`. Misconception: Regenerating either account key revokes every account-key SAS. Could be correct if `key2` is regenerated or Shared Key is disabled.",
+        "D": "A stored access policy can help revoke service SAS tokens when the policy is changed or deleted, but merely referencing a policy does not make a SAS invalid when an unrelated action occurs. Misconception: Stored access policy behavior is identical to key rotation. Could be correct when the question asks how to revoke a service SAS without rotating keys."
+      },
+      "plainEnglish": "A SAS URL is a temporary permission slip. Some slips are signed with the storage account master key; others use Microsoft Entra identity. If you replace `key1`, every slip signed with old `key1` stops matching. Slips signed with `key2` still match because that key did not change, and identity-based user delegation SAS tokens are not tied to either account key. The key question is not simply whether something is a SAS, but which credential signed it.",
+      "analogy": "A school issues hall passes using a red stamp (`key1`), a blue stamp (`key2`), or a digital identity system. Replacing the red stamp invalidates old red-stamped passes only.\n\n| Analogy | Azure reality |\n|---|---|\n| Red stamp | `key1` |\n| Blue stamp | `key2` |\n| Red broad pass | Account SAS signed with `key1` |\n| Red service pass | Service SAS signed with `key1` |\n| Digital pass | User delegation SAS |\n\n**Where the analogy breaks down:** Azure signatures are cryptographic values with permissions and expiry times. A school stamp does not show the full SAS calculation.",
+      "jargon": [
+        {
+          "term": "SAS",
+          "definition": "Shared access signature, a signed token appended to a storage resource URI."
+        },
+        {
+          "term": "Account SAS",
+          "definition": "A SAS signed with a storage account key for one or more services or service operations."
+        },
+        {
+          "term": "Service SAS",
+          "definition": "A SAS signed with a storage account key for one Azure Storage service."
+        },
+        {
+          "term": "User delegation SAS",
+          "definition": "A SAS secured with Microsoft Entra credentials instead of an account key."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A policy on a container, queue, table, or file share that can constrain service SAS tokens."
+        },
+        {
+          "term": "Signature",
+          "definition": "The cryptographic SAS value Azure Storage checks before authorizing a request."
+        },
+        {
+          "term": "Regenerate",
+          "definition": "Replace an access key with a new value."
+        }
+      ],
+      "watchOut": "- Key rotation revokes account SAS and service SAS only when you rotate the key that signed the SAS.\n- User delegation SAS is preferred where supported because it is secured with Microsoft Entra credentials.\n- Azure Storage does not track how many SAS tokens were generated.\n- Disallowing Shared Key access is broader than regenerating one key.",
+      "productionTip": {
+        "official": "Microsoft documents that rotating or regenerating access keys revokes SAS tokens generated based on that key. It also states that user delegation SAS tokens use Microsoft Entra credentials and are not affected by account key rotation.",
+        "recommendation": "For incident response, record which key your services use to issue SAS tokens. Prefer user delegation SAS for supported Blob scenarios, keep SAS lifetimes short, and maintain a tested revocation plan."
+      },
+      "memoryTrick": "Ask, 'Who signed the SAS?' If `key1` signed it, `key1` rotation breaks it; if Entra signed it, account key rotation does not. Stored access policies and Shared Key disablement are separate controls.",
+      "examTip": "Clue words are **regenerate only `key1`** and **which SAS tokens**. Rule out answers that ignore the signing key. A harder version may compare key rotation, stored access policy deletion, SAS expiration policy, and `AllowSharedKeyAccess=false`."
+    },
+    "sources": [
+      {
+        "title": "Manage account access keys",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+      },
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      },
+      {
+        "title": "Prevent authorization with Shared Key",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.4-03",
+    "objective": "D2.1.4",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have several older storage accounts. Security wants administrators to receive a reminder when account access keys have not been rotated within 60 days, and wants Azure Policy compliance reporting for expired storage account keys. In one older account, `keyCreationTime` is null for both keys.\n\nWhat should you do before configuring the reminder for that older account?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Regenerate both access keys at least once, and then configure the key expiration policy, such as with `--key-exp-days 60`."
+      },
+      {
+        "id": "B",
+        "text": "Configure a SAS expiration policy with a 60-day upper limit."
+      },
+      {
+        "id": "C",
+        "text": "Apply a ReadOnly management lock to the storage account."
+      },
+      {
+        "id": "D",
+        "text": "Set `AllowSharedKeyAccess` to `false` and wait for Azure Storage to rotate both keys automatically."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The requirement is about storage account access key rotation reminders, not SAS token validity.",
+    "sections": {
+      "correctAnswer": "**A. Regenerate both access keys at least once, and then configure the key expiration policy, such as with `--key-exp-days 60`**. Older accounts can have null key creation times, and Microsoft documents that keys may need to be rotated before a key expiration policy can be created.",
+      "technical": "A storage account key expiration policy is a reminder and compliance mechanism for account access keys. In the portal it appears as a rotation reminder on the Access keys page. With Azure CLI, you configure it by updating the storage account with `--key-exp-days`, and Azure exposes the resulting `KeyPolicy`. The policy depends on the creation or last-rotation time of each key. For older accounts, `keyCreationTime` can be null because the value has not been set. Microsoft documents that if `keyCreationTime` is null, you cannot create the key expiration policy until you rotate the keys. This is different from a SAS expiration policy, which sets a maximum validity interval for SAS tokens. A management lock protects control-plane changes but does not create a reminder or rotate keys. Disallowing Shared Key stops Shared Key authorization but does not automatically regenerate account access keys.",
+      "wrongOptions": {
+        "B": "A SAS expiration policy controls SAS token validity; it is not the account key rotation reminder. Misconception: Every expiration policy in Azure Storage applies to account keys. Could be correct when the requirement is to log or block overly long SAS tokens.",
+        "C": "A ReadOnly lock can block management operations, but it does not create key rotation reminders or set key creation times. Misconception: A lock is a security policy engine. Could be correct when the requirement is to protect a resource from accidental control-plane modification.",
+        "D": "`AllowSharedKeyAccess=false` rejects Shared Key authorization but does not rotate `key1` or `key2`. Misconception: Disabling Shared Key cleans up existing account keys. Could be correct when the goal is to force supported clients to stop using account keys."
+      },
+      "plainEnglish": "The reminder needs a date to count from. Older storage accounts might not have a recorded date for when the current keys were created or last changed. If Azure does not know that date, it cannot reliably tell you when 60 days have passed. Changing each key once creates the needed timestamp. After that, you can set the 60-day reminder and check policy compliance. This is about the two master passwords for the storage account, not the expiry date on temporary SAS links.",
+      "analogy": "A company wants a calendar reminder to change safe combinations every 60 days. An old safe has no record of when its combinations were created, so both combinations must be changed once before the reminder can start.\n\n| Analogy | Azure reality |\n|---|---|\n| Safe combination | Storage account access key |\n| Unknown old date | Null `keyCreationTime` |\n| Change both combinations | Regenerate `key1` and `key2` at least once |\n| 60-day reminder | Key expiration policy |\n| Compliance report | Azure Policy result |\n\n**Where the analogy breaks down:** Azure key rotation can affect applications and SAS tokens, so it requires inventory and staged rotation. A safe combination analogy hides those dependencies.",
+      "jargon": [
+        {
+          "term": "Key expiration policy",
+          "definition": "A storage account setting that defines a rotation reminder interval for account access keys."
+        },
+        {
+          "term": "`keyCreationTime`",
+          "definition": "A property recording when each access key was created or last rotated."
+        },
+        {
+          "term": "`--key-exp-days`",
+          "definition": "An Azure CLI parameter that sets the key expiration period in days."
+        },
+        {
+          "term": "Azure Policy",
+          "definition": "An Azure governance service for auditing or enforcing resource configuration."
+        },
+        {
+          "term": "Storage account keys should not be expired",
+          "definition": "A built-in policy for monitoring accounts whose keys exceed the configured interval."
+        },
+        {
+          "term": "SAS expiration policy",
+          "definition": "A separate policy that recommends or enforces maximum SAS validity intervals."
+        },
+        {
+          "term": "ReadOnly lock",
+          "definition": "A management lock that blocks update and delete control-plane operations."
+        }
+      ],
+      "watchOut": "- Key expiration policy and SAS expiration policy are different settings.\n- Older accounts can require both keys to be regenerated before the key expiration policy can be set.\n- The key expiration policy is a reminder; it does not rotate keys for you.\n- Rotate keys with the two-key sequence to avoid application outages.",
+      "productionTip": {
+        "official": "Microsoft documents that older storage accounts may need each access key rotated because `KeyCreationTime` or `keyCreationTime` can be null before a key expiration policy is created. The same guidance identifies Azure Policy compliance checking for expired storage account keys.",
+        "recommendation": "Set the reminder only after you have a tested rotation runbook. Pair policy compliance with owner metadata so the correct team receives the alert and can coordinate application updates before regenerating keys."
+      },
+      "memoryTrick": "No key date, no key deadline. First create the date by rotating; then set the reminder. This is simplified because rotation still must be staged safely.",
+      "examTip": "Clue words are **access keys**, **60 days**, **reminder**, **Azure Policy**, and **`keyCreationTime` is null**. Choose the answer about key expiration policy, not SAS expiration. A harder version might show both `KeyPolicy` and `SasPolicy` JSON outputs."
+    },
+    "sources": [
+      {
+        "title": "Manage account access keys",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+      },
+      {
+        "title": "Configure an expiration policy for shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/sas-expiration-policy"
+      },
+      {
+        "title": "List of built-in policy definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/samples/built-in-policies#storage"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.4-04",
+    "objective": "D2.1.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A legacy workload still requires a storage account connection string. The security team wants to avoid hard-coding the connection string in application files while the team plans a later migration to Microsoft Entra ID. A proposal says: \"Create a new Azure Key Vault managed storage account keys integration because it will automatically rotate the account keys for the storage account.\"\n\nWhat should you recommend now?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use the old Azure Key Vault managed storage account keys integration for the new workload."
+      },
+      {
+        "id": "B",
+        "text": "Store the connection string in a deployment script variable and copy it during each release."
+      },
+      {
+        "id": "C",
+        "text": "Store the connection string or access key as an Azure Key Vault secret, grant the application identity access to that secret, and plan migration to Microsoft Entra authorization."
+      },
+      {
+        "id": "D",
+        "text": "Create a customer-managed encryption key in Key Vault and use it as the application's storage data access credential."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The legacy application cannot immediately use Microsoft Entra ID or user delegation SAS. The question is about access secrets, not encryption keys for data at rest.",
+    "sections": {
+      "correctAnswer": "**C. Store the connection string or access key as an Azure Key Vault secret, grant the application identity access to that secret, and plan migration to Microsoft Entra authorization**. Current Microsoft guidance recommends Microsoft Entra ID where possible; if a legacy app must still use a key, avoid hard-coding it and protect it as a secret.",
+      "technical": "Storage account access keys grant broad access to storage data and can sign service SAS and account SAS tokens. Microsoft recommends Microsoft Entra ID with managed identities whenever possible because the application can obtain tokens without storing account keys. When a workload cannot yet use Microsoft Entra authorization, the next control is to keep the connection string or key out of code and plain-text deployment artifacts. Store it as a Key Vault secret and let the application identity read only that secret. Do not confuse Key Vault concepts: a Key Vault secret can hold a legacy connection string; a customer-managed encryption key controls storage encryption at rest and does not authenticate application data requests. Old Key Vault storage-key Learn URLs now redirect to current Storage authorization guidance, so do not design a new solution around that legacy managed storage account keys flow.",
+      "wrongOptions": {
+        "A": "The old Key Vault managed storage account keys flow is not the current documented path for new designs; current Learn guidance redirects old pages to Storage authorization guidance. Misconception: Any old Key Vault storage-key feature is still the best new implementation. Could be correct only in an existing legacy environment where support confirms it remains available and appropriate.",
+        "B": "Deployment script variables can leak through logs, source control, release history, or operator access. Misconception: Moving a secret out of code but into release tooling is enough protection. Could be correct for nonsecret values or an approved masked secret store.",
+        "D": "A customer-managed encryption key protects data at rest; it is not a client credential for reading or writing storage data. Misconception: Any Key Vault key associated with Storage can authenticate data access. Could be correct when the requirement is customer-controlled encryption, not application authorization."
+      },
+      "plainEnglish": "The old app still needs a password-like connection string. Do not paste that password into code or deployment notes. Put it in a secure vault and let the app retrieve it using its own identity. That reduces accidental exposure while you work toward a better design that uses identity instead of a shared password. Also, a Key Vault encryption key is not the same thing as the app's login credential for storage.",
+      "analogy": "A warehouse still has an old door that opens with a shared code. Until badge readers are installed, keep the code in a locked safe and allow only the trusted supervisor identity to retrieve it.\n\n| Analogy | Azure reality |\n|---|---|\n| Shared door code | Storage account connection string or access key |\n| Locked safe | Azure Key Vault secret store |\n| Supervisor identity | Managed identity or application identity |\n| Badge reader migration | Microsoft Entra authorization |\n| Document safe key | Customer-managed encryption key |\n\n**Where the analogy breaks down:** Azure has RBAC, Key Vault access control, audit logs, and rotation effects on SAS tokens. A physical safe does not show those cloud authorization details.",
+      "jargon": [
+        {
+          "term": "Azure Key Vault",
+          "definition": "An Azure service for storing and controlling access to secrets, keys, and certificates."
+        },
+        {
+          "term": "Key Vault secret",
+          "definition": "A protected name-value secret suitable for connection strings when an app still needs them."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An Azure-provided identity that can obtain Microsoft Entra tokens without stored credentials."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory."
+        },
+        {
+          "term": "Connection string",
+          "definition": "A client configuration string that can include endpoints and an account key."
+        },
+        {
+          "term": "Customer-managed key",
+          "definition": "A customer-controlled encryption key, often in Key Vault, used for data-at-rest encryption."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "An authorization method based on the storage account access key."
+        }
+      ],
+      "watchOut": "- Storing a key in Key Vault is not the same as eliminating Shared Key authorization.\n- A Key Vault customer-managed encryption key does not replace data access authorization.\n- Treat account keys as high-impact secrets because they can grant broad data access.\n- Prefer Microsoft Entra ID and managed identities for supported workloads.",
+      "productionTip": {
+        "official": "Microsoft's current Storage guidance recommends Microsoft Entra ID with managed identities for blob, queue, and table data whenever possible and warns that shared keys grant broad access. Old Key Vault storage-key Learn URLs now redirect to current Storage authorization guidance.",
+        "recommendation": "Use Key Vault secrets only as a migration bridge. Give the application identity only secret read permission, separate operators who rotate the storage key from applications that read it, and maintain a tested rotation process."
+      },
+      "memoryTrick": "Vaulting a password protects the password; it does not make the password disappear. The target state is identity, not a better hiding place. This simplification fails for legacy apps that cannot migrate yet.",
+      "examTip": "Clue words are **legacy**, **connection string**, **avoid hard-coding**, and **later migration to Microsoft Entra ID**. Pick secure secret storage as a bridge, not an encryption-key feature or an old storage-key automation path. A harder version may compare Key Vault secrets, Key Vault keys, and storage customer-managed keys."
+    },
+    "sources": [
+      {
+        "title": "Manage account access keys",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+      },
+      {
+        "title": "Authorize operations for data access",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/authorize-data-access"
+      },
+      {
+        "title": "Managed identities for Azure resources",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview"
+      },
+      {
+        "title": "Key Vault storage keys page redirects to current Storage authorization guidance",
+        "url": "https://learn.microsoft.com/en-us/azure/key-vault/secrets/overview-storage-keys"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.4-05",
+    "objective": "D2.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stfinance`. A break-glass operations group must be able to list and regenerate the storage account access keys when an incident is declared. The group must not receive blob data-plane permissions and must not receive broad Contributor permissions.\n\nWhich built-in role should you assign at the storage account scope?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Reader"
+      },
+      {
+        "id": "B",
+        "text": "Storage Blob Data Reader"
+      },
+      {
+        "id": "C",
+        "text": "Contributor"
+      },
+      {
+        "id": "D",
+        "text": "Storage Account Key Operator Service Role"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The group needs management-plane ability to list and regenerate account access keys for this storage account only. No ReadOnly management lock blocks the storage account.",
+    "sections": {
+      "correctAnswer": "**D. Storage Account Key Operator Service Role**. Listing keys requires `Microsoft.Storage/storageAccounts/listkeys/action`, and rotating keys requires `Microsoft.Storage/storageAccounts/regeneratekey/action`; this role is purpose-built for key operations without blob data-plane access.",
+      "technical": "Storage account key operations are management-plane operations, not blob data-plane operations. To view account access keys, a principal must be a Service Administrator or have an Azure role that includes `Microsoft.Storage/storageAccounts/listkeys/action`. To rotate access keys, the principal needs `Microsoft.Storage/storageAccounts/regeneratekey/action`. Microsoft lists Owner, Contributor, and Storage Account Key Operator Service Role as built-in roles that include the relevant actions. Contributor would technically work, but it grants broad management permissions and violates the requirement. Reader can view resource metadata but does not include list or regenerate key actions. Storage Blob Data Reader is a data-plane role for reading blob contents; it is not a key operator role. Assign the key operator role at the storage account scope unless a broader scope is truly required.",
+      "wrongOptions": {
+        "A": "Reader can view Azure resource metadata, but it does not include the key list or regenerate actions. Misconception: Read access to a storage account includes reading its account keys. Could be correct when the group only needs to view configuration.",
+        "B": "Storage Blob Data Reader grants blob data read permissions, not management-plane key operations. Misconception: Storage data roles manage account keys. Could be correct when the group needs to read blobs with Microsoft Entra authorization.",
+        "C": "Contributor includes key actions, but it is broader than required and violates the requirement to avoid broad Contributor permissions. Misconception: Any role that works is acceptable even if it overgrants. Could be correct when the team must manage storage account configuration generally."
+      },
+      "plainEnglish": "The team needs to handle the storage account's master keys, not read files and not change every account setting. Azure has a specific role for key operators. Use that role instead of a larger role like Contributor. It is like giving a locksmith permission to copy and replace keys for one building, not permission to remodel the building or read every document inside it.",
+      "analogy": "A company has a locksmith team. They can copy and replace the building's master key during an emergency, but they should not edit floor plans or read confidential files.\n\n| Analogy | Azure reality |\n|---|---|\n| Locksmith team | Break-glass operations group |\n| Copy master key | `listkeys/action` |\n| Replace master key | `regeneratekey/action` |\n| Building | Storage account |\n| Reading files | Blob data-plane roles |\n\n**Where the analogy breaks down:** In Azure, seeing the account key can indirectly enable data access with Shared Key. The role itself has no DataActions, but the revealed secret is powerful.",
+      "jargon": [
+        {
+          "term": "Storage Account Key Operator Service Role",
+          "definition": "A built-in Azure role for listing and regenerating storage account keys."
+        },
+        {
+          "term": "`Microsoft.Storage/storageAccounts/listkeys/action`",
+          "definition": "The Azure Resource Manager action required to list storage account access keys."
+        },
+        {
+          "term": "`Microsoft.Storage/storageAccounts/regeneratekey/action`",
+          "definition": "The action required to regenerate a storage account access key."
+        },
+        {
+          "term": "Management plane",
+          "definition": "The Azure control layer for managing resource configuration."
+        },
+        {
+          "term": "Data plane",
+          "definition": "The service layer used to read or write data inside a resource."
+        },
+        {
+          "term": "Contributor",
+          "definition": "A broad built-in role that can manage resources but cannot assign Azure RBAC roles."
+        },
+        {
+          "term": "Storage Blob Data Reader",
+          "definition": "A built-in data role that allows reading blob data with Microsoft Entra authorization."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role assignment applies."
+        }
+      ],
+      "watchOut": "- Data roles do not list storage account access keys.\n- Reader is not enough to list keys.\n- Contributor can list and regenerate keys but overgrants for this requirement.\n- Listing a key can indirectly grant data access through Shared Key, so monitor and restrict this role carefully.",
+      "productionTip": {
+        "official": "Microsoft's storage key management documentation states that viewing keys requires `listkeys/action` and rotating keys requires `regeneratekey/action`, and lists Storage Account Key Operator Service Role among the built-in roles that contain those actions.",
+        "recommendation": "Treat key-listing permission as highly sensitive. Put the role behind privileged access workflow, scope it to required accounts, alert on key listing and regeneration events, and prefer data-specific Microsoft Entra roles for normal data access."
+      },
+      "memoryTrick": "Keys are management actions, blobs are data actions. Pick the key operator for keys and a blob data role for blobs. This is simplified because a listed key can later be used for data access through Shared Key.",
+      "examTip": "Clue words are **list and regenerate keys**, **not data-plane**, and **not Contributor**. Look for the role name that says key operator. A harder version may add a ReadOnly lock, which can still block List Keys because it is a POST operation."
+    },
+    "sources": [
+      {
+        "title": "Manage account access keys",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+      },
+      {
+        "title": "Azure built-in roles for Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage#storage-account-key-operator-service-role"
+      },
+      {
+        "title": "Storage Accounts - List Keys",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storagerp/storage-accounts/list-keys?view=rest-storagerp-2025-01-01"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.4-06",
+    "objective": "D2.1.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a storage account named `staudit`. A user named Alex has the Contributor role on `staudit`. A ReadOnly management lock is also applied directly to the storage account. Alex can view the storage account properties but receives an error when trying to list the access keys.\n\nWhat explains the behavior?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Contributor never includes permission to list storage account keys."
+      },
+      {
+        "id": "B",
+        "text": "A ReadOnly lock affects only blob, queue, table, and file data-plane operations."
+      },
+      {
+        "id": "C",
+        "text": "List Keys is a control-plane POST operation, and the ReadOnly lock blocks it even for users whose role includes the key action."
+      },
+      {
+        "id": "D",
+        "text": "Alex must be assigned Storage Blob Data Owner before the portal can show the account keys."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The ReadOnly lock applies at a scope that includes the storage account. Alex has no existing copy of the account key.",
+    "sections": {
+      "correctAnswer": "**C. List Keys is a control-plane POST operation, and the ReadOnly lock blocks it even for users whose role includes the key action**. Management locks override user permissions, and Microsoft specifically documents that a ReadOnly lock on a storage account prevents listing account keys.",
+      "technical": "Azure management locks protect resources from accidental changes and apply across users and roles at the locked scope. A ReadOnly lock allows read operations but blocks update and delete operations. Locks apply to control-plane operations sent to Azure Resource Manager, not to data-plane operations sent directly to service endpoints. The List Keys operation is a storage resource provider operation against `management.azure.com`, and the REST operation uses POST. Microsoft documents that some operations that appear read-like require blocked actions because they use POST. A ReadOnly lock on a storage account prevents listing account keys because the keys provide broad access to storage data. Contributor normally includes the key actions, but the lock takes precedence for this operation. A blob data role does not bypass the management lock.",
+      "wrongOptions": {
+        "A": "Contributor is one of the built-in roles Microsoft lists as including key actions. The failure is caused by the lock. Misconception: Contributor lacks all sensitive storage actions. Could be correct if Alex had only Reader or a custom role without `listkeys/action`.",
+        "B": "Locks apply to control-plane operations, not data-plane operations. List Keys is a control-plane operation, so the ReadOnly lock can block it. Misconception: A storage account lock affects only stored data. Could be correct when discussing valid data-plane blob deletes.",
+        "D": "Storage Blob Data Owner is a blob data role and does not make the portal show account keys through Azure Resource Manager. Misconception: Data owner roles unlock management secrets. Could be correct when Alex needs full blob data access with Microsoft Entra authorization."
+      },
+      "plainEnglish": "Alex has a powerful role, but the storage account has a special read-only padlock on it. That padlock wins over Alex's normal permissions for management operations. Listing keys may sound like reading, but Azure handles it as a protected management request because the keys can unlock the storage account data. Alex can look at basic properties but cannot ask Azure to reveal the master keys while the lock remains.",
+      "analogy": "A museum curator normally manages a storage room. During an audit, a supervisor places a read-only seal on the master-key cabinet. The curator can read the label but cannot copy the master keys.\n\n| Analogy | Azure reality |\n|---|---|\n| Curator | Contributor user Alex |\n| Read-only seal | ReadOnly management lock |\n| Master-key cabinet | Access keys page/List Keys API |\n| Reading the label | Viewing resource properties |\n| Copying master keys | Listing storage account keys |\n\n**Where the analogy breaks down:** Azure distinguishes control-plane and data-plane APIs, and locks affect only control-plane operations. A physical seal does not model HTTP methods such as POST.",
+      "jargon": [
+        {
+          "term": "ReadOnly lock",
+          "definition": "A management lock that prevents authorized users from deleting or updating a resource."
+        },
+        {
+          "term": "Management lock",
+          "definition": "An Azure Resource Manager lock applied to a subscription, resource group, or resource."
+        },
+        {
+          "term": "Control plane",
+          "definition": "Azure Resource Manager operations used to manage resources."
+        },
+        {
+          "term": "Data plane",
+          "definition": "Service-specific operations against stored data, such as a blob endpoint request."
+        },
+        {
+          "term": "POST",
+          "definition": "An HTTP method used by some Azure Resource Manager operations, including List Keys."
+        },
+        {
+          "term": "Contributor",
+          "definition": "A broad Azure built-in role that can manage resources but cannot assign Azure RBAC roles."
+        },
+        {
+          "term": "Storage Blob Data Owner",
+          "definition": "A data-plane role for managing blob data with Microsoft Entra authorization."
+        },
+        {
+          "term": "List Keys",
+          "definition": "The operation that returns storage account access keys or Kerberos keys."
+        }
+      ],
+      "watchOut": "- A ReadOnly lock can block operations that look like reads if they use POST.\n- Microsoft specifically calls out storage account List Keys as blocked by a ReadOnly lock.\n- Locks override Azure RBAC permissions at the affected scope.\n- Locks do not directly protect data-plane writes or deletes made through service endpoints with valid credentials.",
+      "productionTip": {
+        "official": "Microsoft's lock documentation states that locks override user permissions and that a ReadOnly lock on a storage account prevents users from listing account keys because List Keys is handled by a POST request to Azure Resource Manager.",
+        "recommendation": "Use ReadOnly locks carefully on storage accounts because they can interrupt key retrieval, role assignment changes at storage scopes, and some container creation paths. Document break-glass steps to remove the lock through an approved change process."
+      },
+      "memoryTrick": "ReadOnly lock means 'no management POST,' not 'all read-looking buttons work.' This shortcut fails for true data-plane operations, which locks do not directly block.",
+      "examTip": "Clue words are **Contributor**, **ReadOnly lock**, and **list access keys**. The trap is assuming List Keys is a harmless read. A harder version may ask why users with existing keys can still delete blob data despite a management lock."
+    },
+    "sources": [
+      {
+        "title": "Lock your Azure resources to protect your infrastructure",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+      },
+      {
+        "title": "Manage account access keys",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage"
+      },
+      {
+        "title": "Storage Accounts - List Keys",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storagerp/storage-accounts/list-keys?view=rest-storagerp-2025-01-01"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.4-07",
+    "objective": "D2.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stsecure`. You set the storage account property `AllowSharedKeyAccess` to `false`. You need to know which access method will continue to work for Blob Storage after the change.\n\nWhich access method will continue to work?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A request authorized with Microsoft Entra ID, including a user delegation SAS where supported"
+      },
+      {
+        "id": "B",
+        "text": "A service SAS signed with `key1`"
+      },
+      {
+        "id": "C",
+        "text": "An account SAS signed with `key2`"
+      },
+      {
+        "id": "D",
+        "text": "A request signed directly with the storage account access key"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The target Blob Storage operation supports Microsoft Entra authorization, and existing RBAC assignments grant the caller the required data permissions.",
+    "sections": {
+      "correctAnswer": "**A. A request authorized with Microsoft Entra ID, including a user delegation SAS where supported**. When Shared Key access is disallowed, Azure Storage rejects Shared Key, service SAS, and account SAS authorization, but permits Microsoft Entra-authorized requests that have the required permissions.",
+      "technical": "Every secure request to Azure Storage must be authorized. By default, requests can use Microsoft Entra credentials or the account access key for Shared Key authorization. The `AllowSharedKeyAccess` property controls whether Shared Key authorization is allowed. The property permits Shared Key when it is null or true; when false, Azure Storage rejects requests authorized with account access keys. The SAS impact depends on what signs the SAS. Service SAS and account SAS are authorized with Shared Key, so they are denied when `AllowSharedKeyAccess` is false. A user delegation SAS is authorized with Microsoft Entra ID and is permitted for Blob Storage when Shared Key access is disabled. Direct requests signed with the account key are also denied. Change this setting only after compatibility testing because some tools and services can still depend on Shared Key.",
+      "wrongOptions": {
+        "B": "A service SAS is signed with the storage account key and is treated as Shared Key authorization. Misconception: SAS tokens are separate from Shared Key. Could be correct only while Shared Key access is allowed and the SAS is otherwise valid.",
+        "C": "An account SAS is also signed with an account key and is denied when Shared Key access is disallowed. Misconception: Using `key2` avoids the Shared Key restriction. Could be correct when the property is null or true.",
+        "D": "A request signed directly with the account key is exactly the Shared Key authorization that the setting blocks. Misconception: Disabling Shared Key blocks SAS but not direct key signatures. Could be correct when Shared Key access is permitted and the key is valid."
+      },
+      "plainEnglish": "Turning off Shared Key is like telling the storage account, 'Do not accept the master passwords anymore.' Links or requests based on those master passwords stop working. Identity-based access can still work because it uses Microsoft Entra ID instead of the master password. A user delegation SAS is the special Blob Storage SAS case because it is based on identity rather than the account key. Service SAS and account SAS are still account-key based, so they are blocked.",
+      "analogy": "A building switches from master-key entry to employee badge entry. Old metal master keys and temporary passes printed from the master-key desk are rejected, while authorized badges still work.\n\n| Analogy | Azure reality |\n|---|---|\n| Master key | Storage account access key |\n| Old master-key entry | Shared Key authorization |\n| Temporary pass from master-key desk | Service SAS or account SAS |\n| Badge system | Microsoft Entra authorization |\n| Identity temporary pass | User delegation SAS |\n\n**Where the analogy breaks down:** Azure services have different authorization support and compatibility concerns. A building badge analogy does not show Azure Files, Cloud Shell, or tool-specific behavior.",
+      "jargon": [
+        {
+          "term": "`AllowSharedKeyAccess`",
+          "definition": "A storage account property that controls whether requests authorized with Shared Key are permitted."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "Authorization where requests are signed with a storage account access key."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity platform for users, apps, and managed identities."
+        },
+        {
+          "term": "User delegation SAS",
+          "definition": "A SAS authorized with Microsoft Entra credentials rather than an account key."
+        },
+        {
+          "term": "Service SAS",
+          "definition": "A SAS for one storage service signed with an account key."
+        },
+        {
+          "term": "Account SAS",
+          "definition": "A SAS for one or more storage services or operations signed with an account key."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An Azure-provided identity that obtains Microsoft Entra tokens without stored credentials."
+        },
+        {
+          "term": "Conditional Access",
+          "definition": "Microsoft Entra policy controls that require identity-based authorization to be effective for storage access."
+        }
+      ],
+      "watchOut": "- `AllowSharedKeyAccess` is not set by default; null behaves like true for permitting Shared Key.\n- Setting it to false denies direct Shared Key, service SAS, and account SAS.\n- User delegation SAS is the identity-based SAS exception for supported Blob Storage scenarios.\n- Test tools and Azure services before enforcement because some workloads can break.",
+      "productionTip": {
+        "official": "Microsoft documents that when Shared Key authorization is disallowed, Azure Storage rejects requests authorized with account access keys. It also documents that service SAS and account SAS are denied, while user delegation SAS is permitted for Blob Storage because it uses Microsoft Entra ID.",
+        "recommendation": "Before setting `AllowSharedKeyAccess=false`, use metrics and logs to find Account Key and SAS traffic, migrate workloads to Microsoft Entra authorization or user delegation SAS where possible, and stage the change with rollback instructions."
+      },
+      "memoryTrick": "If the account key signs it, Shared Key-off denies it; if Entra signs it, it can still work. This is simplified because the caller still needs the right data role and service support.",
+      "examTip": "Clue words are **`AllowSharedKeyAccess=false`** and **which access continues**. Choose Microsoft Entra or user delegation SAS, not service SAS or account SAS. A harder version may include Azure Files or Cloud Shell compatibility details."
+    },
+    "sources": [
+      {
+        "title": "Prevent authorization with Shared Key",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+      },
+      {
+        "title": "Authorize operations for data access",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/authorize-data-access"
+      },
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      },
+      {
+        "title": "Authorize Blob Access with Microsoft Entra ID",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/authorize-access-azure-active-directory"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.4-08",
+    "objective": "D2.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Your organization wants to identify storage accounts that still permit Shared Key authorization. After application owners migrate supported workloads to Microsoft Entra ID, the organization wants to prevent new or existing storage accounts from allowing Shared Key access. You need to use a governance control that can start in audit mode and later enforce the requirement.\n\nWhat should you assign?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The `az storage account keys renew` command on every storage account"
+      },
+      {
+        "id": "B",
+        "text": "The built-in Azure Policy definition **Storage accounts should prevent shared key access**, first with audit and later with deny enforcement"
+      },
+      {
+        "id": "C",
+        "text": "The Storage Blob Data Contributor role at the subscription scope"
+      },
+      {
+        "id": "D",
+        "text": "A SAS expiration policy with the Block action"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The organization wants governance over the storage account configuration that permits or disallows Shared Key authorization.",
+    "sections": {
+      "correctAnswer": "**B. The built-in Azure Policy definition Storage accounts should prevent shared key access, first with audit and later with deny enforcement**. Microsoft documents this built-in policy as the governance control for identifying and preventing storage accounts that allow Shared Key authorization.",
+      "technical": "Shared Key authorization can be allowed or disallowed per storage account through the `AllowSharedKeyAccess` property. Microsoft recommends Microsoft Entra ID and managed identities where possible because account keys are shared secrets with broad impact. For organization-wide governance, Azure Policy is the appropriate control because it evaluates resource configuration at scopes such as management groups, subscriptions, or resource groups. Microsoft's Shared Key prevention guidance identifies the built-in policy **Storage accounts should prevent shared key access**. Assign it in audit mode first to discover accounts where Shared Key authorization is allowed. After application owners migrate workloads and validate Microsoft Entra or user delegation SAS paths, enforce the requirement so users cannot configure accounts to permit Shared Key. Key renewal changes secrets but leaves Shared Key enabled. SAS expiration policy controls token lifetimes, not the account-level Shared Key setting.",
+      "wrongOptions": {
+        "A": "Renewing keys rotates secrets but leaves Shared Key authorization enabled. Misconception: Rotating keys is the same as disabling key-based authorization. Could be correct when replacing leaked or expired account keys.",
+        "C": "Storage Blob Data Contributor grants blob data permissions to a principal; it does not audit or deny the Shared Key setting. Misconception: Assigning data roles automatically disables account keys. Could be correct when a workload needs blob read/write access through Microsoft Entra ID.",
+        "D": "A SAS expiration policy with Block can deny out-of-policy SAS tokens, but it does not prevent Shared Key authorization itself. Misconception: Blocking long-lived SAS solves all Shared Key risk. Could be correct when enforcing maximum SAS validity intervals."
+      },
+      "plainEnglish": "The company wants a rule that checks storage accounts and says, 'This account must not allow the old shared master-key method.' Azure Policy is the service for that kind of rule. Start by auditing so you can see what would fail without breaking apps. After teams fix their apps, switch to enforcement so accounts cannot allow Shared Key anymore. Changing the keys is not enough because the account would still accept the new keys.",
+      "analogy": "A company phases out physical master keys and moves to badge access. Inspectors first audit buildings that still allow master keys; after tenants move to badges, the company enforces a rule that buildings cannot enable master-key entry.\n\n| Analogy | Azure reality |\n|---|---|\n| Building entry rule | Azure Policy assignment |\n| Physical master key entry | Shared Key authorization |\n| Badge access | Microsoft Entra authorization |\n| Audit phase | Azure Policy audit effect |\n| Enforcement phase | Azure Policy deny or prevention |\n\n**Where the analogy breaks down:** Azure Policy evaluates resource properties and can have multiple effects. A building policy analogy does not show diagnostic logs or service compatibility testing.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "An Azure governance service that audits or enforces resource configuration rules."
+        },
+        {
+          "term": "Storage accounts should prevent shared key access",
+          "definition": "A built-in policy for auditing or preventing accounts that allow Shared Key authorization."
+        },
+        {
+          "term": "Audit mode",
+          "definition": "A policy effect that reports noncompliant resources without blocking operations."
+        },
+        {
+          "term": "Deny",
+          "definition": "A policy effect that blocks create or update requests that violate a rule."
+        },
+        {
+          "term": "Shared Key authorization",
+          "definition": "Azure Storage authorization based on signing requests with the account key."
+        },
+        {
+          "term": "`AllowSharedKeyAccess`",
+          "definition": "The storage account property that determines whether Shared Key authorization is allowed."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service used for identity-based authorization."
+        },
+        {
+          "term": "SAS expiration policy",
+          "definition": "A separate policy that recommends or blocks SAS tokens whose validity interval is too long."
+        }
+      ],
+      "watchOut": "- Start with audit to find applications still using account keys or account-key SAS tokens.\n- Deny enforcement can break workloads that still depend on Shared Key.\n- Key rotation reduces exposure of old secrets but does not disable Shared Key authorization.\n- SAS expiration policy and Shared Key prevention policy solve different problems.",
+      "productionTip": {
+        "official": "Microsoft's Shared Key prevention documentation recommends assigning the built-in policy **Storage accounts should prevent shared key access** in audit mode to identify accounts that allow Shared Key, then updating the policy to prevent allowing Shared Key access after applications move to Microsoft Entra authorization.",
+        "recommendation": "Roll out by management group or subscription, audit for at least one application cycle, use logs and owner attestations to identify Shared Key dependencies, then move critical workloads to Microsoft Entra managed identities before deny enforcement."
+      },
+      "memoryTrick": "Rotate keys to change a password; policy to ban passwords. This is simplified because the policy governs the storage Shared Key setting, not every possible secret in an application.",
+      "examTip": "Clue words are **identify**, **prevent**, **audit mode**, **later enforce**, and **Shared Key authorization**. Pick Azure Policy, not a role assignment or key renewal command. A harder version might ask which setting the policy evaluates: `AllowSharedKeyAccess`."
+    },
+    "sources": [
+      {
+        "title": "Prevent authorization with Shared Key",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+      },
+      {
+        "title": "List of built-in policy definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/samples/built-in-policies#storage"
+      },
+      {
+        "title": "Authorize operations for data access",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/authorize-data-access"
+      },
+      {
+        "title": "az storage account keys",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/storage/account/keys?view=azure-cli-latest#az-storage-account-keys-renew"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

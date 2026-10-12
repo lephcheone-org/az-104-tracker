@@ -1,0 +1,710 @@
+[
+  {
+    "id": "D3.3.1-01",
+    "objective": "D3.3.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains a container registry named `tailspinlabacr` in the Basic pricing plan. Developers use the registry for test images. A new production workload requires private image pulls through Azure Private Link, geo-replication to East US and West Europe, encryption with a customer-managed key, and zone redundancy where supported.\n\nYou need to choose the lowest Azure Container Registry SKU that satisfies the requirements.\n\nWhich SKU should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Basic"
+      },
+      {
+        "id": "B",
+        "text": "Standard"
+      },
+      {
+        "id": "C",
+        "text": "Premium"
+      },
+      {
+        "id": "D",
+        "text": "Basic with a repository-scoped token and an Azure resource lock"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The registry is created in regions where Azure Container Registry zone redundancy is supported. The workload needs documented GA behavior unless a preview feature is explicitly named.",
+    "sections": {
+      "correctAnswer": "**C. Premium**. Private endpoints, geo-replication, customer-managed keys, content trust, retention policy for untagged manifests, and several large-scale registry capabilities are documented for the Premium SKU; Basic and Standard do not provide those Premium-only registry features.",
+      "technical": "Azure Container Registry uses the pricing plan, also called the SKU or service tier, to decide which registry features and limits are available. Basic, Standard, and Premium expose the same registry data plane APIs for ordinary push and pull operations, but the SKU changes included storage, throughput limits, quotas, and advanced capabilities.\n\nFor this scenario, evaluate hard requirements before reading the word `production`. Private Link with private endpoints is listed for Premium only. Geo-replication is also Premium only and lets one registry have replicas in chosen Azure regions. Customer-managed keys are documented for Premium registries and require a managed identity and an Azure Key Vault key. Availability zones sound like a Premium feature, but the SKU article states that all SKUs have zone redundancy enabled by default in supported regions, so that item alone does not force Premium.\n\nThe decision order is: first identify feature gates, then choose the least costly SKU that contains all gated features. Standard has more included storage and throughput than Basic, and Microsoft says Standard satisfies many production scenarios, but it does not add private endpoints, geo-replication, or customer-managed keys. Premium is the first tier that contains every requested capability.\n\nA few current exam traps are worth separating. Zone redundancy is not the differentiator in this question. Docker Content Trust is listed as Premium, but Microsoft also states that DCT cannot be enabled on new registries or registries that had not enabled it previously starting May 31, 2026, and that it will be removed in 2028. A retention policy for untagged manifests is Premium and currently preview. Those details matter when an option tries to make zone redundancy, deprecated content trust, or a lifecycle policy substitute for the actual networking and replication requirements.",
+      "wrongOptions": {
+        "A": "Basic is appropriate for low-usage development and testing, and it supports many common registry operations, but it does not support the private endpoint, geo-replication, or customer-managed key requirements in this scenario. Misconception: Because Basic can store and serve images, it can be upgraded feature-by-feature with unrelated Azure resources. Could be correct when the only needs are low-volume authenticated push and pull, image deletion, and simple webhooks.",
+        "B": "Standard increases included storage and throughput compared with Basic and may be enough for many production registries, but it does not add the Premium-only networking, replication, and encryption-key features named in the prompt. Misconception: Standard is always the production tier and Premium is only for extra capacity. Could be correct when the workload needs normal authenticated push and pull with more capacity than Basic but no advanced registry features.",
+        "D": "A repository-scoped token limits repository actions, and an Azure resource lock protects management-plane changes to a resource, but neither turns on Private Link, geo-replication, or customer-managed key encryption for a Basic registry. Misconception: Access-control settings can substitute for SKU-gated platform capabilities. Could be correct when the problem is limiting who can pull or preventing accidental deletion of the registry resource."
+      },
+      "plainEnglish": "Think of an Azure container registry as a private warehouse for container images. The pricing plan is not just a bill size; it controls which doors, replication systems, and security equipment the warehouse can use. Basic can run a small warehouse. Standard gives the warehouse more room and handling capacity. Premium adds special equipment, such as private network doors, copies of the warehouse in other regions under one registry name, and customer-controlled encryption keys. In this question, the company asks for several pieces of special equipment, so the answer must be Premium. Availability zones sound advanced, but they do not decide the answer here because Microsoft documents zone redundancy across all SKUs when the region supports it.",
+      "analogy": "A small delivery company rents lockers for parcels. Basic is a starter locker bank, Standard is a larger locker bank with more throughput, and Premium is a managed locker network with private entrances, regional copies, and customer-held master-key controls.\n\n| Analogy | Azure reality |\n|---|---|\n| Locker bank | Azure container registry |\n| Locker size and handling rate | SKU storage and throughput limits |\n| Private entrance | Private endpoint through Private Link |\n| Locker copies in several cities | Geo-replicas in Azure regions |\n| Customer-held master key | Customer-managed key in Key Vault |\n\n**Where the analogy breaks down:** ACR does not physically copy lockers for every tag instantly. Geo-replication is a distributed service with eventual consistency, routing, and Azure-managed endpoints.",
+      "jargon": [
+        {
+          "term": "Azure Container Registry (ACR)",
+          "definition": "An Azure service for storing, managing, and distributing container images and related artifacts."
+        },
+        {
+          "term": "SKU",
+          "definition": "The Azure Container Registry pricing plan: Basic, Standard, or Premium. It controls limits and feature availability."
+        },
+        {
+          "term": "Private Link",
+          "definition": "Azure networking that lets clients reach a service through private IP addresses instead of exposing traffic to the public internet."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A network interface with a private IP address in a virtual network that connects privately to a supported Azure service."
+        },
+        {
+          "term": "Geo-replication",
+          "definition": "An ACR Premium feature that creates registry replicas in selected Azure regions and syncs pushed content to them."
+        },
+        {
+          "term": "Customer-managed key",
+          "definition": "An encryption key that a customer stores and controls, commonly in Azure Key Vault."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate datacenter zone inside an Azure region used to improve resilience against zonal failures."
+        },
+        {
+          "term": "Docker Content Trust",
+          "definition": "A Docker signing model for trusted image tags. In ACR it is a Premium feature but is being deprecated."
+        }
+      ],
+      "watchOut": "- Do not choose Premium merely because the word production appears; choose it because named requirements need Premium features.\n- Zone redundancy is supported across Basic, Standard, and Premium in supported regions, so it is not the deciding item here.\n- Standard improves capacity but does not include Private Link or geo-replication.\n- Docker Content Trust is Premium but deprecated, and new enablement is restricted after May 31, 2026.",
+      "productionTip": {
+        "official": "The SKU documentation lists Basic, Standard, and Premium limits and identifies Premium support for private endpoints, geo-replication, customer-managed keys, content trust, and retention policy for untagged manifests. The private endpoint article also states that Private Link for ACR is available in the Premium service tier.",
+        "recommendation": "Choose the smallest tier that contains the required features, then validate regional support and quotas before deployment. For production, record why Premium is needed, monitor pull throttling, and avoid relying on deprecated Docker Content Trust for a new supply-chain design."
+      },
+      "memoryTrick": "Premium is for private paths, paired regions, and personal keys. That phrase is a simplification because capacity limits and preview or deprecated features still require checking the current SKU table.",
+      "examTip": "Clue words are **Private Link**, **geo-replication**, and **customer-managed key**. If any of those are non-negotiable, Basic and Standard fall away even if their ordinary push and pull APIs are the same. A harder version may include only availability zones; then Premium would not be justified by zones alone."
+    },
+    "sources": [
+      {
+        "title": "Azure Container Registry SKU Features and Limits",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+      },
+      {
+        "title": "Set Up Private Endpoint with Private Link for ACR",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-private-endpoints"
+      },
+      {
+        "title": "Geo-replication in Azure Container Registry",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-geo-replication"
+      },
+      {
+        "title": "Enable a Customer-Managed Key for Azure Container Registry",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/tutorial-enable-customer-managed-keys"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.1-02",
+    "objective": "D3.3.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You are creating an Azure container registry in the Azure portal for a training lab. The registry will use the **Unsecure** Domain Name Label option because the lab instructions intentionally require the classic login server format.\n\nWhich registry name is valid and results in the login server `fabrikamacr01.azurecr.io`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`fabrikam-acr-01`"
+      },
+      {
+        "id": "B",
+        "text": "`fabrikamacr01`"
+      },
+      {
+        "id": "C",
+        "text": "`fab`"
+      },
+      {
+        "id": "D",
+        "text": "`Fabrikam_Acr_01`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The registry is created with the Unsecure Domain Name Label option for a predictable `name.azurecr.io` DNS name. No custom domain is configured.",
+    "sections": {
+      "correctAnswer": "**B. `fabrikamacr01`**. An ACR registry name must be globally unique within Azure and contain 5-50 alphanumeric characters; with the Unsecure DNL option, that name produces the login server `fabrikamacr01.azurecr.io`.",
+      "technical": "When you create a container registry, the **Registry name** becomes part of the registry's fully qualified DNS name. Microsoft Learn states that the registry name must be unique within Azure and must contain 5-50 alphanumeric characters, excluding dash characters. Alphanumeric means letters and numbers only. Underscores, hyphens, periods, and spaces are not valid characters in the registry resource name.\n\nFor this question, the Domain Name Label option is deliberately set to **Unsecure**. With that option, the login server is based directly on the registry name and uses the Azure public cloud suffix `azurecr.io`. Therefore, the valid registry name `fabrikamacr01` results in `fabrikamacr01.azurecr.io`.\n\nCurrent portal behavior adds an important nuance. The portal also offers Domain Name Label scopes such as Tenant Reuse, Subscription Reuse, Resource Group Reuse, and No Reuse. Those DNL-enabled options append a unique hash to the DNS name, such as `mycontainerregistry-abc123.azurecr.io`, to reduce the risk of subdomain takeover if a registry name is later deleted and reused. The registry name itself still cannot include a dash; the dash appears only in the generated DNS name as a hash separator.\n\nThe order is: choose a valid globally unique name, choose the DNL behavior during creation, then copy the actual **Login server** value from the registry overview. Do not assume the login server in downstream Kubernetes YAML or Docker commands unless you know the DNL setting. The DNL scope selected at creation is permanent, so changing it later is not the normal fix for a wrong reference.",
+      "wrongOptions": {
+        "A": "`fabrikam-acr-01` contains dash characters, and the registry creation rules exclude dashes from the registry name. Misconception: Because many Azure resource names allow hyphens, an ACR registry name must allow them too. Could be correct when naming some other Azure resources or when viewing a DNL-generated login server that contains a hash separator, not when entering the registry name.",
+        "C": "`fab` uses only letters, but it is only three characters and the documented minimum is five. Misconception: Global uniqueness is the only naming rule. Could be correct as part of a longer valid name, such as `fab01`, if that name is available globally.",
+        "D": "`Fabrikam_Acr_01` contains underscores, so it is not an alphanumeric-only registry name. The exact casing is not the useful distinction; the underscore is disqualifying. Misconception: If a portal display name can have formatting characters, the registry DNS name can as well. Could be correct for a descriptive tag value or documentation label, but not for the registry resource name."
+      },
+      "plainEnglish": "The registry name is like the internet address label for your private image store. Azure needs that label to be simple enough to become part of a DNS name, so it only allows letters and numbers and it requires the label to be between 5 and 50 characters. In this lab, `fabrikamacr01` is valid because it is long enough and contains only letters and numbers. Because the lab picked the Unsecure DNL setting, Azure uses the name directly in the login server: `fabrikamacr01.azurecr.io`. If a safer DNL option were selected, Azure could add a hash to the DNS name, so copying the portal's Login server value is safest.",
+      "analogy": "Imagine registering a short radio call sign for a delivery depot. The dispatcher only accepts letters and numbers, and the call sign must be long enough to avoid tiny ambiguous codes. After it is accepted, the full radio address adds the network suffix.\n\n| Analogy | Azure reality |\n|---|---|\n| Depot call sign | Registry name |\n| Letters and numbers only | Alphanumeric naming rule |\n| Full radio address | Login server |\n| Added anti-confusion suffix | DNL hash in protected modes |\n\n**Where the analogy breaks down:** DNS names and Azure resource names have formal validation, global uniqueness checks, and permanent DNL behavior that a human dispatcher analogy does not capture.",
+      "jargon": [
+        {
+          "term": "Registry name",
+          "definition": "The Azure resource name for the container registry. It must be globally unique and 5-50 alphanumeric characters."
+        },
+        {
+          "term": "Login server",
+          "definition": "The fully qualified registry endpoint used in Docker tags and image references, such as `myregistry.azurecr.io`."
+        },
+        {
+          "term": "Alphanumeric",
+          "definition": "Characters that are letters or numbers. In this ACR rule, characters such as dashes and underscores are excluded."
+        },
+        {
+          "term": "Domain Name Label (DNL)",
+          "definition": "An ACR creation setting that can add a unique hash to the registry DNS name to reduce subdomain takeover risk."
+        },
+        {
+          "term": "Unsecure DNL option",
+          "definition": "The DNL choice that creates the DNS name directly from the registry name without a protective hash."
+        },
+        {
+          "term": "`azurecr.io`",
+          "definition": "The public Azure cloud DNS suffix used by Azure Container Registry login servers."
+        },
+        {
+          "term": "DNS",
+          "definition": "Domain Name System, the internet naming system that maps names to network endpoints."
+        }
+      ],
+      "watchOut": "- ACR registry names do not allow dash characters even though many Azure names do.\n- The generated login server may include a DNL hash unless you intentionally choose the Unsecure DNL option.\n- Always copy the actual Login server value for Docker tags, Kubernetes manifests, and Helm charts.\n- DNL scope is selected during creation and is permanent.",
+      "productionTip": {
+        "official": "The portal quickstart states that the registry name must be unique within Azure and contain 5-50 alphanumeric characters, excluding dashes. The same page explains that DNL-enabled choices append a hash to the DNS name, while the Unsecure choice uses the registry name as-is.",
+        "recommendation": "For production, prefer a DNL-protected option unless you have a controlled reason to preserve the classic `name.azurecr.io` form. Store the actual login server in deployment variables so future scripts do not break when DNL adds a hash."
+      },
+      "memoryTrick": "ACR names are **5 to 50, A to Z and 0 to 9**. The shortcut ignores DNL hashes, so still check the portal for the final login server.",
+      "examTip": "Clue words are **registry name**, **5-50**, **alphanumeric**, and **login server**. Eliminate names with hyphens or underscores, then check length. A tougher question may show `registry-hash.azurecr.io`; remember that a DNL hash can appear in the login server even though the registry name itself cannot contain a dash."
+    },
+    "sources": [
+      {
+        "title": "Quickstart - Create Registry in Portal",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-portal"
+      },
+      {
+        "title": "Integrate Azure Container Registry with Azure Kubernetes Service (AKS)",
+        "url": "https://learn.microsoft.com/en-us/azure/aks/cluster-container-registry-integration"
+      },
+      {
+        "title": "About Registries, Repositories, Images, and Artifacts",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-concepts"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.1-03",
+    "objective": "D3.3.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You manage a registry named `woodgroveprod`. Developers need interactive push and pull from workstations. An Azure VM batch worker must pull images without storing a registry password in its configuration.\n\nWhich two authentication choices match these requirements while avoiding the registry admin user? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use `az acr login` after `az login` for developers who push and pull interactively"
+      },
+      {
+        "id": "B",
+        "text": "Enable the registry admin user and share either password with all developers and workloads"
+      },
+      {
+        "id": "C",
+        "text": "Use a managed identity on the Azure VM and assign it an ACR role for image pull"
+      },
+      {
+        "id": "D",
+        "text": "Use the same individual developer account password in every build and batch script"
+      },
+      {
+        "id": "E",
+        "text": "Use a repository-scoped token as a Microsoft Entra RBAC assignment for the VM identity"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra authentication is available. The question asks for two choices that directly satisfy the developer and Azure VM requirements.",
+    "sections": {
+      "correctAnswer": "**A. Use `az acr login` after `az login` for developers who push and pull interactively** and **C. Use a managed identity on the Azure VM and assign it an ACR role for image pull**. Microsoft documents individual Microsoft Entra identity login for interactive registry use and managed identity authentication for Azure resources without storing registry credentials.",
+      "technical": "Azure Container Registry supports several authentication methods, and each one is intended for a different operational pattern. For users working directly from a workstation, the documented flow is to sign in to Azure CLI with `az login` and then run `az acr login --name <acrName>`. That flow uses the user's Microsoft Entra identity and enables Azure RBAC-based permissions. The ACR access token used through `az acr login` is valid for three hours, so interactive users should sign in again when it expires.\n\nFor Azure resources such as a virtual machine, managed identity avoids placing a registry username and password in scripts, VM extensions, or application settings. You assign the VM's system-assigned or user-assigned managed identity a registry role that permits the needed operation. For pull-only access, Microsoft documentation shows either `Container Registry Repository Reader` for ABAC-enabled registries or `AcrPull` for non-ABAC registry-permission mode. The workload then obtains tokens through Azure's managed identity infrastructure.\n\nThe admin user is different. Each registry includes one admin user account, disabled by default, with full push and pull permissions. Microsoft describes it as a single account mainly for testing and warns not to share it among multiple users. The admin account bypasses Microsoft Entra RBAC, so it does not express least privilege for different people and workloads.\n\nRepository-scoped tokens are useful for non-Microsoft Entra scenarios, such as external devices that need a generated token and password for specific repositories. However, those tokens are not Microsoft Entra RBAC assignments and cannot be assigned to a managed identity. Service principals remain a valid unattended choice for some pipelines, but this question specifically asks for developers and an Azure VM while avoiding the admin account.",
+      "wrongOptions": {
+        "B": "The admin user is disabled by default, has full registry permissions, is one account per registry, and is not recommended for multiple users. Misconception: One shared credential is simpler and therefore acceptable for every registry access scenario. Could be correct only for a limited supported case that specifically requires the admin account, such as certain portal deployment experiences, and after accepting the security tradeoff.",
+        "D": "A personal developer password in automation creates credential ownership and rotation problems and does not match the documented headless choices. Misconception: If a human can push, automation should borrow the same identity. Could be correct never as a recommended production design; use a service principal or managed identity for unattended access.",
+        "E": "Repository-scoped tokens are non-Microsoft Entra tokens associated with scope maps; they are not Azure RBAC role assignments for a managed identity. Misconception: Any repository-scoped access feature can be attached to any identity type. Could be correct for an external partner device that authenticates with the token name and generated password."
+      },
+      "plainEnglish": "Different people and systems should not all use the same master key. Developers can sign in as themselves, so Azure knows exactly which person pushed or pulled an image. An Azure VM can use a managed identity, which is like an Azure-issued identity card for the VM, so no one has to store a registry password on the machine. The admin user is more like one powerful shared password for the whole registry. It may work, but it hides who did what and gives too much access for normal team use. Repository tokens help outside devices, but they are a separate token system, not an identity assigned to an Azure VM.",
+      "analogy": "A company building has several entry methods. Employees badge in with personal ID cards, delivery robots use device badges issued by the building system, and a contractor kiosk can issue limited visitor passes for one room. The master key exists but should not be copied for everyone.\n\n| Analogy | Azure reality |\n|---|---|\n| Employee badge | Individual Microsoft Entra identity with `az acr login` |\n| Robot device badge | Managed identity on an Azure resource |\n| Limited visitor pass | Repository-scoped token |\n| Master key | Registry admin user |\n\n**Where the analogy breaks down:** Azure authentication uses tokens, RBAC roles, token expiry, and Docker registry challenge flows rather than physical locks.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity platform, formerly named Azure Active Directory."
+        },
+        {
+          "term": "`az acr login`",
+          "definition": "An Azure CLI command that authenticates a Docker-compatible client to an Azure container registry."
+        },
+        {
+          "term": "Service principal",
+          "definition": "A Microsoft Entra application identity commonly used for unattended automation such as CI/CD pipelines."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An Azure-managed identity for an Azure resource, used to access other Azure services without storing credentials in code."
+        },
+        {
+          "term": "Admin user",
+          "definition": "A registry-local account that is disabled by default and has full push and pull access when enabled."
+        },
+        {
+          "term": "Repository-scoped token",
+          "definition": "A non-Microsoft Entra token in ACR that uses a scope map to grant actions on repositories."
+        },
+        {
+          "term": "RBAC",
+          "definition": "Role-based access control, a way to grant permissions by assigning roles to identities at a scope."
+        },
+        {
+          "term": "Headless authentication",
+          "definition": "Authentication by an application or automation process without an interactive human sign-in."
+        }
+      ],
+      "watchOut": "- `az acr login` for an individual identity uses a token that must be renewed after it expires.\n- The admin user is disabled by default and has full registry access, so it is not a least-privilege answer.\n- Managed identities work only from Azure services that support managed identities.\n- Repository-scoped tokens are useful outside Microsoft Entra but are not assigned as Azure RBAC roles.",
+      "productionTip": {
+        "official": "The ACR authentication article lists individual Microsoft Entra identity, service principal, managed identity, admin user, and non-Microsoft Entra token-based repository permissions as separate methods. It also states that the admin account is a single account, disabled by default, has full permissions, and is not recommended for multiple users.",
+        "recommendation": "Use personal Entra identities for humans, managed identities for supported Azure workloads, and service principals only where a managed identity is not available. Reserve repository-scoped tokens for external or non-Entra cases, give each consumer the narrowest repository actions, and rotate token passwords."
+      },
+      "memoryTrick": "Humans use Entra, Azure machines use managed identity, outsiders can use scoped tokens, and the admin user is the emergency master key. This shortcut fails when a specific Azure service has its own integration requirement.",
+      "examTip": "Clue words are **interactive**, **unattended**, **without storing a password**, and **avoiding admin user**. Match the authentication method to the actor. If the option shares the admin user broadly or reuses a person's password in automation, it is a trap."
+    },
+    "sources": [
+      {
+        "title": "Azure Container Registry Authentication Options Explained",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication"
+      },
+      {
+        "title": "Managed Identity Authentication for ACR",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication-managed-identity"
+      },
+      {
+        "title": "Token-based repository permissions in Azure Container Registry",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-token-based-repository-permissions"
+      },
+      {
+        "title": "Azure Container Registry Entra permissions and role assignments overview",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-rbac-built-in-roles-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.1-04",
+    "objective": "D3.3.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure Kubernetes Service (AKS) cluster that runs production pods. The pods must pull images from an Azure container registry named `contosoprodacr`. The registry's **Role assignment permissions mode** is **RBAC Registry Permissions**, not ABAC repository permissions.\n\nYou need to grant the AKS cluster the least privilege needed to pull images.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign `AcrPull` to the AKS kubelet managed identity at the registry scope"
+      },
+      {
+        "id": "B",
+        "text": "Assign `AcrPush` to the AKS cluster identity at the subscription scope"
+      },
+      {
+        "id": "C",
+        "text": "Assign `AcrDelete` to the AKS kubelet managed identity at the registry scope"
+      },
+      {
+        "id": "D",
+        "text": "Enable the registry admin user and create a Kubernetes image pull secret with the admin password"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The AKS cluster uses a managed identity and the registry is in RBAC Registry Permissions mode. The cluster only needs to pull images for pod deployments.",
+    "sections": {
+      "correctAnswer": "**A. Assign `AcrPull` to the AKS kubelet managed identity at the registry scope**. For non-ABAC ACR permission mode, Microsoft documents `AcrPull` as the pull-only data-plane role, and AKS integration assigns that role to the managed identity associated with the agent pool.",
+      "technical": "AKS pulls private ACR images from the node side of the cluster, so the identity that needs registry pull permission is the node pool's kubelet managed identity, not merely a human operator. In the documented AKS-to-ACR integration, `az aks --attach-acr` configures the appropriate pull role for the managed identity. For a registry using **RBAC Registry Permissions**, that role is `AcrPull`.\n\nThe scope should be as narrow as the requirement allows. Assigning `AcrPull` at the registry scope gives the kubelet identity data-plane read access to pull images from that registry. Assigning at the subscription scope would grant pull access to every registry in the subscription where the role applies, which is wider than needed.\n\nThe built-in roles have different meanings. `AcrPull` provides read and pull access for images and artifacts. `AcrPush` includes push and pull, so it is more than a deployment runtime needs. `AcrDelete` is for deleting artifacts and tags. Owner and Contributor are management-plane roles and are too broad for an image-pull requirement.\n\nA current nuance is ABAC. Microsoft documents that `az aks --attach-acr` is not supported for ABAC-enabled ACR registries where the role assignment mode is **RBAC Registry + ABAC Repository Permissions**. In that mode, pull access uses `Container Registry Repository Reader` rather than `AcrPull`. The prompt explicitly says the registry is in **RBAC Registry Permissions** mode, so the classic `AcrPull` answer is correct here.\n\nImage pull secrets with admin credentials are not the least-privilege answer. They store a powerful registry-local credential in Kubernetes and lose the identity-specific RBAC behavior of managed identities.",
+      "wrongOptions": {
+        "B": "`AcrPush` includes push capability, and subscription scope is broader than a single registry. The runtime only needs pull access. Misconception: If a cluster can deploy images, it must be able to push images too. Could be correct for a build identity that creates and pushes images to a registry, but not for pod image pulls.",
+        "C": "`AcrDelete` is for deleting artifacts and tags across repositories; it does not describe the least permission to pull images. Misconception: Delete permission is part of general registry access and can be granted harmlessly. Could be correct for a cleanup automation account that removes images under a controlled lifecycle policy.",
+        "D": "The admin user is a single full-access account that is disabled by default and not recommended for multiple users or least-privilege service access. Misconception: Kubernetes private-registry access always requires a stored Docker password. Could be correct for a private external registry without an Azure identity integration, not for AKS pulling from ACR with managed identity support."
+      },
+      "plainEnglish": "AKS nodes need permission to download images before they can start pods. They do not need permission to upload new images, delete old images, or manage the registry. The right way is to give the node identity a pull-only role on the one registry it uses. In this registry mode, that role is called `AcrPull`. Giving push, delete, or admin access is like giving a warehouse loading robot the keys to create and destroy inventory when it only needs to pick up boxes.",
+      "analogy": "A theater has stagehands who need to pick up costumes from one storage room before each show. They need a pickup badge for that room, not a badge that lets them stock new costumes, throw costumes away, or manage every building in the company.\n\n| Analogy | Azure reality |\n|---|---|\n| Stagehand | AKS kubelet identity |\n| Costume storage room | Azure container registry |\n| Pickup badge | `AcrPull` |\n| Stocking badge | `AcrPush` |\n| Disposal badge | `AcrDelete` |\n\n**Where the analogy breaks down:** Kubernetes image pulls involve container runtimes, tokens, manifests, layers, and Azure RBAC propagation rather than a person presenting a badge.",
+      "jargon": [
+        {
+          "term": "AKS",
+          "definition": "Azure Kubernetes Service, Microsoft's managed Kubernetes service."
+        },
+        {
+          "term": "Kubelet identity",
+          "definition": "The managed identity used by AKS node agents for operations such as pulling images from ACR."
+        },
+        {
+          "term": "`AcrPull`",
+          "definition": "An ACR data-plane role for pulling and reading images and artifacts in RBAC Registry Permissions mode."
+        },
+        {
+          "term": "`AcrPush`",
+          "definition": "An ACR role that includes push and pull permissions for images and artifacts."
+        },
+        {
+          "term": "`AcrDelete`",
+          "definition": "An ACR role for deleting artifacts and tags across repositories in a registry."
+        },
+        {
+          "term": "ABAC",
+          "definition": "Attribute-based access control. In ACR, it can scope Microsoft Entra role assignments to repositories when the registry mode supports it."
+        },
+        {
+          "term": "Registry scope",
+          "definition": "A role assignment scope limited to one Azure Container Registry resource."
+        },
+        {
+          "term": "Image pull secret",
+          "definition": "A Kubernetes secret containing registry credentials that pods can use to pull private images."
+        }
+      ],
+      "watchOut": "- For AKS pulls, assign the role to the kubelet identity associated with the agent pool.\n- ABAC-enabled registries use `Container Registry Repository Reader` for pull scenarios, and `az aks --attach-acr` is not supported for that mode.\n- `AcrPush` and subscription-scope assignments are wider than a pull-only runtime needs.\n- Admin-password image pull secrets are not the least-privilege Azure-native choice.",
+      "productionTip": {
+        "official": "The AKS integration article states that AKS-to-ACR integration assigns the `AcrPull` role to the Microsoft Entra managed identity associated with the agent pool. It also warns that ABAC-enabled ACR registries require `Container Registry Repository Reader` instead of `AcrPull` and should not use `az aks --attach-acr`.",
+        "recommendation": "Automate the role assignment during cluster provisioning and keep the assignment at registry scope unless several registries are intentionally shared. Prefer a precreated kubelet identity in automation to avoid group membership latency and to make the registry permission explicit."
+      },
+      "memoryTrick": "Pods pull, so choose **AcrPull**. The memory aid assumes the registry is in RBAC Registry Permissions mode; ABAC-enabled registries use the newer repository reader role.",
+      "examTip": "Clue words are **least privilege**, **AKS**, **pull images**, and **RBAC Registry Permissions**. The right identity is the kubelet identity and the right permission is read-only pull. If the question changes the registry to ABAC repository mode, look for `Container Registry Repository Reader` instead."
+    },
+    "sources": [
+      {
+        "title": "Integrate Azure Container Registry with Azure Kubernetes Service (AKS)",
+        "url": "https://learn.microsoft.com/en-us/azure/aks/cluster-container-registry-integration"
+      },
+      {
+        "title": "Azure Container Registry Entra permissions and role assignments overview",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-rbac-built-in-roles-overview"
+      },
+      {
+        "title": "Managed Identity Authentication for ACR",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication-managed-identity"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.1-05",
+    "objective": "D3.3.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You manage a registry named `litwarebuildacr`. A development team wants to move container image builds to Azure Container Registry. Developers must build and push an image from a local source folder without running a local Docker Engine. A long-running build definition must automatically rebuild the application image when source code is committed to a Git repository and when the base image is updated.\n\nWhich two ACR Tasks capabilities should you use? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Run `az acr build` as a quick task using the source folder as the build context"
+      },
+      {
+        "id": "B",
+        "text": "Create an ACR task with a Git repository context and enable source-code and base-image triggers"
+      },
+      {
+        "id": "C",
+        "text": "Enable the registry admin user because ACR Tasks require the admin account to build images"
+      },
+      {
+        "id": "D",
+        "text": "Use `docker build` locally and then `docker push` because ACR Tasks cannot build without a local Docker daemon"
+      },
+      {
+        "id": "E",
+        "text": "Create a retention policy because retention policies trigger image rebuilds after tag changes"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The developers have permissions to run ACR Tasks or quick builds. The Git source provider and personal access token requirements can be satisfied.",
+    "sections": {
+      "correctAnswer": "**A. Run `az acr build` as a quick task using the source folder as the build context** and **B. Create an ACR task with a Git repository context and enable source-code and base-image triggers**. Quick tasks offload a build to Azure on demand, while regular ACR tasks can automatically run from source commits and base image updates.",
+      "technical": "ACR Tasks is a set of Azure Container Registry features for building, managing, and patching container images in the cloud. The first requirement is an on-demand developer build. Microsoft describes quick tasks as a cloud version of `docker build` and `docker push`: the `az acr build` command takes a context, sends that context to Azure Container Registry, builds the image in Azure, and by default pushes the built image to the registry. That lets a developer validate a Dockerfile and image build without depending on a local Docker Engine.\n\nThe second requirement is an automatically maintained build definition. ACR Tasks can create tasks with a source code context, such as a GitHub or Azure DevOps repository. For a Git repository context, a task can trigger on source code commits by default and can also support pull request triggers. ACR Tasks can also detect base image updates and rebuild dependent application images to help with operating system and framework patching. Timer triggers are another task type, but the requirement is specifically source commit and base image changes.\n\nA practical design often uses both capabilities. Developers first run a quick task such as:\n\n```azurecli\naz acr build --registry litwarebuildacr --image webapi:dev .\n```\n\nAfter the Dockerfile and build context are proven, the team creates a named task with a repository context and trigger settings. The named task stores the build configuration and is invoked by webhooks or base-image tracking.\n\nACR Tasks do not require enabling the registry admin user. Task permissions are controlled through Azure roles such as `Container Registry Tasks Contributor` for managing tasks, plus appropriate data-plane roles when ABAC mode affects build push and pull operations. Retention policies and image locking manage image lifecycle and mutability; they do not cause builds to run.",
+      "wrongOptions": {
+        "C": "The admin user is not a prerequisite for ACR Tasks. Task management uses Azure permissions, and the admin account is a broad registry-local credential. Misconception: Any tool that pushes an image into ACR must use the admin password. Could be correct for a separate basic-auth deployment scenario that explicitly requires admin credentials, not for cloud builds.",
+        "D": "ACR quick tasks are specifically designed to build and push in Azure and do not require the developer to run a local Docker Engine for the build. Misconception: Container image builds always happen wherever the Dockerfile is stored. Could be correct when a team intentionally uses a local developer or CI agent Docker daemon instead of ACR Tasks.",
+        "E": "A retention policy deletes untagged manifests after a configured period; it is not a build trigger. Misconception: Any registry policy under the ACR blade can automate image rebuilding. Could be correct when the problem is cleaning up untagged manifests in a Premium registry."
+      },
+      "plainEnglish": "A quick task is like sending your recipe and ingredients to a cloud kitchen and getting the finished meal placed in your pantry. You do not need a working kitchen on your laptop. A named ACR task is more like setting up the cloud kitchen with standing instructions: whenever the recipe in the source repository changes, or whenever a base ingredient changes, cook the meal again. The admin user is not needed for that, and a retention policy cleans up old untagged items rather than starting new builds.",
+      "analogy": "A publishing team sends manuscripts to a print shop. A one-off print order checks that the manuscript can be printed, while a standing order says to reprint whenever the manuscript or a required template changes.\n\n| Analogy | Azure reality |\n|---|---|\n| One-off print order | `az acr build` quick task |\n| Standing print order | Named ACR task |\n| Manuscript folder | Build context |\n| Template update | Base image update |\n| Printed book in warehouse | Built image pushed to ACR |\n\n**Where the analogy breaks down:** Container builds execute Dockerfile steps, layer caching, registry authentication, and trigger webhooks rather than physical printing.",
+      "jargon": [
+        {
+          "term": "ACR Tasks",
+          "definition": "A set of Azure Container Registry features for cloud-based image builds, task runs, and automated rebuilds."
+        },
+        {
+          "term": "Quick task",
+          "definition": "An on-demand ACR build run, commonly started with `az acr build`, that builds from a context and pushes to the registry."
+        },
+        {
+          "term": "`az acr build`",
+          "definition": "An Azure CLI command that queues an ACR quick build using a local or remote context."
+        },
+        {
+          "term": "Build context",
+          "definition": "The folder, Git repository, tarball, or artifact location containing files used to build an image."
+        },
+        {
+          "term": "Base image",
+          "definition": "The parent image referenced by a Dockerfile, often containing the operating system or runtime framework."
+        },
+        {
+          "term": "Source-code trigger",
+          "definition": "An ACR task trigger that starts a build after a commit or supported repository event."
+        },
+        {
+          "term": "Base-image trigger",
+          "definition": "An ACR task trigger that rebuilds application images when a tracked base image changes."
+        },
+        {
+          "term": "Docker Engine",
+          "definition": "The local container runtime and daemon commonly used to build and run Docker containers on a machine."
+        }
+      ],
+      "watchOut": "- Quick tasks are for immediate builds; named tasks are for stored definitions and triggers.\n- Source commit triggers require a supported Git context and appropriate token setup.\n- Base image triggers help automate patch rebuilds but still need deployment validation.\n- ACR task command lines or URIs can be logged, so do not include secrets in them.",
+      "productionTip": {
+        "official": "The ACR Tasks overview describes quick tasks with `az acr build`, automatically triggered tasks from source code updates, base image update triggers for OS and framework patching, timer triggers, and multi-step tasks. The roles overview identifies `Container Registry Tasks Contributor` for managing ACR task definitions and runs.",
+        "recommendation": "Use quick tasks for developer validation and named tasks for repeatable automation. Keep build secrets out of command lines, pin base images thoughtfully, and trigger deployment only after tests or scanning confirm that the rebuilt image is safe to roll out."
+      },
+      "memoryTrick": "Quick task equals build now; task trigger equals build when something changes. This is a simplification because multi-step tasks, timers, and ABAC permissions can add more design choices.",
+      "examTip": "Clue words are **without local Docker Engine**, **source code is committed**, and **base image is updated**. Select the ACR Tasks features that map to on-demand cloud build and event-driven rebuild. Options about admin credentials or retention policies are unrelated to build triggers."
+    },
+    "sources": [
+      {
+        "title": "Automate Container Builds with Azure Container Registry Tasks",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-tasks-overview"
+      },
+      {
+        "title": "Azure Container Registry roles directory reference",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-rbac-built-in-roles-directory-reference"
+      },
+      {
+        "title": "Azure Container Registry Authentication Options Explained",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.1-06",
+    "objective": "D3.3.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have production AKS clusters in East US and West Europe. Both clusters currently pull images from a single Standard Azure container registry in East US. During deployments, the West Europe cluster spends too long pulling image layers across regions. You want one registry name in Kubernetes manifests and a Microsoft-managed routing experience that serves pulls from a nearby replica when possible.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Upgrade the registry to Premium and add a geo-replica in West Europe"
+      },
+      {
+        "id": "B",
+        "text": "Create a second Standard registry in West Europe and manually change all image names to the new login server"
+      },
+      {
+        "id": "C",
+        "text": "Enable a retention policy for untagged manifests in the East US registry"
+      },
+      {
+        "id": "D",
+        "text": "Create a private endpoint in East US and keep the registry in the Standard SKU"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The organization wants one ACR resource and one global endpoint in manifests. Required regions support ACR geo-replication.",
+    "sections": {
+      "correctAnswer": "**A. Upgrade the registry to Premium and add a geo-replica in West Europe**. ACR geo-replication requires Premium and lets clients use one global endpoint while Azure routes requests to the geo-replica with the best network performance profile, usually the closest available replica.",
+      "technical": "ACR geo-replication is designed for the exact pattern in the question: one registry managed centrally, with replicas in multiple Azure regions for network-close deployments and improved data-plane availability. After you enable geo-replication on a Premium registry, you push tags and digests once, and ACR automatically syncs content and metadata to the geo-replicas. Kubernetes manifests can continue to reference the global endpoint, for example `myregistry.azurecr.io/myapp:v1`. Azure routes global endpoint requests to the geo-replica with the best network performance profile for the client, normally the closest healthy replica.\n\nThe management model is important. You still manage one registry: credentials, role assignments, networking rules, and registry configuration are common across geo-replicas. This differs from creating separate registries, where each login server, role assignment, replication process, and cleanup policy must be managed separately.\n\nGeo-replication uses an active-active model. Clients can push, pull, and delete through available geo-replicas. The consistency model is eventual consistency, so a push in one region might not be immediately pullable from another replica until replication catches up. Microsoft calls out failure modes such as push-then-immediate-pull-cross-region returning `manifest unknown`, tag overwrite races during the replication window, and delete propagation delays. Production pipelines should use retry logic, immutable tags or digest references where appropriate, and webhooks or checks when immediate cross-region pull matters.\n\nPrivate endpoints solve private network access, not cross-region layer locality by themselves. Retention policies clean untagged manifests, not latency. A second standalone registry could improve regional pulls but violates the requirement for one registry name and Azure-managed geo-replication behavior.",
+      "wrongOptions": {
+        "B": "A second Standard registry creates a separate login server and separate management surface, so it does not meet the one-registry-name requirement. Misconception: Any registry in the target region is equivalent to geo-replication. Could be correct when strict isolation requires independent registries and you are willing to manage image copy, permissions, and manifest references yourself.",
+        "C": "A retention policy manages deletion of untagged manifests and has no role in routing image pulls to a nearby region. Misconception: Reducing stored data automatically makes remote pulls local. Could be correct for storage cleanup in a Premium registry, especially when many untagged manifests accumulate.",
+        "D": "Private endpoints are a Premium ACR feature, and a private endpoint in East US would not create a West Europe replica for closer pulls. Misconception: Private networking and geo-replication are the same high-availability feature. Could be correct when the requirement is private access from a virtual network to a Premium registry."
+      },
+      "plainEnglish": "The company wants the West Europe cluster to download images from nearby storage without teaching every deployment a different registry address. Geo-replication makes copies of the registry's content in chosen Azure regions while keeping one registry identity and one usual login server. The cluster can keep using the same image name, and Azure chooses a suitable replica. Creating a separate registry is more manual: you would need to copy images, manage permissions twice, and update references or routing yourself.",
+      "analogy": "A global retailer wants customers to order from one website, but products should ship from a nearby warehouse. Geo-replication is the retailer's internal warehouse network behind one storefront.\n\n| Analogy | Azure reality |\n|---|---|\n| One website address | ACR global endpoint |\n| Regional warehouse | Geo-replica |\n| Stock copied between warehouses | Automatic sync of tags and digests |\n| Shipping from a nearby warehouse | Pull routed to a network-close replica |\n| Stock update delay | Eventual consistency window |\n\n**Where the analogy breaks down:** ACR routing is based on service health and network profile, not a guaranteed closest-city promise for every request, and container image layers replicate as registry artifacts rather than retail stock.",
+      "jargon": [
+        {
+          "term": "Geo-replication",
+          "definition": "An ACR Premium feature that creates active replicas in selected Azure regions and syncs registry content to them."
+        },
+        {
+          "term": "Global endpoint",
+          "definition": "The main registry login server, such as `myregistry.azurecr.io`, used by clients for push and pull operations."
+        },
+        {
+          "term": "Geo-replica",
+          "definition": "A regional ACR replica that can serve data-plane operations such as image pulls."
+        },
+        {
+          "term": "Active-active",
+          "definition": "A replication model where all replicas can handle writes and reads, rather than having only one writable primary."
+        },
+        {
+          "term": "Eventual consistency",
+          "definition": "A model where updates replicate in the background and replicas may briefly differ after a push or delete."
+        },
+        {
+          "term": "Manifest",
+          "definition": "The metadata object that identifies an image or artifact and points to its layers."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A private IP connection into a supported Azure service; useful for network isolation but not a replica by itself."
+        },
+        {
+          "term": "AKS",
+          "definition": "Azure Kubernetes Service, which runs Kubernetes clusters in Azure."
+        }
+      ],
+      "watchOut": "- Geo-replication requires Premium.\n- One global endpoint can route to replicas, but the closest replica is not an absolute guarantee in every network or health condition.\n- Replication is eventually consistent; immediate cross-region pulls after a push need retry or readiness checks.\n- Separate registries increase operational effort and change image reference strategy.",
+      "productionTip": {
+        "official": "Microsoft Learn states that geo-replication creates replicas in chosen regions, uses one global endpoint, routes requests to the geo-replica with the best network performance profile, and automatically syncs pushed tags and digests. The same article notes Premium is required and describes active-active behavior with eventual consistency.",
+        "recommendation": "Use unique image tags or digests in deployment pipelines and avoid overwriting hot tags during multi-region rollouts. Add backoff for pulls after a push, monitor replication health, and test failover behavior before depending on it for a release window."
+      },
+      "memoryTrick": "Geo-replication is **one name, many nearby copies**. The phrase is a simplification because replication can lag and routing can move away from the closest replica during failures.",
+      "examTip": "Clue words are **one registry name**, **nearby pulls**, and **East US and West Europe**. That combination points to Premium geo-replication, not independent registries or private endpoints. A harder version may ask about an immediate pull after a push; then eventual consistency becomes the key detail."
+    },
+    "sources": [
+      {
+        "title": "Geo-replication in Azure Container Registry",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-geo-replication"
+      },
+      {
+        "title": "Azure Container Registry SKU Features and Limits",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+      },
+      {
+        "title": "Import Container Images to ACR using Azure APIs",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-import-images"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.1-07",
+    "objective": "D3.3.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You manage a Premium Azure container registry named `adatumprodacr`. The security team asks you to copy the public `hello-world:latest` image from Docker Hub into the registry without installing Docker on the operator workstation, automatically clean future untagged Docker manifests after 30 days, and protect the production tag `payments/api:2026.10.06` from accidental overwrite or deletion.\n\nWhich three actions should you perform? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Run `az acr import --name adatumprodacr --source docker.io/library/hello-world:latest --image hello-world:latest`"
+      },
+      {
+        "id": "B",
+        "text": "Enable a retention policy for untagged manifests and set the retention period to 30 days"
+      },
+      {
+        "id": "C",
+        "text": "Run `az acr repository update` for `payments/api:2026.10.06` with `--write-enabled false` and `--delete-enabled false`"
+      },
+      {
+        "id": "D",
+        "text": "Use `docker pull`, `docker tag`, and `docker push` because ACR import requires a local Docker daemon"
+      },
+      {
+        "id": "E",
+        "text": "Set an Azure resource lock on the registry and rely on it to block repository tag overwrite operations"
+      },
+      {
+        "id": "F",
+        "text": "Enable the registry admin user because retention policies require admin credentials"
+      }
+    ],
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The registry is Premium, the operator has permission to import and manage registry policies, and the image source registry supports HTTP range requests as required by ACR import.",
+    "sections": {
+      "correctAnswer": "**A. Run `az acr import --name adatumprodacr --source docker.io/library/hello-world:latest --image hello-world:latest`**, **B. Enable a retention policy for untagged manifests and set the retention period to 30 days**, and **C. Run `az acr repository update` for `payments/api:2026.10.06` with `--write-enabled false` and `--delete-enabled false`**. These actions map directly to server-side import, automatic cleanup of future untagged manifests, and image tag protection.",
+      "technical": "ACR provides separate tools for image copy, cleanup, and immutability-style protection. The import feature copies container images into an Azure container registry by using Azure APIs, without requiring the client workstation to run Docker commands. For Docker Hub official images, the source uses the `docker.io/library/...` repository path, so importing `hello-world:latest` can be done with `az acr import --name adatumprodacr --source docker.io/library/hello-world:latest --image hello-world:latest`. Microsoft notes that imports require the external registry to support RFC 7233 range requests and that imported multi-architecture images copy all architectures and platforms in the manifest list, subject to the documented manifest limit.\n\nA retention policy is different. It applies to stored image manifests that have no associated tags. In Premium registries, the retention policy for untagged manifests is currently preview. When enabled, ACR schedules deletion after the configured number of days, but only for untagged manifests with timestamps after the policy is enabled. The period can be 0 to 365 days, and the default is seven days if you do not specify another value. The question asks for 30 days, so set the policy to 30. The documentation also warns that deleted image data is unrecoverable and that systems pulling by manifest digest can break if the digest points to an untagged manifest that retention later removes.\n\nImage locking uses repository or image attributes. By default, a tagged image is mutable. `az acr repository update` can set attributes such as `write-enabled` and `delete-enabled`. Setting both to false for the production tag protects it from accidental overwrite and deletion. A separate note matters: tag and corresponding manifest attributes are managed separately, so highly controlled environments may also inspect and set manifest attributes by digest.\n\nAzure resource locks protect management-plane changes to the registry resource, such as deleting the registry or changing some control-plane settings. Microsoft explicitly says a registry resource lock does not prevent creating, updating, or deleting repository data. Admin credentials are unrelated to retention policies and should not be enabled just to manage lifecycle settings.",
+      "wrongOptions": {
+        "D": "ACR import is specifically documented as copying images by using Azure APIs without Docker commands on the client. Misconception: Every registry-to-registry copy must pass through a local Docker daemon. Could be correct when you intentionally need to modify or rebuild an image locally before pushing it.",
+        "E": "A registry resource lock affects management operations on the registry resource and does not prevent repository data changes such as overwriting tags. Misconception: Azure resource locks automatically protect all data-plane operations inside a service. Could be correct to reduce accidental deletion of the registry itself or changes to management-plane settings.",
+        "F": "Retention policy configuration does not require enabling the registry admin user, and admin credentials are a broad full-access account. Misconception: Portal or CLI registry policy operations need the local admin account. Could be correct only for a scenario that explicitly requires admin credentials, not for lifecycle policy management."
+      },
+      "plainEnglish": "The three requests are about three different switches. To copy a public image into ACR without Docker on your machine, ask Azure to import it directly. To clean up future image versions that no longer have tags, turn on the Premium retention policy and set 30 days. To protect one production tag, change that image's repository attributes so it cannot be written over or deleted. A resource lock protects the Azure registry object, not every image inside it, and the admin user is a powerful password that is not needed for these tasks.",
+      "analogy": "A library receives books, removes abandoned catalog records, and protects a signed first edition. It uses a courier transfer for incoming books, an archive rule for unclaimed records, and a locked display case for the valuable copy.\n\n| Analogy | Azure reality |\n|---|---|\n| Courier transfer from another library | `az acr import` from Docker Hub or another registry |\n| Abandoned catalog record | Untagged manifest |\n| Archive cleanup rule | Retention policy |\n| Locked display case | `write-enabled=false` and `delete-enabled=false` image attributes |\n| Building lease lock | Azure resource lock on the registry resource |\n\n**Where the analogy breaks down:** ACR manages manifests, tags, layers, and digests; deleting a manifest can affect layer storage and clients that pull by digest in ways a library catalog metaphor cannot fully show.",
+      "jargon": [
+        {
+          "term": "`az acr import`",
+          "definition": "An Azure CLI command that imports images or artifacts into ACR using Azure APIs instead of local Docker pull and push commands."
+        },
+        {
+          "term": "Docker Hub",
+          "definition": "A public container registry service that hosts official and community container images."
+        },
+        {
+          "term": "Untagged manifest",
+          "definition": "An image manifest that has no tag pointing to it but can still consume registry storage."
+        },
+        {
+          "term": "Retention policy",
+          "definition": "An ACR policy that can automatically delete untagged manifests after a configured number of days."
+        },
+        {
+          "term": "Preview",
+          "definition": "A feature status indicating the feature is available for evaluation but may have limitations or changed support terms."
+        },
+        {
+          "term": "`az acr repository update`",
+          "definition": "An Azure CLI command that updates repository, tag, or manifest attributes such as read, write, and delete flags."
+        },
+        {
+          "term": "`write-enabled`",
+          "definition": "An ACR attribute controlling whether the targeted repository or image can be overwritten or updated."
+        },
+        {
+          "term": "`delete-enabled`",
+          "definition": "An ACR attribute controlling whether the targeted repository, tag, or manifest can be deleted."
+        },
+        {
+          "term": "Azure resource lock",
+          "definition": "A management-plane lock that can protect an Azure resource from deletion or modification, but does not automatically block service data-plane changes."
+        },
+        {
+          "term": "Manifest digest",
+          "definition": "A SHA-256 identifier for a specific image manifest, often used to pull an exact image version."
+        }
+      ],
+      "watchOut": "- `az acr import` can avoid local Docker, but the source registry must support HTTP range requests.\n- Retention policy for untagged manifests is Premium and currently preview.\n- Retention applies only to qualifying untagged manifests after the policy is enabled.\n- Tag and manifest attributes are separate; protect the digest too when digest-level deletion risk matters.\n- A resource lock on the registry is not an image lock.",
+      "productionTip": {
+        "official": "The import article describes copying images into ACR without Docker commands and shows Docker Hub sources such as `docker.io/library/hello-world:latest`. The retention article states that Premium registries can enable a preview retention policy for untagged manifests, and the image-lock article documents `az acr repository update` attributes for preventing update or deletion.",
+        "recommendation": "Before enabling retention, inventory workloads that pull by digest and agree on a unique-tag policy. For protected releases, lock both the human-friendly production tag and the manifest digest after validation, and test cleanup automation in a nonproduction registry first."
+      },
+      "memoryTrick": "Import copies in, retention cleans untagged leftovers, and image lock protects a release tag. This rule of thumb leaves out source registry limitations and the tag-versus-manifest attribute split, so verify those details in production.",
+      "examTip": "Clue words are **without installing Docker**, **untagged manifests**, and **protect the production tag**. Choose one feature for each job: import, retention, and repository update attributes. Resource locks and admin credentials sound administrative but do not satisfy these data-plane lifecycle requirements."
+    },
+    "sources": [
+      {
+        "title": "Import Container Images to ACR using Azure APIs",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-import-images"
+      },
+      {
+        "title": "Set a Retention Policy to Retain Untagged Manifests",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-retention-policy"
+      },
+      {
+        "title": "Lock Images to Prevent Deletion in Azure Container Registry",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-image-lock"
+      },
+      {
+        "title": "Azure Container Registry SKU Features and Limits",
+        "url": "https://learn.microsoft.com/en-us/azure/container-registry/container-registry-skus"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

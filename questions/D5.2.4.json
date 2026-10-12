@@ -1,0 +1,483 @@
+[
+  {
+    "id": "D5.2.4-01",
+    "objective": "D5.2.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains a production virtual machine named `vm-invoice01`. Azure Backup protection is already enabled from the VM's **Backup** blade by using a Standard policy that runs once each night. A payroll release will start in two hours, and the operations team wants a restore point created immediately so that the VM can be recovered to the state before the release. The restore point should be kept only long enough to cover the change window, not for the full monthly retention schedule.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "From the VM **Backup** blade, select **Backup now**, choose the recovery-point retention date, and confirm the job"
+      },
+      {
+        "id": "B",
+        "text": "Create a second Recovery Services vault in the paired region and move `vm-invoice01` to the new vault before the release"
+      },
+      {
+        "id": "C",
+        "text": "Stop backup protection for `vm-invoice01`, retain the existing recovery points, and then enable backup again with a shorter policy"
+      },
+      {
+        "id": "D",
+        "text": "Wait for the next scheduled backup because Azure VM backup doesn't support administrator-triggered restore points"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The VM is already protected by Azure Backup in a Recovery Services vault, and the requirement is to create an extra Azure VM backup restore point before a planned application change.",
+    "sections": {
+      "correctAnswer": "**A. From the VM **Backup** blade, select **Backup now**, choose the recovery-point retention date, and confirm the job**. Azure Backup supports an on-demand VM backup from the VM settings after protection is enabled, and the **Backup Now** pane lets you select how long that recovery point is retained.",
+      "technical": "An on-demand backup is the correct operation when protection already exists and the schedule is too late for the operational risk. The protected item stays associated with the same Recovery Services vault and policy; you are simply asking Azure Backup to run an extra job immediately. Microsoft documents the portal path as **Virtual machines** > select the VM > **Backup** > **Backup now**, followed by choosing the retention date for that recovery point.\n\nThe order of evaluation is important for this scenario. First, confirm that backup is already enabled; otherwise you would enable backup and wait for or trigger the initial backup. Second, use the protected VM's **Backup** experience, not a vault move, because the request is for an immediate restore point of the same machine. Third, set the retention date in the on-demand workflow so that the extra recovery point does not live longer than the change window requires. Fourth, monitor the backup job in portal notifications or the backup jobs view.\n\nAzure Backup still uses the normal VM backup architecture. For agent-based application-consistent or file-system-consistent backups, the VM backup extension coordinates the snapshot process through the Azure VM agent. Azure Backup takes a snapshot, transfers changed blocks to the Recovery Services vault, and creates a recovery point. If the VM is a Windows VM and application consistency is requested, Volume Shadow Copy Service is involved; Linux application consistency requires customer pre/post scripts. None of that changes the administrative action: **Backup now** triggers the job immediately.\n\nThe exception to remember is the initial state. If a VM has just been configured for backup and the first backup has not completed, the blade can show an initial backup pending warning. A usable recovery point exists only after a backup job succeeds. For this scenario, the VM is already protected, so changing vaults or stopping protection would add risk and administrative work without producing the needed point.",
+      "wrongOptions": {
+        "B": "Creating another vault and moving the VM's protection target is unnecessary and is not the documented way to create a quick pre-change restore point. Misconception: regional vault placement is the lever for every urgent backup request. Could be correct when you are designing a new protection topology before workloads are onboarded, not when a protected VM needs an immediate backup job.",
+        "C": "Stopping protection interrupts the existing protection relationship and creates avoidable operational risk. It also does not produce an immediate pre-release restore point by itself. Misconception: a shorter retention requirement means the whole policy must be rebuilt. Could be correct during a planned retirement of backup protection, especially if you need to retain or delete old data deliberately.",
+        "D": "The portal has a **Backup now** action for Azure VMs with enabled backup, so waiting for the scheduled run is not required. Misconception: scheduled backup services cannot run administrator-triggered jobs. Could be correct only if the exam stated that backup wasn't enabled and no administrator had permission to start protection in time."
+      },
+      "plainEnglish": "The VM already has a nightly safety copy, but the team needs a special safety copy right before a risky payroll release. Azure Backup has a button for exactly that situation. You don't rebuild the backup system, move the VM, or wait overnight. You go to the VM's backup page, choose **Backup now**, pick how long that one recovery point should be kept, and let Azure run the job. Think of the scheduled policy as the regular nightly photo and the on-demand backup as an extra photo taken before making a big change.",
+      "analogy": "A chef normally photographs the kitchen inventory every night. Before a large wedding order, the chef takes an extra photo at noon so mistakes can be compared against that exact moment. The chef does not move the restaurant to a different building or cancel the nightly inventory process.\n\n| Analogy | Azure reality |\n|---|---|\n| Nightly inventory photo | Scheduled VM backup policy |\n| Noon photo before the wedding order | On-demand **Backup now** restore point |\n| How long to keep the extra photo | Retention date selected for the on-demand point |\n| Checking that the photo finished | Monitoring the backup job |\n\n**Where the analogy breaks down:** Azure Backup creates snapshots and transfers changed disk blocks to a vault; a photo does not model application-consistent coordination, VSS, or vault storage redundancy.",
+      "jargon": [
+        {
+          "term": "Azure Backup",
+          "definition": "An Azure service that creates recovery points for machines, files, shares, and workloads so data can be restored after loss or corruption."
+        },
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure resource that stores backup recovery points, policies, job metadata, and related protection settings."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A point-in-time backup that can be selected during a restore operation."
+        },
+        {
+          "term": "Backup policy",
+          "definition": "A configuration that controls scheduled backup frequency and how long recovery points are kept."
+        },
+        {
+          "term": "Snapshot",
+          "definition": "A point-in-time capture used by Azure Backup during protection and restore workflows."
+        },
+        {
+          "term": "Restore job",
+          "definition": "The tracked Azure operation that performs a restore and reports progress, success, or failure."
+        },
+        {
+          "term": "On-demand backup",
+          "definition": "A backup job started manually by an administrator rather than by the regular policy schedule."
+        },
+        {
+          "term": "Retention",
+          "definition": "The amount of time Azure Backup keeps a recovery point before it can expire."
+        },
+        {
+          "term": "VM backup extension",
+          "definition": "The extension Azure Backup installs through the Azure VM agent to coordinate VM snapshots."
+        },
+        {
+          "term": "Volume Shadow Copy Service (VSS)",
+          "definition": "A Windows service used by backup products to coordinate application-consistent snapshots."
+        },
+        {
+          "term": "Initial backup",
+          "definition": "The first successful backup after protection is enabled, which establishes the first usable recovery point."
+        },
+        {
+          "term": "Portal notification",
+          "definition": "An Azure portal message that reports progress or completion of an operation such as a backup job."
+        }
+      ],
+      "watchOut": "- **Backup now** does not replace the normal policy; it adds a manually triggered recovery point.\n- The restore point is useful only after the job completes successfully.\n- The retention date for the on-demand point is selected during the manual backup workflow.\n- If the VM is not yet protected, enabling backup and creating an initial backup is a separate prerequisite.\n- For application consistency, the guest components and application writers still matter.",
+      "productionTip": {
+        "official": "Microsoft documents that after backup is enabled for an Azure VM, an administrator can select **Backup now** from the VM's **Backup** blade, choose how long the recovery point is retained, and monitor the triggered job from portal notifications or jobs.",
+        "recommendation": "Before high-risk releases, trigger an on-demand backup early enough to verify success before the change starts. Grant operators only the backup permissions they need, record the selected retention date in the change ticket, and confirm that application owners know whether the recovery point is application-consistent or crash/file-system-consistent."
+      },
+      "memoryTrick": "For a protected VM, remember **Now, Date, Job**: start **Backup now**, pick the retention date, then watch the job. This shortcut assumes backup is already enabled and does not cover first-time protection setup.",
+      "examTip": "Clue words are **already enabled**, **immediately**, and **kept only long enough**. Those words point to **Backup now** with a selected retention date, not to changing the vault or policy. A harder version may show **Initial backup pending**; then you must reason that no reliable restore point exists until the first successful backup finishes."
+    },
+    "sources": [
+      {
+        "title": "Back Up an Azure VM from the VM settings - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-first-look-arm"
+      },
+      {
+        "title": "About Azure VM backup - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-introduction"
+      },
+      {
+        "title": "Architecture Overview - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.4-02",
+    "objective": "D5.2.4",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You administer a Recovery Services vault that protects several Azure virtual machines. A teammate is choosing restore methods for two incidents.\n\n- `vm-app01` still exists, uses encrypted managed disks, and the application owner wants the current disks replaced in place if possible.\n- `vm-report01` must be recovered into the paired secondary region after a regional outage test. The vault has Cross Region Restore enabled and the selected recovery point is available in the secondary region.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use **Replace existing** for `vm-app01` because that option supports encrypted managed VMs and classic VMs"
+      },
+      {
+        "id": "B",
+        "text": "For `vm-app01`, choose another restore path because **Replace existing** is documented for unencrypted managed VMs and has unsupported VM categories"
+      },
+      {
+        "id": "C",
+        "text": "For `vm-report01`, Cross Region Restore can use **Create a VM** or **Restore disks**, but not **Replace existing** in the secondary region"
+      },
+      {
+        "id": "D",
+        "text": "For `vm-report01`, restore only by file-level recovery because Cross Region Restore doesn't support full VM restore options"
+      },
+      {
+        "id": "E",
+        "text": "Use **Restore disk** when you need restored disks and a template so that you can customize VM settings before creating a VM"
+      }
+    ],
+    "correct": [
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The question focuses on Azure VM restore options in the Azure portal. Cross Region Restore is enabled on the vault, and the secondary-region recovery point exists.",
+    "sections": {
+      "correctAnswer": "**B. For `vm-app01`, choose another restore path because **Replace existing** is documented for unencrypted managed VMs and has unsupported VM categories** and **C. For `vm-report01`, Cross Region Restore can use **Create a VM** or **Restore disks**, but not **Replace existing** in the secondary region**. The encrypted VM disqualifies the in-place replacement option in this scenario, and secondary-region recovery supports only the documented CRR restore methods.",
+      "technical": "Azure VM restore is not a single button with one behavior. The exam expects you to match the restore option to the technical and regional constraints. **Create a new VM** quickly creates a basic VM from a recovery point. **Restore disk** copies disks and provides a template so you can customize settings or create a VM later. **Replace existing** replaces disks on the existing VM, but Microsoft documents support for unencrypted managed VMs and excludes categories such as classic, unmanaged, and generalized VMs. **Cross Region Restore** uses the vault-replicated data in the paired secondary region and is documented for **Create a VM** and **Restore Disks**, not for replacing existing disks.\n\nFor `vm-app01`, the words **still exists** might tempt you toward **Replace existing**, but the encryption detail changes the answer. The current VM existing is necessary for replacement, yet it is not sufficient. The option also depends on supported disk and VM types. If the selected VM falls outside the supported set, restore disks or create a new VM becomes the safer exam path.\n\nFor `vm-report01`, the regional requirement is the controlling condition. During backup, snapshots are not replicated to the secondary region; the vault data is replicated. Microsoft describes secondary-region restores as vault-tier restores and lists the available Cross Region Restore options as **Create a VM** and **Restore Disks**. The restore time is generally similar to vault-tier restore time in the primary region. If the source machine has more than 16 disks, VHDs are not created in Cross Region Restore, which is a detail to verify in designs with many disks.\n\nOption E is a true statement about **Restore disk**, but the question asks for the two statements that solve the two incidents. `vm-report01` could use restore disks, yet option C captures the Cross Region Restore boundary being tested. `vm-app01` needs recognition that replace existing is not available for the described encrypted managed VM.",
+      "wrongOptions": {
+        "A": "The statement overstates **Replace existing**. Microsoft documents it for unencrypted managed VMs and notes unsupported categories, so encrypted managed disks make this answer unsafe here. Misconception: if the original VM still exists, replacement is always allowed. Could be correct when the VM is an unencrypted managed VM that meets all other replace-existing prerequisites.",
+        "D": "Cross Region Restore is not limited to file-level recovery. Microsoft lists **Create a VM** and **Restore Disks** as supported secondary-region VM restore options. Misconception: regional recovery must use the smallest recovery method. Could be correct when the requirement is to copy only a few files from a VM backup rather than recover VM disks or a VM.",
+        "E": "This is generally accurate for **Restore disk**, but it is not one of the two incident-specific conclusions requested. The question's second incident is testing the secondary-region option boundary, and option C covers that directly. Misconception: every true restore-method description must be selected in a multiple-answer exam item. Could be correct if the prompt asked specifically how to customize a restored VM before creation."
+      },
+      "plainEnglish": "Azure Backup offers several ways to bring a VM back, and each one has boundaries. Creating a new VM is the quick rebuild. Restoring disks gives you the parts so you can assemble or customize the VM. Replacing existing disks is more like changing the engine in the same car, but it is allowed only for supported VM types. Cross-region recovery is a special disaster-recovery case: when you restore in the paired region, Azure Backup supports creating a VM or restoring disks there, not replacing disks on the old VM in place.",
+      "analogy": "Picture a repair shop after two accidents. For one car, the customer asks the mechanic to swap parts inside the same vehicle, but the car has a custom locked drivetrain that the shop's swap procedure does not cover. For the second car, the repair must happen in a different city after the local shop closes, so the shop can ship a rebuilt car or ship parts, but it cannot replace parts in the original garage.\n\n| Analogy | Azure reality |\n|---|---|\n| Same vehicle repair | **Replace existing** disks |\n| Custom locked drivetrain | Unsupported encrypted VM for this option |\n| Shipping a rebuilt car | **Create a VM** in the secondary region |\n| Shipping parts | **Restore disks** |\n| Different city | Cross Region Restore target region |\n\n**Where the analogy breaks down:** Azure restore decisions involve recovery-point tiers, vault replication, disk encryption support, RBAC permissions, and VM resource creation rules rather than physical shipping.",
+      "jargon": [
+        {
+          "term": "Azure Backup",
+          "definition": "An Azure service that creates recovery points for machines, files, shares, and workloads so data can be restored after loss or corruption."
+        },
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure resource that stores backup recovery points, policies, job metadata, and related protection settings."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A point-in-time backup that can be selected during a restore operation."
+        },
+        {
+          "term": "Backup policy",
+          "definition": "A configuration that controls scheduled backup frequency and how long recovery points are kept."
+        },
+        {
+          "term": "Snapshot",
+          "definition": "A point-in-time capture used by Azure Backup during protection and restore workflows."
+        },
+        {
+          "term": "Restore job",
+          "definition": "The tracked Azure operation that performs a restore and reports progress, success, or failure."
+        },
+        {
+          "term": "Create a VM",
+          "definition": "An Azure Backup restore option that creates a new virtual machine from a selected recovery point with basic settings."
+        },
+        {
+          "term": "Restore disk",
+          "definition": "An Azure Backup restore option that restores disks and can provide a template for creating a customized VM."
+        },
+        {
+          "term": "Replace existing",
+          "definition": "A restore option that replaces disks on an existing supported VM with disks from a recovery point."
+        },
+        {
+          "term": "Cross Region Restore",
+          "definition": "A feature that lets supported backups be restored in the paired secondary Azure region when vault replication supports it."
+        },
+        {
+          "term": "Managed disk",
+          "definition": "An Azure disk resource managed by Azure rather than stored as an unmanaged VHD in a user-managed storage account."
+        },
+        {
+          "term": "Vault tier",
+          "definition": "Backup data stored in the vault, as distinct from local snapshots used for faster primary-region restores."
+        },
+        {
+          "term": "Paired region",
+          "definition": "An Azure regional pairing used by some services for geo-replication and regional recovery planning."
+        },
+        {
+          "term": "Template",
+          "definition": "A generated deployment file that can be edited to create a VM with customized settings from restored disks."
+        }
+      ],
+      "watchOut": "- **Existing VM** is required for disk replacement, but it is not the only requirement.\n- Cross Region Restore is a secondary-region vault-tier restore path, not a universal copy of every primary-region restore option.\n- **Restore disk** is useful for customization, especially when **Create a VM** is too basic.\n- Large disk counts and recovery-point tiers can change supporting details, so read the scenario carefully.\n- Do not assume encrypted, classic, unmanaged, and generalized VM categories behave the same.",
+      "productionTip": {
+        "official": "Microsoft documents the Azure VM restore options and explicitly describes **Create a new VM**, **Restore disk**, **Replace existing**, and **Cross Region Restore**. The same restore documentation states that Cross Region Restore supports **Create a VM** and **Restore Disks**, while **Replace existing disks** is not currently supported for the secondary region.",
+        "recommendation": "For production runbooks, list restore paths by VM class before an outage: encrypted status, disk count, regional requirements, and whether the application can tolerate a new VM identity. Test both disk restore and full VM restore during drills so operators do not discover option limits during an incident."
+      },
+      "memoryTrick": "Think **New, Parts, Swap, Far**: create a new VM, restore parts as disks, swap disks only for supported existing VMs, and in the far region use create or disks. The mnemonic is a simplification because subscription, zone, encryption, and disk-count details still matter.",
+      "examTip": "This item hides traps in adjectives: **encrypted**, **existing**, and **secondary region**. Select the answer that honors the documented restriction even when another word in the scenario points toward a tempting option. A harder question may add Cross Subscription Restore or Cross Zonal Restore; keep those separate from Cross Region Restore because each has its own support matrix."
+    },
+    "sources": [
+      {
+        "title": "Restore VMs by using the Azure portal using Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+      },
+      {
+        "title": "About Azure VM backup - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-introduction"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.4-03",
+    "objective": "D5.2.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure VM named `vm-ops01` that is protected by Azure Backup. A developer accidentally deleted `D:\\Apps\\prod.json` inside the guest OS. The VM and the rest of the disk are healthy, and the developer needs only that one file restored. The VM has 8 data disks, none larger than 4 TB, and the recovery workstation has the required OS compatibility and outbound access.\n\nWhich restore approach should you use to minimize disruption to the running VM?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use **File Recovery**, download the generated executable or script, run it with the password, browse the mounted recovery volumes, and copy the file"
+      },
+      {
+        "id": "B",
+        "text": "Use **Replace existing** so the current disks are swapped with disks from the recovery point"
+      },
+      {
+        "id": "C",
+        "text": "Use **Create new virtual machine** and migrate all application traffic to the restored VM"
+      },
+      {
+        "id": "D",
+        "text": "Install the MARS agent on `vm-ops01` and wait for a new files-and-folders backup before restoring the deleted file"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The protected VM is an Azure Resource Manager VM in a Recovery Services vault. File recovery from the selected backup is supported, and the recovery workstation satisfies the documented operating-system and access requirements.",
+    "sections": {
+      "correctAnswer": "**A. Use **File Recovery**, download the generated executable or script, run it with the password, browse the mounted recovery volumes, and copy the file**. Azure VM backup supports file and folder recovery by mounting a recovery point through a downloaded executable or script, which lets you copy selected files without restoring the whole VM.",
+      "technical": "File-level recovery from an Azure VM backup is designed for exactly this case: the VM is otherwise healthy, but a small number of guest files must be retrieved from an older recovery point. In the Azure portal, you open the VM backup item, select **File Recovery**, choose the restore point that contains the file, and download the generated Windows executable or Linux Python script. Azure also provides a password for that generated file. When you run it as administrator or with the required permissions on a compatible machine, the recovery point is mounted so you can browse volumes and copy the needed data.\n\nThe process does not replace the VM's disks and does not create a new VM. For Windows, the executable mounts new volumes and assigns drive letters that might differ from the original VM, though the volume name is preserved. For Linux, the script mounts volumes under the folder where the script is run. After copying files, you unmount or close the recovery connection. Microsoft notes performance guidance for this feature; the portal blade calls out that it is intended for smaller recoveries, such as total recovery sizes around 10 GB or less, with expected transfer speeds around 1 GB per hour for that path.\n\nConnectivity is a real requirement, not an afterthought. The machine running the script needs outbound access to Microsoft download endpoints, Recovery Services URLs on port 3260 for iSCSI, public DNS resolution, and Microsoft Entra-related endpoints on port 443. Microsoft also warns that proxies may not support iSCSI, so a directly connected suitable machine is recommended. The scenario states the workstation has the required access, making file recovery the least disruptive answer.\n\nThis option has exceptions. File recovery from encrypted VM backups is documented as not supported. VMs with unsupported disk layouts, Windows Storage Spaces, dynamic disk configurations, or very large disk counts may require choosing an alternate machine or a different restore method. Here, the disk count and size are deliberately within the simpler path, and the need is one file, so replacing disks or creating a VM would be excessive.",
+      "wrongOptions": {
+        "B": "Replacing disks would roll the VM's disks back to the recovery point and affect much more data than the one deleted file. Misconception: any VM backup restore must restore the whole disk state. Could be correct when the current VM is supported for in-place disk replacement and the incident requires rolling back entire disks.",
+        "C": "Creating a new VM can recover a full machine, but it introduces a parallel VM, networking decisions, identity differences, and migration work for a single file. Misconception: the safest restore is always to rebuild the entire server. Could be correct when the original VM is unusable or you need a clean full-machine recovery for validation.",
+        "D": "A new MARS backup after deletion would capture the state after the file is gone, so it doesn't recover the missing file. Azure VM backup already has the recovery point needed. Misconception: file restore always requires a separate files-and-folders agent. Could be correct when you intentionally protect specific Windows files and folders with MARS before the loss occurs."
+      },
+      "plainEnglish": "You do not need to roll the whole computer back because one configuration file was deleted. Azure Backup can open an older backup like a read-only suitcase. You download a special tool from the recovery point, unlock it with the provided password, and the backed-up disks appear so you can browse them. Then you copy just `prod.json` back to a safe location. The running VM keeps working, and you avoid undoing newer data that might have been written after the recovery point.",
+      "analogy": "Imagine a warehouse that keeps sealed snapshots of storage shelves. A worker loses one label from shelf D. Instead of replacing the entire shelf or opening a second warehouse, the manager opens yesterday's sealed shelf image in a side room and photocopies the missing label.\n\n| Analogy | Azure reality |\n|---|---|\n| Sealed shelf image | VM backup recovery point |\n| Side room | Recovery workstation running the script |\n| Photocopy one label | Copy one recovered file |\n| Replacing the shelf | **Replace existing** disks |\n| Opening another warehouse | Creating a new VM |\n\n**Where the analogy breaks down:** The Azure method uses generated scripts, credentials, mounted volumes, iSCSI connectivity, and OS compatibility checks rather than a physical shelf image.",
+      "jargon": [
+        {
+          "term": "Azure Backup",
+          "definition": "An Azure service that creates recovery points for machines, files, shares, and workloads so data can be restored after loss or corruption."
+        },
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure resource that stores backup recovery points, policies, job metadata, and related protection settings."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A point-in-time backup that can be selected during a restore operation."
+        },
+        {
+          "term": "Backup policy",
+          "definition": "A configuration that controls scheduled backup frequency and how long recovery points are kept."
+        },
+        {
+          "term": "Snapshot",
+          "definition": "A point-in-time capture used by Azure Backup during protection and restore workflows."
+        },
+        {
+          "term": "Restore job",
+          "definition": "The tracked Azure operation that performs a restore and reports progress, success, or failure."
+        },
+        {
+          "term": "File Recovery",
+          "definition": "An Azure Backup feature that lets you browse an Azure VM recovery point and copy selected files or folders."
+        },
+        {
+          "term": "Executable",
+          "definition": "For Windows VM file recovery, the downloaded program that connects to and mounts the selected recovery point."
+        },
+        {
+          "term": "Script",
+          "definition": "For Linux VM file recovery, the generated Python script used to connect to and mount the selected recovery point."
+        },
+        {
+          "term": "Mounted volume",
+          "definition": "A recovery-point disk volume made visible to the recovery machine so files can be browsed and copied."
+        },
+        {
+          "term": "iSCSI",
+          "definition": "A storage networking protocol used by the recovery process to expose recovery point data to the machine running the script."
+        },
+        {
+          "term": "Port 3260",
+          "definition": "The TCP port commonly used by iSCSI and documented in the access requirements for VM file recovery."
+        },
+        {
+          "term": "MARS agent",
+          "definition": "The Microsoft Azure Recovery Services agent used for file, folder, and system state backup of supported Windows machines."
+        },
+        {
+          "term": "Azure Resource Manager",
+          "definition": "The current Azure deployment model for managing Azure resources, as opposed to the classic model."
+        }
+      ],
+      "watchOut": "- File recovery is for small, selective restores, not bulk server rebuilds.\n- The generated script or executable is tied to the selected recovery point and requires the portal-provided password.\n- The recovery machine must meet OS, component, and network access requirements.\n- Drive letters during recovery might not match the original VM, so use volume names and paths carefully.\n- Encrypted VM backup file recovery and some complex disk layouts have limitations.",
+      "productionTip": {
+        "official": "Microsoft documents VM file recovery as a workflow that generates and downloads a Windows executable or Linux script, mounts the selected recovery point as volumes, and lets administrators browse and copy files. The same documentation lists OS, component, and outbound access requirements including Recovery Services URLs on port 3260.",
+        "recommendation": "Keep a small hardened recovery workstation or jump box ready with direct outbound access for file recovery. Store procedures for verifying the copied file version, unmounting the recovery volumes, and documenting exactly which recovery point was used so that selective recovery does not become an uncontrolled data-copy operation."
+      },
+      "memoryTrick": "For one lost file, **mount and copy**, don't **rollback and rebuild**. This rule of thumb fails when the VM backup is encrypted, the disk layout is unsupported, or the recovery size is too large for file recovery to be practical.",
+      "examTip": "Clue words are **one file**, **VM is healthy**, and **minimize disruption**. Those words point to VM backup **File Recovery** with the generated script or executable. If the question says the whole VM is corrupted, the correct answer may switch to create VM, restore disks, or replace existing disks."
+    },
+    "sources": [
+      {
+        "title": "Recover files and folders from Azure VM backup - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-restore-files-from-vm"
+      },
+      {
+        "title": "Restore VMs by using the Azure portal using Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-arm-restore-vms"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.4-04",
+    "objective": "D5.2.4",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Woodgrove Bank uses two Azure Backup patterns. A Windows file server named `fs-legacy01` backs up selected folders by using the Microsoft Azure Recovery Services (MARS) agent. The bank also protects an Azure file share named `finance` by using Azure Backup for Azure Files. An auditor asks how operators should restore individual folders from `fs-legacy01` and individual items from `finance`.\n\nWhich statement correctly distinguishes the two restore workflows?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use the MARS **Recover Data** wizard for `fs-legacy01`; use Azure Files **File Recovery** or full-share recovery from the protected file share for `finance`"
+      },
+      {
+        "id": "B",
+        "text": "Use Azure VM **File Recovery** scripts for both `fs-legacy01` and `finance` because all Azure Backup item-level restores mount VM recovery points"
+      },
+      {
+        "id": "C",
+        "text": "Use only **Restore disk** for `finance` because Azure file shares are restored as managed disks before files can be copied"
+      },
+      {
+        "id": "D",
+        "text": "Use the MARS console for `finance`, but use the Azure portal only to restore `fs-legacy01` folders"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. `fs-legacy01` is a supported Windows machine protected by the MARS agent for files and folders. The Azure file share is protected by Azure Backup in a Recovery Services vault.",
+    "sections": {
+      "correctAnswer": "**A. Use the MARS **Recover Data** wizard for `fs-legacy01`; use Azure Files **File Recovery** or full-share recovery from the protected file share for `finance`**. MARS file/folder restores are performed from the Microsoft Azure Backup agent wizard, while Azure Files restores are performed from the protected Azure file share experience in the Azure portal.",
+      "technical": "Azure Backup has multiple data-source-specific restore workflows. For files and folders protected by the MARS agent, the operator opens the **Microsoft Azure Backup** snap-in on the same or alternate Windows machine and starts **Recover Data**. The wizard can restore to the same machine or another server registered to the same Recovery Services vault. For individual files and folders, it mounts a writable recovery point snapshot as a recovery volume so the operator can browse and copy the needed content. The alternate-machine workflow requires the vault credentials file and passphrase for the source machine.\n\nAzure Files backup is different because the protected item is an Azure file share in a storage account, not a Windows server volume protected by the local MARS console. Microsoft documents portal restore choices for Azure Files: full share recovery and item-level recovery. For item-level recovery, the operator selects the protected Azure Files item, chooses a restore point, chooses original or alternate location, uses **Add File** to select files or folders, chooses conflict handling such as skip or overwrite, and starts the restore. For full share recovery, the target can be the original share or an alternate share and folder.\n\nThe sequence and scope therefore differ. MARS is machine-centric: identify the server, choose individual files and folders or volume recovery, mount the recovery volume, copy files, and unmount. Azure Files restore is share-centric: identify the protected share, select the recovery point, select whole share or specific items, choose original or alternate destination, and let Azure Backup perform the restore job.\n\nThere are also limitations to keep straight. MARS backs up supported Windows files and folders; the Azure Backup architecture page states Linux machines are not protected directly by the MARS agent. Azure Files vaulted backup currently supports full share recovery only, while snapshot-based Azure Files protection supports item-level recovery scenarios documented in the restore article. For the exam, avoid mixing VM file-recovery scripts, MARS recovery volumes, and Azure file share restore blades.",
+      "wrongOptions": {
+        "B": "VM file-recovery scripts are for Azure VM backups, not every item-level restore in Azure Backup. MARS and Azure Files have their own documented workflows. Misconception: all item restores use the same mounted VM recovery point mechanism. Could be correct when restoring files from an Azure VM backup recovery point.",
+        "C": "Azure file shares are not restored as managed disks. Azure Backup for Azure Files restores full shares or selected files/folders to original or alternate file share locations. Misconception: every Azure restore passes through VM disks. Could be correct when the protected data source is an Azure VM and the operator chooses **Restore disk**.",
+        "D": "The direction is reversed. MARS-protected server folders are recovered through the MARS agent wizard, while protected Azure file shares are restored through the Azure Backup/Azure Files portal experience. Misconception: the word Azure in Azure Files means a local server agent must control the restore. Could be correct only for Windows files and folders that were actually protected by the MARS agent."
+      },
+      "plainEnglish": "Woodgrove has two different kinds of backups. The old Windows file server uses a backup program installed on that server, so recovery starts in that program's **Recover Data** wizard. The Azure file share is a cloud file share protected by Azure Backup, so recovery starts from the protected share in the Azure portal. Both can restore selected content, but the buttons and mental model are different: MARS restores from a server's recovery volume, while Azure Files restore works directly with a protected file share and a chosen destination.",
+      "analogy": "Think of two storage systems in a bank. One is a filing cabinet with a clerk who keeps drawer snapshots; to restore a folder, you ask that clerk to open the cabinet's recovery drawer. The other is a cloud document room with a central service desk; to restore a document, you pick the document room, date, and destination through the service desk form.\n\n| Analogy | Azure reality |\n|---|---|\n| Filing cabinet clerk | MARS agent on a Windows server |\n| Recovery drawer | Mounted MARS recovery volume |\n| Cloud document room | Azure file share |\n| Service desk restore form | Azure Files restore workflow |\n| Original or alternate shelf | Original or alternate restore destination |\n\n**Where the analogy breaks down:** MARS uses vault credentials, passphrases, mounted snapshots, and local copy operations; Azure Files restore is a service-managed restore job against storage resources.",
+      "jargon": [
+        {
+          "term": "Azure Backup",
+          "definition": "An Azure service that creates recovery points for machines, files, shares, and workloads so data can be restored after loss or corruption."
+        },
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure resource that stores backup recovery points, policies, job metadata, and related protection settings."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A point-in-time backup that can be selected during a restore operation."
+        },
+        {
+          "term": "Backup policy",
+          "definition": "A configuration that controls scheduled backup frequency and how long recovery points are kept."
+        },
+        {
+          "term": "Snapshot",
+          "definition": "A point-in-time capture used by Azure Backup during protection and restore workflows."
+        },
+        {
+          "term": "Restore job",
+          "definition": "The tracked Azure operation that performs a restore and reports progress, success, or failure."
+        },
+        {
+          "term": "MARS agent",
+          "definition": "Microsoft Azure Recovery Services agent, used to protect files, folders, and system state on supported Windows machines."
+        },
+        {
+          "term": "Microsoft Azure Backup snap-in",
+          "definition": "The local management console used with the MARS agent to schedule backups and recover data."
+        },
+        {
+          "term": "Recover Data wizard",
+          "definition": "The MARS wizard used to select the source, recovery mode, recovery point, and restore location."
+        },
+        {
+          "term": "Recovery volume",
+          "definition": "A mounted view of backed-up data exposed by MARS Instant Restore so files can be browsed and copied."
+        },
+        {
+          "term": "Vault credentials file",
+          "definition": "A file downloaded from the vault and used by MARS to register or access protected backup data."
+        },
+        {
+          "term": "Passphrase",
+          "definition": "A secret used with MARS-protected data, especially when recovering to another machine."
+        },
+        {
+          "term": "Azure Files",
+          "definition": "Azure Storage service that provides managed cloud file shares."
+        },
+        {
+          "term": "Full share recovery",
+          "definition": "An Azure Files restore mode that restores the complete file share to original or alternate location."
+        },
+        {
+          "term": "Item-level recovery",
+          "definition": "A restore mode that selects individual files or folders instead of the entire protected data source."
+        },
+        {
+          "term": "Conflict handling",
+          "definition": "The restore choice that determines whether files with the same names are skipped or overwritten."
+        }
+      ],
+      "watchOut": "- MARS is not the same workflow as Azure VM file recovery, even though both can expose recoverable files.\n- Azure Files restore is based on the protected file share, not on a VM disk.\n- Alternate-machine MARS recovery requires the target and source to be associated with the same vault and uses credentials and passphrase inputs.\n- For Azure Files, check whether the recovery is full share or item-level and whether the restore target is original or alternate.\n- Vaulted Azure Files backup has restore behavior that differs from snapshot-only restore, so read the recovery tier details.",
+      "productionTip": {
+        "official": "Microsoft documents MARS restores through the **Recover Data** wizard in the Microsoft Azure Backup agent, including same-machine and alternate-machine recovery. Microsoft separately documents Azure Files restore through the Azure portal, with full-share and item-level recovery to original or alternate destinations.",
+        "recommendation": "Label runbooks by data source rather than by the generic word backup. Store MARS passphrase handling procedures securely, test alternate-machine MARS recovery, and test Azure Files item restore with conflict choices so that service-desk staff do not overwrite current share contents by mistake."
+      },
+      "memoryTrick": "**MARS follows the machine; Azure Files follows the share.** This is a shortcut: some Azure VMs can also run MARS for file backups, but the restore workflow still depends on which protection method created the recovery point.",
+      "examTip": "Look for the protected data source. If the scenario says **MARS agent** and Windows files/folders, think **Recover Data** wizard. If it says **Azure file share**, think protected Azure Files restore with original or alternate location. A more difficult item may mention Azure VM File Recovery; reserve that for VM-level backups, not Azure file share backups."
+    },
+    "sources": [
+      {
+        "title": "Restore files to Windows Server using the MARS Agent - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-restore-windows-server"
+      },
+      {
+        "title": "Manage and monitor MARS Agent backups - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-manage-mars"
+      },
+      {
+        "title": "Restore Azure Files - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/restore-afs"
+      },
+      {
+        "title": "Architecture Overview - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-architecture"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

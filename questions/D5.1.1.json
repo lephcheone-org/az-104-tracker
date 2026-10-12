@@ -1,0 +1,391 @@
+[
+  {
+    "id": "D5.1.1-01",
+    "objective": "D5.1.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure virtual machine named `vm-app1`. In Azure Monitor metrics explorer, you can see platform metrics such as Percentage CPU and network throughput without installing any agent. The operations team also wants to chart free disk space inside the guest operating system and per-process memory usage.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable guest operating system monitoring with Azure Monitor Agent or the recommended VM metrics experience so guest performance data is collected in addition to platform metrics"
+      },
+      {
+        "id": "B",
+        "text": "Create an activity log alert because the activity log automatically records all process-level memory counters for each VM"
+      },
+      {
+        "id": "C",
+        "text": "Add a public IP address to the VM because Azure Monitor collects guest counters only from publicly reachable virtual machines"
+      },
+      {
+        "id": "D",
+        "text": "Use only the built-in platform metrics because Azure Monitor platform metrics include every counter visible inside the operating system"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The VM is supported by Azure Monitor Agent, and the goal is to analyze guest operating system performance metrics rather than only Azure control-plane events.",
+    "sections": {
+      "correctAnswer": "**A. Enable guest operating system monitoring with Azure Monitor Agent or the recommended VM metrics experience so guest performance data is collected in addition to platform metrics**. Azure platform metrics are collected automatically from Azure resources, but metrics from inside the VM guest require a guest data collection path.",
+      "technical": "Azure Monitor metrics come from different sources. Platform metrics are emitted by Azure resources and collected automatically at no ingestion or storage charge. For a virtual machine, examples include host-observed CPU, disk, and network signals made available by the Azure platform. Those metrics are valuable because they require no agent and usually arrive at one-minute frequency unless a metric definition says otherwise.\n\nGuest operating system data is different because Azure does not automatically see every process, file system, or operating-system counter from outside the VM. Microsoft documents that Azure Monitor Agent collects monitoring data from the guest operating system of Azure and hybrid VMs, and that without the agent you can collect data only from the host machine because there is no access to the client operating system and running processes. The recommended modern VM metrics experience uses OpenTelemetry system metrics for enhanced monitoring, while logs-based VM monitoring remains available for scenarios that need Log Analytics correlation.\n\nThe order is:\n\n1. Identify whether the desired signal is an Azure resource signal or an inside-the-OS signal.\n2. Use platform metrics when the signal appears without configuration.\n3. Add guest monitoring when the signal is a process, guest file system, guest memory, or OS performance counter.\n4. Choose the destination and query model that matches the monitoring need, such as PromQL for OpenTelemetry metrics or KQL for logs-based counters.\n\nThe boundary is source, not the fact that both charts may appear in Azure Monitor.",
+      "wrongOptions": {
+        "B": "The activity log records subscription-level control-plane events, not continuous process memory counters from inside a VM. Misconception: anything related to monitoring is stored in the activity log. Could be correct when: you need to alert on resource operations such as VM start, delete, or configuration changes.",
+        "C": "A public IP address is not required for Azure Monitor Agent to collect guest metrics, and making a VM public would increase exposure without solving the data-source issue. Misconception: monitoring agents must be reached inbound from the internet. Could be correct when: a separate application requirement genuinely needs a public endpoint.",
+        "D": "Platform metrics do not include every guest operating system counter or per-process measurement. Misconception: VM metrics in the portal all come from the same automatic source. Could be correct when: the requirement can be met entirely by built-in host/resource metrics such as platform CPU or network totals."
+      },
+      "plainEnglish": "Azure can see some things about a VM from the outside, much like a building owner can read the main electricity meter without entering an apartment. But the owner cannot know which lamp is on in which room without something inside reporting that information. Platform metrics are the outside meters. Guest metrics are the inside details. To see free disk space inside the operating system or memory used by one process, enable the monitoring component that reads those details.",
+      "analogy": "A car dashboard shows speed and fuel level because the car exposes those values by design. A mechanic who wants to know which cylinder is misfiring connects a diagnostic tool to read deeper information. Both results can be displayed on a screen, but they come from different collection paths.\n\n| Analogy | Azure reality |\n|---|---|\n| Dashboard speed | Platform metric |\n| Diagnostic tool | Azure Monitor Agent or VM enhanced monitoring |\n| Cylinder details | Guest OS counters and process metrics |\n| Service computer | Azure Monitor workspace or Log Analytics workspace |\n| Driver seeing charts | Metrics explorer or Grafana dashboard |\n\n**Where the analogy breaks down:** Cars have proprietary diagnostic buses. Azure uses agents, data collection rules, OpenTelemetry metrics, workspaces, and role-based access to route and view monitoring data.",
+      "jargon": [
+        {
+          "term": "Azure Monitor",
+          "definition": "Azure monitoring service for metrics, logs, alerts, dashboards, and related observability features."
+        },
+        {
+          "term": "Platform metrics",
+          "definition": "Metrics automatically emitted by Azure resources and collected without extra configuration."
+        },
+        {
+          "term": "Guest operating system",
+          "definition": "The operating system running inside a virtual machine, such as Windows Server or Linux."
+        },
+        {
+          "term": "Azure Monitor Agent",
+          "definition": "The supported agent for collecting monitoring data from VM guest operating systems and hybrid machines."
+        },
+        {
+          "term": "OpenTelemetry",
+          "definition": "An open observability standard used by Azure Monitor for newer VM system metrics experiences."
+        },
+        {
+          "term": "Log Analytics workspace",
+          "definition": "A workspace used by Azure Monitor Logs for KQL queries and log retention."
+        },
+        {
+          "term": "Azure Monitor workspace",
+          "definition": "A workspace used for Prometheus and OpenTelemetry metric storage and analysis."
+        },
+        {
+          "term": "PromQL",
+          "definition": "Prometheus Query Language, used to query Prometheus-style metrics."
+        }
+      ],
+      "watchOut": "- Platform metrics are automatic, but that does not mean every VM-internal counter is automatic.\n- The legacy Log Analytics agent is retired; use Azure Monitor Agent for new guest data collection.\n- Guest metrics may use a different workspace and query language from platform metrics.\n- A public IP address is not a monitoring prerequisite.",
+      "productionTip": {
+        "official": "Microsoft documents platform metrics as automatically collected from Azure resources with no configuration, while Azure Monitor Agent collects data from the guest operating system. The VM metrics experience describes OpenTelemetry metrics-based monitoring as recommended for new deployments.",
+        "recommendation": "Decide the question you need to answer before enabling data collection. Use free automatic platform metrics for basic resource health, then add guest monitoring for disk, process, and OS-level insight. Keep data collection rules focused so you do not ingest high-volume counters nobody reviews."
+      },
+      "memoryTrick": "Use **outside versus inside**: platform metrics are outside the VM; guest metrics come from inside the operating system. This is a simplification because some host-observed VM signals resemble OS counters.",
+      "examTip": "Clue words are **without installing any agent** versus **inside the guest operating system**. The exam is testing metric source, not charting skill. A harder version may ask whether to use PromQL or KQL; then the destination workspace and monitoring experience become the deciding details."
+    },
+    "sources": [
+      {
+        "title": "Metrics in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+      },
+      {
+        "title": "Azure Monitor Agent Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-overview"
+      },
+      {
+        "title": "Metrics experience for virtual machines in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/vm/metrics-opentelemetry-guest"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.1.1-02",
+    "objective": "D5.1.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are building Azure Monitor charts for a production review. One chart must show the total number of API requests processed during each five-minute interval. Another chart must reveal whether CPU usage briefly spiked above 90 percent on any VM during the same review window.\n\nWhich two aggregation choices should you use? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use Sum for the request-count metric so values in each five-minute time grain are added together"
+      },
+      {
+        "id": "B",
+        "text": "Use Count for CPU percentage because Count returns the highest sample value captured in the interval"
+      },
+      {
+        "id": "C",
+        "text": "Use Max for CPU percentage so a short high sample is visible within the selected time grain"
+      },
+      {
+        "id": "D",
+        "text": "Use Average for request count because Average always shows the total work done in an interval"
+      },
+      {
+        "id": "E",
+        "text": "Use Min for the request-count metric because Min protects charts from missing events"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The request metric represents a count of requests per measurement, and the CPU chart is intended to catch brief peaks rather than show sustained average utilization.",
+    "sections": {
+      "correctAnswer": "**A. Use Sum for the request-count metric so values in each five-minute time grain are added together** and **C. Use Max for CPU percentage so a short high sample is visible within the selected time grain**. Sum answers total volume questions, while Max preserves the highest observed value inside the interval.",
+      "technical": "Metrics explorer aggregates metric values over the selected time granularity. The same raw or preaggregated measurements can tell different stories depending on the aggregation type. Microsoft documents five basic aggregations: Sum, Count, Average, Min, and Max. Sum adds the values captured during the aggregation interval. Count returns the number of measurements captured, not the total of their values unless each measurement is always one. Average computes the mean value, Min returns the smallest value, and Max returns the largest value in the interval.\n\nFor a request-count chart, the question asks for total requests processed during each five-minute interval. The aggregation should add the request measurements within that interval, so Sum is the best match. Average would answer a different question, such as the average request count per underlying sample. Count would answer how many metric records were captured, which can be misleading if one record can represent many requests.\n\nFor a CPU spike investigation, the question asks whether usage briefly exceeded 90 percent. Average can smooth short spikes below the threshold, especially when the time grain is wider than the spike. Max keeps the highest value observed in each interval visible, so it is the better choice for peak detection. Min would show the lowest CPU value and would hide the spike.\n\nThe order is: define the business question, identify whether the metric is a total, rate, percentage, or event count, choose a time grain that matches the investigation, and then choose the aggregation that preserves the signal you need.",
+      "wrongOptions": {
+        "B": "Count does not return the highest CPU sample; it counts how many measurements were captured in the interval. Misconception: Count means count the largest value or count high samples. Could be correct when: you need to know how many metric records were received during an interval.",
+        "D": "Average does not produce total request volume; it divides by the number of measurements used in the interval. Misconception: any aggregation over a count metric is interchangeable. Could be correct when: you want a smoothed average request rate or average value per sample.",
+        "E": "Min shows the lowest captured value, which is not a safe way to count events and can understate workload. Misconception: lower values are always more conservative for monitoring. Could be correct when: you need the minimum observed free space, availability, or latency sample."
+      },
+      "plainEnglish": "A chart can combine many small readings into one dot. The way it combines them matters. If you want to know how many requests happened, add them up. If you want to know whether CPU briefly got very high, look for the highest reading. Averaging CPU might make a short hot moment disappear, and counting CPU samples only tells you how many readings were collected, not how busy the server was.",
+      "analogy": "A grocery store manager reviews checkout activity. To know how many customers were served in five minutes, the manager adds every cashier's customer count. To know whether any line became dangerously long, the manager looks at the longest line seen during that period, not the average line length.\n\n| Analogy | Azure reality |\n|---|---|\n| Customers served | Request-count metric values |\n| Add cashier totals | Sum aggregation |\n| Longest line | Max CPU sample |\n| Five-minute review block | Time granularity |\n| Average line length | Average aggregation that can smooth spikes |\n\n**Where the analogy breaks down:** Metrics may be preaggregated before display, and some Azure resource providers define which aggregations are valid for each metric. A store manager is not dealing with metric dimensions, missing values, or sampling intervals.",
+      "jargon": [
+        {
+          "term": "Metrics explorer",
+          "definition": "The Azure portal tool for charting Azure Monitor metric values over time."
+        },
+        {
+          "term": "Aggregation",
+          "definition": "A calculation that combines multiple metric values into a single chart point."
+        },
+        {
+          "term": "Sum",
+          "definition": "An aggregation that adds all metric values captured during the interval."
+        },
+        {
+          "term": "Count",
+          "definition": "An aggregation that counts the number of measurements captured during the interval."
+        },
+        {
+          "term": "Average",
+          "definition": "An aggregation that calculates the mean value of measurements in the interval."
+        },
+        {
+          "term": "Min",
+          "definition": "An aggregation that returns the smallest value captured in the interval."
+        },
+        {
+          "term": "Max",
+          "definition": "An aggregation that returns the largest value captured in the interval."
+        },
+        {
+          "term": "Time granularity",
+          "definition": "The size of the time bucket used for each chart point."
+        }
+      ],
+      "watchOut": "- Count counts measurements, not the metric values inside those measurements.\n- Average can hide short spikes when the time grain is too broad.\n- Sum is natural for totals such as bytes, packets, requests, or events when the metric semantics support it.\n- Metrics explorer hides aggregations that are irrelevant for a metric, so choices can vary by metric.",
+      "productionTip": {
+        "official": "Microsoft documents that Metrics Explorer has Sum, Count, Average, Min, and Max aggregations, and that values captured during each selected time grain are aggregated into chart points. Count is defined as the number of measurements, not the sum of their values.",
+        "recommendation": "Name dashboard tiles after the question they answer, such as `Total requests` or `Peak CPU`, and lock the intended aggregation in shared workbooks. During incident reviews, pair Average and Max for utilization metrics so sustained pressure and short bursts are both visible."
+      },
+      "memoryTrick": "**Totals sum; spikes max.** This is a simplification because some metrics are already rates or percentages, and a resource provider metric definition can make one aggregation more meaningful than another.",
+      "examTip": "Clue words are **total number** and **briefly spiked**. Choose Sum for total volume and Max for peak detection. A harder version may ask about availability or health percentages, where Average is often the recommended aggregation rather than Sum or Count."
+    },
+    "sources": [
+      {
+        "title": "Analyze metrics with Azure Monitor metrics explorer",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+      },
+      {
+        "title": "Azure Monitor metrics aggregation and display explained",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/metrics-aggregation-explained"
+      },
+      {
+        "title": "Metrics in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.1.1-03",
+    "objective": "D5.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You are analyzing an Azure Monitor metric named `Transactions` for a storage account. The metric has dimensions for `ResponseType` and `ApiName`. The total transaction line shows a spike at 09:00, but you need to answer a narrower question: Which API operation contributed most to failed transactions during the spike?\n\nWhat should you configure in metrics explorer?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add a filter for `ResponseType` equal to failures, and split the chart by the `ApiName` dimension"
+      },
+      {
+        "id": "B",
+        "text": "Set the time granularity to Automatic and remove all dimensions so the total line is smoother"
+      },
+      {
+        "id": "C",
+        "text": "Use Count aggregation with no filters because Count separates each API operation into its own line"
+      },
+      {
+        "id": "D",
+        "text": "Create an activity log query because metric dimensions cannot be used for filtering or splitting"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The metric exposes `ResponseType` and `ApiName` as dimensions during the selected time range, and the chart is being created in Azure Monitor metrics explorer.",
+    "sections": {
+      "correctAnswer": "**A. Add a filter for `ResponseType` equal to failures, and split the chart by the `ApiName` dimension**. Filtering narrows the data to failed transactions, and splitting draws separate series for each API operation so the operation causing the spike can be identified.",
+      "technical": "Azure Monitor supports multi-dimensional metrics. A dimension is a name/value pair that adds context to a metric value. Microsoft describes filtering and splitting as diagnostic tools for metrics that have dimensions. Filtering chooses which dimension values are included in the chart. Splitting controls whether the chart shows separate lines for values of a dimension or aggregates those values into one line.\n\nThe question asks for failed transactions by API operation. That requires two operations in the right order. First, limit the metric to failed responses by filtering on `ResponseType`. Without this filter, successful transactions can dominate the chart and hide the failed subset. Second, split by `ApiName` so each API operation appears as a separate line. Once split, the highest line around 09:00 identifies the operation that contributed most to the failed-transaction spike.\n\nThe scope and time range still matter. If a dimension value did not appear during the selected time range, it might not show in the filter value picker. If too many API names exist, the chart can become noisy, so you may need to filter further or inspect the top contributors in a workbook. Aggregation remains important: a transaction count commonly uses Sum when the goal is total failed operations per interval.\n\nDimensions do not replace logs. Metrics are efficient for spotting which category is responsible. Logs are useful later when you need individual request details, error messages, or request IDs.",
+      "wrongOptions": {
+        "B": "Smoothing the total line removes the detail needed to isolate failed transactions by API operation. Misconception: a cleaner total chart is the same as a diagnostic breakdown. Could be correct when: you want a high-level trend and do not need to attribute the spike to a dimension value.",
+        "C": "Count counts measurement records and does not automatically split by API operation. Splitting is a separate chart configuration. Misconception: aggregation controls dimensions. Could be correct when: the question is how many metric samples were captured and no dimension breakdown is needed.",
+        "D": "Metrics with dimensions can be filtered and split in metrics explorer. Misconception: only logs can segment monitoring data. Could be correct when: you need per-request fields that are not available as metric dimensions or you need to join monitoring data with log records."
+      },
+      "plainEnglish": "The total line is like a pile of receipts from every checkout lane mixed together. You first throw away the successful receipts because you only care about failures. Then you separate the remaining receipts by checkout lane, which shows which lane caused the spike. In Azure Monitor, the first step is a filter, and the second step is a split by dimension.",
+      "analogy": "A school sees a big rise in absent students. The principal does not just stare at the total absence count. She filters to unexcused absences and then groups by classroom to find where the problem is concentrated.\n\n| Analogy | Azure reality |\n|---|---|\n| Total absences | Total transaction line |\n| Unexcused-only filter | `ResponseType` failure filter |\n| Classroom grouping | Split by `ApiName` |\n| 09:00 attendance report | Selected chart time window |\n| Noisy school-wide total | Aggregated metric without dimensions |\n\n**Where the analogy breaks down:** Azure metric dimensions depend on what the resource provider emits, and missing dimension values may not appear if they have no data in the selected time range. A school roster does not have metric sampling or aggregation behavior.",
+      "jargon": [
+        {
+          "term": "Metric dimension",
+          "definition": "A name/value pair attached to metric data to describe a segment such as API name or response type."
+        },
+        {
+          "term": "Filtering",
+          "definition": "Including only selected dimension values in a metric chart."
+        },
+        {
+          "term": "Splitting",
+          "definition": "Displaying separate chart lines for values of a selected dimension."
+        },
+        {
+          "term": "ResponseType",
+          "definition": "A dimension name that can categorize metric values by result type, such as success or failure."
+        },
+        {
+          "term": "ApiName",
+          "definition": "A dimension name that identifies the API operation associated with a metric value."
+        },
+        {
+          "term": "Transaction",
+          "definition": "An operation or request counted by the metric."
+        },
+        {
+          "term": "Metrics explorer",
+          "definition": "The Azure portal experience for charting and exploring Azure Monitor metrics."
+        },
+        {
+          "term": "Aggregation",
+          "definition": "The calculation used to combine metric values within each time bucket."
+        }
+      ],
+      "watchOut": "- Filter first when the question is about a subset such as failures only.\n- Split when you need separate lines for each dimension value.\n- Too many split lines can make a chart unreadable; narrow the time range or add filters.\n- Dimension names and values are case-insensitive in Azure Monitor metrics, but available dimensions vary by metric and resource type.",
+      "productionTip": {
+        "official": "Microsoft documents that filtering lets metrics explorer show only selected dimension values and that splitting displays separate lines for each value of a dimension. Azure Monitor also describes dimensions as name/value pairs that add context to metric values.",
+        "recommendation": "When building operational dashboards, include both an aggregate chart and a dimension-split drilldown. Use filters for the failure class first, then split by the most actionable dimension, such as operation, backend, region, or status code, so responders know who owns the next investigation step."
+      },
+      "memoryTrick": "**Filter to the problem, split to find the owner.** This is a simplification because some incidents need several filters or a log query after the metric chart identifies the suspect dimension.",
+      "examTip": "Clue words are **failed transactions** and **which API operation**. The answer must use both a dimension filter and a dimension split. A harder version may include multiple dimensions such as region and API; choose the filter for the condition and the split for the comparison you need to see."
+    },
+    "sources": [
+      {
+        "title": "Analyze metrics with Azure Monitor metrics explorer",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+      },
+      {
+        "title": "Azure Monitor metrics aggregation and display explained",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/metrics-aggregation-explained"
+      },
+      {
+        "title": "Metrics in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.1.1-04",
+    "objective": "D5.1.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You need to review an Azure platform metric for a virtual machine across the last 60 days. You open the VM's Metrics page in the Azure portal and try to chart the entire 60-day period at once. The chart is blank for part of the range. You also need enough detail to inspect a five-minute spike that occurred during one of those days.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Platform metrics are retained for 93 days, but a single Metrics chart can query only up to 30 days; use a 30-day or smaller window and pan through the retained data, then select a finer time granularity for the spike"
+      },
+      {
+        "id": "B",
+        "text": "Platform metrics are retained for only 14 days, so the missing range proves the data has expired and cannot be viewed in Azure Monitor"
+      },
+      {
+        "id": "C",
+        "text": "Set the time granularity to 60 days because a larger grain increases the retention period for platform metrics"
+      },
+      {
+        "id": "D",
+        "text": "Use Count aggregation because Count bypasses the 30-day chart limit and retrieves the full 93-day retention window at once"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The metric is a normal Azure Monitor platform metric, not a log-based Application Insights metric or Prometheus metric stored in an Azure Monitor workspace.",
+    "sections": {
+      "correctAnswer": "**A. Platform metrics are retained for 93 days, but a single Metrics chart can query only up to 30 days; use a 30-day or smaller window and pan through the retained data, then select a finer time granularity for the spike**. Retention and portal chart query span are related but different limits, and time granularity controls chart detail rather than how long the metric is stored.",
+      "technical": "Microsoft documents that platform and custom metrics are stored for 93 days, with listed exceptions for some guest OS and log-based scenarios. The same documentation states that, while those metrics are stored for 93 days, the Metrics tile can query a maximum of 30 days of data on any single chart. Metrics explorer documentation repeats that most metrics are stored for 93 days and that you can query up to 30 days on a single chart, then pan the chart to view the full retention window.\n\nTime granularity is a separate concept. It is the size of the interval used to aggregate values into chart points. Metrics explorer's minimum time granularity is one minute, although underlying collection can be faster depending on the metric. A wider grain such as one hour or one day smooths the data and reduces the number of chart points; it does not extend retention. A finer grain such as one minute or five minutes can reveal short spikes, but only within the selected time range that the chart is querying.\n\nThe correct process is:\n\n1. Keep each chart query within the allowed maximum span, such as 30 days or less.\n2. Pan backward or forward to cover different portions of the 93-day retention period.\n3. When investigating a five-minute spike, zoom the time range around the day and choose a time grain fine enough to show the spike.\n4. Use an aggregation that matches the question, such as Max for a brief peak or Average for sustained level.\n\nDo not confuse retention, chart query span, time range, time grain, and aggregation; they control different parts of the metrics experience.",
+      "wrongOptions": {
+        "B": "Fourteen days is an exception mentioned for classic guest OS metrics routed to storage, not the general platform metric retention stated for Azure Monitor Metrics. Misconception: the shortest exception applies to every metric. Could be correct when: you are specifically discussing classic guest OS metrics collected by diagnostic extensions into a storage account.",
+        "C": "A larger time grain changes how values are summarized on the chart; it does not increase how long Azure Monitor keeps platform metrics. Misconception: compression creates extra retention. Could be correct when: you want a smoother long-range trend and are already within the chart query limits.",
+        "D": "Count is an aggregation type that counts measurements in an interval. It does not bypass the maximum number of days a single Metrics chart can query. Misconception: aggregation settings override service limits. Could be correct when: the monitoring question is how many metric records arrived during each time bucket."
+      },
+      "plainEnglish": "Azure may keep the metric history for about three months, but the chart window cannot look at all of that history in one bite. It can take a 30-day bite, and you can slide the window to earlier or later days. If you need to inspect a short spike, zoom into the day of interest and make each dot represent a small period. Making each dot represent 60 days would hide the spike; it would not magically unlock more stored history.",
+      "analogy": "A library keeps 93 days of newspapers, but the reading table holds only one month's stack at a time. You can swap in the next month and keep reading. If you want to inspect a small article, you open the exact day's paper instead of placing a whole month's papers under one magnifying glass.\n\n| Analogy | Azure reality |\n|---|---|\n| 93 days of newspapers | Platform metric retention |\n| One month's stack on the table | 30-day single chart query span |\n| Swapping stacks | Panning through retained data |\n| Exact day's paper | Narrow time range |\n| Magnifying glass | Finer time granularity |\n\n**Where the analogy breaks down:** Azure charts also apply aggregations such as Average, Sum, Min, and Max. A newspaper archive does not have metric namespaces, dimensions, null values, or resource-provider sampling differences.",
+      "jargon": [
+        {
+          "term": "Retention",
+          "definition": "The length of time monitoring data is stored before it expires."
+        },
+        {
+          "term": "Platform metric",
+          "definition": "A metric automatically emitted by an Azure resource and stored in Azure Monitor Metrics."
+        },
+        {
+          "term": "Metrics tile",
+          "definition": "The Azure portal metrics charting experience for a resource."
+        },
+        {
+          "term": "Time range",
+          "definition": "The start and end dates selected for a chart."
+        },
+        {
+          "term": "Time granularity",
+          "definition": "The time bucket size used to aggregate values into each chart point."
+        },
+        {
+          "term": "Pan",
+          "definition": "Moving a chart window backward or forward in time while keeping the same span."
+        },
+        {
+          "term": "Aggregation",
+          "definition": "A calculation such as Average or Max that combines measurements within a time bucket."
+        },
+        {
+          "term": "Log-based metric",
+          "definition": "A metric derived from log data, with retention behavior tied to the underlying logs."
+        }
+      ],
+      "watchOut": "- 93-day retention does not mean a 93-day portal chart in one query.\n- A single Metrics chart is limited to 30 days for platform and custom metrics.\n- Time granularity changes detail and smoothing, not storage duration.\n- Use a fine grain and a peak-preserving aggregation when investigating a short spike.",
+      "productionTip": {
+        "official": "Microsoft documents 93-day retention for platform and custom metrics, while the Metrics chart can query only a maximum of 30 days at a time. Metrics explorer lets you pan across retained data and adjust time granularity for chart detail.",
+        "recommendation": "For monthly reviews, save workbook sections that load defined 30-day windows instead of asking responders to remember portal limits. For spikes, keep a runbook note explaining which aggregation and grain expose the signal, then export or route metrics when your organization needs trending beyond native retention."
+      },
+      "memoryTrick": "**Stored for 93, charted by 30.** This is a simplification because metric type exceptions exist, and Prometheus or log-based metrics have different retention and query-span rules.",
+      "examTip": "Clue words are **last 60 days**, **Metrics page**, and **five-minute spike**. The answer must separate retention from the maximum chart span and from time granularity. A harder version may switch the data source to Prometheus metrics or log-based metrics, so read the metric implementation before applying the 93-day platform rule."
+    },
+    "sources": [
+      {
+        "title": "Metrics in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/data-platform-metrics"
+      },
+      {
+        "title": "Analyze metrics with Azure Monitor metrics explorer",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/analyze-metrics"
+      },
+      {
+        "title": "Azure Monitor metrics aggregation and display explained",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/metrics-aggregation-explained"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

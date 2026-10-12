@@ -1,0 +1,668 @@
+[
+  {
+    "id": "D3.1.4-01",
+    "objective": "D3.1.4",
+    "type": "multiple",
+    "difficulty": "foundation",
+    "prompt": "You have a Bicep file named `landingzone.bicep`. The file creates two resource groups and assigns Azure Policy at subscription scope. It starts with `targetScope = 'subscription'`.\n\nWhich two commands can deploy this file to the correct scope? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "`az deployment group create --resource-group rg-platform --template-file landingzone.bicep`"
+      },
+      {
+        "id": "B",
+        "text": "`az deployment sub create --location australiaeast --template-file landingzone.bicep`"
+      },
+      {
+        "id": "C",
+        "text": "`New-AzResourceGroupDeployment -ResourceGroupName rg-platform -TemplateFile landingzone.bicep`"
+      },
+      {
+        "id": "D",
+        "text": "`New-AzSubscriptionDeployment -Location australiaeast -TemplateFile landingzone.bicep`"
+      },
+      {
+        "id": "E",
+        "text": "`az deployment tenant create --location australiaeast --template-file landingzone.bicep`"
+      }
+    ],
+    "correct": [
+      "B",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The Bicep file is local, targets subscription scope, and the operator has already authenticated to the intended subscription.",
+    "sections": {
+      "correctAnswer": "**B. `az deployment sub create --location australiaeast --template-file landingzone.bicep`** and **D. `New-AzSubscriptionDeployment -Location australiaeast -TemplateFile landingzone.bicep`**. A template whose target scope is the subscription must be submitted with subscription-scope deployment commands, not resource-group or tenant commands.",
+      "technical": "Azure Resource Manager deployments run at one of four scopes: resource group, subscription, management group, or tenant. The deployment command must match what the template is written to do. In Bicep, `targetScope = 'subscription'` means the deployment operation is a subscription-level deployment. At that level, Azure CLI uses `az deployment sub create`, and Azure PowerShell uses `New-AzSubscriptionDeployment`, which Microsoft documents as an alias of `New-AzDeployment`.\n\nThe evaluation order for this scenario is:\n\n1. Read the Bicep `targetScope` and the resources being declared. Creating resource groups and subscription-level policy assignments points to subscription scope.\n2. Choose the matching deployment command family. CLI names the scope after `az deployment`; PowerShell uses a scope-specific cmdlet.\n3. Provide `--location` or `-Location` because subscription, management group, and tenant deployments store deployment metadata in a region.\n4. Pass the local Bicep file with `--template-file` or `-TemplateFile`.\n\n| Desired scope | Azure CLI command | Azure PowerShell command |\n|---|---|---|\n| Resource group | `az deployment group create` | `New-AzResourceGroupDeployment` |\n| Subscription | `az deployment sub create` | `New-AzSubscriptionDeployment` or `New-AzDeployment` |\n| Management group | `az deployment mg create` | `New-AzManagementGroupDeployment` |\n| Tenant | `az deployment tenant create` | `New-AzTenantDeployment` |\n\nThe exception is not based on where the file is stored. A local file can be deployed to any supported scope if the template is authored for that scope and the identity has the required permissions.",
+      "wrongOptions": {
+        "A": "`az deployment group create` submits the template at resource-group scope. That is the wrong scope for a Bicep file that creates resource groups and declares subscription-level resources. Misconception: any deployment can be launched from an existing resource group as a container for the operation. Could be correct when the Bicep file has `targetScope = 'resourceGroup'` or omits target scope and only deploys resources into one existing resource group.",
+        "C": "`New-AzResourceGroupDeployment` is the PowerShell cmdlet for resource-group deployments. It can't be the right command for a subscription-scoped Bicep file. Misconception: the resource group that will receive resources is always the command scope. Could be correct for a template that deploys a storage account, virtual network, or VM into `rg-platform`.",
+        "E": "`az deployment tenant create` is a tenant-scope deployment command. The template in the question targets the subscription, not the Microsoft Entra tenant. Misconception: policy and identity-sounding resources must always be tenant-level. Could be correct for a tenant-scoped Bicep file that creates tenant-level resources such as management groups or tenant-level role assignments where supported."
+      },
+      "plainEnglish": "Think of an Azure deployment as mailing instructions to the correct office. A resource group office handles resources inside one resource group. A subscription office can create resource groups and subscription-level settings. A management group office works above subscriptions, and a tenant office works at the directory-wide level. This file says it belongs at the subscription office. Therefore, the correct commands are the subscription versions in Azure CLI and PowerShell. The location parameter does not mean all resources must be in Australia East; it is where Azure records the subscription deployment operation.",
+      "analogy": "A company has four approval desks: team desk, department desk, division desk, and headquarters desk. If a request creates new team folders for the whole department, it must go to the department desk, not to one existing team desk.\n\n| Analogy | Azure reality |\n|---|---|\n| Team desk | Resource group deployment |\n| Department desk | Subscription deployment |\n| Division desk | Management group deployment |\n| Headquarters desk | Tenant deployment |\n| Request form title | Bicep `targetScope` |\n\n**Where the analogy breaks down:** Azure scopes are security and resource hierarchy boundaries enforced by Resource Manager. A real office might forward a form for you, but ARM expects the deployment API call to target the correct scope.",
+      "jargon": [
+        {
+          "term": "Bicep",
+          "definition": "A declarative language for deploying Azure resources. Bicep is transpiled to an ARM template before Azure Resource Manager deploys it."
+        },
+        {
+          "term": "ARM template",
+          "definition": "A JSON template processed by Azure Resource Manager to create or update Azure resources."
+        },
+        {
+          "term": "Deployment scope",
+          "definition": "The Azure hierarchy level where a deployment operation is submitted: resource group, subscription, management group, or tenant."
+        },
+        {
+          "term": "`targetScope`",
+          "definition": "A Bicep statement that declares the intended deployment scope for the file."
+        },
+        {
+          "term": "`az deployment sub create`",
+          "definition": "The Azure CLI command for creating a subscription-scope deployment."
+        },
+        {
+          "term": "`New-AzSubscriptionDeployment`",
+          "definition": "The Azure PowerShell cmdlet for subscription-scope deployments; it is documented as an alias of `New-AzDeployment`."
+        },
+        {
+          "term": "Deployment location",
+          "definition": "A region used to store deployment metadata for non-resource-group deployments."
+        }
+      ],
+      "watchOut": "- The scope word in the command matters more than the folder where the file sits.\n- Subscription, management group, and tenant deployments require a deployment location.\n- `New-AzDeployment` maps to subscription deployment behavior.\n- A resource-group deployment can create resources inside an existing group, but it doesn't create the resource group itself as its main purpose.",
+      "productionTip": {
+        "official": "Microsoft documents separate deployment commands for resource group, subscription, management group, and tenant scopes in both Azure CLI and Azure PowerShell. The same documentation states that the deploying identity must have the required permissions at the scope where resources are created.",
+        "recommendation": "Put the expected deployment scope in the file name or pipeline stage, such as `sub-landingzone.bicep`, and fail the pipeline if the command scope doesn't match the Bicep `targetScope`. This avoids accidentally trying broad governance deployments from a resource-group job."
+      },
+      "memoryTrick": "Match the middle word: `deployment sub` for subscription, `deployment group` for resource group, and `New-AzSubscriptionDeployment` for subscription. This shortcut fails if you ignore the template's declared target scope.",
+      "examTip": "Clue words are **creates resource groups**, **subscription policy**, and **`targetScope = 'subscription'`**. Eliminate commands containing `group` because those are resource-group deployments. A harder version may replace PowerShell with `New-AzDeployment`; remember that Microsoft documents it as the subscription deployment cmdlet alias, not as a generic all-scope launcher."
+    },
+    "sources": [
+      {
+        "title": "Deploy Bicep files with the Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+      },
+      {
+        "title": "Deploy Bicep files with Azure PowerShell",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-powershell"
+      },
+      {
+        "title": "Azure deployment templates with Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+      },
+      {
+        "title": "Deploy resources with PowerShell and template",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-powershell"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.4-02",
+    "objective": "D3.1.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a resource group named `rg-app1` that contains a virtual network, an App Service plan, and a storage account. The resource group has a `CanNotDelete` management lock. You deploy an ARM template to `rg-app1` by using complete mode. The template declares only the storage account.\n\nWhat should you expect from complete mode?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The virtual network and App Service plan are always deleted because complete mode ignores resource group locks"
+      },
+      {
+        "id": "B",
+        "text": "Nothing changes because complete mode is available only at subscription scope"
+      },
+      {
+        "id": "C",
+        "text": "Resources missing from the template are deletion candidates at resource-group scope, but the resource group lock prevents complete mode from deleting them"
+      },
+      {
+        "id": "D",
+        "text": "Only child resources are deleted; top-level resources not in the template are left unchanged"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The deployment operation targets `rg-app1` directly, the lock is a management lock on the resource group, and no deployment stack is being used.",
+    "sections": {
+      "correctAnswer": "**C. Resources missing from the template are deletion candidates at resource-group scope, but the resource group lock prevents complete mode from deleting them**. Complete mode compares the template to existing resources in the target resource group, yet Microsoft documents that a locked resource group prevents those deletes.",
+      "technical": "Deployment mode controls how Resource Manager treats existing resources in the target resource group. In incremental mode, existing resources that aren't in the template are left alone. In complete mode, Resource Manager deletes resources in the target resource group that aren't specified in the template, subject to documented exceptions. The default mode is incremental, and Microsoft now recommends deployment stacks for delete-oriented workflows because complete mode is not recommended and is being gradually deprecated.\n\nFor the question's sequence:\n\n1. The deployment targets `rg-app1`, so the comparison boundary is that resource group.\n2. The template contains the storage account only.\n3. The virtual network and App Service plan are not represented in the final template collection, so complete mode would normally mark them for deletion.\n4. The resource group has a `CanNotDelete` lock. Microsoft states that if the resource group is locked, complete mode doesn't delete the resources.\n\nThe storage account is still processed from the template. If its definition matches the existing resource, no operation is taken for unchanged settings; if properties differ and are mutable, the storage account is updated. Incremental mode has its own trap: when a resource is redeployed, the template is treated as the desired final state for that resource, so omitted properties can reset to defaults. That property behavior is separate from deleting resources that are absent from the template.\n\nComplete mode has other scope limits. Subscription-level deployments don't support complete mode, the Azure portal doesn't support complete mode, and linked or nested templates must use incremental mode at their own deployment resource. For complete mode at a resource group, what-if should be run first because it can show Delete changes before anything is removed.",
+      "wrongOptions": {
+        "A": "Complete mode doesn't ignore a resource group lock. Microsoft specifically calls out that if the resource group is locked, complete mode doesn't delete the resources. Misconception: deployment mode has higher precedence than management locks. Could be correct in an unlocked resource group where the unlisted resources support complete-mode deletion and no other exception applies.",
+        "B": "Complete mode is a resource-group deployment mode. Subscription-level deployments don't support complete mode, but that doesn't make the resource-group deployment in the scenario a no-op. Misconception: because subscription deployments don't support complete mode, complete mode no longer exists anywhere. Could be correct if the command were `az deployment sub create --mode Complete`, which is not a supported subscription-scope mode.",
+        "D": "Top-level resources can be deleted when they are absent from a complete-mode resource-group template. Parent and child resource behavior has details, but complete mode isn't limited to child resources. Misconception: complete mode is a cleanup feature only for nested child resources. Could be correct for a narrow resource type exception where a child isn't automatically deleted while its parent remains in the template."
+      },
+      "plainEnglish": "Complete mode is Azure's strict comparison mode for a resource group. It asks, 'After this deployment, should this resource group contain only the things in the template?' If the answer is yes, anything in the group that is not listed can be removed. In this scenario, the virtual network and App Service plan are not listed. However, the resource group has a delete lock, which is like a guardrail that stops deletion. The exam point is not that complete mode is harmless; the point is that complete mode is powerful but still constrained by locks and scope rules.",
+      "analogy": "Imagine a storeroom inventory sheet. Incremental mode says, 'Add or update the items on this sheet, but don't touch other boxes.' Complete mode says, 'Make the room match this sheet exactly.' A `CanNotDelete` lock is a padlock on the storeroom door that prevents throwing boxes away.\n\n| Analogy | Azure reality |\n|---|---|\n| Inventory sheet | ARM template |\n| Add-or-update instruction | Incremental mode |\n| Exact-match cleanup | Complete mode |\n| Padlock on the room | Resource group management lock |\n| Boxes not on the sheet | Existing resources absent from the template |\n\n**Where the analogy breaks down:** Azure deletion behavior depends on resource type support, deployment API version, parent-child relationships, and Resource Manager authorization. A storeroom doesn't model those service-specific rules.",
+      "jargon": [
+        {
+          "term": "Complete mode",
+          "definition": "An ARM deployment mode where Resource Manager deletes resources in the target resource group that aren't specified in the template, subject to exceptions."
+        },
+        {
+          "term": "Incremental mode",
+          "definition": "The default ARM deployment mode where resources not listed in the template are left unchanged."
+        },
+        {
+          "term": "Management lock",
+          "definition": "An Azure control-plane lock such as `CanNotDelete` that restricts delete or update operations at a scope."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical container for Azure resources that share lifecycle, permissions, or management boundaries."
+        },
+        {
+          "term": "Deployment stack",
+          "definition": "A newer Azure Resource Manager feature recommended by Microsoft for managing resource deletions from template or Bicep-defined infrastructure."
+        },
+        {
+          "term": "Linked template",
+          "definition": "A separate ARM template file referenced by a main template through a deployment resource."
+        }
+      ],
+      "watchOut": "- The default deployment mode is incremental, not complete.\n- Complete mode is not recommended for new delete workflows; Microsoft points to deployment stacks.\n- Always preview complete mode with what-if before using it.\n- Complete mode evaluates the target resource group of the deployment operation.\n- A lock on the resource group prevents complete-mode deletions.",
+      "productionTip": {
+        "official": "Microsoft documents that complete mode deletes resources in the resource group that aren't in the template, that the portal doesn't support complete mode, that subscription deployments don't support it, and that a locked resource group prevents complete-mode deletion.",
+        "recommendation": "Avoid complete mode as a routine cleanup mechanism. Prefer deployment stacks or explicit decommission runbooks, require peer review for any delete-capable deployment, and keep protective locks on production resource groups where accidental deletion would create an outage."
+      },
+      "memoryTrick": "Incremental means **include more without cleaning the room**; complete means **compare and clean**, unless a lock blocks the cleanup. This is a memory aid, not a substitute for checking resource-type deletion exceptions.",
+      "examTip": "Clue words are **complete mode**, **not in the template**, and **`CanNotDelete` lock**. First identify what complete mode would normally delete, then apply the lock exception. A harder question may remove the lock, add a child resource, or move one resource to a secondary resource group; those details change the deletion result."
+    },
+    "sources": [
+      {
+        "title": "Deployment modes - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes"
+      },
+      {
+        "title": "Template deployment what-if",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-what-if"
+      },
+      {
+        "title": "Link templates for deployment",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/linked-templates"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.4-03",
+    "objective": "D3.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You plan to deploy an ARM template to a production resource group named `rg-payroll`. The template changes a virtual network address prefix and might remove a subnet if complete mode is later selected. You must preview the predicted changes without modifying existing resources.\n\nWhich command should you run first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`az deployment group what-if --resource-group rg-payroll --template-file network.json`"
+      },
+      {
+        "id": "B",
+        "text": "`az deployment group create --resource-group rg-payroll --template-file network.json --no-wait`"
+      },
+      {
+        "id": "C",
+        "text": "`az deployment operation group list --resource-group rg-payroll --name network`"
+      },
+      {
+        "id": "D",
+        "text": "`az deployment group validate --resource-group rg-payroll --template-file network.json --mode Complete`"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The operator is using Azure CLI, the template file is local, and the production resource group already exists.",
+    "sections": {
+      "correctAnswer": "**A. `az deployment group what-if --resource-group rg-payroll --template-file network.json`**. The what-if operation predicts Create, Modify, Delete, Ignore, NoChange, NoEffect, or Deploy results without making changes to existing resources.",
+      "technical": "What-if is the Resource Manager preview operation for ARM templates and Bicep files. It validates the deployment input and predicts the resource changes that would occur if the template were deployed. Microsoft documents what-if for resource group, subscription, management group, and tenant deployments. For resource-group deployments in Azure CLI, the command is `az deployment group what-if`.\n\nIn this scenario the objective is to inspect impact before touching production. The command should therefore perform a preview, not an actual deployment. A typical flow is:\n\n1. Run `az deployment group what-if` against the target resource group and template.\n2. Review change types such as `Modify` for the virtual network and `Delete` if complete mode is included and a resource is missing.\n3. Investigate unexpected output before running `az deployment group create`.\n4. Optionally use `--confirm-with-what-if` on `az deployment group create` when you want a preview followed by an interactive confirmation.\n\nWhat-if has limits. It expands nested templates only until documented limits are reached, including 500 nested templates, 800 resource groups in a cross-resource-group deployment, or five minutes of expansion. After a limit is reached, remaining resources can show as `Ignore`. What-if also has known noise: it can't resolve the `reference` function and may report a property as changing because it compares the current value with an unresolved expression. The important exam boundary is still clear: what-if predicts; create deploys.\n\nThe operation requires the same permissions as deployment: write access to the resources being deployed and access to all operations on `Microsoft.Resources/deployments`.",
+      "wrongOptions": {
+        "B": "`az deployment group create` starts the deployment. `--no-wait` only returns control before the operation finishes; it doesn't turn the deployment into a preview. Misconception: asynchronous execution is safer because it doesn't wait for completion. Could be correct after you've reviewed expected changes and want to start the real deployment without blocking the shell.",
+        "C": "`az deployment operation group list` reads operation details for an existing named deployment. It doesn't predict what a new template will do. Misconception: deployment operations are a dry-run feature. Could be correct when a deployment has already failed and you need to inspect per-resource operation messages.",
+        "D": "Validation checks syntax, parameters, and preflight conditions, but it doesn't provide the resource change prediction that what-if provides. Adding complete mode to validation doesn't show the same Delete/Modify preview. Misconception: validation and what-if are interchangeable safety checks. Could be correct when you only need to catch template or parameter errors before deployment."
+      },
+      "plainEnglish": "Before changing production, you want Azure to say, 'Here is what I think will happen,' without actually doing it. That is what what-if does. It is like previewing tracked changes before accepting them in a document. Validation is useful, but it mostly asks whether the request is shaped correctly. A normal create command actually starts changing resources. Operation history is useful only after a deployment exists. For a resource group in Azure CLI, the preview command is `az deployment group what-if`.",
+      "analogy": "A builder plans to remodel a house. Before construction starts, the owner asks for a marked-up plan that shows which walls are added, changed, or removed. The marked-up plan does not swing a hammer.\n\n| Analogy | Azure reality |\n|---|---|\n| Marked-up plan | What-if result |\n| Added wall | `Create` change type |\n| Changed wall | `Modify` change type |\n| Removed wall | `Delete` change type |\n| Construction crew starts | Deployment create command |\n\n**Where the analogy breaks down:** Resource Manager predictions can include noise from unresolved expressions such as `reference`. A construction drawing doesn't have the same expression-evaluation problem.",
+      "jargon": [
+        {
+          "term": "What-if",
+          "definition": "An Azure Resource Manager operation that predicts deployment changes without applying them."
+        },
+        {
+          "term": "Change type",
+          "definition": "A category in what-if output, such as Create, Delete, Modify, Ignore, NoChange, NoEffect, or Deploy."
+        },
+        {
+          "term": "`az deployment group what-if`",
+          "definition": "Azure CLI command that previews a resource-group-scope ARM template or Bicep deployment."
+        },
+        {
+          "term": "`--confirm-with-what-if`",
+          "definition": "An Azure CLI create-command switch that shows what-if output and asks for confirmation before deployment."
+        },
+        {
+          "term": "Validation",
+          "definition": "A predeployment check for template syntax, parameters, and request validity; it is not the same as a change preview."
+        },
+        {
+          "term": "Deployment operation",
+          "definition": "A recorded step inside a deployment, useful for troubleshooting after a deployment has run."
+        },
+        {
+          "term": "`reference` function",
+          "definition": "An ARM template function that reads runtime state from another resource; what-if can't fully resolve it."
+        }
+      ],
+      "watchOut": "- What-if doesn't change resources.\n- `--no-wait` still starts a deployment.\n- Validation can catch errors but doesn't replace what-if impact review.\n- What-if Delete results appear for complete mode when resources are absent from the template.\n- Treat unresolved-expression noise as a reason to inspect, not as proof that production will change exactly that way.",
+      "productionTip": {
+        "official": "Microsoft documents what-if as a way to preview changes before deploying an ARM template and states that it doesn't make changes to existing resources. The documentation also lists resource-group, subscription, management-group, and tenant what-if commands for Azure CLI.",
+        "recommendation": "Require a saved what-if review for production infrastructure changes. When complete mode, network changes, role assignments, or deletes appear in the output, have a second operator verify that the predicted changes match the change ticket before running create."
+      },
+      "memoryTrick": "**What-if asks; create acts.** This is a simplification because `create --confirm-with-what-if` can combine a question with a later action after confirmation.",
+      "examTip": "Clue words are **preview**, **without modifying**, and **predicted changes**. Pick the command with `what-if`, not `validate`, `operation list`, or `create`. A harder version may ask for PowerShell; then look for `New-AzResourceGroupDeployment -WhatIf` or the what-if result cmdlets."
+    },
+    "sources": [
+      {
+        "title": "Template deployment what-if",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-what-if"
+      },
+      {
+        "title": "Azure deployment templates with Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+      },
+      {
+        "title": "Find error codes",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/troubleshooting/find-error-code"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.4-04",
+    "objective": "D3.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a Bicep file named `main.bicep` and a Bicep parameters file named `main.prod.bicepparam`. The parameters file contains `using './main.bicep'`. You use Azure CLI 2.53.0 or later and Bicep CLI 0.22.x or later.\n\nWhich command should you run to deploy to the resource group named `rg-prod` by using the Bicep parameters file?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`az deployment group create --resource-group rg-prod --template-file main.bicep --parameters main.prod.bicepparam`"
+      },
+      {
+        "id": "B",
+        "text": "`az deployment group create --resource-group rg-prod --parameters main.prod.bicepparam`"
+      },
+      {
+        "id": "C",
+        "text": "`az deployment group create --resource-group rg-prod --template-uri main.prod.bicepparam`"
+      },
+      {
+        "id": "D",
+        "text": "`New-AzResourceGroupDeployment -ResourceGroupName rg-prod -TemplateParameterUri main.prod.bicepparam`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Both files are local, the `.bicepparam` file correctly points to `main.bicep`, and the question is about Azure CLI syntax rather than Azure PowerShell.",
+    "sections": {
+      "correctAnswer": "**B. `az deployment group create --resource-group rg-prod --parameters main.prod.bicepparam`**. With a `.bicepparam` file that has a `using` statement, Azure CLI doesn't require `--template-file`; Microsoft documents that including it with a Bicep parameters file causes an error.",
+      "technical": "Parameter values can be supplied in several ways during an ARM or Bicep deployment. Inline parameters are passed directly on the command line. JSON parameter files use the ARM deployment parameter file schema. Bicep parameter files use the `.bicepparam` extension and Bicep syntax, including a `using` statement that links the parameter file to a Bicep file.\n\nFor Azure CLI with `.bicepparam`, Microsoft documents these requirements and behaviors:\n\n1. Azure CLI must be version 2.53.0 or later for this deployment style.\n2. Bicep CLI must be 0.22.x or later.\n3. The Bicep parameters file must be local.\n4. If the file contains `using './main.bicep'`, you pass the parameters file with `--parameters` and omit `--template-file`.\n5. If you include `--template-file` together with a `.bicepparam` file, CLI returns an error like, `Only a .bicep file is allowed with a .bicepparam file`.\n\nThis differs from JSON parameter files. For a JSON parameters file with a Bicep template, the normal CLI pattern is:\n\n```azurecli\naz deployment group create \\\n  --resource-group rg-prod \\\n  --template-file main.bicep \\\n  --parameters @main.prod.parameters.json\n```\n\nParameter precedence is also exam-relevant. When you use a local parameter file and inline parameters in the same operation, inline values can override file values. However, if you're supplying a `.bicepparam` parameters file in Azure CLI, Microsoft notes that this argument can only be used once, so design the file and override strategy carefully.",
+      "wrongOptions": {
+        "A": "This mixes `--template-file` with a `.bicepparam` file. Microsoft documents that the `using` statement removes the need for `--template-file` and that including it results in an error for this pattern. Misconception: every deployment must explicitly name the template file. Could be correct with a JSON parameters file, not with this linked Bicep parameters file.",
+        "C": "`--template-uri` is for a remote ARM JSON template URI, not for pointing to a local Bicep parameters file. Azure CLI also doesn't deploy remote Bicep files directly. Misconception: any deployment-related file can be passed as a template URI. Could be correct when deploying a reachable remote ARM JSON template with `--template-uri`.",
+        "D": "`TemplateParameterUri` is an Azure PowerShell parameter for an external JSON parameters file; it doesn't support `.bicepparam` files. The question asks for Azure CLI. Misconception: URI-based parameter handling works equally for Bicep parameter files. Could be correct for an external JSON parameters file in a PowerShell deployment."
+      },
+      "plainEnglish": "A `.bicepparam` file can point to the Bicep file it belongs to. Because the parameter file already says `using './main.bicep'`, the CLI can find the template through that link. You give the CLI the parameters file and the target resource group. If you also add `--template-file`, you are over-specifying the deployment in a way the CLI rejects for this case. JSON parameter files behave differently; they usually travel beside an explicit template file.",
+      "analogy": "A theatre ticket can either list the seat directly or include a reservation number that points to the booking. A `.bicepparam` file with `using` is like a reservation that already points to the show. Handing the usher both that reservation and a separate conflicting show slip causes confusion.\n\n| Analogy | Azure reality |\n|---|---|\n| Reservation number | `.bicepparam` `using` statement |\n| Show slip | `--template-file` |\n| Seat preferences | Parameter values |\n| Usher's scanner | Azure CLI deployment command |\n\n**Where the analogy breaks down:** Azure CLI doesn't merely get confused; it enforces command syntax and version requirements before the Resource Manager deployment starts.",
+      "jargon": [
+        {
+          "term": "Parameter",
+          "definition": "A value supplied to a template so the same template can deploy different names, sizes, regions, or settings."
+        },
+        {
+          "term": "`.bicepparam`",
+          "definition": "A native Bicep parameters file format that stores parameter values using Bicep syntax."
+        },
+        {
+          "term": "`using` statement",
+          "definition": "A Bicep parameters file statement that links the parameter file to the Bicep file it supplies values for."
+        },
+        {
+          "term": "JSON parameters file",
+          "definition": "An ARM-format parameters file that uses the deploymentParameters JSON schema."
+        },
+        {
+          "term": "Inline parameter",
+          "definition": "A parameter value supplied directly in the deployment command rather than stored in a parameter file."
+        },
+        {
+          "term": "Parameter precedence",
+          "definition": "The rule that decides which value is used when the same parameter is supplied more than once."
+        },
+        {
+          "term": "`--parameters`",
+          "definition": "Azure CLI option used to pass inline values, JSON parameter files, or supported Bicep parameters files to a deployment command."
+        }
+      ],
+      "watchOut": "- A `.bicepparam` file with `using` can remove the need for `--template-file`.\n- A JSON parameters file and a Bicep parameters file don't use identical command patterns.\n- Parameter files can contain plain text values; don't store passwords directly in them.\n- Extra parameters that don't exist in the template cause errors.\n- Inline overrides are useful, but don't rely on them to hide poor environment separation.",
+      "productionTip": {
+        "official": "Microsoft documents native Bicep parameters files, required versions for Azure CLI and Bicep CLI, and the deployment syntax where `az deployment group create` uses `--parameters storage.bicepparam` without `--template-file`. The documentation also warns that parameter files store values as plain text unless secrets are retrieved securely.",
+        "recommendation": "Keep one reviewed `.bicepparam` file per environment and avoid command-line overrides for production except for nonsecret release metadata. Use Key Vault references or deployment-time secret retrieval patterns instead of placing passwords in parameter files."
+      },
+      "memoryTrick": "For `.bicepparam`, **the parameter file points back to the Bicep file**. This reminder fails for ordinary JSON parameter files, which usually need an explicit template file in the command.",
+      "examTip": "Clue words are **`.bicepparam`**, **`using './main.bicep'`**, and **Azure CLI 2.53.0 or later**. Choose the answer that passes the parameter file only. A harder version may use a JSON parameters file; then `--template-file main.bicep --parameters @file.json` becomes the likely pattern."
+    },
+    "sources": [
+      {
+        "title": "Create a parameters file for bicep deployment",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameter-files"
+      },
+      {
+        "title": "Deploy Bicep files with the Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+      },
+      {
+        "title": "Create parameter file",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameter-files"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.4-05",
+    "objective": "D3.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A platform team has approved a reusable ARM template for storage accounts. The template must be shared with application teams without making a GitHub repository public or distributing SAS tokens for a storage account. Application teams should deploy a specific version by using standard ARM deployment commands.\n\nWhat should the platform team use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Upload the template to a private GitHub repository and pass the repository URL as `--template-uri`"
+      },
+      {
+        "id": "B",
+        "text": "Send each team a local copy of the JSON file and ask them to keep it synchronized manually"
+      },
+      {
+        "id": "C",
+        "text": "Convert the template to an activity log alert and deploy the alert rule"
+      },
+      {
+        "id": "D",
+        "text": "Create an Azure Resource Manager template spec and have teams deploy the template spec version by resource ID"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The organization wants Azure-native sharing through Azure RBAC. The approved template is an ARM JSON template or packaged from compatible local templates.",
+    "sections": {
+      "correctAnswer": "**D. Create an Azure Resource Manager template spec and have teams deploy the template spec version by resource ID**. Template specs store ARM templates as Azure resources, support versioning, and can be shared with Azure RBAC instead of public URLs or SAS-token distribution.",
+      "technical": "A template spec is the Azure Resource Manager feature for storing a reusable ARM template in Azure for later deployment. Microsoft documents `Microsoft.Resources/templateSpecs` as the resource type. A template spec can contain a main template and linked templates, is stored securely in a resource group, and supports versions.\n\nThe deployment flow is:\n\n1. The platform team creates a template spec from the approved template, for example with `az ts create` or `New-AzTemplateSpec`.\n2. The team publishes a version such as `1.0.0` or `2026-10-approved`.\n3. Access is granted with Azure RBAC, such as Template Spec Reader for users who should deploy but not modify the template spec.\n4. Application teams retrieve or receive the template spec version resource ID.\n5. They deploy with standard commands, such as:\n\n```azurecli\naz deployment group create \\\n  --resource-group rg-app \\\n  --template-spec $id\n```\n\nor in PowerShell:\n\n```powershell\nNew-AzResourceGroupDeployment `\n  -ResourceGroupName rg-app `\n  -TemplateSpecId $id\n```\n\nA remote template URI is different. `--template-uri` or `-TemplateUri` expects a reachable external ARM template URI. Microsoft examples use publicly accessible raw GitHub URLs or accessible storage URLs; if templates or linked templates are not available to Resource Manager, deployments can fail with content-link errors. Template specs are designed to avoid making templates public and avoid managing SAS tokens merely to share approved infrastructure code.\n\nThe application team still needs deployment permissions for the target resources. Reader access to the template spec lets them read the template, not create resources by itself.",
+      "wrongOptions": {
+        "A": "A private GitHub URL isn't automatically reachable by Resource Manager as a template URI. Remote templates require an accessible URI or another access design. Misconception: the operator's browser or Git credentials are passed through to ARM. Could be correct when the template is at a reachable public URL or an accessible storage URL and organizational sharing requirements allow it.",
+        "B": "Manual local copies lose central versioning and make it hard to ensure teams deploy the approved template. Misconception: copying a file is equivalent to governing a reusable template. Could be correct for a one-time lab or disconnected environment where centralized sharing isn't required.",
+        "C": "An activity log alert monitors Azure events; it doesn't store or deploy ARM templates. Misconception: any Azure resource can package deployment logic. Could be correct when the requirement is to alert on failed deployments or administrative actions, not to distribute infrastructure code."
+      },
+      "plainEnglish": "The platform team wants a library item, not a public download link. A template spec is that library item inside Azure. It keeps the template in a resource group, lets Azure RBAC decide who can read it, and gives each version a resource ID. Application teams can then deploy that version using the same deployment commands they already use. A private GitHub link sounds secure, but Azure Resource Manager must be able to fetch the template. Your personal access to the repository doesn't make the ARM service able to read it.",
+      "analogy": "A company publishes approved forms in an internal document library. Employees can use version 1.0 of the form if they have read access, but they don't need the form emailed to them or posted on the public internet.\n\n| Analogy | Azure reality |\n|---|---|\n| Internal document library | Template spec resource |\n| Versioned approved form | Template spec version |\n| Library reader permission | Template Spec Reader role |\n| Filling out the form for a project | Deploying the template spec to a target scope |\n\n**Where the analogy breaks down:** Deploying a template can create billable and security-sensitive Azure resources, so the user also needs permissions on the target resources, not just permission to read the template spec.",
+      "jargon": [
+        {
+          "term": "Template spec",
+          "definition": "An Azure Resource Manager resource that stores an ARM template for later deployment and sharing."
+        },
+        {
+          "term": "Template spec version",
+          "definition": "A named version of a template spec, included in the resource ID used for deployment."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system that grants actions over Azure scopes."
+        },
+        {
+          "term": "Template Spec Reader",
+          "definition": "A built-in role for reading template specs so users can deploy approved templates without modifying the template spec."
+        },
+        {
+          "term": "`--template-spec`",
+          "definition": "Azure CLI parameter used to deploy a template spec by its resource ID."
+        },
+        {
+          "term": "`-TemplateSpecId`",
+          "definition": "Azure PowerShell parameter used to deploy a template spec by its resource ID."
+        },
+        {
+          "term": "`--template-uri`",
+          "definition": "Azure CLI parameter used to deploy a reachable external ARM template URI."
+        },
+        {
+          "term": "SAS token",
+          "definition": "A shared access signature token that can grant time-limited access to a storage resource such as a template file in blob storage."
+        }
+      ],
+      "watchOut": "- Template spec read access doesn't grant permission to create the resources described by the template.\n- A template spec resource ID includes the version name.\n- Remote template URIs must be reachable by Azure Resource Manager.\n- Template specs support linked templates by packaging local artifacts when created with supported commands.\n- Confirm current service status before relying on older training material that labels template specs differently.",
+      "productionTip": {
+        "official": "Microsoft documents template specs as Azure resources for storing ARM templates, sharing them with Azure RBAC, and deploying them through portal, PowerShell, Azure CLI, REST, and SDKs. The same page shows deployment by resource ID using `--template-spec` and `-TemplateSpecId`.",
+        "recommendation": "Use semantic or date-based template spec versions and make version promotion explicit. Grant teams read access to approved versions and separate that from Contributor-like permissions in target resource groups so template library governance doesn't become broad infrastructure access."
+      },
+      "memoryTrick": "If the question says **share a template securely inside Azure**, think **template spec**. This doesn't mean every remote template should become a template spec; public samples and quick tests can still use reachable URIs.",
+      "examTip": "Clue words are **approved reusable template**, **specific version**, **no public repo**, and **no SAS tokens**. Rule out `templateUri` answers when the source isn't reachable to ARM. A harder question may ask for the parameter name; CLI uses `--template-spec`, while PowerShell uses `-TemplateSpecId`."
+    },
+    "sources": [
+      {
+        "title": "Create & deploy template specs",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-specs"
+      },
+      {
+        "title": "Azure deployment templates with Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-cli"
+      },
+      {
+        "title": "Troubleshoot common Azure deployment errors",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/troubleshooting/common-deployment-errors"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.4-06",
+    "objective": "D3.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Your team deploys to `rg-data` many times each day by using ARM templates. An auditor asks why older deployment records disappeared even though the deployed resources still exist. The resource group deployment history had grown beyond 700 records, and the deploying identity has permission to delete deployment records.\n\nWhich statement explains the behavior?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Azure deletes deployed resources when it removes their deployment history entries"
+      },
+      {
+        "id": "B",
+        "text": "Deployment history is unlimited when every deployment has a unique name"
+      },
+      {
+        "id": "C",
+        "text": "Azure Resource Manager automatically deletes the oldest deployment history records as the history approaches the 800-deployment limit"
+      },
+      {
+        "id": "D",
+        "text": "Only failed deployments count toward the deployment history limit"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The question is about deployment history records at a resource group scope, not Azure Activity Log retention or deletion of actual Azure resources.",
+    "sections": {
+      "correctAnswer": "**C. Azure Resource Manager automatically deletes the oldest deployment history records as the history approaches the 800-deployment limit**. Microsoft documents an 800-deployment history limit per scope and automatic cleanup of older records; deleting a deployment record doesn't delete the resources that were deployed.",
+      "technical": "Resource Manager records deployment details at the scope where the deployment occurs. For a resource group, those records appear in the resource group's deployment history and can be queried with commands such as `az deployment group list`, `az deployment group show`, or `Get-AzResourceGroupDeployment`. Microsoft documents that each scope can store up to 800 deployments in its history.\n\nAutomatic cleanup is more specific than simply waiting for record 800. Microsoft documents that when deployment history exceeds 700 records, Azure Resource Manager deletes older deployments until the history is down to 600. The oldest records are deleted first. This process needs permission because the deletions are requested under the identity of the user who deployed the template. That identity needs access to `Microsoft.Resources/deployments/delete`. If a `CanNotDelete` lock exists on a resource group or subscription, deployments for that scope can't be automatically deleted until the lock is removed.\n\nDeployment names also matter. If you run a deployment with the same name as an existing history entry after the first completes, the older entry is replaced by the current deployment entry. If two deployments with the same name run concurrently in the same resource group, only the last deployment is completed. Unique names help preserve separate history entries and avoid concurrency conflicts, but they don't make the history unlimited.\n\nThe exam distinction is between deployment metadata and deployed resources. Deleting a deployment from history doesn't remove the storage accounts, networks, or other resources created by that deployment.",
+      "wrongOptions": {
+        "A": "Deployment history cleanup removes metadata records, not the resources created by those records. Misconception: a deployment record is the parent object that owns the resources. Could be correct only for a separate explicit resource deletion operation, not for deleting deployment history.",
+        "B": "Unique names help maintain separate entries and avoid same-name replacement, but the 800-deployment limit still applies. Misconception: naming strategy changes the service quota. Could be correct as advice for avoiding overwritten history entries when the total count remains well below the limit.",
+        "D": "Successful and failed deployments can appear in deployment history; the documented limit is about deployment records, not only failures. Misconception: only errors are retained for troubleshooting. Could be correct for an alert rule or report that intentionally filters to failed deployments, not for the Resource Manager history quota."
+      },
+      "plainEnglish": "Azure keeps a log-like list of deployments so you can review what happened and troubleshoot errors. That list is not endless. When the list gets large, Azure prunes old deployment records to make room for new ones. This is like clearing old receipts from a filing cabinet; it doesn't undo the purchases. The resources remain in the resource group unless a separate deployment or delete operation removes them. Giving deployments unique names is still useful, but it doesn't remove the storage limit on the cabinet.",
+      "analogy": "A workshop keeps job tickets for completed work. The shelves hold only a certain number of tickets, so old tickets are archived or discarded when the shelves get crowded. The machines built from those tickets are not dismantled just because the ticket is gone.\n\n| Analogy | Azure reality |\n|---|---|\n| Job ticket | Deployment history record |\n| Workshop shelf limit | 800 deployments per scope |\n| Removing old ticket | Automatic deployment history deletion |\n| Machine built from ticket | Azure resource created by deployment |\n| Ticket number reused | Deployment name reused |\n\n**Where the analogy breaks down:** Azure cleanup is permission-aware and can be blocked by management locks. A physical shelf doesn't evaluate `Microsoft.Resources/deployments/delete` permissions.",
+      "jargon": [
+        {
+          "term": "Deployment history",
+          "definition": "The Resource Manager records for past deployments at a resource group, subscription, management group, or tenant scope."
+        },
+        {
+          "term": "Deployment record",
+          "definition": "A metadata entry describing a deployment operation, including state, timestamp, correlation ID, and related operation information."
+        },
+        {
+          "term": "Correlation ID",
+          "definition": "An identifier used to trace related events for a deployment, often needed in support cases."
+        },
+        {
+          "term": "`Microsoft.Resources/deployments/delete`",
+          "definition": "The Azure RBAC action needed to delete deployment history records."
+        },
+        {
+          "term": "Management lock",
+          "definition": "A control-plane lock such as `CanNotDelete` that can block deletion of deployment records at a locked scope."
+        },
+        {
+          "term": "`az deployment group list`",
+          "definition": "Azure CLI command that lists deployment records for a resource group."
+        },
+        {
+          "term": "`Get-AzResourceGroupDeployment`",
+          "definition": "Azure PowerShell cmdlet that lists or retrieves resource-group deployment records."
+        }
+      ],
+      "watchOut": "- The limit is per deployment scope, not one global count for the tenant.\n- Automatic cleanup starts after the history exceeds 700 and reduces the count to 600.\n- A scope at the hard 800 limit can cause the next deployment to fail until cleanup can run.\n- Reusing a deployment name replaces the history entry for that name after completion.\n- Deleting deployment history doesn't delete deployed resources.",
+      "productionTip": {
+        "official": "Microsoft documents that each deployment scope can store up to 800 deployments, that Resource Manager automatically deletes oldest deployments when history exceeds 700 until the count is down to 600, and that deleting a deployment from history doesn't affect deployed resources.",
+        "recommendation": "Use meaningful unique deployment names that include application, environment, and build identifiers, but export audit evidence to a durable logging or change-management system if you need retention beyond Resource Manager deployment history. Don't rely on the deployment history as the only audit archive."
+      },
+      "memoryTrick": "History has a **700 cleanup trigger, 800 hard ceiling, and 600 cleanup target**. This number trick is about deployment records only; it says nothing about how many resources can exist.",
+      "examTip": "Clue words are **older deployment records disappeared** and **resources still exist**. Pick metadata cleanup, not resource deletion. A harder version may add a resource group lock or missing `deployments/delete` permission; then automatic cleanup can be blocked and future deployments may fail near the limit."
+    },
+    "sources": [
+      {
+        "title": "Deployment history",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-history"
+      },
+      {
+        "title": "Deployment history deletions",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-history-deletions"
+      },
+      {
+        "title": "Deploy Bicep files with the Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.4-07",
+    "objective": "D3.1.4",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "A DevOps pipeline uses Azure PowerShell on a self-hosted Windows agent to run `New-AzResourceGroupDeployment -ResourceGroupName rg-vm -TemplateFile .\\vm.bicep`. The signed-in service principal has `Microsoft.Resources/deployments/*` at `rg-vm`, but it doesn't have permissions to create virtual machines. The agent has Azure PowerShell installed, but the standalone `bicep` executable isn't installed.\n\nWhich two changes are required for the deployment to succeed? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Replace Azure PowerShell with the Azure portal because `.bicep` files can't be deployed from command-line tools"
+      },
+      {
+        "id": "B",
+        "text": "Install the Bicep CLI manually on the self-hosted agent so Azure PowerShell can compile the Bicep file"
+      },
+      {
+        "id": "C",
+        "text": "Remove `Microsoft.Resources/deployments/*` because resource write permissions alone are sufficient"
+      },
+      {
+        "id": "D",
+        "text": "Grant the service principal the required write permissions on the resources being deployed, such as `Microsoft.Compute/virtualMachines/write`"
+      },
+      {
+        "id": "E",
+        "text": "Change the deployment to complete mode so Resource Manager bypasses missing resource-provider permissions"
+      }
+    ],
+    "correct": [
+      "B",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The pipeline must continue using Azure PowerShell and the target Bicep file deploys a virtual machine into `rg-vm`. A custom least-privilege role is acceptable if it contains the needed actions.",
+    "sections": {
+      "correctAnswer": "**B. Install the Bicep CLI manually on the self-hosted agent so Azure PowerShell can compile the Bicep file** and **D. Grant the service principal the required write permissions on the resources being deployed, such as `Microsoft.Compute/virtualMachines/write`**. Azure PowerShell doesn't automatically install Bicep CLI, and ARM deployments require both deployment actions and target-resource write permissions.",
+      "technical": "Two independent prerequisites are failing in this scenario: local tooling and Azure authorization. For tooling, Microsoft documents that Azure CLI automatically installs a self-contained Bicep CLI when a command needs it. Azure PowerShell is different: it doesn't automatically install Bicep CLI. PowerShell deployments of `.bicep` files fail when the standalone `bicep` executable hasn't been manually installed and made available to the agent.\n\nFor authorization, Resource Manager deployment permission is not enough by itself. Microsoft documents that to deploy a Bicep file or ARM template, the identity needs write access on the resources being deployed and access to all operations on the `Microsoft.Resources/deployments` resource type. In the example from the documentation, deploying a virtual machine requires `Microsoft.Compute/virtualMachines/write` plus `Microsoft.Resources/deployments/*`. The what-if operation has the same permission requirements.\n\nThe order to troubleshoot is:\n\n1. Confirm the agent can run `bicep --version` if Azure PowerShell will deploy `.bicep` files.\n2. Confirm the Az module version supports Bicep deployments; Microsoft documents Azure PowerShell 5.6.0 or later for deploying Bicep files.\n3. Check that the service principal can create or update every resource type in the template at the correct scope.\n4. Keep `Microsoft.Resources/deployments/*` so Resource Manager can create and track the deployment operation.\n\nLeast privilege can be implemented with a custom role containing only needed resource-provider actions and deployment actions. Contributor is often sufficient but broader than many production pipelines require.",
+      "wrongOptions": {
+        "A": "Command-line deployment of Bicep files is supported by both Azure CLI and Azure PowerShell. The failure is missing local Bicep tooling for PowerShell, not a command-line limitation. Misconception: Bicep is only an editor or portal feature. Could be correct only if an organization policy required portal deployments, not because Azure requires it.",
+        "C": "Resource write permissions alone are not sufficient because the identity also needs access to operations on `Microsoft.Resources/deployments`. The scenario already has those deployment actions and should keep them. Misconception: deployment tracking is optional metadata that doesn't require permission. Could be correct as part of tightening a role only if another role still grants the deployment actions.",
+        "E": "Complete mode changes how missing resources in a resource group are treated; it doesn't bypass Azure RBAC or provider authorization. Misconception: deployment mode affects permissions. Could be correct when the goal is intentional cleanup of resources absent from a resource-group template, after permissions and safety checks are already satisfied."
+      },
+      "plainEnglish": "The pipeline has two separate problems. First, PowerShell needs the Bicep tool installed on the machine so it can turn `vm.bicep` into the JSON form Azure Resource Manager understands. Azure CLI can install its own Bicep copy, but Azure PowerShell does not do that for you. Second, the service principal has permission to submit deployments but not to create the VM described by the deployment. It needs both the right to create a deployment record and the right to create the resources inside the template.",
+      "analogy": "A courier is asked to submit a building plan. The courier needs a translator to convert the plan into the city office's required language, and also needs authorization for the construction work requested by the plan. Having only a receipt-stamping permission doesn't authorize building a house.\n\n| Analogy | Azure reality |\n|---|---|\n| Translator on the workstation | Bicep CLI for Azure PowerShell |\n| City receipt stamp | `Microsoft.Resources/deployments/*` |\n| Building permit | Resource-provider write permission |\n| House in the plan | Virtual machine resource |\n| Courier identity | Service principal |\n\n**Where the analogy breaks down:** Azure authorization is evaluated by exact resource-provider actions and scopes, and Bicep compilation happens before the ARM service processes the final JSON template.",
+      "jargon": [
+        {
+          "term": "Service principal",
+          "definition": "An application identity used by automation to authenticate to Azure."
+        },
+        {
+          "term": "Azure PowerShell",
+          "definition": "PowerShell modules, commonly the Az modules, used to manage Azure resources."
+        },
+        {
+          "term": "Bicep CLI",
+          "definition": "The command-line executable that builds, validates, and works with Bicep files."
+        },
+        {
+          "term": "Self-hosted agent",
+          "definition": "A pipeline runner managed by the organization rather than by the cloud service provider."
+        },
+        {
+          "term": "`Microsoft.Resources/deployments/*`",
+          "definition": "Azure RBAC action pattern covering deployment operations for Resource Manager."
+        },
+        {
+          "term": "Resource-provider action",
+          "definition": "An Azure RBAC permission for a provider operation, such as `Microsoft.Compute/virtualMachines/write`."
+        },
+        {
+          "term": "Custom role",
+          "definition": "An Azure RBAC role definition created by an organization with a chosen set of allowed actions."
+        },
+        {
+          "term": "Complete mode",
+          "definition": "A resource-group deployment mode that can delete resources absent from the template; it doesn't change authorization requirements."
+        }
+      ],
+      "watchOut": "- Azure CLI's auto-managed Bicep CLI doesn't make `bicep` available to Azure PowerShell.\n- PowerShell agents need the standalone Bicep CLI installed manually for `.bicep` deployments.\n- Deployment permissions and target resource permissions are both required.\n- What-if uses the same permission requirements as deployment.\n- Don't grant Owner or broad Contributor by reflex if a narrower custom role can safely cover the template.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure PowerShell doesn't automatically install Bicep CLI and that PowerShell deployments fail without a manual Bicep CLI installation. Microsoft also documents that template deployment requires write access on deployed resources plus access to all operations on `Microsoft.Resources/deployments`.",
+        "recommendation": "Bake `bicep --version`, Az module version checks, and a least-privilege role test into the pipeline preflight stage. For production, use a dedicated service principal per workload or environment and include only the resource-provider write actions the approved templates require."
+      },
+      "memoryTrick": "PowerShell needs **Bicep beside it**, and ARM needs **deployment rights plus resource rights**. This is a simplification because exact permissions depend on every resource type and operation in the template.",
+      "examTip": "Clue words are **Azure PowerShell**, **Bicep CLI isn't installed**, and **only `Microsoft.Resources/deployments/*`**. Pick one tooling fix and one RBAC fix. A harder version may switch to Azure CLI; then Bicep CLI installation is usually automatic, but the resource write permissions are still required."
+    },
+    "sources": [
+      {
+        "title": "Install Bicep tools",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/install"
+      },
+      {
+        "title": "Deploy Bicep files with Azure PowerShell",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-powershell"
+      },
+      {
+        "title": "Deploy Bicep files with the Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-cli"
+      },
+      {
+        "title": "Template deployment what-if",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-what-if"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

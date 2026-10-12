@@ -1,0 +1,420 @@
+[
+  {
+    "id": "D5.1.4-01",
+    "objective": "D5.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains the following resources.\n\n| Resource | Requirement | Data already available |\n|---|---|---|\n| `vm-web-01` | Notify the operations team when average platform CPU exceeds 85 percent for 10 minutes | Azure Monitor platform metrics |\n| `law-prod` | Notify the database team when a custom application writes more than 20 deadlock events in 15 minutes | Log Analytics table populated by the app |\n| Subscription | Notify the governance team whenever someone deletes a network security group | Azure Activity log |\n\nYou need to choose the alert rule type that matches each requirement while minimizing unnecessary data collection.\n\nWhich mapping should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use a metric alert for `vm-web-01`, a log search alert for `law-prod`, and an activity log alert for the subscription deletion event"
+      },
+      {
+        "id": "B",
+        "text": "Use log search alerts for all three requirements so the rules can be written in Kusto Query Language"
+      },
+      {
+        "id": "C",
+        "text": "Use metric alerts for all three requirements and convert every signal into a custom metric first"
+      },
+      {
+        "id": "D",
+        "text": "Use activity log alerts for `vm-web-01` and `law-prod`, and a metric alert for the subscription deletion event"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The CPU requirement can use an existing Azure Monitor platform metric. The deadlock events are already written to a Log Analytics workspace. The network security group deletion is an Azure Resource Manager operation recorded in the Azure Activity log.",
+    "sections": {
+      "correctAnswer": "**A. Use a metric alert for `vm-web-01`, a log search alert for `law-prod`, and an activity log alert for the subscription deletion event**. The CPU condition uses metric data that is already precomputed, the deadlock condition needs a Log Analytics query, and the deletion condition is an Azure control-plane event in the Activity log.",
+      "technical": "Azure Monitor alert rules are selected by the signal that must be evaluated, not by the team that receives the message. A metric alert evaluates a numeric time series at regular intervals. Microsoft describes metric alerts as useful when the data is already available as metric data and requires little or no manipulation. Platform CPU for a virtual machine fits that pattern because Azure collects host-level metric signals without you first sending guest logs to a workspace.\n\nA log search alert evaluates a Kusto Query Language query on logs at a configured frequency. It is the correct type when the condition depends on rows in a Log Analytics table, joins, filters, counts, or other logic that is more expressive than a single metric comparison. The deadlock requirement is based on custom application events already stored in a workspace, so a query can count the matching rows over the evaluation window.\n\nAn activity log alert is different again. The Azure Activity log records subscription-level resource operations and service or resource health events. Deleting a network security group is a management-plane event, so an activity log alert can match the operation and call an action group.\n\nEvaluation order for this design is: choose the resource scope, choose the signal type that contains the needed evidence, define the condition, then attach actions or allow alert processing rules to modify notification behavior. Action groups decide what happens after an alert fires; they do not change metric data into log data or turn Activity log events into performance metrics.",
+      "wrongOptions": {
+        "B": "A log search alert can express advanced logic, but using it for platform CPU or subscription deletion would add complexity when native metric and activity log signals already match those requirements. Misconception: KQL is always the most exam-safe answer because it is flexible. Could be correct when the CPU signal must be combined with logs or when the deletion evidence has been exported to a workspace for a broader correlation query.",
+        "C": "Converting every signal into a custom metric is unnecessary and may lose useful event context. Activity log events are not naturally metric time series, and the custom deadlock rows already live in a log table. Misconception: Azure Monitor alerts are best standardized on one alert type. Could be correct when an application emits a clean numeric custom metric and you need low-latency metric alerting for that value.",
+        "D": "Activity log alerts watch Azure control-plane and health events, not a VM's ongoing CPU percentage or a custom application table. A metric alert also cannot directly detect that a network security group deletion operation occurred. Misconception: Activity log means any activity inside a resource. Could be correct when the requirement is to notify about VM start, VM restart, policy, resource health, service health, or another logged management event."
+      },
+      "plainEnglish": "Azure has different alarm types because not every warning sign lives in the same place. CPU percentage is like a gauge on a dashboard, so use a metric alert. Deadlock messages written by an application are like entries in a notebook, so use a log search alert that reads the notebook and counts the matching entries. A deleted network security group is like an official change record for the Azure subscription, so use an activity log alert. The action group is only the phone tree or automation that runs after the alarm exists; it is not the part that detects the evidence.",
+      "analogy": "Imagine a hospital command center with three different monitoring boards. A heart-rate monitor watches a numeric line, an incident journal stores detailed notes, and a building security log records who opened or removed equipment.\n\n| Analogy | Azure reality |\n|---|---|\n| Heart-rate monitor | Metric alert on VM CPU |\n| Incident journal search | Log search alert over a workspace table |\n| Building security log | Activity log alert for a resource operation |\n| Paging the specialist | Action group notification or automation |\n\n**Where the analogy breaks down:** Azure alert rules are evaluated by service-defined intervals, scopes, dimensions, and query windows. Hospital staff can sometimes infer missing details informally, but Azure Monitor only evaluates the data source and condition that the rule is configured to use.",
+      "jargon": [
+        {
+          "term": "Azure Monitor",
+          "definition": "Microsoft's monitoring service for collecting, analyzing, visualizing, and alerting on metrics and logs from Azure and other environments."
+        },
+        {
+          "term": "Metric alert",
+          "definition": "An alert rule that evaluates numeric metric time-series data such as CPU percentage, request count, or latency at regular intervals."
+        },
+        {
+          "term": "Platform metric",
+          "definition": "Metric data emitted by an Azure resource provider and available in Azure Monitor without writing a custom query first."
+        },
+        {
+          "term": "Log search alert",
+          "definition": "An alert rule that runs a Log Analytics query and evaluates the returned rows or numeric calculation."
+        },
+        {
+          "term": "Kusto Query Language (KQL)",
+          "definition": "The query language used to search and analyze data in Azure Monitor Logs and related services."
+        },
+        {
+          "term": "Log Analytics workspace",
+          "definition": "A workspace that stores Azure Monitor log data and supports KQL queries."
+        },
+        {
+          "term": "Activity log",
+          "definition": "The Azure subscription log for resource management operations, service health events, resource health events, policy events, and similar control-plane activity."
+        },
+        {
+          "term": "Action group",
+          "definition": "A reusable set of notification receivers and automated actions that can run when an alert fires."
+        },
+        {
+          "term": "Control plane",
+          "definition": "The management layer used to create, update, delete, or configure Azure resources, as distinct from application data moving through those resources."
+        },
+        {
+          "term": "Network security group",
+          "definition": "An Azure network resource containing security rules that filter inbound and outbound network traffic."
+        }
+      ],
+      "watchOut": "- Do not choose an alert type only because it can notify the right people; notifications are handled by action groups.\n- Metric alerts are strong when the required signal is already a metric and needs little manipulation.\n- Log search alerts are strong when you need KQL, log rows, joins, counts, or calculated values.\n- Activity log alerts are for Azure management and health events, not guest operating system events unless those events are written into a suitable log source.",
+      "productionTip": {
+        "official": "Microsoft documents that alert rules combine a monitored resource, a signal, and conditions, then use action groups and alert processing rules to determine what happens when an alert is triggered. Microsoft also distinguishes metric alerts, log search alerts, and activity log alerts by the type of data each evaluates.",
+        "recommendation": "For production, start with the native signal that already contains the evidence, because that usually reduces cost and operational complexity. Use log search alerts when the question really needs query logic, and document why the alert was not implemented as a simpler metric or activity log rule."
+      },
+      "memoryTrick": "Think **Gauge, Query, Audit**: metrics watch gauges, log search runs queries, and activity log alerts watch audited Azure operations. This shortcut fails if an application exports a log as a metric or sends management events into a workspace for custom correlation.",
+      "examTip": "The clue words are **CPU percentage**, **custom application writes events**, and **someone deletes a resource**. Match each phrase to where the evidence naturally lives. A harder exam version might include exported Activity log data in Log Analytics; if the requirement says to correlate several tables, log search may become correct, but a simple deletion operation is usually an activity log alert."
+    },
+    "sources": [
+      {
+        "title": "Overview of Azure Monitor alerts",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+      },
+      {
+        "title": "Types of Azure Monitor alerts",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-types"
+      },
+      {
+        "title": "Create Azure Monitor log search alert rules",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-create-log-alert-rule"
+      },
+      {
+        "title": "Create an activity log, service health, or resource health alert rule",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-create-activity-log-alert-rule"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.1.4-02",
+    "objective": "D5.1.4",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You manage alerting for a SaaS workload that has two different patterns.\n\n- `app-eastus` runs customer traffic with a strong weekday business-hours pattern. The team does not know a safe fixed value for normal request latency, but they want alerts for unusual deviations from the learned pattern.\n- `batch-westus` starts every night at 23:00 and is healthy as long as fewer than 50 jobs fail in a 30-minute window. If 50 or more jobs fail, the batch team wants a predictable incident every time.\n\nYou need to choose threshold behavior for the alert rules.\n\nWhich two choices should you make? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Configure `app-eastus` with a static threshold because dynamic thresholds cannot learn recurring patterns"
+      },
+      {
+        "id": "B",
+        "text": "Configure `batch-westus` with a dynamic threshold so Azure Monitor decides whether 50 failed jobs is unusual"
+      },
+      {
+        "id": "C",
+        "text": "Configure `app-eastus` with a dynamic threshold so the alert can learn historical behavior and detect anomalous deviations"
+      },
+      {
+        "id": "D",
+        "text": "Use a dynamic threshold for a rule that has several alert conditions combined in the same alert rule"
+      },
+      {
+        "id": "E",
+        "text": "Configure `batch-westus` with a static threshold that compares the failed-job count with the value chosen by the operations team"
+      }
+    ],
+    "correct": [
+      "C",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The latency signal supports dynamic thresholds. The failed-job count is available either as a metric or as a log search alert measurement with a numeric count over the window. The business wants deterministic behavior for the 50-job boundary.",
+    "sections": {
+      "correctAnswer": "**C. Configure `app-eastus` with a dynamic threshold so the alert can learn historical behavior and detect anomalous deviations** and **E. Configure `batch-westus` with a static threshold that compares the failed-job count with the value chosen by the operations team**. Dynamic thresholds fit an unknown seasonal baseline; a static threshold fits a known business rule.",
+      "technical": "A static threshold is a value you configure. The rule compares the measured value with that value by using an operator such as greater than or less than. Static thresholds are appropriate when the operations team has a clear limit, for example a failed-job count that must stay below 50 in a 30-minute window. The result is easier to explain because the alert should fire whenever the rule evaluation crosses the configured boundary.\n\nDynamic thresholds use machine learning to learn historical behavior, detect patterns such as hourly, daily, or weekly seasonality, and calculate bounds for unexpected behavior. Microsoft describes them as useful when you do not know the correct threshold or when one rule must scale across many series with different normal ranges. For `app-eastus`, business-hour latency may naturally rise and fall. A dynamic threshold can treat a Monday morning rise differently from a quiet weekend if the historical data supports that pattern.\n\nThere are limits. Dynamic thresholds do not immediately alert on brand-new data; Microsoft documents that alert rules using dynamic thresholds do not trigger before collecting three days and at least 30 samples. The model needs more history for weekly seasonality, and dynamic thresholds are better at significant deviations than slow drift. Microsoft also documents that dynamic thresholds cannot be used in alert rules that monitor multiple conditions.\n\nThe decision order is: identify whether the boundary is known, confirm the signal supports the chosen threshold type, choose sensitivity or numeric value, then set evaluation frequency and lookback so the rule evaluates the intended window.",
+      "wrongOptions": {
+        "A": "Dynamic thresholds are specifically designed to learn historical behavior and recurring patterns such as hourly, daily, or weekly patterns when enough data exists. Misconception: Machine learning thresholds are only for random metrics with no seasonality. Could be correct when the metric is unsupported for dynamic thresholds or when the team deliberately wants a fixed contractual limit.",
+        "B": "The batch requirement already defines the boundary as 50 failed jobs. Letting the model decide whether that number is unusual could miss a business-defined incident during periods when failures are historically common. Misconception: Dynamic always means smarter and therefore safer. Could be correct when the team lacks a meaningful numeric limit and only cares about abnormal changes from each job stream's past behavior.",
+        "D": "Microsoft documents that dynamic thresholds cannot be used in alert rules that monitor multiple conditions. Misconception: Dynamic threshold support is independent of the alert rule structure. Could be correct for a single-condition rule whose metric or log query result supports dynamic thresholds and has enough historical data."
+      },
+      "plainEnglish": "Use a fixed line when the company already knows the rule. If 50 failed jobs is the emergency number, draw the line at 50. Use a learning line when normal behavior changes by time of day or day of week and nobody can give a reliable fixed number. The learning line is helpful, but it needs history before it becomes trustworthy and it is not allowed in every alert design. It also should not replace a strict business promise, because the model's idea of unusual may not match the team's definition of unacceptable.",
+      "analogy": "A building manager uses two different alarms. The freezer alarm rings whenever the temperature goes above a printed food-safety value. The lobby crowd alarm watches normal foot traffic and rings when the crowd is strange for that hour.\n\n| Analogy | Azure reality |\n|---|---|\n| Printed food-safety value | Static threshold for 50 failed jobs |\n| Learned lobby pattern | Dynamic threshold for latency seasonality |\n| Several days of observations | Data needed before dynamic thresholds trigger |\n| One sensor rule | Dynamic threshold's single-condition limitation |\n\n**Where the analogy breaks down:** Azure dynamic thresholds calculate statistical bounds from time-series data and expose sensitivity choices. A building manager may override judgment instantly, but Azure Monitor evaluates only the configured rule and its supported signal type.",
+      "jargon": [
+        {
+          "term": "Static threshold",
+          "definition": "A configured value that an alert rule compares with a measured value by using an operator."
+        },
+        {
+          "term": "Dynamic threshold",
+          "definition": "A threshold calculated by Azure Monitor using machine learning over historical metric or log query result behavior."
+        },
+        {
+          "term": "Seasonality",
+          "definition": "A recurring pattern in data, such as higher latency during weekday business hours and lower latency overnight."
+        },
+        {
+          "term": "Sensitivity",
+          "definition": "A dynamic threshold setting that affects how much deviation is required before the alert fires."
+        },
+        {
+          "term": "Lookback period",
+          "definition": "The time window of data that an alert rule considers when it evaluates the condition."
+        },
+        {
+          "term": "Evaluation frequency",
+          "definition": "How often Azure Monitor checks the alert rule condition."
+        },
+        {
+          "term": "Time series",
+          "definition": "A sequence of measured values for a metric or query result over time."
+        },
+        {
+          "term": "Anomaly",
+          "definition": "A value or pattern that is outside the expected range for that signal."
+        },
+        {
+          "term": "Multiple conditions",
+          "definition": "An alert rule design where more than one condition must be evaluated in the same rule."
+        }
+      ],
+      "watchOut": "- Dynamic thresholds need enough history before they can alert reliably; they are not instant for new signals.\n- A dynamic model can be a poor match for a contractual or business-defined hard boundary.\n- Dynamic thresholds are not supported in alert rules that monitor multiple conditions.\n- Static thresholds are simple but can be noisy when normal behavior changes by hour, weekday, or resource instance.",
+      "productionTip": {
+        "official": "Microsoft documents static thresholds as configured values and dynamic thresholds as machine-learning thresholds that learn historical behavior, recognize patterns, and calculate suitable bounds. The dynamic threshold documentation also lists considerations, including the minimum data before triggering and the restriction on alert rules with multiple conditions.",
+        "recommendation": "Use static thresholds for service-level objectives, compliance cutoffs, queue limits, or any number the business can defend. Use dynamic thresholds after you review historical charts, choose a sensitivity deliberately, and document how new resources behave during the initial learning period."
+      },
+      "memoryTrick": "**Known line: static. Unknown pattern: dynamic.** This rule is a simplification because support differs by signal, and a metric can have a known emergency limit even when it also has daily seasonality.",
+      "examTip": "Watch for phrases such as **does not know a safe fixed value**, **weekday pattern**, and **learned behavior**; those point to dynamic thresholds. Phrases like **must be fewer than 50** or **predictable every time** point to static thresholds. A harder question may hide a multi-condition rule, which rules out dynamic thresholds even if the metric itself looks seasonal."
+    },
+    "sources": [
+      {
+        "title": "Create Azure Monitor metric alert rules",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-create-metric-alert-rule"
+      },
+      {
+        "title": "Create a Log Search alert rule with dynamic threshold",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-dynamic-thresholds"
+      },
+      {
+        "title": "Types of Azure Monitor alerts",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-types"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.1.4-03",
+    "objective": "D5.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank has 40 alert rules for production resources. The same on-call team must receive email and Azure mobile app push notifications, and a remediation workflow must run in Azure Logic Apps for high-severity alerts. The security team also wants to reuse the same response configuration from several alert rules without rebuilding it for each rule.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a separate action group for each alert rule and copy the email, push, and Logic Apps entries into every group"
+      },
+      {
+        "id": "B",
+        "text": "Create one reusable action group that contains notification receivers and a Logic Apps action, then attach it to the alert rules"
+      },
+      {
+        "id": "C",
+        "text": "Create an alert processing rule with suppression so alerts remain visible but no notification receivers are contacted"
+      },
+      {
+        "id": "D",
+        "text": "Create only an activity log alert because action groups are supported for activity log alerts but not metric or log search alerts"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The email receivers can complete any required email verification. The Logic Apps workflow has an endpoint suitable for use as an Azure Monitor action. The organization wants notification and automation reuse, not temporary suppression.",
+    "sections": {
+      "correctAnswer": "**B. Create one reusable action group that contains notification receivers and a Logic Apps action, then attach it to the alert rules**. Action groups define who is notified and which automation runs, and multiple alert rules can use the same action group.",
+      "technical": "An action group is the reusable response object for Azure Monitor alerts. It contains notification types, such as email, SMS, voice, Azure app push notification, or email to an Azure Resource Manager role, and action types, such as Automation runbook, Azure Functions, Logic Apps, secure webhook, webhook, Event Hubs, and ITSM. Each action entry has a type, a name, and type-specific details.\n\nThe scope of the alert rule and the scope of the action group solve different problems. The alert rule decides what data to monitor and when an alert fires. The action group decides what happens after the alert fires. Microsoft documents that multiple alert rules can use the same action group, which is exactly the reuse requirement in the question. Microsoft also documents that action groups are executed concurrently, in no specific order, so the design should not require email to finish before a Logic Apps workflow starts.\n\nThe documented limit that matters here is that you can add up to five action groups to a single alert rule. That does not mean you need five groups, and it does not prevent one group from containing multiple receiver and action entries.\n\nThe evaluation path is: alert rule condition is met, an alert instance is created, any relevant alert processing rules are applied, and action groups that remain associated with the fired alert execute their configured notifications and actions. Suppression rules can remove action groups, but suppression is the opposite of this scenario's goal.",
+      "wrongOptions": {
+        "A": "Copying the same receivers into 40 separate groups increases administrative effort and creates drift when the on-call address or workflow changes. Misconception: Each alert rule needs its own action group. Could be correct when different rules truly require separate ownership, regions, compliance boundaries, or response workflows.",
+        "C": "A suppression alert processing rule removes action groups from affected fired alerts, so it would stop the very notifications and Logic Apps action the bank needs. Misconception: Alert processing rules are the normal place to define every response. Could be correct during a maintenance window when alerts should remain visible but notifications should not be sent.",
+        "D": "Action groups are not limited to activity log alerts. Azure Monitor alert rules, including metric and log search alerts, can use action groups. Misconception: Activity log alert documentation mentioning action groups implies exclusivity. Could be correct only if the signal being monitored is specifically an activity log, service health, or resource health event."
+      },
+      "plainEnglish": "Think of an action group as the contact card and response checklist for an alarm. It can say, \"email this address, send a phone app push, and start this Logic Apps workflow.\" After you create that card, many alert rules can point to it. That is easier than writing the same contact card 40 times. If the on-call address changes, you update the shared card instead of hunting through many copies. Suppression is a separate feature for times when you intentionally do not want the contact card used.",
+      "analogy": "A bank branch has many sensors: vault door, server room temperature, and generator fuel. They all call the same incident desk card, which lists the duty manager and the automated building response.\n\n| Analogy | Azure reality |\n|---|---|\n| Sensor rule | Azure Monitor alert rule |\n| Incident desk card | Action group |\n| Duty manager phone and email | Notification receivers |\n| Automated building response | Logic Apps or automation action |\n| Temporarily silencing the card | Alert processing rule suppression |\n\n**Where the analogy breaks down:** Real people may decide the order of calls. Azure Monitor action group actions are executed concurrently and should be designed without depending on a specific execution sequence.",
+      "jargon": [
+        {
+          "term": "Action group",
+          "definition": "A reusable Azure Monitor resource that defines notification receivers and automated actions for fired alerts."
+        },
+        {
+          "term": "Notification type",
+          "definition": "A receiver method in an action group, such as email, SMS, voice, or Azure app push notification."
+        },
+        {
+          "term": "Action type",
+          "definition": "An automated response in an action group, such as Logic Apps, Azure Functions, Automation runbook, webhook, secure webhook, ITSM, or Event Hubs."
+        },
+        {
+          "term": "Logic Apps",
+          "definition": "An Azure service for creating workflow automations and integrations, including workflows triggered from alert notifications."
+        },
+        {
+          "term": "Azure app push notification",
+          "definition": "A notification sent to the Azure mobile app for the configured Azure account."
+        },
+        {
+          "term": "Alert rule",
+          "definition": "A configuration that watches a resource signal and creates an alert when its condition is met."
+        },
+        {
+          "term": "Fired alert",
+          "definition": "An alert instance created after the alert rule condition is met."
+        },
+        {
+          "term": "Alert processing rule",
+          "definition": "A rule that modifies fired alert behavior, such as adding or suppressing action groups according to scope, filters, and schedules."
+        },
+        {
+          "term": "Suppression",
+          "definition": "An alert processing rule action that removes action groups from affected fired alerts."
+        }
+      ],
+      "watchOut": "- Action groups are reusable; do not duplicate identical receiver lists unless separation is intentional.\n- Actions in a group run concurrently and in no specific order.\n- A single alert rule can have up to five action groups attached.\n- Email receiver verification and endpoint security are operational details that can prevent expected notifications if ignored.",
+      "productionTip": {
+        "official": "Microsoft documents action groups as collections of notification preferences and automated actions. The same documentation states that multiple alert rules can use the same action group, actions are executed concurrently, and up to five action groups can be added to a single alert rule.",
+        "recommendation": "Create action groups around durable response teams or workflows, such as `prod-platform-oncall`, rather than around individual metrics. Test each receiver after changes, use secure webhook or managed workflow patterns where possible, and keep high-severity automation idempotent because several alerts can call it at the same time."
+      },
+      "memoryTrick": "An **action group answers \"who and what happens next\"**, not \"what went wrong\". The shortcut fails if an alert processing rule later adds or suppresses the group before actions run.",
+      "examTip": "Clue words are **reuse**, **email**, **push notifications**, and **Logic Apps**. Those point directly to an action group. If the question says **during maintenance** or **outside business hours**, consider alert processing rules instead. If it asks what signal to watch, go back to metric, log, or activity log alert types."
+    },
+    "sources": [
+      {
+        "title": "Overview of Azure Monitor alerts",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+      },
+      {
+        "title": "Create and manage action groups in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/action-groups"
+      },
+      {
+        "title": "Alert processing rules for Azure Monitor alerts",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-processing-rules"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.1.4-04",
+    "objective": "D5.1.4",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Fabrikam has hundreds of alert rules across a subscription. During a planned Sunday maintenance window, alerts for virtual machines in resource group `rg-legacy` should still be created and visible in the Azure portal, but they must not page the on-call team. Separately, every Sev0 alert for production resources should call a new central incident action group, even if individual alert rule owners forget to add it. You need to minimize changes to existing alert rules.\n\nWhich two configurations should you use? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Disable every alert rule that might target `rg-legacy` before maintenance and re-enable the rules after maintenance"
+      },
+      {
+        "id": "B",
+        "text": "Create an alert processing rule scoped to `rg-legacy` with suppression scheduled for the Sunday maintenance window"
+      },
+      {
+        "id": "C",
+        "text": "Create an alert processing rule that applies the central incident action group to matching Sev0 production alerts"
+      },
+      {
+        "id": "D",
+        "text": "Create one new metric alert rule at subscription scope because alert processing rules cannot modify fired alerts"
+      },
+      {
+        "id": "E",
+        "text": "Move the existing action groups into the virtual machines so alert rules inherit them from the resource"
+      }
+    ],
+    "correct": [
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The alert processing rules are created in the same subscription as the resources they affect. The filters can identify the `rg-legacy` resource group, Sev0 severity, and the production resource scope. Azure Service Health alert exceptions are not part of this scenario.",
+    "sections": {
+      "correctAnswer": "**B. Create an alert processing rule scoped to `rg-legacy` with suppression scheduled for the Sunday maintenance window** and **C. Create an alert processing rule that applies the central incident action group to matching Sev0 production alerts**. Alert processing rules can suppress action groups on a schedule or add action groups at scale without editing each alert rule.",
+      "technical": "Alert processing rules operate on fired alerts as they are being processed. They are separate from alert rules: alert rules generate alerts, while alert processing rules change alert behavior for matching fired alerts. Microsoft documents two key actions: suppression, which removes action groups from affected fired alerts, and apply action groups, which adds one or more action groups.\n\nFor the maintenance requirement, suppression is the right action. The alerts still fire and remain visible in the portal, Azure Resource Graph, API, or PowerShell, but action groups are removed, so the on-call team is not paged. A schedule can make that rule active only during the planned Sunday window. This is better than disabling alert rules when the alert rule scope does not exactly match the machines under maintenance or when many rules cover the same resources.\n\nFor the central Sev0 requirement, an apply-action-groups processing rule is the at-scale configuration. The rule can be scoped to a subscription, resource group, or specific resources and narrowed with filters such as severity, resource type, resource group, monitor condition, or alert rule name. Microsoft documents that processing rules can add action groups even for alert types whose source did not let the owner specify action groups directly.\n\nPrecedence matters. Suppression has higher priority than apply action groups. If the same fired alert is matched by both a suppression rule and an apply-action-groups rule, action groups are suppressed. This is useful during maintenance but must be documented so the incident team understands why the central action group might not run inside a suppression window.",
+      "wrongOptions": {
+        "A": "Disabling alert rules prevents alerts from firing in the first place and can also hide real problems for resources not under maintenance if the rule covers a broader scope. Misconception: Pausing notifications and pausing alert evaluation are the same operation. Could be correct for a small, isolated rule whose entire scope is under maintenance and where losing alert instances is acceptable.",
+        "D": "Alert processing rules can modify fired alert behavior by adding or suppressing action groups. A new metric alert rule would not cover log, activity log, backup, or other alert sources, and it would duplicate detection logic. Misconception: Only alert rules can influence actions. Could be correct when a genuinely missing metric condition must be detected for the first time.",
+        "E": "Azure resources do not inherit action groups from virtual machines. Action groups are associated with alert rules or added by alert processing rules. Misconception: Notifications are a property of the monitored resource. Could be correct in unrelated services that support resource-level contact metadata, but not for Azure Monitor action group inheritance."
+      },
+      "plainEnglish": "The company wants two changes without editing hundreds of alarms. For Sunday maintenance, keep recording the alarms but remove the phone calls. That is suppression in an alert processing rule. For Sev0 production incidents, automatically attach the central response group when an alert is fired. That is the apply action groups behavior in another alert processing rule. Turning off alert rules would stop the alarm record itself, which removes useful history and can silence resources that are not actually in maintenance.",
+      "analogy": "A city keeps emergency reports flowing into dispatch even during a planned parade, but it temporarily stops sirens for streets inside the parade route. Separately, every highest-priority fire report is copied to a central command desk.\n\n| Analogy | Azure reality |\n|---|---|\n| Emergency report | Fired alert instance |\n| Siren list removed for parade streets | Suppression processing rule for maintenance |\n| Central command desk added to major fires | Apply action groups processing rule for Sev0 |\n| Parade schedule | Predefined processing rule schedule |\n| Fire alarm sensor | Original alert rule |\n\n**Where the analogy breaks down:** Azure processing is controlled by exact scopes, filters, and precedence. A dispatcher can improvise, but Azure Monitor follows the configured suppression and action-application rules for each fired alert.",
+      "jargon": [
+        {
+          "term": "Alert processing rule",
+          "definition": "A rule that changes the behavior of fired alerts by adding action groups or suppressing action groups according to scope, filters, and schedule."
+        },
+        {
+          "term": "Suppression",
+          "definition": "An alert processing rule action that removes all action groups from affected fired alerts so they do not invoke notifications or automation."
+        },
+        {
+          "term": "Apply action groups",
+          "definition": "An alert processing rule action that adds one or more action groups to affected fired alerts."
+        },
+        {
+          "term": "Scope",
+          "definition": "The Azure resources, resource groups, or subscription to which a rule applies."
+        },
+        {
+          "term": "Filter",
+          "definition": "A condition that narrows matching alerts, such as severity, resource group, resource type, monitor condition, or alert rule name."
+        },
+        {
+          "term": "Severity",
+          "definition": "A classification assigned to an alert rule or alert, commonly used to indicate business urgency such as Sev0."
+        },
+        {
+          "term": "Fired alert",
+          "definition": "An alert instance created when an alert rule condition is met."
+        },
+        {
+          "term": "Azure Resource Graph",
+          "definition": "An Azure service for querying resource and alert data across Azure environments."
+        },
+        {
+          "term": "Maintenance window",
+          "definition": "A planned time period when changes are expected and notifications may need different handling."
+        }
+      ],
+      "watchOut": "- Suppression removes action groups but does not delete the fired alert instance from alert listings.\n- Suppression has higher priority than apply action groups if both processing rule types match one fired alert.\n- A processing rule cannot target resources in a different subscription from the processing rule.\n- Disabling alert rules can be riskier than suppressing actions because the alert may not fire at all.",
+      "productionTip": {
+        "official": "Microsoft documents alert processing rules as rules that modify fired alerts by adding or suppressing action groups, applying filters, and using predefined schedules. The same documentation states that suppressed alerts remain visible and that the suppression action has higher priority than the apply action groups action.",
+        "recommendation": "Use scheduled suppression for planned maintenance when you still need auditability and post-maintenance review. Keep processing rule scopes narrow, include a description naming the change ticket, and test central action-group rules with a nonpaging receiver before routing Sev0 alerts to live incident systems."
+      },
+      "memoryTrick": "Processing rules **do not find the fire; they change the response to the fire**. This simplification fails only if the real gap is missing detection, in which case you still need a new alert rule.",
+      "examTip": "Clue words are **alerts should still be created**, **must not page**, **add an action group at scale**, and **minimize changes to existing alert rules**. Those words point to alert processing rules, not disabling alert rules. A harder question may include both suppression and apply rules; remember that suppression wins for the matching fired alert."
+    },
+    "sources": [
+      {
+        "title": "Overview of Azure Monitor alerts",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview"
+      },
+      {
+        "title": "Alert processing rules for Azure Monitor alerts",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-processing-rules"
+      },
+      {
+        "title": "Manage your alert rules",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-manage-alert-rules"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

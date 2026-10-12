@@ -1,0 +1,680 @@
+[
+  {
+    "id": "D3.4.5-01",
+    "objective": "D3.4.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure App Service app named `bluebird-prod`. The app's default host name is `bluebird-prod.azurewebsites.net`. Your DNS team owns the public DNS zone for `contoso.com` and asks how to map both `www.contoso.com` and the root domain `contoso.com` to the app. You want to use the Microsoft-recommended DNS record type for each name.\n\nWhich DNS design should you recommend?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a CNAME record for `www` that points to `bluebird-prod.azurewebsites.net`, and create an A record for `@` that points to the app's IP address."
+      },
+      {
+        "id": "B",
+        "text": "Create an A record for `www` and a CNAME record for `@`, both pointing to `bluebird-prod.azurewebsites.net`."
+      },
+      {
+        "id": "C",
+        "text": "Create CNAME records for both `www` and `@`, because CNAME records survive App Service IP changes."
+      },
+      {
+        "id": "D",
+        "text": "Create TXT records only, because App Service maps custom domains by using the domain verification ID."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The app already exists, the DNS team can edit the public `contoso.com` zone, and the question is about DNS records for App Service custom domain mapping, not TLS certificate binding.",
+    "sections": {
+      "correctAnswer": "**A. Create a CNAME record for `www` that points to `bluebird-prod.azurewebsites.net`, and create an A record for `@` that points to the app's IP address.** Microsoft recommends CNAME for subdomains such as `www.contoso.com` and an A record for the root or apex name `contoso.com`.",
+      "technical": "App Service custom domain mapping depends on the host name you are adding. Microsoft separates the DNS choice by name shape, not by whether the same app receives the traffic.\n\n| Name being mapped | Example | Recommended record | Target value |\n|---|---|---|---|\n| Subdomain | `www.contoso.com` | CNAME | The app's default host name, such as `bluebird-prod.azurewebsites.net` |\n| Root or apex domain | `contoso.com` | A | The inbound IP address shown for the app |\n\nThe reason is DNS behavior. A CNAME record makes one DNS name an alias of another DNS name, so it is a good fit for `www` because it follows the app's default Azure host name rather than hard-coding the app IP address. Microsoft notes that an App Service inbound IP address can change in some situations, so a CNAME is less exposed to that risk for subdomains. A root domain is different: Microsoft says not to use a CNAME for the root domain and recommends an A record instead.\n\nThe mapping also has an ownership-check side. For the root, App Service uses a TXT record named `asuid` with the domain verification ID. For a subdomain, the recommended TXT name is `asuid.<subdomain>`, for example `asuid.www`. Those TXT records do not replace the A or CNAME mapping record; they prove that the tenant adding the host name controls the DNS name. The usual order is to collect the default host name or IP address and verification ID, publish DNS, validate in App Service, and then add the custom domain.",
+      "wrongOptions": {
+        "B": "An A record for `www` can work in some cases, but it is not the recommended subdomain mapping when a CNAME can point to the app's default host name. A CNAME at `@` is the wrong direction for the root name in the Microsoft guidance. Misconception: any host label can use the same record type if the final destination is the same app. Could be correct when a DNS provider offers a special alias-like apex feature outside ordinary CNAME behavior, but that is not the standard App Service answer.",
+        "C": "The CNAME part is attractive for `www`, but Microsoft specifically warns not to use CNAME for the root domain in the App Service mapping table. Misconception: because CNAME reduces dependence on an IP address, it should be used everywhere. Could be correct for multiple subdomains such as `api.contoso.com` and `www.contoso.com`, not for the ordinary apex record described here.",
+        "D": "TXT records help App Service verify domain ownership, but a TXT record does not route browser traffic to the app. The domain still needs an A or CNAME record for name resolution. Misconception: validation and traffic mapping are the same DNS function. Could be correct as only the pre-binding step in a no-downtime migration before changing the active A or CNAME record."
+      },
+      "plainEnglish": "A website name has to answer two questions. First, where should users go? Second, can the Azure app prove that the owner of the name allowed the mapping? For `www.contoso.com`, the answer to the first question is usually a CNAME: it says that `www` is an alias for the Azure default name. For `contoso.com` without anything in front, the answer is an A record: it points the root name to the app's IP address. The TXT record is like an ownership receipt. It helps Azure trust the mapping, but it does not send users to the web app by itself.",
+      "analogy": "Imagine a company mailroom. For a named department such as `www`, the receptionist can say, `follow the sign for Bluebird-prod`, and the sign can be moved later. For the company front door, the street directory needs the actual street address. The ownership tag proves that the company authorized the sign.\n\n| Analogy | Azure reality |\n|---|---|\n| Department sign | CNAME for a subdomain |\n| Street address | A record for the root domain |\n| Authorization tag | `asuid` TXT verification record |\n| Bluebird building | App Service app |\n\n**Where the analogy breaks down:** DNS resolution is performed by recursive and authoritative DNS servers, not a receptionist, and App Service also validates host name bindings before serving the app for that name.",
+      "jargon": [
+        {
+          "term": "Azure App Service",
+          "definition": "A managed Azure service for hosting web apps, APIs, mobile back ends, and some function apps without managing web servers."
+        },
+        {
+          "term": "Default host name",
+          "definition": "The automatically assigned App Service name ending in `azurewebsites.net`, such as `bluebird-prod.azurewebsites.net`."
+        },
+        {
+          "term": "Custom domain",
+          "definition": "A DNS name that you own, such as `www.contoso.com`, and bind to an App Service app."
+        },
+        {
+          "term": "CNAME record",
+          "definition": "A DNS alias record that points one host name to another host name."
+        },
+        {
+          "term": "A record",
+          "definition": "A DNS address record that maps a name to an IPv4 address."
+        },
+        {
+          "term": "Root domain",
+          "definition": "The bare domain name, such as `contoso.com`, also called an apex domain."
+        },
+        {
+          "term": "TXT record",
+          "definition": "A DNS text record. App Service uses an `asuid` TXT record to verify domain ownership."
+        },
+        {
+          "term": "Inbound IP address",
+          "definition": "The public IP address App Service shows for traffic that is routed directly through an A record."
+        }
+      ],
+      "watchOut": "- Do not put a normal CNAME at the root domain in the standard App Service mapping design.\n- A subdomain can use an A record, but Microsoft recommends CNAME because it points to the app's default host name.\n- The `asuid` TXT record proves ownership; it is not the traffic record.\n- Mapping `www.contoso.com` does not automatically map `contoso.com`; add each host name you need.",
+      "productionTip": {
+        "official": "Microsoft documents separate recommended DNS records for App Service: A for the root domain, CNAME for subdomains, and CNAME for wildcard names. The same App Service article says custom domains must be in a public DNS zone and that private DNS zones are not supported for this custom domain feature.",
+        "recommendation": "Prefer CNAME for user-facing subdomains so routine App Service IP changes are less likely to force DNS edits. Keep a short operational record of the host name, target app, verification TXT value, and who owns the public DNS zone so later migrations are less risky."
+      },
+      "memoryTrick": "**W means CNAME, root means A.** This is a simplification: a subdomain can be mapped with an A record, but the exam usually expects the recommended CNAME pattern for `www`.",
+      "examTip": "When the stem contrasts `www.contoso.com` with `contoso.com`, classify the names before reading the answer choices. Subdomain plus `azurewebsites.net` points you toward CNAME; root domain plus app IP points you toward A record. A harder item might add the TXT verification row and ask which record sends traffic. Remember that TXT proves ownership while A or CNAME performs the mapping."
+    },
+    "sources": [
+      {
+        "title": "Set Up an Existing Custom Domain Name for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+      },
+      {
+        "title": "Azure App Service limits",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits#azure-app-service-limits"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.5-02",
+    "objective": "D3.4.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have an App Service app named `litware-portal` and an Azure DNS public zone named `litware.com`. The app's **Custom domains** blade shows a Custom Domain Verification ID. You need to map `shop.litware.com` to the app by using Azure DNS and you want to reduce the risk of subdomain takeover.\n\nWhich two DNS record sets should you create in the Azure DNS zone before you validate and add the host name? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "A CNAME record set named `shop` that points to `litware-portal.azurewebsites.net`."
+      },
+      {
+        "id": "B",
+        "text": "A TXT record set named `asuid.shop` whose value is the Custom Domain Verification ID from the app."
+      },
+      {
+        "id": "C",
+        "text": "An NS record set named `shop` that delegates the subdomain to App Service name servers."
+      },
+      {
+        "id": "D",
+        "text": "A TXT record set named `shop` whose value is `litware-portal.azurewebsites.net`."
+      },
+      {
+        "id": "E",
+        "text": "A CAA record set named `asuid.shop` that allows Microsoft to issue certificates."
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Azure DNS is authoritative for the public `litware.com` zone, the App Service app is not on the Free tier, and the requirement is to map a subdomain, not to delegate DNS authority for a child zone.",
+    "sections": {
+      "correctAnswer": "**A. A CNAME record set named `shop` that points to `litware-portal.azurewebsites.net`** and **B. A TXT record set named `asuid.shop` whose value is the Custom Domain Verification ID from the app**. The CNAME maps the subdomain to the app's default host name, and the `asuid.shop` TXT value verifies ownership for App Service.",
+      "technical": "In Azure DNS, a record set groups records that share the same name and type inside a DNS zone. For an App Service subdomain mapping, two separate DNS purposes are involved. The traffic mapping uses a CNAME record named for the subdomain label, `shop`, with the app's default `azurewebsites.net` host name as the value. The ownership proof uses a TXT record whose host name is `asuid.<subdomain>`, so this scenario needs `asuid.shop`, and the value must be the Custom Domain Verification ID shown by the App Service app.\n\nThe flow is: create or open the public Azure DNS zone, add the CNAME record set for `shop`, add the TXT record set for `asuid.shop`, return to the App Service **Add custom domain** dialog, select **Validate**, and then add the custom domain if validation succeeds. Microsoft states that the TXT verification ID is strongly recommended for security because it helps prevent subdomain takeovers by other App Service apps.\n\nThe scope is public DNS. App Service custom domains require a public DNS zone; a private DNS zone is not enough for the public custom-domain validation path. Azure DNS can host the public zone, but it becomes authoritative only after the domain is delegated at the registrar to the Azure DNS name servers. If `litware.com` was created as an Azure DNS zone but the registrar still delegates the domain somewhere else, public validation might not see the records.",
+      "wrongOptions": {
+        "C": "An NS record delegates a child DNS zone to name servers. App Service custom domain mapping does not require creating App Service name servers for `shop`. Misconception: because Azure validates DNS, the subdomain must be delegated to Azure infrastructure. Could be correct when you intentionally create a child zone such as `dev.litware.com` and delegate authority for that child zone.",
+        "D": "A TXT record named `shop` with the default host name is not the App Service ownership record described by Microsoft. The verification TXT record uses the `asuid` prefix and contains the verification ID, not the app host name. Misconception: any text record near the target name proves ownership. Could be correct for a different product that asks for a TXT token at the host label, but not for this App Service mapping.",
+        "E": "CAA records control which certificate authorities may issue certificates for a domain; they are not the DNS records App Service uses to bind a custom host name. Misconception: certificate issuance controls and App Service domain verification are the same step. Could be correct when planning public certificate issuance policy, but it does not replace the `asuid.shop` TXT record or the CNAME."
+      },
+      "plainEnglish": "You need one record that says where visitors should go and one record that proves you own the name. The CNAME record for `shop` is the direction sign: when someone asks for `shop.litware.com`, DNS points them to the app's Azure name. The TXT record named `asuid.shop` is the proof note: App Service checks that note to make sure someone who controls `litware.com` approved the binding. Azure DNS is just the place where those records are stored, provided the domain registrar is actually sending public DNS queries to the Azure DNS name servers.",
+      "analogy": "Think of Azure DNS as a building directory. One entry says `shop is in the Litware Portal office`; another locked note says `the landlord approved this shop sign`. Visitors follow the directory entry, while Azure checks the landlord note before it lets the sign be attached.\n\n| Analogy | Azure reality |\n|---|---|\n| Directory entry for shop | CNAME `shop` |\n| Landlord approval note | TXT `asuid.shop` |\n| Litware Portal office | `litware-portal.azurewebsites.net` |\n| Building directory service | Azure DNS public zone |\n\n**Where the analogy breaks down:** DNS records are cached and delegated across the internet. A paper directory does not model registrar delegation, TTL, or the portal validation service.",
+      "jargon": [
+        {
+          "term": "Azure DNS",
+          "definition": "An Azure service that hosts public or private DNS zones and record sets."
+        },
+        {
+          "term": "Public DNS zone",
+          "definition": "A DNS zone resolvable from the internet when the domain is delegated to its authoritative name servers."
+        },
+        {
+          "term": "Record set",
+          "definition": "In Azure DNS, the collection of DNS records with the same name and type inside a zone."
+        },
+        {
+          "term": "CNAME",
+          "definition": "A DNS record type that makes one name an alias for another name."
+        },
+        {
+          "term": "TXT",
+          "definition": "A DNS record type that stores text values, including ownership verification tokens."
+        },
+        {
+          "term": "Custom Domain Verification ID",
+          "definition": "The App Service-generated value placed in an `asuid` TXT record so App Service can verify domain ownership."
+        },
+        {
+          "term": "Subdomain takeover",
+          "definition": "A risk where a DNS name points at a service endpoint that an attacker can claim if ownership is not verified or the old binding is abandoned."
+        },
+        {
+          "term": "Registrar delegation",
+          "definition": "The process of configuring the parent domain to send DNS queries to the authoritative name servers for a DNS zone."
+        }
+      ],
+      "watchOut": "- In Azure DNS, record set names are relative to the zone, so enter `shop`, not the full `shop.litware.com`, when the zone is `litware.com`.\n- The TXT record for this subdomain is `asuid.shop`, not just `asuid` and not `shop`.\n- The TXT value is the verification ID from App Service, not the app's default host name.\n- Azure DNS hosting works only after the registrar delegates the domain to Azure DNS name servers.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure DNS can host DNS records for an App Service custom DNS name. The App Service custom-domain article recommends a CNAME record for a subdomain and an `asuid.<subdomain>` TXT record containing the domain verification ID to reduce subdomain takeover risk.",
+        "recommendation": "Treat the TXT verification record as a permanent security control rather than a temporary setup artifact. Store the App Service app name and verification ID in your DNS change ticket, and use Azure RBAC so only approved operators can edit the public DNS zone."
+      },
+      "memoryTrick": "For a subdomain, remember **name for traffic, asuid.name for trust**. The rule is a shortcut for App Service; other Azure services may ask for different verification labels.",
+      "examTip": "When a question mentions Azure DNS and a subdomain, do not switch to NS delegation unless it explicitly asks for a child zone. Look for the pair: CNAME host label to `azurewebsites.net`, plus TXT `asuid.<host>` to the verification ID. A harder version might show the record-set form used in the Azure portal, where names are relative to the zone rather than fully qualified."
+    },
+    "sources": [
+      {
+        "title": "Set Up an Existing Custom Domain Name for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+      },
+      {
+        "title": "Quickstart: Create a public DNS zone and record - Azure portal - Azure DNS",
+        "url": "https://learn.microsoft.com/en-us/azure/dns/dns-getstarted-portal"
+      },
+      {
+        "title": "Tutorial: Host your domain in Azure DNS",
+        "url": "https://learn.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.5-03",
+    "objective": "D3.4.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You support an App Service app named `tailspin-sites`. Marketing wants any future one-label host name under `tailspintoys.com`, such as `spring.tailspintoys.com` and `vip.tailspintoys.com`, to resolve to the app without creating a separate CNAME for every campaign. You decide to add the wildcard custom domain `*.tailspintoys.com` to App Service.\n\nWhich DNS records should you create for the wildcard mapping?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a CNAME record named `*.asuid` that points to `tailspin-sites.azurewebsites.net`, and create a TXT record named `*` containing the app name."
+      },
+      {
+        "id": "B",
+        "text": "Create a CNAME record named `*` that points to `tailspin-sites.azurewebsites.net`, and create a TXT record named `asuid` that contains the app's Custom Domain Verification ID."
+      },
+      {
+        "id": "C",
+        "text": "Create an A record named `*` that points to `tailspin-sites.azurewebsites.net`, and create no TXT record because wildcard records prove ownership."
+      },
+      {
+        "id": "D",
+        "text": "Create a CNAME record named `*` that points to `sni.tailspin-sites.azurewebsites.net`, because wildcard domains always require SNI host names."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The goal is to map the wildcard DNS name to App Service over HTTP first; TLS certificate coverage is a separate task. The wildcard is for one label below `tailspintoys.com`, not for the root domain itself.",
+    "sections": {
+      "correctAnswer": "**B. Create a CNAME record named `*` that points to `tailspin-sites.azurewebsites.net`, and create a TXT record named `asuid` that contains the app's Custom Domain Verification ID.** Microsoft lists CNAME as the recommended App Service record type for wildcard names and uses `asuid` as the TXT host for wildcard verification.",
+      "technical": "A wildcard custom domain in App Service uses a DNS wildcard label such as `*` in the zone. Microsoft shows the App Service wildcard example `*.contoso.com` with a CNAME record whose host is `*` and whose value is the app's default host name from the App Service overview page. For the ownership record, the wildcard row uses a TXT record with host `asuid` and the domain verification ID as the value.\n\nThe wildcard mapping changes DNS matching, but it does not remove App Service validation. App Service still needs the custom host name binding for `*.tailspintoys.com`, and it still checks that the domain owner published the verification value. The wildcard is scoped to one label at that DNS level. It can match `spring.tailspintoys.com`, but it is not the same as the apex `tailspintoys.com` and it does not automatically create separate portal entries for each specific campaign name.\n\nOne documented exception matters when migrating: Microsoft notes that wildcard `*` records do not validate subdomains that already have an existing CNAME record, so explicit TXT records might be needed for particular existing subdomains. Also, TLS is separate from the mapping. After the wildcard host name is added, HTTPS requires an appropriate certificate binding. App Service Managed Certificates currently do not support wildcards according to the troubleshooting guidance, so a wildcard HTTPS plan usually involves a certificate you upload or import rather than expecting the mapping alone to secure every name.",
+      "wrongOptions": {
+        "A": "The CNAME host should be the wildcard label `*`, not `*.asuid`, and the verification TXT value should be the App Service verification ID, not the app name. Misconception: the wildcard and verification prefix must be combined into one DNS name. Could be correct for no standard App Service wildcard mapping; it is simply the wrong label pattern here.",
+        "C": "An A record value is an IP address, not another host name such as `tailspin-sites.azurewebsites.net`. Microsoft recommends CNAME for wildcard App Service mappings and still uses a TXT record for verification. Misconception: a wildcard traffic record automatically demonstrates ownership. Could be correct if a DNS provider allowed a wildcard A record pointing to an IP address for a different service design, but that is not the documented App Service pattern.",
+        "D": "The `sni.<app-name>.azurewebsites.net` target appears in the TLS article for remapping certain SNI SSL scenarios, not as the basic custom domain mapping target for a wildcard. Misconception: every custom domain that might later use HTTPS must point at an SNI-prefixed host immediately. Could be correct after a particular SNI SSL remapping instruction, but not for adding the wildcard mapping in this question."
+      },
+      "plainEnglish": "A wildcard DNS record is a catch-all for many names at the same level. Instead of making `spring`, `vip`, and every future campaign one by one, you create `*` in the DNS zone. App Service then needs two pieces: the wildcard CNAME that sends matching names to the Azure app, and a TXT record that proves the domain owner approved the binding. The TXT record is not named `asuid.spring` for the wildcard itself; the wildcard instructions use `asuid` at the zone level.",
+      "analogy": "Picture a hotel that wants all future event-room signs to send visitors to the same reception desk. A sign that says `any event room: go to Tailspin reception` covers many future event names. The property manager also leaves a signed note saying the hotel owns the event-room naming area.\n\n| Analogy | Azure reality |\n|---|---|\n| Any event room sign | Wildcard `*` CNAME |\n| Tailspin reception | `tailspin-sites.azurewebsites.net` |\n| Signed property note | TXT `asuid` verification record |\n| Individual event names | One-label subdomains under the zone |\n\n**Where the analogy breaks down:** DNS wildcard matching has formal rules and can be overridden by more specific DNS records; a hallway sign does not model those name-resolution details.",
+      "jargon": [
+        {
+          "term": "Wildcard domain",
+          "definition": "A DNS name containing `*` that can match multiple names at that level, such as `*.tailspintoys.com`."
+        },
+        {
+          "term": "CNAME",
+          "definition": "A DNS alias record that points a host name to another host name."
+        },
+        {
+          "term": "TXT",
+          "definition": "A DNS record that stores text; App Service uses it for ownership verification."
+        },
+        {
+          "term": "Custom Domain Verification ID",
+          "definition": "The App Service value placed in the `asuid` TXT record to prove domain control."
+        },
+        {
+          "term": "Apex domain",
+          "definition": "The root name of the zone, such as `tailspintoys.com`, which is not covered by a one-label wildcard in the same way as `spring.tailspintoys.com`."
+        },
+        {
+          "term": "SNI",
+          "definition": "Server Name Indication, a TLS extension that helps a server choose the right certificate for the requested host name."
+        },
+        {
+          "term": "App Service Managed Certificate",
+          "definition": "A free certificate option that App Service can create for supported custom domains, but not for wildcard certificates."
+        },
+        {
+          "term": "Host name binding",
+          "definition": "The App Service configuration that allows the app or slot to answer for a particular custom domain name."
+        }
+      ],
+      "watchOut": "- A wildcard such as `*.tailspintoys.com` does not map the root `tailspintoys.com`.\n- The documented wildcard traffic record is a CNAME with host `*`.\n- For the wildcard verification record, the host is `asuid`, not `asuid.*`.\n- Existing specific CNAME records can require explicit verification records in migration scenarios.\n- DNS wildcard mapping is not the same as owning a wildcard TLS certificate.",
+      "productionTip": {
+        "official": "Microsoft's App Service custom-domain article lists wildcard names with a CNAME record and shows the wildcard TXT verification host as `asuid`. The active-domain migration article notes that wildcard records do not validate subdomains that already have existing CNAME records, so explicit TXT records might be required for those subdomains.",
+        "recommendation": "Use wildcard bindings sparingly and document which application will handle arbitrary host names. Add application-level host validation if different tenant or campaign names imply different content, because DNS wildcarding can send unexpected names to the same app."
+      },
+      "memoryTrick": "For App Service wildcard mapping, think **star for traffic, plain asuid for proof**. This mnemonic is only for the wildcard row; ordinary subdomains use `asuid.<subdomain>`.",
+      "examTip": "Clue words are `*.contoso.com` or `any future subdomain`. Pick the answer with a wildcard CNAME to the default app host name plus the documented TXT verification record. A tougher version may add HTTPS; then separate the mapping from certificate support and remember that wildcard managed certificates are not the same as wildcard DNS bindings."
+    },
+    "sources": [
+      {
+        "title": "Set Up an Existing Custom Domain Name for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+      },
+      {
+        "title": "Migrate an Active Domain - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+      },
+      {
+        "title": "Troubleshoot custom domain issues in Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/troubleshoot/azure/app-service/connection-issues-with-ssl-or-tls/troubleshoot-custom-domain-issues-azure-app-service"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.5-04",
+    "objective": "D3.4.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an App Service app named `adatum-help` in an App Service plan that uses the Free F1 tier. You need to add `help.adatum.com` as a custom domain and also create an App Service Managed Certificate for that host name during the portal workflow. You want the least expensive tier that satisfies both requirements.\n\nWhat should you do first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep the app in Free F1 and add only the TXT verification record before validating the domain."
+      },
+      {
+        "id": "B",
+        "text": "Scale the App Service plan to Shared D1, because Shared supports custom domains and App Service Managed Certificates."
+      },
+      {
+        "id": "C",
+        "text": "Scale the App Service plan to Basic B1 or higher before adding the custom domain with an App Service Managed Certificate."
+      },
+      {
+        "id": "D",
+        "text": "Move the DNS zone to Azure DNS, because the App Service plan tier does not affect custom domain mapping."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The domain is a public DNS name that the administrator can edit. The requirement includes both custom domain mapping and an App Service Managed Certificate, not just HTTP custom-domain routing.",
+    "sections": {
+      "correctAnswer": "**C. Scale the App Service plan to Basic B1 or higher before adding the custom domain with an App Service Managed Certificate.** Free F1 has zero custom domains in the limits table, and App Service Managed Certificates are available starting at Basic in the App Service limits and custom-domain workflow.",
+      "technical": "Two tier-related rules intersect in this scenario. First, the App Service limits table lists custom domains per app as `0` for Free and `500` for Shared, Basic, Standard, Premium, and Isolated. That means Free F1 cannot host the custom domain binding. Second, the custom-domain workflow says the **App Service Managed Certificate** choice is available if the app is in the Basic tier or higher, and the limits table lists App Service Managed Certificates from Basic upward.\n\nBecause the question requires both mapping and an App Service Managed Certificate during setup, Shared D1 is not enough even though Shared has custom-domain capacity. Shared also lacks custom domain SSL support in the limits table. Basic B1 is the lowest tier among the choices that satisfies both the custom domain and the managed certificate requirement.\n\nThe evaluation order is: identify the required feature set, check custom-domain support, then check certificate support. If the requirement were only to route HTTP traffic for a custom domain, the answer might discuss Shared support in the limits table. If the requirement is a managed certificate or custom domain TLS binding, the answer must move to Basic or higher, and IP-based SSL has an even higher Standard-or-above requirement in the TLS binding documentation. DNS hosting location does not override these plan capabilities.",
+      "wrongOptions": {
+        "A": "A TXT verification record proves ownership, but it does not add custom-domain capacity to the Free tier. Free is listed with zero custom domains per app. Misconception: passing DNS validation is enough even when the plan tier blocks the feature. Could be correct as one DNS preparation step after the plan is in a supported tier.",
+        "B": "Shared is a paid shared-compute tier and the limits table lists custom domains for it, but App Service Managed Certificates and custom domain SSL support start at Basic in the documented tables and workflow. Misconception: any non-Free tier supports every custom-domain feature. Could be correct for a question that only asks for HTTP custom-domain mapping without a managed certificate requirement.",
+        "D": "Azure DNS can host the records, but it cannot make an unsupported App Service plan accept a custom domain or issue a managed certificate. Misconception: DNS provider choice controls App Service feature availability. Could be correct if the problem were lack of access to edit DNS records at the current provider, not a Free-tier and certificate support issue."
+      },
+      "plainEnglish": "The plan tier is like the feature package for the web app. Free F1 does not include custom domains. Shared can hold custom domains, but the question also asks Azure to create the managed certificate for HTTPS. That certificate option starts at Basic. So the first step is not a DNS change; it is changing the app's plan to Basic B1 or higher. After that, you can add the CNAME and TXT records, validate the domain, and continue with the certificate binding process.",
+      "analogy": "A venue offers packages. The free package does not allow a custom sign outside the building. The shared package allows the sign, but not the venue-provided security seal. The basic package allows both the sign and the seal.\n\n| Analogy | Azure reality |\n|---|---|\n| Custom sign | Custom domain binding |\n| Security seal | App Service Managed Certificate |\n| Free package | Free F1 tier |\n| Basic package | Basic B1 or higher App Service plan |\n\n**Where the analogy breaks down:** Azure tiers also affect compute, storage, scale, and other features; this analogy focuses only on the custom-domain and certificate pieces asked in the scenario.",
+      "jargon": [
+        {
+          "term": "App Service plan",
+          "definition": "The Azure resource that defines compute resources, region, operating system, scaling, and pricing tier for one or more App Service apps."
+        },
+        {
+          "term": "Free F1",
+          "definition": "The Free App Service tier, which the limits table lists with zero custom domains per app."
+        },
+        {
+          "term": "Shared D1",
+          "definition": "A shared-compute paid tier where apps run on VMs shared with other customers and receive CPU quotas."
+        },
+        {
+          "term": "Basic B1",
+          "definition": "A dedicated-compute Basic tier instance size and the lowest tier in the choices that supports App Service Managed Certificates."
+        },
+        {
+          "term": "App Service Managed Certificate",
+          "definition": "A free certificate option that App Service can create for supported custom domains on supported tiers."
+        },
+        {
+          "term": "TLS/SSL binding",
+          "definition": "The App Service configuration that associates a certificate with a custom domain so HTTPS works for that host name."
+        },
+        {
+          "term": "Custom domain SSL support",
+          "definition": "Tier capability for binding certificates to custom domains; Shared does not include it in the limits table."
+        },
+        {
+          "term": "Scale up",
+          "definition": "Changing an App Service plan to a higher pricing tier to unlock more features or capacity."
+        }
+      ],
+      "watchOut": "- Free F1 is the obvious blocker for custom domains.\n- Shared can appear tempting because it is paid, but the managed-certificate requirement pushes this scenario to Basic or higher.\n- IP-based SSL is a separate TLS option and requires Standard or higher.\n- DNS records can be correct and validation can still fail if the App Service plan is not eligible for the feature being configured.",
+      "productionTip": {
+        "official": "Microsoft documents Free with zero custom domains per app and lists Shared and higher with custom domain capacity. The TLS and custom-domain articles document App Service Managed Certificate and TLS binding prerequisites at Basic or higher, while IP-based SSL is supported in Standard or higher.",
+        "recommendation": "Record the exact feature that caused the scale-up, not just the new SKU. If a team only needs temporary HTTP testing, Shared might be discussed, but production custom domains should usually be planned together with HTTPS, certificate renewal, monitoring, and cost ownership."
+      },
+      "memoryTrick": "**Free has no name, Basic gets the managed certificate.** This shortcut is for App Service custom domains; other services and certificate products have their own SKU rules.",
+      "examTip": "Notice the compound requirement: custom domain plus App Service Managed Certificate. Answer choices that only solve DNS or only leave the app in a paid-but-Shared tier do not satisfy both halves. A harder question may ask for IP-based SSL, where Standard or higher becomes relevant instead of Basic."
+    },
+    "sources": [
+      {
+        "title": "Azure App Service limits",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits#azure-app-service-limits"
+      },
+      {
+        "title": "Set Up an Existing Custom Domain Name for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+      },
+      {
+        "title": "Secure Your Domain with TLS/SSL - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+      },
+      {
+        "title": "Azure App Service Plans",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.5-05",
+    "objective": "D3.4.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Woodgrove Bank currently serves `www.woodgrovebank.com` from an on-premises web farm. A new App Service app named `woodgrove-web` is ready, and the DNS team wants to avoid downtime in DNS resolution during the migration. The existing CNAME for `www` must continue to point to the on-premises service until the cutover window.\n\nWhat should you do before changing the active CNAME record?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create an A record for `www` that points to the on-premises web farm and a second CNAME record for `www` that points to App Service."
+      },
+      {
+        "id": "B",
+        "text": "Change the `www` CNAME to `woodgrove-web.azurewebsites.net`, wait for propagation, and then add the custom domain in App Service."
+      },
+      {
+        "id": "C",
+        "text": "Delete the existing `www` record so App Service can claim the name, and recreate it after the custom domain appears in the portal."
+      },
+      {
+        "id": "D",
+        "text": "Add a TXT record named `asuid.www` with the App Service Custom Domain Verification ID, then validate and add `www.woodgrovebank.com` to the App Service app."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The organization controls the public DNS zone, the App Service app is in a supported tier, and the goal is to pre-bind the active subdomain before the traffic cutover.",
+    "sections": {
+      "correctAnswer": "**D. Add a TXT record named `asuid.www` with the App Service Custom Domain Verification ID, then validate and add `www.woodgrovebank.com` to the App Service app.** Microsoft documents this preemptive binding pattern for active-domain migration so the domain can be enabled in App Service before the live CNAME changes.",
+      "technical": "A normal custom-domain setup often creates the traffic record and the verification record before validation. An active migration is different because the traffic record is already serving users from the old site. Microsoft documents a no-downtime DNS-resolution pattern: publish the domain verification ID as a TXT record first, add the custom domain to App Service by validating the TXT record, and only later remap the active A or CNAME record to App Service.\n\nFor `www.woodgrovebank.com`, the TXT host is `asuid.www`, and the value is the Custom Domain Verification ID from the target App Service app. When the portal validates this TXT record, App Service can enable the host name binding even though the `www` CNAME still points at the on-premises system. During cutover, the DNS team changes the existing `www` CNAME to `woodgrove-web.azurewebsites.net`. DNS queries move to the App Service app after normal DNS propagation, but the app is already allowed to answer for the host name.\n\nThis approach avoids the gap where DNS points users to App Service before App Service accepts the host header. It does not eliminate every application-level risk: certificates, redirects, application configuration, and backend dependencies still need migration planning. It also does not allow the same domain to be assigned freely everywhere; Microsoft notes special considerations when migrating between App Service apps in the same deployment unit.",
+      "wrongOptions": {
+        "A": "A single DNS name should not have both a CNAME and another data record such as an A record in ordinary DNS, and this design does not create a clean cutover path. Misconception: adding both destinations gives automatic load sharing or fallback. Could be correct never for this App Service mapping pattern; use proper traffic-management services when you need controlled routing.",
+        "B": "Changing the CNAME first sends some users to App Service before the app has the custom host name binding, creating a risk of 404 or failed validation during the cutover. Misconception: DNS must point to the target before App Service can validate ownership. Could be correct for a noncritical site where temporary DNS-resolution downtime is acceptable.",
+        "C": "Deleting the live DNS record interrupts users and defeats the no-downtime requirement. App Service can validate with the `asuid.www` TXT record while the old traffic record remains in place. Misconception: a name must be absent from DNS before a new platform can prepare for it. Could be correct during cleanup of abandoned records after a migration is complete, not before cutover."
+      },
+      "plainEnglish": "You do not want to move the public sign before the new building is ready to recognize it. The TXT record lets Azure check, `Does Woodgrove really control this name?` without changing where customers go today. After Azure accepts the name on the App Service app, the DNS team can change the actual CNAME during the cutover. Users then start going to Azure as DNS caches refresh, and the Azure app already knows that `www.woodgrovebank.com` is one of its valid names.",
+      "analogy": "A bank is moving branches. Before changing the street signs, the bank files ownership paperwork with the new building so security will let customers in under the bank's name. Only after that paperwork is accepted does the city redirect the signpost.\n\n| Analogy | Azure reality |\n|---|---|\n| Ownership paperwork | `asuid.www` TXT record |\n| New building accepts bank name | App Service host name binding |\n| Old signpost remains during preparation | Existing CNAME still targets on-premises |\n| Cutover sign change | CNAME remapped to `azurewebsites.net` |\n\n**Where the analogy breaks down:** DNS cutover depends on TTLs and resolver caches, so not every user sees the new destination at the same moment.",
+      "jargon": [
+        {
+          "term": "Active domain",
+          "definition": "A DNS name that is already serving live user traffic."
+        },
+        {
+          "term": "Preemptive binding",
+          "definition": "Adding the custom host name to App Service before changing the traffic DNS record."
+        },
+        {
+          "term": "CNAME",
+          "definition": "A DNS alias record used here to point `www` to either the old service or the App Service default host name."
+        },
+        {
+          "term": "TXT record",
+          "definition": "A DNS text record used here to publish the domain verification ID."
+        },
+        {
+          "term": "Custom Domain Verification ID",
+          "definition": "The App Service token value used in the `asuid` TXT record for ownership validation."
+        },
+        {
+          "term": "Cutover",
+          "definition": "The planned moment when production traffic is moved from the old hosting platform to the new one."
+        },
+        {
+          "term": "DNS propagation",
+          "definition": "The period during which DNS resolvers and caches gradually observe a DNS change."
+        },
+        {
+          "term": "Host header",
+          "definition": "The HTTP request value that tells a web server which DNS name the client used."
+        }
+      ],
+      "watchOut": "- The TXT verification record prepares the App Service binding; it does not move user traffic.\n- Keep the active CNAME unchanged until App Service has accepted the host name.\n- Set certificate bindings and application redirects before or during the cutover if HTTPS is required.\n- Lowering TTL before migration can help, but caches that already hold the old value still follow the previous TTL.",
+      "productionTip": {
+        "official": "Microsoft's active-domain migration article states that adding the domain verification ID before changing existing DNS records lets you verify ownership and enable the domain name in App Service, and that validation can pass with just the TXT record in this migration path.",
+        "recommendation": "Run a rehearsal with a nonproduction host name, lower TTL well ahead of the change if policy allows, and prepare rollback steps. During the live window, monitor both DNS answers and HTTP responses because a successful binding does not guarantee the application behaves correctly under the production host name."
+      },
+      "memoryTrick": "**Prove first, point later.** It is a simplified migration rule: the TXT proves ownership to App Service, and the CNAME points users only when you are ready.",
+      "examTip": "Look for phrases such as active site, no downtime, or keep existing DNS until cutover. Those clues point to TXT-only pre-binding with `asuid.<subdomain>`, followed later by changing the CNAME or A record. A harder question might involve moving between two App Service apps, where deployment-unit conflicts can also matter."
+    },
+    "sources": [
+      {
+        "title": "Migrate an Active Domain - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/manage-custom-dns-migrate-domain"
+      },
+      {
+        "title": "Set Up an Existing Custom Domain Name for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.5-06",
+    "objective": "D3.4.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are troubleshooting custom domain validation for an App Service app named `fabrikam-api`. The administrator added DNS records for `api.fabrikam.com` 10 minutes ago. The portal sometimes reports **DNS record could not be located**. In a second test, adding `legacy.fabrikam.com` reports that the name is **already in use** or linked to another app.\n\nWhich two actions match Microsoft troubleshooting guidance? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use tools such as `nslookup` or an online DNS checker to confirm which A, CNAME, and TXT records are publicly visible, and allow for TTL and DNS propagation delays."
+      },
+      {
+        "id": "B",
+        "text": "For an already-in-use host name, remove the custom domain from the other Azure resource first, or contact Azure support if you no longer control that resource."
+      },
+      {
+        "id": "C",
+        "text": "Create both an A record and a CNAME record for `api.fabrikam.com` so at least one answer reaches App Service during propagation."
+      },
+      {
+        "id": "D",
+        "text": "Ignore the TXT verification record for subdomains because only root domains require proof of ownership."
+      },
+      {
+        "id": "E",
+        "text": "Wait exactly 30 seconds, because App Service custom domain DNS validation uses the same propagation window as Azure Storage stored access policies."
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The DNS provider is public and authoritative for `fabrikam.com`. The validation errors occur while adding custom host names to App Service, not while issuing a certificate from a third-party CA.",
+    "sections": {
+      "correctAnswer": "**A. Use tools such as `nslookup` or an online DNS checker to confirm which A, CNAME, and TXT records are publicly visible, and allow for TTL and DNS propagation delays** and **B. For an already-in-use host name, remove the custom domain from the other Azure resource first, or contact Azure support if you no longer control that resource.** These actions align with Microsoft's DNS visibility and conflicting-binding troubleshooting guidance.",
+      "technical": "Two different failures are described, so the fix must match the symptom. For **DNS record could not be located**, Microsoft points to propagation delay, incorrect DNS configuration, typos, caching, or an authoritative DNS issue. The proper investigation is to query public DNS, check the exact record names and values, and wait for the relevant TTL and provider propagation. `nslookup <yourdomain>` can show whether the expected record is visible from the resolver being queried; online propagation tools can reveal whether different regions see different answers.\n\nFor **already in use** or **linked to another app**, the DNS record might be correct, but App Service prevents duplicate domain bindings for security. Microsoft troubleshooting guidance says to check that the domain is not already bound to another Azure resource, including another App Service, Static Web Apps, or Azure Front Door. If you control the old resource, remove the custom domain there first. If the old association is inaccessible, Azure support might need to release the locked domain after ownership is proven.\n\nThe order is important: do not add conflicting records to guess your way through validation. For a subdomain, choose CNAME to the app's default host name or an A record to the app IP, and include the recommended TXT verification record. A CNAME record should not coexist with an A record for the same DNS name. If validation still fails after records are visible, use the App Service diagnostics path and recheck plan tier, permissions, locks, and conflicting use.",
+      "wrongOptions": {
+        "C": "Microsoft troubleshooting warns not to configure both a CNAME and an A record for the same domain because it can cause resolution conflicts. Misconception: duplicate record types increase the chance that one path works. Could be correct only if the records were for different host names, such as an A record for `@` and a CNAME for `api`.",
+        "D": "Microsoft recommends the `asuid.<subdomain>` TXT record for subdomains to verify ownership and reduce takeover risk. Misconception: only apex domains need ownership proof. Could be correct for no App Service guidance in this scenario; it omits a recommended security record.",
+        "E": "The 30-second propagation window belongs to a different Azure Storage stored access policy behavior, not App Service public DNS propagation. DNS changes can take longer depending on TTL, provider behavior, and caches. Misconception: all Azure validation delays use the same fixed timer. Could be correct for the specific Azure Storage SAS policy update scenario, not for custom-domain DNS validation."
+      },
+      "plainEnglish": "A missing DNS record error usually means Azure cannot see the record yet or the record was entered incorrectly. Check the public DNS answer with a tool rather than relying only on what one browser shows. An already-in-use error is a different problem: Azure thinks the name is already attached somewhere else. In that case, changing TTL or flushing a cache will not release the name. You need to remove the old binding or ask support to help if the old resource is gone or outside your control.",
+      "analogy": "Troubleshooting this is like checking a public address book and a building lease. If the address book does not show the new address, wait for publication or fix the listing. If the name is already on another lease, publishing a clearer address does not solve the ownership conflict.\n\n| Analogy | Azure reality |\n|---|---|\n| Public address book | Public DNS records |\n| Publication delay | TTL and DNS propagation |\n| Lease already held | Domain bound to another Azure resource |\n| Clerk releasing the lease | Remove old binding or contact Azure support |\n\n**Where the analogy breaks down:** DNS resolvers cache answers independently, and App Service validation also checks service-side host name binding rules.",
+      "jargon": [
+        {
+          "term": "TTL",
+          "definition": "Time to live; the amount of time DNS resolvers and clients may cache a DNS answer."
+        },
+        {
+          "term": "Propagation",
+          "definition": "The process by which DNS changes become visible across resolvers and regions after caches expire and providers publish updates."
+        },
+        {
+          "term": "nslookup",
+          "definition": "A command-line tool that queries DNS records and helps confirm what a resolver can see."
+        },
+        {
+          "term": "A record",
+          "definition": "A DNS record mapping a name to an IPv4 address."
+        },
+        {
+          "term": "CNAME record",
+          "definition": "A DNS record making one name an alias of another name."
+        },
+        {
+          "term": "TXT verification record",
+          "definition": "The `asuid` DNS text record used by App Service to verify domain ownership."
+        },
+        {
+          "term": "Host name binding",
+          "definition": "The App Service configuration linking a custom DNS name to an app or slot."
+        },
+        {
+          "term": "Azure Front Door",
+          "definition": "An Azure global application delivery service that can also use custom domains, which matters when checking conflicting use."
+        }
+      ],
+      "watchOut": "- A browser cache is not the same as authoritative DNS. Query DNS directly when troubleshooting.\n- Do not create both CNAME and A records for the same fully qualified name.\n- `Already in use` is a binding conflict, not a TTL problem.\n- A correct CNAME without the `asuid` TXT record may leave a security warning or ownership validation problem.\n- Record names often differ between DNS providers; verify how the provider represents relative names.",
+      "productionTip": {
+        "official": "Microsoft's troubleshooting flow recommends verifying plan tier, permissions, domain ownership, conflicting use, and DNS records. It notes that DNS propagation can take time, that tools such as DNS checkers can confirm public visibility, and that already-linked domains must be removed from the other resource or released through support if inaccessible.",
+        "recommendation": "Keep a custom-domain inventory across App Service, Static Web Apps, Front Door, and DNS zones. During incidents, capture the exact validation message and a DNS query transcript so teams do not waste time treating binding conflicts as propagation delays."
+      },
+      "memoryTrick": "**Missing record means look at DNS; already used means look at ownership.** The phrase is a shortcut, not a replacement for checking permissions, locks, and plan tier.",
+      "examTip": "The exam often mixes two symptoms. `DNS record could not be located` points to DNS visibility, typo, TTL, or propagation. `Already in use` points to a duplicate binding on another resource. Eliminate answers that add conflicting records or skip the recommended TXT verification record."
+    },
+    "sources": [
+      {
+        "title": "Troubleshoot custom domain issues in Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/troubleshoot/azure/app-service/connection-issues-with-ssl-or-tls/troubleshoot-custom-domain-issues-azure-app-service"
+      },
+      {
+        "title": "Troubleshoot domain and TLS/SSL certificates - Azure",
+        "url": "https://learn.microsoft.com/en-us/troubleshoot/azure/app-service/connection-issues-with-ssl-or-tls/troubleshoot-domain-and-tls-ssl-certificates"
+      },
+      {
+        "title": "Set Up an Existing Custom Domain Name for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.5-07",
+    "objective": "D3.4.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have an App Service app named `contoso-store` in the Standard tier. The app has a deployment slot named `staging`. Production uses `www.contoso.com`. Testers need `preview.contoso.com` to go directly to the staging slot, and you do not want a later slot swap to move custom domain names between slots. HTTPS will be configured after the mapping is validated.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create an A record for `preview` that points to the production app's IP address, because deployment slots cannot have custom host names."
+      },
+      {
+        "id": "B",
+        "text": "Add `preview.contoso.com` only to the production slot, because custom domain names are swapped to staging during a slot swap."
+      },
+      {
+        "id": "C",
+        "text": "Create a CNAME record for `preview` that points to `contoso-store-staging.azurewebsites.net`, add the custom domain on the staging slot resource, and later add a TLS binding for `preview.contoso.com`."
+      },
+      {
+        "id": "D",
+        "text": "Create only a TXT record named `asuid.preview`, because a deployment slot automatically inherits all DNS traffic from the production app."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The slot exists in a Standard App Service plan, the DNS team can edit the public `contoso.com` zone, and the question focuses on mapping a custom domain to the slot; HTTPS certificate selection is referenced only as a follow-on task.",
+    "sections": {
+      "correctAnswer": "**C. Create a CNAME record for `preview` that points to `contoso-store-staging.azurewebsites.net`, add the custom domain on the staging slot resource, and later add a TLS binding for `preview.contoso.com`.** Deployment slots are live apps with their own host names, and Microsoft documents that custom domain names are not swapped between slots.",
+      "technical": "An App Service deployment slot is not just an internal folder. Microsoft describes slots as live apps with their own host names. A slot URL uses the form `sitename-slotname.azurewebsites.net`, so a staging slot named `staging` for `contoso-store` has a default host name like `contoso-store-staging.azurewebsites.net`. To route a friendly subdomain to that slot, create the subdomain DNS mapping to the slot's default host name and add the host name binding on the slot resource.\n\nThe slot-swap behavior is a key exam detail. App content and many configuration elements can be swapped, but Microsoft lists custom domain names under settings that are not swapped. Therefore, adding `preview.contoso.com` to the staging slot keeps that custom name with the staging slot rather than transferring it to production during a later swap. This lets testers keep using the preview host name while production keeps `www.contoso.com`.\n\nThe custom-domain mapping still follows the normal subdomain pattern: CNAME for `preview` to the target default host name, plus the recommended `asuid.preview` TXT verification record with the Custom Domain Verification ID if the portal requests or recommends it. Once the domain is added, HTTP can work, but HTTPS is separate. Microsoft's custom-domain article notes that unless a certificate binding is configured, browser HTTPS requests to the custom domain receive an error or warning. That is why the option includes a later TLS binding without making TLS the answer to the mapping step.",
+      "wrongOptions": {
+        "A": "Deployment slots are live apps with their own host names and management pages, so they can be targeted separately. Using the production app's IP for a staging preview name also defeats the goal of sending testers directly to staging. Misconception: only the production slot can receive custom domains. Could be correct for a root-domain A record to a production app in a scenario without slots.",
+        "B": "Custom domain names are explicitly listed as settings that are not swapped. Adding the preview name to production would bind it to the wrong slot for the testers. Misconception: a slot swap moves every visible endpoint with the application content. Could be correct for configuration items that are documented as swapped, but custom domain names are not in that group.",
+        "D": "The TXT record helps prove ownership, but it does not route traffic, and a slot does not automatically inherit all custom-domain traffic from production. Misconception: verification records are traffic records or slot bindings are inherited. Could be correct as one supplemental verification record along with the CNAME and slot host name binding."
+      },
+      "plainEnglish": "The staging slot has its own Azure web address. If testers need a friendly preview name, point `preview.contoso.com` at that staging address and add the name to the staging slot, not to production. A slot swap can move application content, but custom domain names stay with their slot. After the name works over HTTP, you still need to attach a certificate if testers will use HTTPS without browser warnings.",
+      "analogy": "A store has a public showroom and a preview showroom. The preview showroom has its own entrance. You put the `preview` sign over that entrance and keep it there, even if the displays inside the rooms are swapped overnight.\n\n| Analogy | Azure reality |\n|---|---|\n| Preview showroom entrance | Staging slot default host name |\n| `preview` sign | Custom domain bound to the staging slot |\n| Swapping displays | Slot swap of app content and supported settings |\n| Security badge for the entrance | TLS binding for the preview custom domain |\n\n**Where the analogy breaks down:** App Service swaps involve warm-up steps, routing rules, and specific lists of swapped and unswapped settings rather than physically moving displays.",
+      "jargon": [
+        {
+          "term": "Deployment slot",
+          "definition": "A separate live App Service environment, such as `staging`, that can host app content and be swapped with production in supported tiers."
+        },
+        {
+          "term": "Slot default host name",
+          "definition": "The built-in slot URL in the form `sitename-slotname.azurewebsites.net`."
+        },
+        {
+          "term": "Slot swap",
+          "definition": "An App Service operation that swaps content and supported configuration between two slots, often staging and production."
+        },
+        {
+          "term": "Custom domain name",
+          "definition": "A DNS name you own and bind to an App Service app or slot."
+        },
+        {
+          "term": "CNAME",
+          "definition": "A DNS alias record used for subdomain mappings such as `preview` to a default App Service host name."
+        },
+        {
+          "term": "TLS binding",
+          "definition": "The association between a certificate and a custom domain so HTTPS works for that name."
+        },
+        {
+          "term": "Standard tier",
+          "definition": "An App Service plan tier that supports deployment slots and custom-domain TLS capabilities."
+        },
+        {
+          "term": "HTTPS warning",
+          "definition": "A browser warning shown when the requested custom domain lacks a valid certificate binding or presents a mismatched certificate."
+        }
+      ],
+      "watchOut": "- A deployment slot has its own default host name and can be addressed separately.\n- Custom domain names are not swapped during slot swaps.\n- Use the slot resource's custom-domain configuration, not the production app's, when the host name should reach staging.\n- Mapping the DNS name does not automatically secure it with HTTPS.\n- Keep preview and production host names distinct to avoid accidentally sending testers to the live site.",
+      "productionTip": {
+        "official": "Microsoft documents deployment slots as live apps with their own host names and lists custom domain names among settings that are not swapped. The custom-domain article also states that HTTPS requests to a custom domain receive an error or warning unless a certificate binding is configured.",
+        "recommendation": "Use a separate preview subdomain for each long-lived slot and protect it with access restrictions if only testers should reach it. Keep production and slot certificate bindings in deployment runbooks because a successful swap does not move custom domain names for you."
+      },
+      "memoryTrick": "**Slots swap code, not custom names.** This is a simplification because several settings have detailed swap rules, but custom domain names are specifically in the not-swapped list.",
+      "examTip": "When a question mentions a deployment slot and a friendly preview URL, target the slot's default host name and bind the custom domain on the slot. If it also says HTTPS, remember that certificate binding is a second step. A harder item may ask which settings stay with the slot during swap; custom domain names are one of them."
+    },
+    "sources": [
+      {
+        "title": "Set Up Staging Environments - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+      },
+      {
+        "title": "Set Up an Existing Custom Domain Name for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+      },
+      {
+        "title": "Secure Your Domain with TLS/SSL - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

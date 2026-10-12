@@ -1,0 +1,392 @@
+[
+  {
+    "id": "D5.2.6-01",
+    "objective": "D5.2.6",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains a Recovery Services vault named `rsv-dr-prod`. The vault protects three Azure virtual machines for an order-processing application by using Azure Site Recovery replication from Australia East to Australia Southeast.\n\nThe application team wants to run a disaster recovery drill next weekend. The drill must start replica VMs in the secondary region without data loss or downtime for the production VMs. The drill network must not connect to the production recovery network because the test VMs keep the same host names as the production VMs.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Run **Test Failover**, select an isolated test virtual network, validate the application, and then select **Cleanup test failover**."
+      },
+      {
+        "id": "B",
+        "text": "Run **Failover** to the mapped target virtual network, validate the application, and then select **Commit** when testing is complete."
+      },
+      {
+        "id": "C",
+        "text": "Disable replication for the three VMs, create new VMs manually in the secondary region, and delete them after the drill."
+      },
+      {
+        "id": "D",
+        "text": "Run **Re-Protect** before the drill so that the VMs replicate from the secondary region back to the primary region."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The VMs are already protected by Azure Site Recovery, replication health is normal, and the requirement is a disaster recovery drill rather than a real regional outage.",
+    "sections": {
+      "correctAnswer": "**A. Run Test Failover, select an isolated test virtual network, validate the application, and then select Cleanup test failover**. A test failover is the Site Recovery drill workflow that creates test VMs without affecting ongoing replication or the production environment, and cleanup removes the resources created for the drill.",
+      "technical": "A Site Recovery test failover is designed for proving a disaster recovery plan while the protected workload continues to run. The service creates Azure VMs from a selected recovery point, but it does not stop the source VMs and it does not change the normal replication relationship.\n\nThe order matters for the exam scenario:\n\n1. Start **Test Failover** from the replicated item or recovery plan.\n2. Pick an appropriate recovery point, such as **Latest processed** for a low recovery time objective during a drill, **Latest** when you want Site Recovery to process all data already sent to the service first, or **Latest app-consistent** when application-consistent recovery points are configured and the test needs that state.\n3. Select a virtual network for the test VMs.\n4. Validate sign-in, services, DNS assumptions, and application behavior.\n5. Select **Cleanup test failover** and save notes about the drill.\n\nThe network choice is a safety boundary. Microsoft recommends using a test network that is separate from the production recovery site network. If a test failover uses the production recovery network while the primary VMs are still running, duplicate computer identities and application endpoints can cause confusing or damaging behavior. Cleanup is also part of the workflow; it deletes the VMs created during the test failover, while the original protected VMs and replication remain in place.\n\nThe exception is a deliberate production-network drill. Microsoft documents considerations for testing in the recovery production network, including shutting down the primary VM to avoid two machines with the same identity. That exception does not satisfy this question because the prompt says no downtime and no connection to the production recovery network.",
+      "wrongOptions": {
+        "B": "Running a real failover changes the protected workload into a disaster recovery state and **Commit** finalizes the selected recovery point. That is not a no-downtime drill. Misconception: every validation in Site Recovery starts with the Failover command. Could be correct when the primary region is unavailable or the business has decided to move the workload to the recovery region.",
+        "C": "Manually building replacement VMs bypasses the Site Recovery test failover workflow and does not validate the actual replicated recovery path. Misconception: a drill only needs any VM that resembles production. Could be correct for a separate lab proof of concept, but not for testing protected replicas managed by Site Recovery.",
+        "D": "Re-Protect is used after a failover is committed so that the workload starts replicating in the reverse direction. It does not run a drill. Misconception: reverse replication must be enabled before any recovery test. Could be correct after a successful real failover to the secondary region when you need to prepare for failback."
+      },
+      "plainEnglish": "A test failover is like a rehearsal. Azure makes temporary copies of the protected machines in the recovery region so the team can see whether the application would start. The original production machines keep serving users, and replication keeps running. Because the temporary machines can have the same names and addresses as real machines, they should be placed in a separate practice network unless the team has planned downtime and isolation very carefully. When the rehearsal is finished, the cleanup button removes the temporary machines and lets you record what happened.",
+      "analogy": "Imagine a hospital running an emergency drill in a training wing. The real emergency department continues treating patients. The drill team uses copied procedures, copied labels, and practice rooms that are not connected to patient-care rooms.\n\n| Analogy | Azure reality |\n|---|---|\n| Training wing | Isolated test virtual network |\n| Emergency rehearsal | Site Recovery test failover |\n| Real emergency department | Production VMs in the primary region |\n| Packing up the practice rooms | Cleanup test failover |\n\n**Where the analogy breaks down:** Azure does not simply photocopy rooms. It starts VMs from replicated recovery points, applies networking rules, and tracks the drill as Site Recovery jobs.",
+      "jargon": [
+        {
+          "term": "Azure Site Recovery",
+          "definition": "An Azure disaster recovery service that replicates machines and orchestrates failover, test failover, reprotection, and failback workflows."
+        },
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure resource that stores management data for services such as Azure Backup and Azure Site Recovery."
+        },
+        {
+          "term": "Test failover",
+          "definition": "A Site Recovery drill operation that creates test VMs from replicated data without affecting production VMs or ongoing replication."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A point in time from replicated data that Site Recovery can use to create a VM during a test failover or failover."
+        },
+        {
+          "term": "Virtual network",
+          "definition": "A private Azure network that provides IP address space, subnets, and connectivity boundaries for Azure resources."
+        },
+        {
+          "term": "Cleanup test failover",
+          "definition": "The Site Recovery action that deletes VMs and related resources created by a test failover and records drill notes."
+        },
+        {
+          "term": "RTO",
+          "definition": "Recovery Time Objective; the target amount of time to restore service after an outage or during a drill."
+        },
+        {
+          "term": "RPO",
+          "definition": "Recovery Point Objective; the target amount of acceptable data loss measured as time between the latest recoverable data and the outage."
+        }
+      ],
+      "watchOut": "- A test failover is not the same as a real failover.\n- The isolated test VNet is chosen during the test failover workflow, not by changing the production target network.\n- Cleanup removes drill VMs, but it does not undo production replication settings.\n- Using the recovery production network for a drill can create duplicate identities unless the original workload is stopped.",
+      "productionTip": {
+        "official": "Microsoft documents that test failover validates replication and disaster recovery strategy without data loss or downtime, and that it does not impact ongoing replication or the production environment. The same guidance recommends a separate network for the drill and states that Cleanup test failover deletes the VMs created for testing.",
+        "recommendation": "Recommendation: build a reusable isolated VNet that mirrors production subnet names and DNS expectations, but keep it disconnected from live application networks. Assign least-privilege operational access for the drill, capture test notes during cleanup, and schedule periodic drills before audit deadlines rather than waiting for a real incident."
+      },
+      "memoryTrick": "**Test means temporary**: choose a test network, prove the app, then clean it up. This shortcut fails if the question says the business is actually moving production traffic or committing a recovery point.",
+      "examTip": "Clue words are **drill**, **without downtime**, **without impacting production**, and **isolated VNet**. Those point to **Test Failover** plus **Cleanup test failover**. If the question says the primary region is down, think real failover. If it says the failed-over VM has been accepted permanently, think commit and then reprotect."
+    },
+    "sources": [
+      {
+        "title": "Run a test failover (disaster recovery drill) to Azure in Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-test-failover-to-azure"
+      },
+      {
+        "title": "Map virtual networks between two regions in Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-network-mapping"
+      },
+      {
+        "title": "About failover and failback in Azure Site Recovery - Modernized",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/failover-failback-overview-modernized"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.6-02",
+    "objective": "D5.2.6",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You have a recovery plan in Azure Site Recovery that contains four application VMs. The business is comparing two failover runbooks.\n\nRunbook 1 is for a controlled maintenance window in which the source VMs are reachable. The business wants the smallest possible data loss.\n\nRunbook 2 is for a regional outage in which the source region is unavailable and the team wants to start the application quickly from already processed replicated data.\n\nWhich two choices should you document? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "For the controlled window, select **Latest processed** because it never processes newly received data."
+      },
+      {
+        "id": "B",
+        "text": "For the controlled window, choose the failover option that tries to shut down the source machines before failover and use **Latest** when the lowest RPO is required."
+      },
+      {
+        "id": "C",
+        "text": "For the outage runbook, use **Latest processed** when the source region is down and the priority is a low RTO from an already processed point."
+      },
+      {
+        "id": "D",
+        "text": "For the outage runbook, use **Latest app-consistent** even when application-consistent recovery points were not enabled."
+      },
+      {
+        "id": "E",
+        "text": "For both runbooks, select **Custom** recovery points because custom is the only supported choice for recovery plans."
+      }
+    ],
+    "correct": [
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The recovery plan is already configured, application owners have approved the maintenance window, and the stated priorities are low data loss for the controlled runbook and fast startup during an outage.",
+    "sections": {
+      "correctAnswer": "**B. For the controlled window, choose the failover option that tries to shut down the source machines before failover and use Latest when the lowest RPO is required** and **C. For the outage runbook, use Latest processed when the source region is down and the priority is a low RTO from an already processed point**. The Site Recovery recovery-point choices trade processing time, data freshness, and application consistency.",
+      "technical": "Site Recovery failover asks you to choose a recovery point. The names are easy to misread, so connect each choice to the objective.\n\n| Recovery point | What the documentation says it is useful for |\n|---|---|\n| Latest | Site Recovery processes all data that has already been sent to the service before creating the recovery point, giving the lowest RPO when that processing is possible. |\n| Latest processed | Site Recovery uses the newest recovery point it has already processed, so no extra time is spent processing unprocessed data. |\n| Latest app-consistent | Site Recovery uses the latest processed application-consistent point when those points exist. |\n| Custom | A specific point in time, available for a single VM rather than a recovery plan. |\n\nFor a controlled move, the source machines are reachable. In the Azure VM failover flow, the operator can select the option for Site Recovery to try to shut down the source VMs before failover. Microsoft notes that shutdown helps ensure no data loss and failover continues even if shutdown fails. If the runbook calls for the lowest RPO, **Latest** is the documented recovery point because it processes the data sent to the service before failover.\n\nFor an unplanned outage, the source region might not be able to send more data or participate in shutdown. Microsoft states that when the source region goes down, log processing stops and you must fail over to the latest processed recovery point. Latest processed also has a low RTO because it skips processing time. Application-consistent points are valuable only if they were generated; they may also be behind the newest processed point.",
+      "wrongOptions": {
+        "A": "Latest processed is fast, but it is not the best answer for the stated controlled-window goal of smallest data loss. Misconception: the safest runbook always avoids extra processing. Could be correct when the maintenance window has a strict startup time and the business accepts using the most recent already processed point.",
+        "D": "Latest app-consistent depends on application-consistent recovery points being enabled and available. It is not a universal outage answer. Misconception: application-consistent always means newest and fastest. Could be correct when the application requires that consistency level and the available point meets the business RPO.",
+        "E": "Custom is not the general answer for a recovery plan; the documentation says custom is not available for recovery plans and is used for an individual VM. Misconception: choosing an exact timestamp is always supported at every orchestration scope. Could be correct for a single replicated VM when you deliberately need a particular recovery point."
+      },
+      "plainEnglish": "The recovery point is the version of the data that Azure will use to start the recovered VMs. If the source region is still working and the team has a maintenance window, Azure can try to shut down the original machines and use the freshest possible replicated data. If the source region is already down, Azure cannot wait for more data from it. The practical choice is then the newest point Azure has already prepared. An app-consistent point is a special kind of prepared point, but it only exists if that feature was configured and captured earlier.",
+      "analogy": "Think of moving a theater performance to a backup venue. During a planned move, the stage manager can stop the live show, collect the latest script changes, and then open at the new venue. During a power failure, the backup venue uses the newest script packet it already received.\n\n| Analogy | Azure reality |\n|---|---|\n| Latest script changes | Latest recovery point processing |\n| Already received packet | Latest processed recovery point |\n| Script checked by each department | App-consistent recovery point |\n| One actor's saved copy | Custom point for a single VM |\n\n**Where the analogy breaks down:** Site Recovery recovery points are generated from replicated machine data and service processing, not human script packets.",
+      "jargon": [
+        {
+          "term": "Planned failover",
+          "definition": "A controlled disaster recovery move used during planned downtime, typically trying to synchronize final changes before starting the replica."
+        },
+        {
+          "term": "Unplanned failover",
+          "definition": "A failover during an outage or unavailable source environment, where final synchronization might not be possible."
+        },
+        {
+          "term": "Latest recovery point",
+          "definition": "A Site Recovery choice that processes data already sent to the service to create the freshest point before failover when possible."
+        },
+        {
+          "term": "Latest processed recovery point",
+          "definition": "The newest recovery point that Site Recovery has already processed and can use without extra processing time."
+        },
+        {
+          "term": "Application-consistent recovery point",
+          "definition": "A recovery point captured in a way that helps application data be internally consistent, when configured and available."
+        },
+        {
+          "term": "Recovery plan",
+          "definition": "A Site Recovery object that groups machines and can orchestrate failover steps for an application."
+        },
+        {
+          "term": "RPO",
+          "definition": "Recovery Point Objective; the amount of data loss, measured in time, that the business is trying to limit."
+        },
+        {
+          "term": "RTO",
+          "definition": "Recovery Time Objective; the amount of time within which the service should be restored."
+        }
+      ],
+      "watchOut": "- **Latest** is about lowest RPO, not necessarily fastest startup.\n- **Latest processed** is often chosen when time matters or the source cannot participate.\n- **Latest app-consistent** is only useful if app-consistent points exist.\n- **Custom** is not a recovery-plan-wide choice in the documented flow.",
+      "productionTip": {
+        "official": "Microsoft documents the recovery-point choices and states that Latest provides the lowest RPO by processing all data sent to the service, while Latest processed provides a low RTO because no time is spent processing unprocessed data. Microsoft also notes that source shutdown can help ensure no data loss and that failover continues even if shutdown fails.",
+        "recommendation": "Recommendation: write two runbooks before you need them. The planned runbook should include application quiescing, owner approval, source shutdown expectations, and acceptance tests. The outage runbook should name the default recovery point, escalation path, and the business owner who can accept data loss if only older points are available."
+      },
+      "memoryTrick": "**Latest for least loss, processed for prompt power-on**. This is a simplification because application consistency, recovery-plan scope, and source-region availability can override the quick choice.",
+      "examTip": "Watch for the pair of clue words: **lowest RPO** points toward Latest, while **low RTO** and **already processed** point toward Latest processed. If the scenario says the source region is down, do not choose an option that requires fresh synchronization from that region. If the scenario asks for a single VM and a specific timestamp, then Custom may enter the discussion."
+    },
+    "sources": [
+      {
+        "title": "Tutorial to fail over Azure VMs to a secondary region for disaster recovery with Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+      },
+      {
+        "title": "Run a Failover During Disaster Recovery With Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-failover"
+      },
+      {
+        "title": "About failover and failback in Azure Site Recovery - Modernized",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/failover-failback-overview-modernized"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.6-03",
+    "objective": "D5.2.6",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You failed over an Azure VM named `vm-ledger-01` from West Europe to North Europe by using Azure Site Recovery. The VM is running in North Europe and the application owner has confirmed that the selected recovery point is acceptable.\n\nThe incident commander now wants to finalize the failover so that operators cannot switch the VM to a different recovery point by mistake.\n\nWhat should you do next?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Disable Site Recovery replication for the VM before any other action."
+      },
+      {
+        "id": "B",
+        "text": "Select **Change recovery point** to reload the same recovery point."
+      },
+      {
+        "id": "C",
+        "text": "Run **Cleanup test failover** for the failed-over VM."
+      },
+      {
+        "id": "D",
+        "text": "Select **Commit** for the failed-over VM."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. This was a real failover, not a test failover, and the business has accepted the VM state that is currently running in the target region.",
+    "sections": {
+      "correctAnswer": "**D. Select Commit for the failed-over VM**. Commit finishes the failover; Microsoft documents that committing deletes the available recovery points for the VM and the recovery point can no longer be changed.",
+      "technical": "A Site Recovery failover has a validation period. After the failover starts the VM in the target region, you can sign in, test the application, and decide whether the chosen recovery point is acceptable. If it is not acceptable, the documented Azure VM flow allows **Change recovery point** before the failover is committed.\n\nOnce the business approves the running state, the next lifecycle action is **Commit**. Commit is not a networking step and not a reverse-replication step. It is the finalization of the failover to the selected recovery point. Microsoft states that commit deletes all recovery points available with the service and that the Change recovery point option is no longer available.\n\nThe operational order is:\n\n1. Run failover and select the recovery point.\n2. Verify that the target-region VM is running, sized appropriately, reachable, and serving the application.\n3. Use Change recovery point only if the current point is rejected.\n4. Select Commit after acceptance.\n5. After commit, plan reprotection so the workload is protected in its new direction.\n\nThe boundary is important for exam questions. **Cleanup test failover** belongs to test failover drills, not real failovers. Disabling replication is not the documented way to finalize a successful failover. Commit deliberately closes the point-selection phase, which is exactly what the incident commander requested.",
+      "wrongOptions": {
+        "A": "Disabling replication does not perform the documented commit action and can remove protection management without deliberately finalizing the chosen point. Misconception: stopping replication is the same as accepting a failover. Could be correct when decommissioning protection after a separate architecture decision, not as the normal finalization step.",
+        "B": "Changing the recovery point is useful before acceptance, not after the owner has approved the running state and wants to prevent accidental switching. Misconception: every post-failover action should revisit the selected point. Could be correct when testing reveals corruption or missing data in the current failed-over VM.",
+        "C": "Cleanup test failover is for disaster recovery drills and deletes resources created by a test failover. This scenario describes a real failover serving the application. Misconception: cleanup is the universal way to finish any Site Recovery operation. Could be correct after validating a temporary test failover in an isolated network."
+      },
+      "plainEnglish": "After a real failover, Azure gives you a chance to check whether the recovered machine looks right. If the application owner says the recovered data and machine are good, you must tell Site Recovery that this is the version you are keeping. That action is called commit. After commit, operators cannot go back in the same failover workflow and pick another recovery point, because Azure removes those available points from the failover decision.",
+      "analogy": "A courier restores a damaged office from one of several boxed snapshots. The manager inspects the restored office and signs the acceptance form. Once the form is signed, the unused boxes are cleared away and staff stop debating which box to unpack.\n\n| Analogy | Azure reality |\n|---|---|\n| Boxed snapshot | Recovery point |\n| Restored office | Failed-over VM |\n| Inspection | Application validation |\n| Acceptance form | Commit action |\n| Clearing unused boxes | Deleting available recovery points |\n\n**Where the analogy breaks down:** Azure recovery points are service-managed data states, and commit is an operation in Site Recovery rather than a paper signature.",
+      "jargon": [
+        {
+          "term": "Commit",
+          "definition": "The Site Recovery action that finalizes a failover to the selected recovery point and removes the ability to change to another point in that failover."
+        },
+        {
+          "term": "Change recovery point",
+          "definition": "A pre-commit action that lets an operator switch a failed-over VM to a different available recovery point."
+        },
+        {
+          "term": "Failed-over VM",
+          "definition": "The virtual machine created or started in the target region as the result of a Site Recovery failover."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A specific point in replicated data used by Site Recovery to create or start a recovered VM."
+        },
+        {
+          "term": "Target region",
+          "definition": "The Azure region where Site Recovery creates the VM after failover."
+        },
+        {
+          "term": "Recovery Services vault",
+          "definition": "The management container that stores Site Recovery configuration and job information."
+        },
+        {
+          "term": "Replication",
+          "definition": "The ongoing copying and processing of machine changes so a recoverable VM can be created in another location."
+        }
+      ],
+      "watchOut": "- Commit is irreversible for the failover point-selection workflow.\n- Use Change recovery point before commit if validation fails.\n- Cleanup test failover applies to test failovers, not accepted production failovers.\n- Reprotect is important after commit, but it answers a different question: how to protect the workload again.",
+      "productionTip": {
+        "official": "Microsoft documents that after failover you should ensure the target VM is running and, if necessary, use Change recovery point. When satisfied, select Commit; the commit operation deletes all available recovery points for the VM in Site Recovery and the recovery point cannot be changed afterward.",
+        "recommendation": "Recommendation: require written application-owner acceptance before commit, especially for databases and stateful services. Keep the team using least-privilege roles, record the job ID and chosen point in the incident timeline, and start reprotection planning immediately after commit so the recovered workload is not left unprotected."
+      },
+      "memoryTrick": "**Check, choose, commit**: check the VM, choose another point only if needed, then commit the accepted state. The phrase is not a substitute for approval controls during a real incident.",
+      "examTip": "The phrase **cannot switch the VM to a different recovery point** is a direct hint for Commit. If the question says the failover was only a drill, look for Cleanup test failover instead. If it asks how to resume protection after the target VM becomes production, move on to Re-Protect."
+    },
+    "sources": [
+      {
+        "title": "Tutorial to fail over Azure VMs to a secondary region for disaster recovery with Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+      },
+      {
+        "title": "Run a Failover During Disaster Recovery With Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-failover"
+      },
+      {
+        "title": "About failover and failback in Azure Site Recovery - Modernized",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/failover-failback-overview-modernized"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.6-04",
+    "objective": "D5.2.6",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You administer Site Recovery for Azure VMs that replicate from East US to West US. A critical workload has already failed over to West US and the failover has been committed. You need to prepare for a later return to East US.\n\nYou also notice that new VMs protected from East US are choosing the wrong target virtual network in West US by default. Existing protected VMs already have their own target network selections.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "After commit, run **Re-Protect** so the failed-over VM starts replicating from West US back to East US."
+      },
+      {
+        "id": "B",
+        "text": "After commit, run **Cleanup test failover** so the VM in West US begins replicating to East US."
+      },
+      {
+        "id": "C",
+        "text": "Modifying an existing network mapping changes the default target VNet for new replications, but it does not change target VNet selections for existing replications."
+      },
+      {
+        "id": "D",
+        "text": "Network mappings are one-way only and Site Recovery never creates or uses reverse mappings."
+      },
+      {
+        "id": "E",
+        "text": "To fail back after reprotection, delete the Recovery Services vault because the original vault still points to East US."
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The workload uses Azure-to-Azure disaster recovery. The problem about network mapping concerns future protection defaults, not a request to move existing replicated VMs to another target network.",
+    "sections": {
+      "correctAnswer": "**A. After commit, run Re-Protect so the failed-over VM starts replicating from West US back to East US** and **C. Modifying an existing network mapping changes the default target VNet for new replications, but it does not change target VNet selections for existing replications**. Reprotection reverses replication after failover, while network mapping controls default target network selection for future enable-replication operations.",
+      "technical": "After a committed failover, the workload is running in the recovery region. It is no longer protected in the original direction. Microsoft describes the next step for Azure VM failover as **Re-Protect**, which starts replication from the secondary region back to the primary region. In the Azure-to-Azure tutorial, the VM status must be **Failover committed** before reprotection starts, and the Re-protect pane shows the reverse direction.\n\nNetwork mapping is a separate planning feature. It maps source and target VNets between two Azure regions and provides a default target network selection when replication is enabled. If no mapping exists and you select a target network during enable replication, Site Recovery can create mappings in both directions. If a mapping already exists for a source network, the mapped target network becomes the default for additional VM replications. Microsoft also documents that changing the mapping affects defaults for new replications only. Existing replicated items keep their selected target virtual network unless you modify the replicated item's **Network** settings.\n\nFor this scenario, two tracks run in parallel:\n\n1. For the workload already failed over and committed, use Re-Protect to reverse replication from West US to East US.\n2. For future East US protections, correct the network mapping so new replications choose the intended West US VNet by default.\n3. For any existing protected VM that already has the wrong network, edit that replicated item's Network settings rather than expecting the mapping change to retrofit it.\n\nFailback later requires the reverse replication to be healthy and at least one usable recovery point in the failback direction.",
+      "wrongOptions": {
+        "B": "Cleanup test failover belongs to drills and removes temporary test resources. It does not reverse production replication after a committed failover. Misconception: any operation with cleanup or finalization can prepare failback. Could be correct only at the end of a test failover that should leave production untouched.",
+        "D": "The network mapping article describes creating a mapping in the opposite direction and also says Site Recovery can automatically create source-to-target and target-to-source mappings when a target network is selected during enable replication. Misconception: a mapping is just a local note on one VNet. Could be correct only as a warning that each direction is a distinct mapping object to manage, not that reverse mappings never exist.",
+        "E": "Deleting the vault is not a failback step and would remove the management container rather than prepare a controlled return. Misconception: the original vault blocks reverse movement because it was created before failover. Could be correct only in a decommissioning plan after all protected items and recovery requirements are intentionally removed."
+      },
+      "plainEnglish": "Once the recovered VM is accepted in West US, you have a new problem: it is now the live machine, but it is not yet being copied back toward East US. Re-Protect starts that copying in the reverse direction. Network mapping is about a different question: when you protect more machines later, which target network should Azure choose automatically? Changing the mapping helps future machines. It does not secretly move the target network for machines that were already configured.",
+      "analogy": "A freight company diverts trucks from City A to City B after a bridge closure. After City B becomes the operating hub, the company must start sending backup copies of new paperwork back toward City A. Separately, it updates the route map so future trucks from City A default to the right depot in City B.\n\n| Analogy | Azure reality |\n|---|---|\n| City B operating hub | Failed-over workload in the secondary region |\n| Sending paperwork back | Re-Protect reverse replication |\n| Route map | Site Recovery network mapping |\n| Future trucks | Newly enabled VM replications |\n| Already dispatched trucks | Existing replicated items with their own network settings |\n\n**Where the analogy breaks down:** Site Recovery replicates disks and machine state, and virtual networks are selected through Azure resource settings rather than road routes.",
+      "jargon": [
+        {
+          "term": "Re-Protect",
+          "definition": "The Site Recovery operation that reverses replication after failover so the workload is protected in the opposite direction."
+        },
+        {
+          "term": "Failback",
+          "definition": "The later movement of a workload from the recovery location back to the original or another primary location after reverse replication is ready."
+        },
+        {
+          "term": "Network mapping",
+          "definition": "A Site Recovery configuration that maps virtual networks between regions and supplies default target network choices when replication is enabled."
+        },
+        {
+          "term": "Replicated item",
+          "definition": "A protected machine tracked by Site Recovery with replication health, recovery points, compute settings, and network settings."
+        },
+        {
+          "term": "Target VNet",
+          "definition": "The Azure virtual network in the recovery region where a VM is connected after failover or test failover."
+        },
+        {
+          "term": "Reverse replication",
+          "definition": "Replication from the current recovery location back toward the original location after a failover."
+        },
+        {
+          "term": "Failover committed",
+          "definition": "The state after an operator finalizes the failover to the selected recovery point."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A recoverable point in the replicated data stream that can be used during failover or failback."
+        }
+      ],
+      "watchOut": "- Reprotect requires the failover to be committed in the Azure-to-Azure flow.\n- A mapping change is not retroactive for existing replicated items.\n- To change an existing VM's target network, open that replicated item's Network settings.\n- Reverse mappings matter when you expect clean movement in both directions.",
+      "productionTip": {
+        "official": "Microsoft documents that after failover you reprotect the VM in the secondary region so that it replicates back to the primary region. Microsoft also documents that network mapping provides default target network selection during enable replication and that modifying a mapping changes defaults for new replications, not existing ones.",
+        "recommendation": "Recommendation: treat reprotection as part of the incident exit checklist, not a later housekeeping task. Keep network mappings reviewed with network teams, reserve address space before enabling replication at scale, and test failback dependencies in a nonproduction window before promising a return date."
+      },
+      "memoryTrick": "**Re-Protect reverses, mapping defaults**. That reminder is intentionally short; it does not mean mapping fixes every existing VM or that failback can begin before reverse replication has usable points.",
+      "examTip": "The words **failed over and committed** point to Re-Protect. The words **new VMs choosing the wrong target network by default** point to network mapping. If the exam says existing VMs are wrong, choose the individual replicated item's Network settings instead of relying only on a mapping change."
+    },
+    "sources": [
+      {
+        "title": "Tutorial to fail over Azure VMs to a secondary region for disaster recovery with Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-failover-failback"
+      },
+      {
+        "title": "Map virtual networks between two regions in Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-network-mapping"
+      },
+      {
+        "title": "About failover and failback in Azure Site Recovery - Modernized",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/failover-failback-overview-modernized"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

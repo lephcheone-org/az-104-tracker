@@ -1,0 +1,813 @@
+[
+  {
+    "id": "D2.3.6-01",
+    "objective": "D2.3.6",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a general-purpose v2 storage account named `stlogs01`. You need to create a lifecycle management policy that moves current block blobs in the `logs` container to the cool tier after they have not been modified for 30 days.\n\nWhich JSON fragment uses the required lifecycle policy shape and property names?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```json\n{\n  \"rules\": {\n    \"rule1\": {\n      \"active\": true,\n      \"kind\": \"Lifecycle\",\n      \"filters\": { \"container\": \"logs\" },\n      \"actions\": { \"tier\": \"Cool\", \"afterDays\": 30 }\n    }\n  }\n}\n```"
+      },
+      {
+        "id": "B",
+        "text": "```json\n{\n  \"policyRules\": [\n    {\n      \"name\": \"cool-logs\",\n      \"enabled\": true,\n      \"definition\": {\n        \"if\": { \"blobTypes\": [ \"blockBlob\" ] },\n        \"then\": { \"accessTier\": \"Cool\", \"days\": 30 }\n      }\n    }\n  ]\n}\n```"
+      },
+      {
+        "id": "C",
+        "text": "```json\n{\n  \"rules\": [\n    {\n      \"name\": \"cool-logs\",\n      \"enabled\": true,\n      \"type\": \"Lifecycle\",\n      \"definition\": {\n        \"filters\": {\n          \"blobTypes\": [ \"blockBlob\" ],\n          \"prefixMatch\": [ \"logs/\" ]\n        },\n        \"actions\": {\n          \"baseBlob\": {\n            \"tierToCool\": { \"daysAfterModificationGreaterThan\": 30 }\n          }\n        }\n      }\n    }\n  ]\n}\n```"
+      },
+      {
+        "id": "D",
+        "text": "```json\n{\n  \"lifecycle\": [\n    {\n      \"ruleName\": \"cool-logs\",\n      \"state\": \"Enabled\",\n      \"resourceType\": \"Blob\",\n      \"containerPrefix\": \"logs/*\",\n      \"baseBlob\": { \"coolAfterLastModifiedDays\": 30 }\n    }\n  ]\n}\n```"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The storage account already supports Blob Storage lifecycle management, and the requirement is to author the JSON policy, not to choose the Azure CLI or portal workflow.",
+    "sections": {
+      "correctAnswer": "**C. The JSON fragment with `rules`, `name`, `enabled`, `type`, `definition`, `filters`, and `actions`**. A lifecycle policy is a JSON document whose top level contains a `rules` array, and each rule uses `type: \"Lifecycle\"`, a filter set, and an action set such as `baseBlob.tierToCool.daysAfterModificationGreaterThan`.",
+      "technical": "A Blob Storage lifecycle management policy is stored as a collection of rule objects. The required shape is not an Azure Policy assignment and not an arbitrary if-then language. The service expects a `rules` array. Each rule has a unique case-sensitive `name`, an optional `enabled` Boolean that defaults to true, a required `type` value of `Lifecycle`, and a required `definition` object.\n\nInside `definition`, two parts matter for this scenario:\n\n| JSON part | Purpose in this policy |\n|---|---|\n| `filters.blobTypes` | Required list of blob types, here `blockBlob` |\n| `filters.prefixMatch` | Optional path prefixes, here `logs/` to target the container named `logs` |\n| `actions.baseBlob` | Actions for the current version of each blob |\n| `tierToCool.daysAfterModificationGreaterThan` | Move matching current blobs after the last modified age is greater than 30 days |\n\nThe evaluation starts with filters. The blob must be the requested type and match the prefix. If the object is a current blob version that passes those filters, Azure evaluates the time condition for the action. When the last modified age exceeds the configured integer, the service can issue the tier change during a policy run.\n\nThe policy is written and read as a full management policy. Microsoft documents that partial updates are not supported, so automation should fetch or maintain the entire policy document when it adds or changes rules.",
+      "wrongOptions": {
+        "A": "This option uses an object named `rules` instead of the required array and invents properties such as `active`, `kind`, `container`, `tier`, and `afterDays`. Misconception: lifecycle JSON is a loose descriptive format that the portal later translates. Could be correct when: you are writing your own application configuration file, not the Azure Storage management policy schema.",
+        "B": "This option resembles a policy language, but `policyRules`, `if`, `then`, `accessTier`, and `days` are not the documented lifecycle management property names. Misconception: Azure Blob lifecycle rules use the same style as Azure Policy definitions. Could be correct when: you are authoring a custom compliance rule in a different service that really accepts if-then syntax.",
+        "D": "This option uses wildcard-style `logs/*` and made-up names such as `ruleName`, `state`, and `coolAfterLastModifiedDays`. Prefix filters do not use `*` as a wildcard, and the rule must include `type: \"Lifecycle\"`. Misconception: matching a container path works like a file-system glob. Could be correct when: a separate backup tool documents its own wildcard-based retention format."
+      },
+      "plainEnglish": "A lifecycle policy is a rule book that Azure Storage reads automatically. The rule book has a strict layout. First comes a list called `rules`. Each rule has a name, says whether it is enabled, says it is a `Lifecycle` rule, and then contains a definition. The definition says which blobs to look at and what to do to them.\n\nIn this question, the storage account should look only at block blobs whose full path starts with the container name `logs/`. For each matching current blob, Azure checks how long it has been since the blob was last changed. If that age is greater than 30 days, Azure can move it to the cool tier during a lifecycle run. If the JSON uses friendly words that humans understand but Azure Storage does not, the policy is not the right shape.",
+      "analogy": "Imagine a warehouse robot that accepts only a very specific checklist format. The checklist must say which aisle to inspect, which kind of box to select, and which action to take after a box has been untouched for a set number of days.\n\n| Analogy | Azure reality |\n|---|---|\n| Checklist list | `rules` array |\n| Checklist name | rule `name` |\n| Robot is allowed to run | `enabled: true` |\n| Aisle label starts with `logs/` | `prefixMatch: [ \"logs/\" ]` |\n| Move box to cheaper shelf | `tierToCool` action |\n\n**Where the analogy breaks down:** Azure is not scanning shelves visually. It evaluates blob properties and filters during background policy runs, and the JSON property names must match the storage management policy schema exactly.",
+      "jargon": [
+        {
+          "term": "Lifecycle management policy",
+          "definition": "A rule-based Azure Blob Storage policy that can move blobs to cooler access tiers or delete them when documented conditions are met."
+        },
+        {
+          "term": "JSON",
+          "definition": "A structured text format that uses objects, arrays, strings, numbers, Booleans, and null values to represent configuration data."
+        },
+        {
+          "term": "Rule",
+          "definition": "One lifecycle policy entry with a name, enabled state, type, filter set, and action set."
+        },
+        {
+          "term": "`type: \"Lifecycle\"`",
+          "definition": "The required rule type value for a Blob Storage lifecycle management rule."
+        },
+        {
+          "term": "`baseBlob`",
+          "definition": "The lifecycle action target that represents the current version of a blob."
+        },
+        {
+          "term": "`blockBlob`",
+          "definition": "A blob type optimized for files and object data; block blobs support lifecycle tiering actions."
+        },
+        {
+          "term": "`prefixMatch`",
+          "definition": "A lifecycle filter that matches full or partial blob paths starting with a container name."
+        },
+        {
+          "term": "Cool tier",
+          "definition": "An online access tier for data that is infrequently accessed or modified and should generally remain there for at least 30 days."
+        }
+      ],
+      "watchOut": "- Use `rules` as an array, not a dictionary keyed by rule name.\n- The rule `type` value is `Lifecycle`; other words such as `Retention` or `BlobLifecycle` are not valid here.\n- The action for current blobs belongs under `actions.baseBlob`.\n- `prefixMatch` starts with the container name and does not use shell wildcards.",
+      "productionTip": {
+        "official": "Microsoft documents the policy as a JSON document with at least one rule and up to 100 rules. Each rule contains a definition made from filters and actions, and a lifecycle management policy must be read or written in full rather than patched partially.",
+        "recommendation": "Keep lifecycle policy JSON in source control and validate it in a nonproduction storage account before applying it broadly. Use clear rule names that describe the container, trigger property, and action, such as `logs-modified-30-cool`, so future administrators can understand why costs changed."
+      },
+      "memoryTrick": "Remember **rules, rule, definition, filters, actions**. This is a simplification because each action has its own supported conditions and storage account limitations.",
+      "examTip": "Clue words are **JSON fragment**, **lifecycle management**, and **not modified for 30 days**. Rule out answers that look like Azure Policy, glob syntax, or human-friendly pseudo-configuration. A harder version may ask you to identify one wrong casing or a misplaced `baseBlob` element inside an otherwise believable policy."
+    },
+    "sources": [
+      {
+        "title": "Azure Blob Storage lifecycle management policy structure",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-structure"
+      },
+      {
+        "title": "Configure a lifecycle management policy",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+      },
+      {
+        "title": "Microsoft.Storage/storageAccounts/managementPolicies template reference",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.storage/storageaccounts/managementpolicies"
+      },
+      {
+        "title": "Lifecycle management policies that transition blobs between tiers",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-access-tiers"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.6-02",
+    "objective": "D2.3.6",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account that contains these containers:\n\n| Container | Example blob name |\n|---|---|\n| `container1` | `sub1/test.txt` |\n| `container11` | `budget.csv` |\n| `container1archive` | `old/log.txt` |\n\nYou want a lifecycle rule to apply only to blobs in `container1` whose blob names begin with `sub1/`. You also want to avoid matching similarly named containers.\n\nWhich `prefixMatch` value should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`container1* /sub1/`"
+      },
+      {
+        "id": "B",
+        "text": "`container1/sub1/`"
+      },
+      {
+        "id": "C",
+        "text": "`/container1/sub1/*`"
+      },
+      {
+        "id": "D",
+        "text": "`sub1/`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The storage account uses standard flat blob paths for lifecycle filtering, and the question is about the documented `prefixMatch` filter, not container-level RBAC or an application search expression.",
+    "sections": {
+      "correctAnswer": "**B. `container1/sub1/`**. A lifecycle prefix match is a full or partial blob path that starts with the container name, and the trailing slash after `container1` prevents the rule from also matching containers whose names merely begin with `container1`.",
+      "technical": "The `prefixMatch` filter is positive inclusion logic. It narrows a lifecycle rule to blobs whose path begins with the specified string. Microsoft documents the format as `[container name]/[blob name]`; the string must start with the container name.\n\nFor this scenario, `container1/sub1/` means:\n\n1. Start in the container named exactly `container1`, because the next character after the container name is `/`.\n2. Continue matching only blobs whose names begin with `sub1/`.\n3. Exclude `container11` and `container1archive`, because neither path begins with `container1/sub1/`.\n\nThe slash is important. A prefix of `container1` without the slash would match every blob path that begins with that text, including `container11/budget.csv` and `container1archive/old/log.txt`. Wildcards are also a trap. The characters `*` and `?` are valid blob-name characters and are treated as literal characters in a prefix; they do not mean any characters or one character.\n\nIf no `prefixMatch` is provided, the rule can apply across all blobs in the storage account that satisfy the remaining filters. If multiple filters are present, such as `blobTypes` and `prefixMatch`, Azure applies logical AND across them.",
+      "wrongOptions": {
+        "A": "This value contains a literal asterisk and even a space before `/sub1/`, so it would not express the required blob path. Misconception: lifecycle prefixes use command-shell wildcard matching. Could be correct when: a different tool explicitly documents `*` as a wildcard and the spacing matches that tool's syntax.",
+        "C": "The prefix should not start with a leading slash, and the final `*` would be interpreted as a literal asterisk rather than as a wildcard. Misconception: blob lifecycle paths are URL paths that begin with `/` and support glob characters. Could be correct when: an application router or web server is matching HTTP paths with its own pattern language.",
+        "D": "This value omits the container name, which is required for lifecycle prefix matching. It would not correctly scope the rule to `container1`. Misconception: the filter starts at the blob name after the container has already been selected elsewhere. Could be correct when: you are using an SDK list operation that takes the container separately and accepts a blob-name prefix."
+      },
+      "plainEnglish": "Think of the full blob address inside the account as `container/blob-name`. The lifecycle prefix starts at the very beginning of that address. If you want the container named `container1` and a folder-like path named `sub1`, write both pieces together as `container1/sub1/`.\n\nDo not write only `sub1/`, because Azure Storage has not already narrowed the rule to one container. Do not write `container1` by itself unless you really mean every container whose name starts with those characters. Also do not add `*` and expect it to mean anything special. In this setting, it is just another character that could appear in a blob name.",
+      "analogy": "Imagine sorting mail by reading the address from the first character. If you write `container1/sub1/`, the sorter first finds the exact building `container1`, then the office hallway `sub1`. If you write only `container1`, the sorter also grabs mail for `container11` because those first characters are the same.\n\n| Analogy | Azure reality |\n|---|---|\n| Full mail address | container name plus blob name |\n| Building name followed by `/` | exact container segment |\n| Hallway prefix | blob-name prefix such as `sub1/` |\n| Star printed on the label | literal `*` character, not a wildcard |\n\n**Where the analogy breaks down:** Blob paths are not real folders unless hierarchical namespace features are involved; for lifecycle prefix matching, the important behavior is string matching over the container-plus-blob path.",
+      "jargon": [
+        {
+          "term": "`prefixMatch`",
+          "definition": "An optional lifecycle policy filter containing path prefixes that begin with a container name and include zero or more blob-name characters after it."
+        },
+        {
+          "term": "Container",
+          "definition": "A logical namespace in Blob Storage that holds blobs."
+        },
+        {
+          "term": "Blob name",
+          "definition": "The name of an individual object in a container; slashes can be part of the name and are often used to simulate folders."
+        },
+        {
+          "term": "Wildcard",
+          "definition": "A pattern character that represents other characters in some systems; lifecycle `prefixMatch` does not treat `*` or `?` as wildcard operators."
+        },
+        {
+          "term": "Logical AND",
+          "definition": "A rule behavior where all configured filters must match before the action can apply."
+        },
+        {
+          "term": "Storage account",
+          "definition": "The Azure resource that contains Blob Storage data services and the lifecycle management policy."
+        },
+        {
+          "term": "Flat namespace",
+          "definition": "A blob naming model where slashes are characters in names rather than separate directory objects."
+        }
+      ],
+      "watchOut": "- `container1/` and `container1` are not equivalent in lifecycle prefix filters.\n- A prefix can have up to 10 case-sensitive values per rule.\n- Negative matching is not provided; filters include matching blobs rather than exclude nonmatching ones.\n- Case matters, so `Container1/sub1/` and `container1/sub1/` are different strings.",
+      "productionTip": {
+        "official": "Microsoft documents that a prefix match string must start with the container name, supports no wildcard matching, is case-sensitive, and can unintentionally match containers such as `container11` when the slash after `container1` is omitted.",
+        "recommendation": "Before enabling a destructive or archival rule, test prefix strings against real container and blob names. Prefer prefixes that include the container name and delimiter, and avoid container naming schemes where one container name is a prefix of many others unless you are deliberate about the slash."
+      },
+      "memoryTrick": "Write prefixes as **container slash blob-prefix**. This is a simplification because omitting the blob part can intentionally target a whole container, but the container name still comes first.",
+      "examTip": "Clue words are **avoid matching similarly named containers** and **begin with `sub1/`**. Choose the answer with the exact container segment followed by `/sub1/`. A harder version may show `container1` without a slash; remember that it also matches longer container names beginning with the same characters."
+    },
+    "sources": [
+      {
+        "title": "Azure Blob Storage lifecycle management policy structure",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-structure"
+      },
+      {
+        "title": "Lifecycle management policy FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-faq"
+      },
+      {
+        "title": "Configure a lifecycle management policy",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.6-03",
+    "objective": "D2.3.6",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You manage a storage account used by a document processing system. Blobs are uploaded to several containers, and each completed invoice receives a blob index tag of `DocumentType = Invoice`. You want a lifecycle rule that deletes only completed invoice blobs in paths that begin with `finance/processed/` in the `records` container.\n\nWhich two statements describe how to configure the filters? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use a `blobIndexMatch` condition with `name`, `op`, and `value`, such as `DocumentType == Invoice`"
+      },
+      {
+        "id": "B",
+        "text": "Use `blobIndexMatch` with `op` set to `!=` so that all non-invoice blobs are excluded"
+      },
+      {
+        "id": "C",
+        "text": "Use `prefixMatch` as `finance/processed/` because the container is selected separately by the lifecycle rule"
+      },
+      {
+        "id": "D",
+        "text": "Use `prefixMatch` as `records/finance/processed/` so the path starts with the container name"
+      },
+      {
+        "id": "E",
+        "text": "Set `blobTypes` to `[ \"pageBlob\" ]` because blob index tags are stored separately from blob content"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The account supports blob index tag filtering for lifecycle management, and the blobs to be deleted are current block blobs rather than page blobs or immutable blobs.",
+    "sections": {
+      "correctAnswer": "**A. Use a `blobIndexMatch` condition with `name`, `op`, and `value`, such as `DocumentType == Invoice`** and **D. Use `prefixMatch` as `records/finance/processed/` so the path starts with the container name**. Lifecycle filters can combine blob index tag conditions with path prefixes, and multiple filters are applied with logical AND.",
+      "technical": "Lifecycle filters define the set of blobs that a rule may act on. This scenario needs two inclusion filters in addition to `blobTypes`: a tag-based filter for invoice classification and a path prefix for the processed finance area.\n\nThe tag filter is expressed with `blobIndexMatch`, an array of objects that include `name`, `op`, and `value`. The documented comparison operator for a tag filter is equality, `==`. A suitable condition is:\n\n```json\n\"blobIndexMatch\": [\n  { \"name\": \"DocumentType\", \"op\": \"==\", \"value\": \"Invoice\" }\n]\n```\n\nThe path filter must begin with the container name, so the prefix is `records/finance/processed/`. If the rule also includes `blobTypes: [ \"blockBlob\" ]`, the full filter set requires a blob to be a block blob, have the matching path, and have the matching tag.\n\nThe order is inclusion first, action second. Azure evaluates the configured filters. If a blob fails any filter, the delete action is not considered for that blob during that rule. If the blob passes every filter, the action condition such as `daysAfterModificationGreaterThan` can be evaluated. Microsoft also notes that blob index match filters are currently supported only for flat namespace accounts, so hierarchical namespace designs should be checked before relying on this filter type.",
+      "wrongOptions": {
+        "B": "Lifecycle tag filtering currently documents equality matching, not a negative `!=` operator for excluding blobs. Misconception: a lifecycle filter language can express arbitrary include and exclude logic. Could be correct when: you are querying a different system that supports negative comparisons in its own query syntax.",
+        "C": "The prefix omits the required container name. Lifecycle `prefixMatch` values start with `[container name]/[blob name]`, so `finance/processed/` alone is not the right account-level path. Misconception: the lifecycle rule has a separate container picker in JSON. Could be correct when: an SDK method receives a container object and a prefix relative to that container.",
+        "E": "Page blobs are not the correct blob type for this rule. Lifecycle policies are supported for block and append blobs, and delete actions for tagged invoice documents would normally target `blockBlob`. Misconception: because tags are a separate subresource, the underlying blob type no longer matters. Could be correct when: you are configuring a feature that explicitly targets page blobs, such as some disk-related workloads, not this lifecycle rule."
+      },
+      "plainEnglish": "The company marks each invoice with a label, and it also puts processed finance files in a certain path. The lifecycle rule should use both clues. The tag clue says, \"only blobs whose label says DocumentType equals Invoice.\" The path clue says, \"only objects whose address starts with records/finance/processed/.\" Because Azure treats these filters as an AND, a blob must satisfy both clues.\n\nThis is safer than using just the path or just the tag. A non-invoice file in the finance processed path will not match the tag. An invoice somewhere else in the account will not match the path. The delete action then operates only on blobs that meet the age condition too.",
+      "analogy": "Picture an archive clerk who must shred only boxes that have both a room location and a label. The room location is \"records building, finance processed aisle,\" and the label says \"DocumentType: Invoice.\" A box missing either clue is left alone.\n\n| Analogy | Azure reality |\n|---|---|\n| Box label | Blob index tag |\n| Label equals Invoice | `blobIndexMatch` with `op: \"==\"` |\n| Building plus aisle | `records/finance/processed/` prefix |\n| Clerk checks both | Logical AND across filters |\n| Shredding later | Lifecycle `delete` action after its day condition |\n\n**Where the analogy breaks down:** Azure index tags are key-value subresources and may have indexing latency after tags are changed, while a paper clerk can see a label immediately.",
+      "jargon": [
+        {
+          "term": "Blob index tag",
+          "definition": "A key-value attribute stored with a blob that can be indexed and used to find, categorize, or filter blob objects."
+        },
+        {
+          "term": "`blobIndexMatch`",
+          "definition": "A lifecycle filter array containing tag conditions with `name`, `op`, and `value` fields."
+        },
+        {
+          "term": "`op`",
+          "definition": "The comparison operator field in a tag filter; lifecycle tag examples use equality with `==`."
+        },
+        {
+          "term": "`prefixMatch`",
+          "definition": "A lifecycle filter containing one or more case-sensitive prefixes that start with a container name."
+        },
+        {
+          "term": "`blobTypes`",
+          "definition": "A required lifecycle filter listing blob types such as `blockBlob` or `appendBlob`."
+        },
+        {
+          "term": "Block blob",
+          "definition": "The common Blob Storage object type for documents, images, backups, and other file-like data."
+        },
+        {
+          "term": "Flat namespace account",
+          "definition": "A storage account namespace style where blob index match filtering is currently documented as supported for lifecycle filters."
+        },
+        {
+          "term": "Delete action",
+          "definition": "A lifecycle action that removes a blob when the configured condition is met, subject to limitations such as immutable containers and soft delete behavior."
+        }
+      ],
+      "watchOut": "- A lifecycle filter can include up to 10 blob index tag conditions per rule.\n- Tag keys and values are case-sensitive, so `Invoice` and `invoice` are different values.\n- Combining prefix and tag filters narrows the rule; it does not create an OR condition.\n- Deleting with lifecycle in a soft-delete-enabled account places the blob into a soft-deleted state for the retention period.",
+      "productionTip": {
+        "official": "Microsoft documents blob index tags as a way to categorize and find blobs and explicitly calls out lifecycle management as a feature that can use those tags. The lifecycle policy structure documentation states that multiple filters are combined with logical AND and that blob index match filters are currently supported only for flat namespace accounts.",
+        "recommendation": "Use tags for business classification and prefixes for storage layout, then combine them to reduce accidental deletion. Before enabling deletion, run discovery queries for the same tag values and compare the result count with your retention inventory so missing or misspelled tags are caught early."
+      },
+      "memoryTrick": "Use **path plus label** when a lifecycle rule needs location and business meaning. This is a simplification because the tag index and namespace support must still be verified.",
+      "examTip": "Clue words are **blob index tag**, **paths that begin**, and **only completed invoice blobs**. Select the tag equality condition and the prefix that starts with the container name. A harder version may ask why a rule matched nothing; suspect a missing container name in `prefixMatch` or case differences in tag keys."
+    },
+    "sources": [
+      {
+        "title": "Azure Blob Storage lifecycle management policy structure",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-structure"
+      },
+      {
+        "title": "Manage and find Azure Blob data with blob index tags",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-manage-find-blobs"
+      },
+      {
+        "title": "Lifecycle management policies that delete blobs",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-delete"
+      },
+      {
+        "title": "Lifecycle management policy FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-faq"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.6-04",
+    "objective": "D2.3.6",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A storage account has blob versioning and snapshots enabled. You plan to use lifecycle management for three objects related to the same logical file:\n\n- The current version should move to the cool tier 45 days after it is last modified.\n- Previous versions should be deleted 180 days after each version is created.\n- Snapshots should be archived 90 days after each snapshot is created.\n\nWhich action layout and day conditions should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Put all three actions under `baseBlob` and use `daysAfterModificationGreaterThan` for current versions, previous versions, and snapshots"
+      },
+      {
+        "id": "B",
+        "text": "Use `baseBlob.tierToCool.daysAfterCreationGreaterThan`, `version.delete.daysAfterModificationGreaterThan`, and `snapshot.tierToArchive.daysAfterModificationGreaterThan`"
+      },
+      {
+        "id": "C",
+        "text": "Use `baseBlob.tierToCool.daysAfterModificationGreaterThan`, `version.delete.daysAfterCreationGreaterThan`, and `snapshot.tierToArchive.daysAfterCreationGreaterThan`"
+      },
+      {
+        "id": "D",
+        "text": "Use `snapshot` for current versions, `baseBlob` for previous versions, and `version` for snapshots because lifecycle actions evaluate the oldest object first"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The blobs are block blobs in an account and redundancy configuration that support the requested cool and archive tier actions, and immutable storage does not block the planned delete action.",
+    "sections": {
+      "correctAnswer": "**C. Use `baseBlob.tierToCool.daysAfterModificationGreaterThan`, `version.delete.daysAfterCreationGreaterThan`, and `snapshot.tierToArchive.daysAfterCreationGreaterThan`**. Current blob actions belong under `baseBlob`; previous versions and snapshots have separate action blocks, and their ages are evaluated from creation time.",
+      "technical": "Lifecycle management distinguishes the current blob from related retained objects. The `baseBlob` element refers to the current version of a blob. The `version` element refers to previous versions. The `snapshot` element refers to blob snapshots. Putting everything under one element changes the target and does not express the requested design.\n\nThe matching day condition depends on the target object:\n\n| Target | Action block | Suitable condition in this scenario |\n|---|---|---|\n| Current version | `baseBlob` | `daysAfterModificationGreaterThan` for age since last modified |\n| Previous version | `version` | `daysAfterCreationGreaterThan` for age of that version |\n| Snapshot | `snapshot` | `daysAfterCreationGreaterThan` for age of that snapshot |\n\nThe service evaluates lifecycle rules per object being processed. It does not look at the current blob's modification time and apply it to older versions. Microsoft documents that lifecycle policies evaluate a rule based on properties of that individual version only. Previous versions use the creation time of that version when the blob was first written, and snapshots use the time at which the snapshot was created.\n\nThere are exceptions and limitations. Archive tiering is not supported for some account redundancy configurations and cannot be used for append blobs, page blobs, premium block blob tiering, encryption-scope blobs, or certain other cases. Delete actions also do not work with blobs in immutable containers.",
+      "wrongOptions": {
+        "A": "This option loses the distinction between the current version, previous versions, and snapshots. `baseBlob` is not the action block for previous versions or snapshots. Misconception: related blob objects inherit the current blob action block. Could be correct when: every required action truly targets only the current version of a blob.",
+        "B": "The previous version and snapshot conditions are wrong because their lifecycle age is based on creation time, not last modification time. The current blob requirement also asks for last modification age, not creation age. Misconception: one day condition can be reused for all lifecycle targets. Could be correct when: a current blob action deliberately uses creation age to expire data after ingest.",
+        "D": "The action block names do not rotate based on object age. `snapshot` always means snapshots, `version` means previous versions, and `baseBlob` means the current version. Misconception: lifecycle management first sorts all related objects and then assigns action names by age. Could be correct when: describing a custom application that names queues by processing order, not Azure Blob lifecycle JSON."
+      },
+      "plainEnglish": "A file in Blob Storage can have a current copy, older saved versions, and snapshots. Lifecycle management names those things separately. The current copy is the base blob. Older saved versions go in the version section. Snapshots go in the snapshot section.\n\nThe clock used for the rule also changes. For the current copy, the question cares about when it was last changed, so the condition uses last modification. For old versions and snapshots, the question cares about how old each retained item is, so the rule uses creation time. Azure does not decide that a snapshot is old because the current file is old; it checks the snapshot's own creation time.",
+      "analogy": "Think of a contract binder. The active contract is on top, earlier revisions are in a revision pocket, and signed photocopies are in a snapshot envelope. You would not label all three pockets with the same instruction if each item ages differently.\n\n| Analogy | Azure reality |\n|---|---|\n| Active contract | `baseBlob` current version |\n| Revision pocket | `version` previous versions |\n| Photocopy envelope | `snapshot` blob snapshots |\n| Date last edited | `daysAfterModificationGreaterThan` for base blobs |\n| Date copy was made | `daysAfterCreationGreaterThan` for versions or snapshots |\n\n**Where the analogy breaks down:** Azure versions and snapshots are service-managed blob objects with precise properties and API behavior, not paper copies that a clerk can inspect manually.",
+      "jargon": [
+        {
+          "term": "Blob versioning",
+          "definition": "A Blob Storage data protection feature that automatically preserves previous versions of a blob when it is modified or deleted."
+        },
+        {
+          "term": "Snapshot",
+          "definition": "A read-only point-in-time copy of a blob."
+        },
+        {
+          "term": "`baseBlob`",
+          "definition": "The lifecycle action section that targets the current version of a blob."
+        },
+        {
+          "term": "`version`",
+          "definition": "The lifecycle action section that targets previous blob versions."
+        },
+        {
+          "term": "`snapshot`",
+          "definition": "The lifecycle action section that targets blob snapshots."
+        },
+        {
+          "term": "`daysAfterModificationGreaterThan`",
+          "definition": "A lifecycle run condition based on how many days have passed since the current blob version was last modified."
+        },
+        {
+          "term": "`daysAfterCreationGreaterThan`",
+          "definition": "A lifecycle run condition based on object creation age, used for current blobs, previous versions, or snapshots depending on the action target."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "An offline tier for rarely accessed data that can take hours to rehydrate before reading."
+        },
+        {
+          "term": "Cool tier",
+          "definition": "An online tier for data that is infrequently accessed or modified but still needs immediate online availability."
+        }
+      ],
+      "watchOut": "- Do not use `baseBlob` for previous versions or snapshots.\n- Previous versions are aged from their own creation time, not from when they became previous.\n- Snapshots are aged from snapshot creation time.\n- Archive actions need separate checks for redundancy, encryption scope, and blob type limitations.",
+      "productionTip": {
+        "official": "Microsoft documents separate `baseBlob`, `version`, and `snapshot` lifecycle action elements. The policy structure page states that current versions can use last modified or last access time, previous versions use their creation time, and snapshots use the time at which the snapshot was created.",
+        "recommendation": "When you enable versioning and snapshots, write lifecycle rules for all retained object types intentionally. Otherwise old versions or snapshots can quietly accumulate cost even though the current blob follows a tidy tiering policy."
+      },
+      "memoryTrick": "Think **base changes, copies age**: base blobs can follow modification time, while versions and snapshots commonly follow creation time. This is a simplification because current base blobs can also use creation or last access conditions in supported cases.",
+      "examTip": "Clue words are **current version**, **previous versions**, and **snapshots**. Match those directly to `baseBlob`, `version`, and `snapshot`. A harder item may include `daysAfterLastTierChangeGreaterThan`; remember that it is an additional archive safeguard, not the normal age condition for all actions."
+    },
+    "sources": [
+      {
+        "title": "Azure Blob Storage lifecycle management policy structure",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-structure"
+      },
+      {
+        "title": "Lifecycle management policies that transition blobs between tiers",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-access-tiers"
+      },
+      {
+        "title": "Lifecycle management policies that delete blobs",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-delete"
+      },
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.6-05",
+    "objective": "D2.3.6",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You configure lifecycle management for a storage account that stores customer reports. Reports should move from hot to cool when they have not been accessed for 30 days. If a cooled report is accessed later, you want Azure Storage to move it back to hot automatically, but you also want to avoid assuming that every read updates the access time.\n\nWhich two configuration facts are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use `daysAfterModificationGreaterThan` because it records when the blob was last read by a client"
+      },
+      {
+        "id": "B",
+        "text": "Enable last access time tracking before using `daysAfterLastAccessTimeGreaterThan` as the lifecycle condition"
+      },
+      {
+        "id": "C",
+        "text": "Set `enableAutoTierToHotFromCool` to a number of days, such as `7`, to control the rehydration delay"
+      },
+      {
+        "id": "D",
+        "text": "Use `enableAutoTierToHotFromCool` with a last-access-based `tierToCool` action, knowing it moves blobs from cool to hot only once in 30 days"
+      },
+      {
+        "id": "E",
+        "text": "Apply the rule to snapshots because automatic tiering back to hot is supported for snapshots and previous versions"
+      }
+    ],
+    "correct": [
+      "B",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The reports are current block blobs in a standard storage account, and the design accepts the documented transaction and early deletion cost behavior of access-time-based tiering.",
+    "sections": {
+      "correctAnswer": "**B. Enable last access time tracking before using `daysAfterLastAccessTimeGreaterThan` as the lifecycle condition** and **D. Use `enableAutoTierToHotFromCool` with a last-access-based `tierToCool` action, knowing it moves blobs from cool to hot only once in 30 days**. Last-access policies depend on access time tracking, and auto-tier-to-hot is tied to the last-access condition rather than a separate day count.",
+      "technical": "A last-access-based lifecycle design has two connected parts. First, the account must have last access time tracking enabled. The lifecycle condition `daysAfterLastAccessTimeGreaterThan` uses the blob's `LastAccessTime` property when available. Microsoft documents that when access time tracking is not enabled, or when the property is null, lifecycle evaluation can use the date when tracking was enabled instead.\n\nSecond, automatic movement back to hot is controlled by the Boolean `enableAutoTierToHotFromCool`. It is not an object with a number of days. The policy structure documentation states that this action is available only when used with `daysAfterLastAccessTimeGreaterThan`. The examples show it beside a `tierToCool` action based on last access.\n\nImportant behavior for this scenario:\n\n1. Reads such as `Get Blob` can update last access time, but metadata, properties, and tag reads do not update it.\n2. To reduce read latency impact, only the first read in a 24-hour period updates last access time unless a modification creates a newer value.\n3. Auto-tiering from cool to hot is limited to once in 30 days to help avoid repeated early deletion penalties.\n4. The auto-tier-to-hot behavior is not supported for snapshots or previous versions.\n\nThe design therefore works for current block blobs whose access patterns are understood, but it should be tested with billing and telemetry in mind.",
+      "wrongOptions": {
+        "A": "Last modification time records changes to the blob, not ordinary reads. A report can be downloaded without changing its last modified timestamp. Misconception: all client activity updates the modification clock. Could be correct when: the policy goal is based on how long it has been since content was written or replaced.",
+        "C": "`enableAutoTierToHotFromCool` is a Boolean property, not a delay value. It enables the cool-to-hot-on-access behavior when used with the right last-access rule. Misconception: every lifecycle action is expressed as a day threshold object. Could be correct when: you are setting a real day threshold such as `tierToCool.daysAfterLastAccessTimeGreaterThan`.",
+        "E": "The documented auto-tier-to-hot action is not supported with previous versions or snapshots. Misconception: if a lifecycle policy can tier versions or snapshots down, it can also auto-tier them back up on access. Could be correct when: you are applying supported tier or delete actions to previous versions or snapshots without using `enableAutoTierToHotFromCool`."
+      },
+      "plainEnglish": "Last access means \"when someone last actually used the blob,\" not \"when someone last changed it.\" Azure Storage has to be told to track that information. Once it is tracking access time, a lifecycle rule can say, \"if this current report has not been accessed for 30 days, move it to cool.\"\n\nThe move back to hot is a switch, not a timer. If the blob was cooled by that rule and someone reads it later, Azure can move it back to hot automatically. But Azure does not update the access time for every tiny read in the same day, and it limits automatic warm-up to once in 30 days to avoid cost surprises.",
+      "analogy": "Imagine a library that shelves old reports in a cheaper basement when nobody has checked them out for a month. The library must first start recording checkouts. If a basement report is checked out, the librarian can bring it back upstairs, but will not keep moving the same report up and down repeatedly every day.\n\n| Analogy | Azure reality |\n|---|---|\n| Checkout log | Last access time tracking |\n| Basement shelf | Cool tier |\n| Bring upstairs after checkout | `enableAutoTierToHotFromCool` |\n| One move limit | Once in 30 days safeguard |\n| Looking at the card catalog | Metadata or tag reads that do not update access time |\n\n**Where the analogy breaks down:** Azure's tracking is property-based and billed as storage operations; the service updates access time with documented throttling rather than every visible user interaction.",
+      "jargon": [
+        {
+          "term": "Last access time tracking",
+          "definition": "A Blob Storage feature that records when a blob was last read or written so lifecycle policies can use access age."
+        },
+        {
+          "term": "`LastAccessTime`",
+          "definition": "The blob property used by last-access-based lifecycle conditions when it has a value."
+        },
+        {
+          "term": "`daysAfterLastAccessTimeGreaterThan`",
+          "definition": "A lifecycle condition that can trigger actions after a configured number of days since last access."
+        },
+        {
+          "term": "`enableAutoTierToHotFromCool`",
+          "definition": "A Boolean lifecycle action that can move a blob from cool to hot when the blob is accessed after being tiered down by the rule."
+        },
+        {
+          "term": "Hot tier",
+          "definition": "An online access tier optimized for frequently accessed or modified data."
+        },
+        {
+          "term": "Cool tier",
+          "definition": "An online access tier optimized for infrequently accessed or modified data, with a minimum recommended retention period of 30 days."
+        },
+        {
+          "term": "Early deletion penalty",
+          "definition": "A prorated charge that can apply when data leaves cool, cold, or archive before the tier's minimum retention period has elapsed."
+        },
+        {
+          "term": "Current block blob",
+          "definition": "The active version of a block blob, as opposed to a previous version or snapshot."
+        }
+      ],
+      "watchOut": "- `Get Blob Properties`, `Get Blob Metadata`, and `Get Blob Tags` do not update last access time.\n- Only the first read within a 24-hour period updates access time in the documented behavior.\n- Automatic movement from cool to hot can still create early deletion charges if the cool minimum period has not elapsed.\n- Turning off a rule does not necessarily turn off previously enabled access-based auto-tier behavior; the FAQ notes that turning off last access tracking is the way to prevent it.",
+      "productionTip": {
+        "official": "Microsoft documents that last access time tracking must be enabled to use access-based lifecycle behavior, that `enableAutoTierToHotFromCool` is available only with a last-access-based condition, and that automatic movement from cool to hot is limited to once in 30 days.",
+        "recommendation": "Enable access tracking deliberately and review billing metrics after rollout. For reports with unpredictable rereads, compare hot storage cost against cool transaction and early deletion charges before using auto-tiering as a blanket setting."
+      },
+      "memoryTrick": "Access rules need **access tracking**, and auto-hot is a **Boolean bounce-back**. This is a simplification because not every operation updates the access clock and not every blob object type supports the bounce-back behavior.",
+      "examTip": "Clue words are **not accessed**, **move it back to hot**, and **avoid assuming every read updates the access time**. Select the answer that enables tracking and the answer that treats auto-tiering as a constrained Boolean. A harder version may ask why a blob moved back to archive after rehydration; then look for `daysAfterLastTierChangeGreaterThan`."
+    },
+    "sources": [
+      {
+        "title": "Azure Blob Storage lifecycle management policy structure",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-structure"
+      },
+      {
+        "title": "Configure a lifecycle management policy",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+      },
+      {
+        "title": "Lifecycle management policies that transition blobs between tiers",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-access-tiers"
+      },
+      {
+        "title": "Lifecycle management policy FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-faq"
+      },
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.6-06",
+    "objective": "D2.3.6",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You create one lifecycle rule for block blobs in the `telemetry` container. The rule contains these current blob actions:\n\n```json\n\"baseBlob\": {\n  \"tierToCool\": { \"daysAfterModificationGreaterThan\": 30 },\n  \"tierToCold\": { \"daysAfterModificationGreaterThan\": 60 },\n  \"tierToArchive\": { \"daysAfterModificationGreaterThan\": 90 },\n  \"delete\": { \"daysAfterModificationGreaterThan\": 90 }\n}\n```\n\nA matching blob has not been modified for 95 days. What will lifecycle management apply when the rule runs, assuming the actions are otherwise supported?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Move the blob to cool because `tierToCool` appears first in the JSON"
+      },
+      {
+        "id": "B",
+        "text": "Move the blob to archive because archive tiering is listed before delete in the cost hierarchy"
+      },
+      {
+        "id": "C",
+        "text": "Delete the blob because lifecycle management applies the least expensive applicable action"
+      },
+      {
+        "id": "D",
+        "text": "Skip the blob because a rule cannot contain more than one action for the same blob"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The blob is a block blob in an account where cool, cold, archive, and delete actions are supported, soft delete and immutability behavior do not block deletion, and the question focuses on lifecycle action precedence.",
+    "sections": {
+      "correctAnswer": "**C. Delete the blob because lifecycle management applies the least expensive applicable action**. When more than one action is defined on the same blob and more than one condition is met, Azure Blob lifecycle management chooses the least expensive action; deletion is cheaper than retaining the blob in an access tier.",
+      "technical": "The blob is 95 days past its last modification. That means all four configured thresholds are met: greater than 30, greater than 60, greater than 90 for archive, and greater than 90 for delete. Lifecycle management does not execute every matching action in sequence and does not stop at the first property listed in JSON.\n\nMicrosoft documents the precedence as a cost rule: if more than one action is defined on the same blob, lifecycle management applies the least expensive action. The documentation gives examples that delete is cheaper than `tierToArchive`, and `tierToArchive` is cheaper than `tierToCool`. With the documented access tier cost model, cold sits between cool and archive for storage cost, so the practical retention order from cheaper storage to more expensive storage is archive, cold, cool, then hot; delete removes the object instead of paying to retain it.\n\nFor this rule:\n\n| Condition met at 95 days? | Candidate action |\n|---|---|\n| Yes, older than 30 days | `tierToCool` |\n| Yes, older than 60 days | `tierToCold` |\n| Yes, older than 90 days | `tierToArchive` |\n| Yes, older than 90 days | `delete` |\n\nBecause delete is applicable and is the least expensive action, the service applies deletion rather than first moving the blob to another tier. In a real account, soft delete could retain the blob in a soft-deleted state, and immutable container settings could prevent lifecycle deletion from working.",
+      "wrongOptions": {
+        "A": "JSON property order does not make `tierToCool` win. The documented tie-breaker is least expensive applicable action, not first listed action. Misconception: lifecycle actions execute like a script from top to bottom. Could be correct when: a procedural script explicitly loops through actions in source order.",
+        "B": "Archive is cheaper than cool or cold storage, but delete is also applicable at 95 days and is cheaper than archiving retained data. Misconception: archive always beats every other lifecycle action even when deletion is eligible. Could be correct when: the policy contains archive but no delete action, or the delete threshold has not yet been met.",
+        "D": "A rule can define more than one action for the same blob target, and Microsoft documents how the service chooses among multiple applicable actions. Misconception: the presence of several action properties makes the rule invalid. Could be correct when: a schema specifically prohibits duplicate properties or unsupported action combinations, but that is not the rule shown here."
+      },
+      "plainEnglish": "The blob is old enough to satisfy every age rule in the example. Azure does not cool it, then cold it, then archive it, then delete it in one visible chain. It picks the action that costs the least when more than one action could apply to the same blob. Keeping a blob in any tier still costs money. Deleting it avoids retaining it, so deletion wins if it is allowed and its day threshold is met.\n\nThis is why a policy can safely contain tiering steps for younger data and deletion for older data. The older blob is not stuck at the first tiering step just because that line appears earlier in the JSON.",
+      "analogy": "A storage manager has four instructions for old equipment: move it to a side room after 30 days, to an offsite room after 60 days, to deep storage after 90 days, or dispose of it after 90 days. If an item qualifies for disposal, the manager does not pay to move it into deep storage first.\n\n| Analogy | Azure reality |\n|---|---|\n| Side room | Cool tier |\n| Offsite room | Cold tier |\n| Deep storage | Archive tier |\n| Dispose | Delete action |\n| Cheapest qualifying outcome | Lifecycle least-expensive action precedence |\n\n**Where the analogy breaks down:** Azure may still retain deleted blobs through soft delete, and lifecycle operations are background service actions rather than a human choosing a warehouse destination.",
+      "jargon": [
+        {
+          "term": "Action precedence",
+          "definition": "The rule Azure uses when more than one lifecycle action could apply to the same blob during a policy run."
+        },
+        {
+          "term": "`tierToCool`",
+          "definition": "A lifecycle action that sets a supported blob to the cool access tier."
+        },
+        {
+          "term": "`tierToCold`",
+          "definition": "A lifecycle action that sets a supported blob to the cold access tier."
+        },
+        {
+          "term": "`tierToArchive`",
+          "definition": "A lifecycle action that sets a supported blob to the offline archive tier when account and blob limitations allow it."
+        },
+        {
+          "term": "`delete`",
+          "definition": "A lifecycle action that deletes a blob, subject to limitations such as immutable containers and soft delete behavior."
+        },
+        {
+          "term": "Soft delete",
+          "definition": "A data protection feature that retains deleted blobs for a configured period before permanent deletion."
+        },
+        {
+          "term": "Immutable container",
+          "definition": "A container protected by immutability settings where objects can be created and read but not modified or deleted while protection applies."
+        },
+        {
+          "term": "Last modified time",
+          "definition": "The timestamp that reflects when blob content or properties were last changed."
+        }
+      ],
+      "watchOut": "- Do not treat lifecycle actions as a procedural script.\n- Delete can be selected over archive when both thresholds are met.\n- Soft delete may hide the immediate capacity effect because the blob remains retained for the soft-delete period.\n- Archive tiering has extra limitations, but those limitations do not change delete precedence when deletion is supported.",
+      "productionTip": {
+        "official": "Microsoft documents that when more than one lifecycle action is defined on the same blob, the service applies the least expensive action. The access tier documentation also explains that cooler tiers reduce storage cost but can introduce higher access costs and minimum retention periods.",
+        "recommendation": "Stagger thresholds intentionally so administrators can read the intended lifecycle: cool for medium-aged data, cold or archive for long-retained data, and delete only when retention obligations have ended. Review soft delete and immutability settings before expecting capacity to drop after a delete action runs."
+      },
+      "memoryTrick": "When several actions qualify, think **delete beats deep storage**. This is a simplification because data protection features and unsupported actions can prevent the apparent winner from completing.",
+      "examTip": "Clue words are **same blob**, **multiple actions**, and **95 days**. Compare every threshold, then apply the least-expensive action rule. A harder version may place `delete` earlier or later in the JSON to see whether you wrongly depend on property order."
+    },
+    "sources": [
+      {
+        "title": "Azure Blob Storage lifecycle management policy structure",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-structure"
+      },
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      },
+      {
+        "title": "Lifecycle management policies that delete blobs",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-delete"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.6-07",
+    "objective": "D2.3.6",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "At 10:00 on Monday, you add a lifecycle management rule that should move matching blobs to the cool tier. At 10:30, no blobs have moved. A teammate says the policy failed because lifecycle rules always run immediately after being saved.\n\nWhat should you tell the teammate?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The policy has failed; lifecycle management must complete all matching actions within 30 minutes"
+      },
+      {
+        "id": "B",
+        "text": "The policy cannot run until you manually start it from the Azure portal"
+      },
+      {
+        "id": "C",
+        "text": "A new or updated policy can take up to 24 hours to take effect, and policy runs are background processes whose completion time varies"
+      },
+      {
+        "id": "D",
+        "text": "Lifecycle policies run only once per month, so the first result should be expected after the next billing cycle"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The policy was saved successfully, the rule is enabled, the blobs match the rule, and the question concerns normal lifecycle scheduling rather than a schema validation error.",
+    "sections": {
+      "correctAnswer": "**C. A new or updated policy can take up to 24 hours to take effect, and policy runs are background processes whose completion time varies**. Microsoft documents that policy changes can take up to 24 hours before effect and first execution start, and the time to process matching blobs depends on account size and workload.",
+      "technical": "Lifecycle management is an automated background service, not an immediate command. The portal configuration article says Azure Storage runs the policy once per day. The overview and FAQ clarify that when rules are added or edited, it can take up to 24 hours for changes to go into effect and for the first execution to start.\n\nAfter the policy becomes effective, execution still is not guaranteed to finish at a fixed minute. The service processes objects periodically and prioritizes customer workloads as the storage account approaches request limits. Large accounts or broad rules can take longer, and performance guidance notes that in some cases processing can take multiple days. A new lifecycle management policy run begins only after the ongoing run completes.\n\nThe correct troubleshooting order at 10:30 on Monday is therefore:\n\n1. Confirm the policy was accepted and the rule is enabled.\n2. Confirm filters, blob types, prefixes, and action conditions are correct.\n3. Wait for the documented up-to-24-hour effect window before declaring scheduling failure.\n4. Later, use lifecycle policy completion events, metrics, and storage resource logs to monitor execution results.\n\nThere is no documented button to force the policy to run immediately, and the FAQ states there is no way to track the exact time at which the policy will execute.",
+      "wrongOptions": {
+        "A": "Thirty minutes is inside the documented 24-hour policy effect window, so lack of movement does not prove failure. Misconception: saving a lifecycle rule is equivalent to running an immediate tier-change command. Could be correct when: you issued a direct supported `Set Blob Tier` call and expected an immediate online tier change.",
+        "B": "Lifecycle management is scheduled by Azure Storage as a background process; it is not manually started from a portal run button. Misconception: every automation service requires an administrator-triggered first run. Could be correct when: a different Azure feature offers an explicit run-now operation.",
+        "D": "The documentation does not say lifecycle policies wait for a monthly billing cycle. The portal documentation says Azure Storage runs the policy once per day, with up to 24 hours for new or changed rules to take effect. Misconception: storage lifecycle aligns with billing periods. Could be correct when: reviewing monthly invoice aggregation, not policy execution timing."
+      },
+      "plainEnglish": "A lifecycle policy is not like clicking a button that immediately moves every matching file. It is more like telling Azure Storage, \"Here is the rule you should use in your background cleanup job.\" Azure may need up to a day before a new or changed rule starts taking effect. Even after it starts, large storage accounts can take time because Azure does not let lifecycle work crowd out normal customer traffic.\n\nSo at 30 minutes, the right answer is patience plus verification. Check that the rule is written correctly and enabled, but do not call it failed just because nothing has moved yet.",
+      "analogy": "Think of a city recycling schedule. You can update the pickup instructions today, but the truck does not appear at every house the moment the form is saved. The route starts on a schedule, and a large neighborhood can take longer to finish.\n\n| Analogy | Azure reality |\n|---|---|\n| Updated pickup instruction | New or edited lifecycle rule |\n| Scheduled truck route | Daily/background policy run |\n| Large neighborhood | Storage account with many blobs |\n| Traffic priority | Customer workload requests take priority near account limits |\n| Completion notice | Lifecycle policy completed event or logs |\n\n**Where the analogy breaks down:** Azure's service can evaluate and operate on many objects in distributed storage infrastructure, and the exact run time is not published like a municipal route map.",
+      "jargon": [
+        {
+          "term": "Policy run",
+          "definition": "A background execution of lifecycle management that evaluates matching blobs and performs eligible actions."
+        },
+        {
+          "term": "Rule enabled state",
+          "definition": "The Boolean setting that determines whether a lifecycle rule is active or temporarily disabled."
+        },
+        {
+          "term": "First execution",
+          "definition": "The first background policy processing cycle after a new or changed rule takes effect."
+        },
+        {
+          "term": "Storage account request limit",
+          "definition": "A scalability boundary for requests to an account; lifecycle operations and workload requests share account limits."
+        },
+        {
+          "term": "LifecyclePolicyCompleted event",
+          "definition": "An Event Grid event that can be used to monitor completion of a lifecycle policy run."
+        },
+        {
+          "term": "Metrics and logs",
+          "definition": "Azure monitoring data sources that can help diagnose whether lifecycle policy operations are being performed."
+        },
+        {
+          "term": "`Set Blob Tier`",
+          "definition": "A direct Blob Storage operation that changes a supported blob's access tier, separate from waiting for lifecycle management."
+        }
+      ],
+      "watchOut": "- Up to 24 hours before effect is documented for new or updated lifecycle rules.\n- A rule can take additional time to complete after it starts, especially in large or busy accounts.\n- There is no supported way to predict the exact execution time of the background scheduler.\n- Disabling all rules makes the policy inactive; an in-progress run can take up to 24 hours to stop.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure Storage runs lifecycle policies once per day, that new or edited rules can take up to 24 hours to go into effect, and that policy execution time depends on the number of blobs, operations performed, and storage account workload.",
+        "recommendation": "Do not use lifecycle management for deadlines that require minute-level action. If a compliance process needs immediate movement for a specific object, use direct tier or delete operations, and use lifecycle policy for ongoing steady-state cleanup."
+      },
+      "memoryTrick": "Lifecycle is **scheduled cleanup, not instant command**. This is a simplification because some accounts process quickly, but the exam-safe expectation is the documented up-to-24-hour start window.",
+      "examTip": "Clue words are **At 10:00**, **At 10:30**, and **always run immediately**. Choose the answer that describes background scheduling and the 24-hour effect window. A harder version may ask why a broad policy is still running days later; then use the performance guidance about large object counts and account workload priority."
+    },
+    "sources": [
+      {
+        "title": "Azure Blob Storage lifecycle management overview",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+      },
+      {
+        "title": "Configure a lifecycle management policy",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure"
+      },
+      {
+        "title": "Lifecycle management policy FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-faq"
+      },
+      {
+        "title": "Lifecycle management performance characteristics",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-performance-characteristics"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.6-08",
+    "objective": "D2.3.6",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You are designing lifecycle management for three storage accounts:\n\n| Account | Kind and redundancy | Requirement |\n|---|---|---|\n| `stgen` | General-purpose v2, Standard_ZRS | Move old block blobs to cool and cold tiers |\n| `starchive` | General-purpose v2, Standard_ZRS | Move old block blobs to the archive tier |\n| `stpremium` | Premium block blob account | Move older blobs to lower standard access tiers |\n\nYou also need to warn the finance team about charges if blobs are moved out of cool, cold, or archive before the recommended minimum retention period.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "`stgen` can use lifecycle tiering to cool and cold because online tiers support all redundancy configurations"
+      },
+      {
+        "id": "B",
+        "text": "`starchive` can use lifecycle archiving with ZRS because archive is supported for every redundancy option"
+      },
+      {
+        "id": "C",
+        "text": "`stpremium` can tier data to hot, cool, cold, or archive by using lifecycle management in the same premium account"
+      },
+      {
+        "id": "D",
+        "text": "Blobs can incur prorated early deletion charges if they leave cool before 30 days, cold before 90 days, or archive before 180 days"
+      },
+      {
+        "id": "E",
+        "text": "A lifecycle management policy is always cheaper than manually setting a blob tier because lifecycle delete operations and tier changes are never billed"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The accounts are in regions where the named tiers exist, the blobs are block blobs, and the question focuses on documented tier support, redundancy limits, and minimum-retention charging behavior.",
+    "sections": {
+      "correctAnswer": "**A. `stgen` can use lifecycle tiering to cool and cold because online tiers support all redundancy configurations** and **D. Blobs can incur prorated early deletion charges if they leave cool before 30 days, cold before 90 days, or archive before 180 days**. Cool and cold are online tiers available with all redundancy configurations, while archive has stricter redundancy support and minimum retention billing rules matter.",
+      "technical": "The account design has three separate concerns: whether lifecycle management is supported for the account kind, whether a specific tier action is supported with the redundancy configuration, and whether the resulting movement creates retention-related charges.\n\nLifecycle management policies are supported for block blobs and append blobs in general-purpose v2, premium block blob, and legacy Blob Storage accounts. That statement does not mean every lifecycle tiering action is available in every account. Microsoft documents that tiering is not yet supported in a premium block blob storage account. The access tier overview also states that data stored in a premium block blob storage account cannot be tiered to hot, cool, cold, or archive using lifecycle management or `Set Blob Tier`; to move data, copy it to a different account.\n\nFor redundancy, hot, cool, and cold online tiers support all redundancy configurations. Archive is different. Moving blobs to archive is supported only for accounts configured with LRS, GRS, or RA-GRS. Archive is not supported for ZRS, GZRS, or RA-GZRS accounts. Therefore `starchive` with Standard_ZRS should not be designed to archive in place.\n\nFor billing, cool has a 30-day minimum recommended retention period, cold has 90 days, and archive has 180 days. Deleting, overwriting, or moving data to another tier before that period has elapsed can result in prorated early deletion charges. Lifecycle policies are free as a feature, but customers are billed for standard operation costs for Set Blob Tier calls; delete operations are free.",
+      "wrongOptions": {
+        "B": "Archive is not supported for ZRS, GZRS, or RA-GZRS accounts, so a Standard_ZRS account should not be used for lifecycle archiving. Misconception: if cool and cold support all redundancy choices, archive must also support them. Could be correct when: the account uses LRS, GRS, or RA-GRS and the blob itself meets other archive requirements.",
+        "C": "Premium block blob accounts support lifecycle management as an account type, but tiering to hot, cool, cold, or archive within that premium account is not supported. Misconception: account-level lifecycle support automatically means every action is available. Could be correct when: copying data from a premium block blob account to a standard account as part of a separate migration design.",
+        "E": "Lifecycle policies are free to define, and delete operations are free, but standard operation costs apply for Set Blob Tier API calls performed by lifecycle management. Early deletion charges can also apply. Misconception: automation removes all storage transaction and retention costs. Could be correct when: comparing administrator effort, because lifecycle can reduce manual work even though operations and retention rules still matter."
+      },
+      "plainEnglish": "The words \"lifecycle management is supported\" do not mean every possible tier move works everywhere. A standard general-purpose account with ZRS can move old block blobs to cool or cold because those are online tiers that support all redundancy choices. But archive is more restrictive and does not work with ZRS-type redundancy.\n\nThe premium account is another trap. Premium block blob accounts are built for a different performance and pricing model. You cannot simply lifecycle-tier those blobs down into standard hot, cool, cold, or archive inside the same account. Also, moving data to a cheaper tier can create a minimum-stay commitment. If data leaves too soon, finance may still pay for the missing days.",
+      "analogy": "Imagine three warehouses. One standard warehouse can move boxes to normal cheaper shelves. Another standard warehouse uses a zone-spread design that does not offer the deep archive vault. A premium warehouse is optimized for fast handling and cannot move boxes onto the standard warehouse shelves without copying them elsewhere.\n\n| Analogy | Azure reality |\n|---|---|\n| Normal cheaper shelves | Cool and cold online tiers |\n| Deep archive vault | Archive tier |\n| Zone-spread warehouse | ZRS-type redundancy |\n| Premium fast warehouse | Premium block blob account |\n| Minimum stay charge | Early deletion charge |\n\n**Where the analogy breaks down:** Azure billing is calculated from storage operations, tier pricing, redundancy, and object age; a warehouse story cannot model every API charge or regional pricing detail.",
+      "jargon": [
+        {
+          "term": "General-purpose v2 account",
+          "definition": "The recommended standard Azure Storage account kind that supports Blob Storage features including lifecycle management and access tiers."
+        },
+        {
+          "term": "Premium block blob account",
+          "definition": "A storage account type optimized for low-latency block blob workloads; standard access tiering is not supported within it."
+        },
+        {
+          "term": "Blob Storage account",
+          "definition": "A legacy account kind for blob data; Microsoft generally recommends general-purpose v2 accounts when possible."
+        },
+        {
+          "term": "ZRS",
+          "definition": "Zone-redundant storage, which synchronously replicates data across availability zones in a region."
+        },
+        {
+          "term": "GRS",
+          "definition": "Geo-redundant storage, which replicates data to a secondary region."
+        },
+        {
+          "term": "RA-GRS",
+          "definition": "Read-access geo-redundant storage, a GRS option that allows read access to the secondary endpoint."
+        },
+        {
+          "term": "Early deletion charge",
+          "definition": "A prorated charge that may apply when data is deleted, overwritten, or moved out of a cooler tier before its minimum retention period ends."
+        },
+        {
+          "term": "`Set Blob Tier`",
+          "definition": "The Blob Storage operation used directly or by lifecycle management to change a supported blob's access tier."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "An offline tier with the lowest storage cost and hours-scale rehydration, supported only with certain redundancy configurations."
+        }
+      ],
+      "watchOut": "- Archive supports LRS, GRS, and RA-GRS, not ZRS, GZRS, or RA-GZRS.\n- Tiering is not supported in premium block blob accounts even though lifecycle management exists for the account type.\n- Cool, cold, and archive have minimum retention periods that can affect lifecycle cost calculations.\n- Lifecycle policies do not rehydrate archived blobs back to an online tier.",
+      "productionTip": {
+        "official": "Microsoft documents lifecycle management support for general-purpose v2, premium block blob, and Blob Storage accounts, but also documents that tiering is not yet supported in premium block blob accounts. The access tier documentation lists archive redundancy support as LRS, GRS, and RA-GRS only and explains cool, cold, and archive minimum retention charges.",
+        "recommendation": "Model lifecycle savings with realistic access and deletion patterns before rollout. Use standard accounts for data intended to age through online and archive tiers, and avoid setting archive policies on ZRS accounts unless the design first changes redundancy or moves data to an eligible account."
+      },
+      "memoryTrick": "Use **online tiers broadly, archive narrowly, premium differently**. This is a simplification because other limitations such as encryption scopes, immutability, and blob type can also affect individual actions.",
+      "examTip": "Clue words are **Standard_ZRS**, **archive tier**, **Premium block blob**, and **early deletion**. Pick the online-tier and minimum-retention facts, and reject answers that treat archive or premium tiering as universal. A harder version may ask for the lowest-effort fix for ZRS archiving; moving to an eligible redundancy or copying to an eligible account becomes the design issue."
+    },
+    "sources": [
+      {
+        "title": "Azure Blob Storage lifecycle management overview",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+      },
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      },
+      {
+        "title": "Azure Blob Storage lifecycle management policy structure",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-structure"
+      },
+      {
+        "title": "Microsoft.Storage/storageAccounts/managementPolicies template reference",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.storage/storageaccounts/managementpolicies"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

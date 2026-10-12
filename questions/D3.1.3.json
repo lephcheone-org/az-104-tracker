@@ -1,0 +1,663 @@
+[
+  {
+    "id": "D3.1.3-01",
+    "objective": "D3.1.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have the following Bicep file for a virtual machine build used by Contoso training labs.\n\n```bicep\nparam vmSize string = 'Standard_B2s'\nparam adminUser string\nparam adminPassword string\n```\n\nYou need to modify the file so that `vmSize` accepts only approved values, `adminUser` must be 4 to 20 characters, the portal shows help text for both user-facing parameters, and the password value is treated as sensitive during deployment.\n\nWhich change should you make?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```bicep\n@allowed([\n  'Standard_B2s'\n  'Standard_D2s_v5'\n])\nparam vmSize string = 'Standard_B2s'\n\n@description('Administrator user name for the lab VM.')\nparam adminUser string\n\nparam adminPassword secureString\n```"
+      },
+      {
+        "id": "B",
+        "text": "```bicep\n@description('Approved VM size for the lab environment.')\n@minValue(4)\n@maxValue(20)\nparam vmSize string = 'Standard_B2s'\n\n@secure()\nparam adminUser string\n\nparam adminPassword string\n```"
+      },
+      {
+        "id": "C",
+        "text": "```bicep\n@description('Approved VM size for the lab environment.')\n@allowed([\n  'Standard_B2s'\n  'Standard_D2s_v5'\n])\nparam vmSize string = 'Standard_B2s'\n\n@description('Administrator user name for the lab VM.')\n@minLength(4)\n@maxLength(20)\nparam adminUser string\n\n@secure()\nparam adminPassword string\n```"
+      },
+      {
+        "id": "D",
+        "text": "```bicep\nparam vmSize string = 'Standard_B2s'\n@allowed([\n  'Standard_B2s'\n  'Standard_D2s_v5'\n])\n\n@minLength(4)\n@maxLength(20)\nvar adminUser = 'azureuser'\n\n@secure()\nvar adminPassword = '<redacted>'\n```"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The snippet is part of a resource group scoped Bicep file, and the goal is to modify parameter declarations, not to choose real VM sizes for a production sizing exercise.",
+    "sections": {
+      "correctAnswer": "**C. The option that adds `@description`, `@allowed`, `@minLength`, `@maxLength`, and `@secure()` to the correct parameters**. Bicep parameter decorators are placed immediately above the `param` declaration they describe, and `@secure()` is the documented way to mark a string or object parameter as sensitive.",
+      "technical": "Bicep parameters are resolved before Azure Resource Manager starts deployment operations, so parameter constraints are checked before the affected resources are created. A decorator is written above the declaration it modifies. For this scenario, the edits target three separate parameter behaviours.\n\n1. `@allowed([...])` belongs on `vmSize` because the deployment must reject values outside a short approved list.\n2. `@description('...')` adds user-facing help text for parameters; Microsoft documents that the description is displayed to users in the Azure portal.\n3. `@minLength(4)` and `@maxLength(20)` apply to a string parameter such as `adminUser`; the length limit is inclusive.\n4. `@secure()` applies to a string or object parameter and stops the value from being saved to deployment history or logged.\n\nThe order in the file is not an authorization sequence, but the association is precise: each decorator affects only the declaration that follows it. The limits do not cascade from `adminUser` to `adminPassword`, and the secure flag on one parameter does not protect another parameter. `secureString` is an ARM template type, but in Bicep the documented pattern for parameters is a normal `string` or `object` declaration with the `@secure()` decorator. A variable cannot replace a required parameter when the caller must supply a value at deployment time.",
+      "wrongOptions": {
+        "A": "This option correctly uses `@allowed` for the VM size, but it omits the requested length limits for `adminUser`, does not add help text for `vmSize`, and uses an ARM-template-style `secureString` type instead of Bicep's `@secure()` parameter decorator. Misconception: Bicep parameter syntax is identical to JSON ARM template parameter types. Could be correct when working in an ARM JSON template rather than a Bicep file, or when the only missing requirement was an allowed VM size list.",
+        "B": "This option uses integer value decorators on a string parameter and marks the user name as secure while leaving the password ordinary. `@minValue` and `@maxValue` are for integer parameters, not strings. Misconception: all minimum and maximum decorators work the same way regardless of data type. Could be correct when constraining an integer parameter such as instance count or data disk size.",
+        "D": "Decorators must be attached to declarations, and replacing caller-provided parameters with fixed variables removes the deployment-time input. The sensitive password would be hard-coded into source text, which is the opposite of the requirement. Misconception: a variable with decorators behaves like a secure parameter prompt. Could be correct when a constant value is intentionally internal to the template and is not a secret."
+      },
+      "plainEnglish": "A parameter is an input box for a deployment. In Bicep, you can put labels on that input box. One label says which values are allowed. Another label says how many characters are acceptable. A description label explains what the person filling in the box should type. The secure label says the input is secret and should not be recorded in normal deployment history. The correct edit puts each label on the exact input it belongs to: the VM size gets the approved list, the user name gets length rules and help text, and the password gets the secure marker.",
+      "analogy": "Imagine a lab check-in desk with three fields on a form. The computer choice field has a drop-down list, the user name field has a note saying how long the name can be, and the password field goes into a sealed envelope.\n\n| Analogy | Bicep reality |\n|---|---|\n| Drop-down choices | `@allowed` on `vmSize` |\n| Form note | `@description` on a parameter |\n| Character-count rule | `@minLength` and `@maxLength` |\n| Sealed envelope | `@secure()` on `adminPassword` |\n\n**Where the analogy breaks down:** Bicep is compiled and validated by deployment tooling; it is not a paper form, and secure parameters still need careful handling by scripts that pass their values.",
+      "jargon": [
+        {
+          "term": "Bicep",
+          "definition": "A declarative language for Azure Resource Manager deployments. It describes the desired Azure resources and compiles to an ARM template."
+        },
+        {
+          "term": "Parameter",
+          "definition": "A deployment input declared with `param`, used to make the same Bicep file reusable for different values."
+        },
+        {
+          "term": "Decorator",
+          "definition": "A Bicep annotation such as `@allowed()` or `@secure()` placed above a declaration to add constraints or metadata."
+        },
+        {
+          "term": "`@allowed`",
+          "definition": "A parameter decorator that restricts acceptable input values to an array of approved values."
+        },
+        {
+          "term": "`@minLength`",
+          "definition": "A decorator for string or array parameters that sets an inclusive minimum number of characters or items."
+        },
+        {
+          "term": "`@maxLength`",
+          "definition": "A decorator for string or array parameters that sets an inclusive maximum number of characters or items."
+        },
+        {
+          "term": "`@description`",
+          "definition": "A decorator that supplies explanatory text for a parameter or output, including help text shown in the Azure portal."
+        },
+        {
+          "term": "`@secure()`",
+          "definition": "A decorator for string or object parameters that prevents sensitive values from being saved to deployment history or logged."
+        },
+        {
+          "term": "Azure Resource Manager",
+          "definition": "The Azure deployment and management service that processes templates and Bicep output."
+        }
+      ],
+      "watchOut": "- Put decorators immediately above the declaration they modify.\n- Use length decorators for strings and arrays; use value decorators for integers.\n- `@secure()` hides deployment parameter values from normal logs, but it does not make a hard-coded secret safe.\n- Do not turn caller-supplied values into variables unless the requirement says the value must be fixed inside the file.",
+      "productionTip": {
+        "official": "Microsoft documents parameter decorators for Bicep, including `@allowed`, `@description`, `@minLength`, `@maxLength`, and `@secure()`. The secure decorator is valid for string and object parameters, and secure values are not saved in deployment history or logged.",
+        "recommendation": "Treat parameter constraints as an early quality gate. For production templates, combine decorators with secret-handling processes such as Key Vault references or secure pipeline variables, and keep descriptions specific enough that operators know exactly what value to provide."
+      },
+      "memoryTrick": "Think **choice, size, help, secret**: `@allowed` chooses, `@minLength` and `@maxLength` size, `@description` helps, and `@secure()` protects. The phrase is a simplification because each decorator only works on supported declaration types.",
+      "examTip": "The clue is that the question asks to modify parameter declarations, not resource properties. Rule out answers that use `var` for caller input, attach decorators to the wrong parameter, or use integer decorators on strings. A harder version may include an object parameter for settings; `@secure()` can also apply to object parameters, but the individual object properties still need thoughtful design."
+    },
+    "sources": [
+      {
+        "title": "Parameters in Bicep files",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.3-02",
+    "objective": "D3.1.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A Bicep file currently creates a storage account for a Tailspin Toys reporting app. The prefix is already restricted to four lowercase letters by the platform team.\n\n```bicep\nparam prefix string = 'tail'\nparam location string = resourceGroup().location\n\nvar storageName = '${prefix}stg'\n\nresource reports 'Microsoft.Storage/storageAccounts@2025-06-01' = {\n  name: storageName\n  location: location\n  sku: {\n    name: 'Standard_LRS'\n  }\n  kind: 'StorageV2'\n}\n```\n\nYou need to modify the name expression so repeated deployments to the same resource group use the same name, but deployments to different resource groups are unlikely to collide.\n\nWhich change should you make?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```bicep\nvar storageName = '${prefix}stg${uniqueString(resourceGroup().id)}'\n```"
+      },
+      {
+        "id": "B",
+        "text": "```bicep\nvar storageName = concat(prefix, 'stg', newGuid())\n```"
+      },
+      {
+        "id": "C",
+        "text": "```bicep\nvar storageName = '${prefix}-stg-${deployment().name}'\n```"
+      },
+      {
+        "id": "D",
+        "text": "```bicep\nvar storageName = '${prefix}stg${utcNow()}'\n```"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The prefix remains four lowercase letters. The question focuses on modifying the Bicep expression that generates a deterministic resource name, not on designing an enterprise naming standard.",
+    "sections": {
+      "correctAnswer": "**A. `var storageName = '${prefix}stg${uniqueString(resourceGroup().id)}'`**. String interpolation builds the name in a readable way, and `uniqueString(resourceGroup().id)` returns a deterministic 13-character hash scoped to the resource group.",
+      "technical": "Bicep supports string interpolation with `${...}` inside single-quoted strings. Microsoft also documents `concat()`, but recommends interpolation for readability when you are combining string values. The requirement has two parts: keep the name stable on redeployment to the same resource group, and make the suffix vary when the resource group changes.\n\n`uniqueString()` is designed for this kind of deterministic suffix. It creates a hash string from the values passed as parameters. The output is not random; with the same input, it returns the same 13-character value. Passing `resourceGroup().id` means the hash is based on the current resource group's identifier. That satisfies a common naming pattern: stable for updates in one resource group, different across resource groups.\n\nThe expression is evaluated before the resource is sent for deployment. The storage account resource receives the resolved name. Because the prefix is four lowercase letters and `stg` is three letters, adding the 13-character suffix creates a 20-character lowercase-and-number name. The naming rules page lists storage accounts under `Microsoft.Storage` as globally scoped with a 3-24 length and lowercase letters or numbers.\n\nThe important exception is that `uniqueString()` is not a proof of global uniqueness. It is a deterministic hash helper, so production naming still needs collision handling when global resource names are involved.",
+      "wrongOptions": {
+        "B": "`newGuid()` can only be used in the default value for a parameter, not inside an arbitrary variable expression, and it would produce a new value instead of a stable redeployment name. Misconception: any uniqueness function can be used anywhere in Bicep. Could be correct when a parameter default deliberately needs a new identifier for short-lived test resources.",
+        "C": "Hyphens are not valid for a storage account name, and using the deployment name changes the suffix when the deployment name changes. Misconception: a more descriptive string is automatically a valid Azure resource name. Could be correct for a resource type that permits hyphens and when uniqueness should vary by deployment name.",
+        "D": "`utcNow()` is limited to parameter default expressions and would vary over time, which conflicts with the requirement for the same name on repeated deployments. Misconception: timestamps are a safe replacement for deterministic resource naming. Could be correct for a parameter default in a disposable test template where each deployment intentionally creates a separate resource."
+      },
+      "plainEnglish": "The existing name is too plain. Every resource group using the same prefix would try to create the same storage account name. The correct fix adds a small calculated suffix. Because the calculation uses the resource group's ID, the same resource group gets the same result every time, which lets updates find the existing account. A different resource group has a different ID, so the suffix changes. That is different from adding a random value or a timestamp, which would create a new name every time and make normal updates painful.",
+      "analogy": "Think of luggage tags for company equipment. The tag starts with the team code, then adds a short code derived from the office address. The same office keeps printing the same tag for the same equipment, while another office prints a different suffix.\n\n| Analogy | Bicep reality |\n|---|---|\n| Team code | `prefix` |\n| Short fixed label | Literal string `stg` |\n| Office address | `resourceGroup().id` |\n| Address-derived suffix | `uniqueString(...)` |\n| Printed tag text | Interpolated storage account name |\n\n**Where the analogy breaks down:** Azure still enforces provider-specific naming rules and global name availability; the hash helper does not reserve a name before deployment.",
+      "jargon": [
+        {
+          "term": "String interpolation",
+          "definition": "A Bicep string feature that inserts expression values into a string by using `${expression}` syntax."
+        },
+        {
+          "term": "`uniqueString()`",
+          "definition": "A Bicep string function that returns a deterministic 13-character hash from one or more input strings."
+        },
+        {
+          "term": "`resourceGroup()`",
+          "definition": "A Bicep scope function that can return information about the current resource group, including its ID and location."
+        },
+        {
+          "term": "Deterministic",
+          "definition": "Returning the same result whenever the same input values are supplied."
+        },
+        {
+          "term": "Storage account",
+          "definition": "An Azure Storage resource whose name is part of public service endpoints and therefore follows strict naming rules."
+        },
+        {
+          "term": "Variable",
+          "definition": "A Bicep `var` declaration used to store a computed value for reuse inside the file."
+        },
+        {
+          "term": "`newGuid()`",
+          "definition": "A Bicep function that returns a GUID but is restricted to parameter default expressions."
+        },
+        {
+          "term": "`utcNow()`",
+          "definition": "A Bicep date function for the current UTC time that is also restricted to parameter default expressions."
+        }
+      ],
+      "watchOut": "- `uniqueString()` is stable for the same inputs; it is not a random generator.\n- Storage account names are globally scoped, so a deterministic suffix reduces but does not mathematically eliminate collision risk.\n- Avoid `newGuid()` and `utcNow()` for ordinary resource names that must be updated later.\n- Interpolation is usually clearer than nested `concat()` calls for Bicep string assembly.",
+      "productionTip": {
+        "official": "Microsoft documents `uniqueString()` as a deterministic hash helper that returns 13 characters and shows examples using `resourceGroup().id`. The Bicep string-function documentation also recommends string interpolation over `concat()` for readability in normal concatenation scenarios.",
+        "recommendation": "For production templates, combine deterministic suffixes with a naming convention that reserves room for provider limits. Check the final resolved length during code review, and consider centralized name allocation for globally scoped services such as storage accounts."
+      },
+      "memoryTrick": "Use **stable input, stable name**. Feed `uniqueString()` something stable, such as `resourceGroup().id`, when the resource should survive redeployment. This shortcut fails when the provider requires globally unique names and the hash happens to collide.",
+      "examTip": "Clue words are **repeated deployments** and **different resource groups**. Prefer `uniqueString(resourceGroup().id)` over random, timestamp, or deployment-name expressions. A tougher exam item may ask why changing the input from `resourceGroup().id` to `deployment().name` changes the lifecycle behaviour of the generated name."
+    },
+    "sources": [
+      {
+        "title": "Variables in Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/variables"
+      },
+      {
+        "title": "Bicep functions - string",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/bicep-functions-string"
+      },
+      {
+        "title": "Naming rules and restrictions for Azure resources",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.3-03",
+    "objective": "D3.1.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A Litware Bicep file creates one network security group for a web tier. The operations team now supplies a list of tier names and wants one NSG per tier without copying the resource block three times.\n\nCurrent file:\n\n```bicep\nparam location string = resourceGroup().location\n\nresource nsg 'Microsoft.Network/networkSecurityGroups@2025-01-01' = {\n  name: 'nsg-web'\n  location: location\n}\n```\n\nRequired tier names are `web`, `api`, and `data`. Each deployed NSG must have a unique name.\n\nWhich change should you make?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```bicep\nvar tiers = [\n  'web'\n  'api'\n  'data'\n]\n\nresource nsg 'Microsoft.Network/networkSecurityGroups@2025-01-01' = [for tier in tiers: {\n  name: 'nsg-${tier}'\n  location: location\n}]\n```"
+      },
+      {
+        "id": "B",
+        "text": "```bicep\nvar tiers = [\n  'web'\n  'api'\n  'data'\n]\n\nresource nsg 'Microsoft.Network/networkSecurityGroups@2025-01-01' = {\n  name: 'nsg-${tiers}'\n  location: location\n}\n```"
+      },
+      {
+        "id": "C",
+        "text": "```bicep\nresource nsg 'Microsoft.Network/networkSecurityGroups@2025-01-01' = [for tier in range(0, 3): {\n  name: 'nsg-web'\n  location: location\n}]\n```"
+      },
+      {
+        "id": "D",
+        "text": "```bicep\nvar tiers = [\n  'web'\n  'api'\n  'data'\n]\n\nresource nsg 'Microsoft.Network/networkSecurityGroups@2025-01-01' = for tier in tiers {\n  name: tier\n  location: location\n}\n```"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The goal is to modify an existing Bicep file by using Bicep loop syntax. The tier list is known at deployment start and each NSG name is unique in the target resource group.",
+    "sections": {
+      "correctAnswer": "**A. The `for tier in tiers` resource loop that names each NSG as `nsg-${tier}`**. Bicep supports `for` expressions for multiple resource instances, and every looped resource instance must resolve to a unique `name` value.",
+      "technical": "Bicep loops let you declare multiple resources, modules, variables, properties, or outputs without duplicating the same block. For a resource loop, the declaration uses an array expression on the right side of the `=` sign. The pattern is `resource symbol 'type@version' = [for item in collection: { ... }]`.\n\nOption A follows that pattern. The `tiers` array is available before deployment starts, which satisfies the loop limitation that iterations must be based on values known at the start of deployment. For each tier value, Bicep creates one network security group resource definition. The interpolated name `nsg-${tier}` resolves to `nsg-web`, `nsg-api`, and `nsg-data`, so the instances have distinct names.\n\nAzure Resource Manager evaluates dependencies and normally deploys independent resources in parallel. These NSGs do not reference one another, so there is no sequence requirement. If a later resource references one member of the looped collection, that reference creates the necessary dependency for that member.\n\nThe key exception is nested child resources. Microsoft documents that a resource cannot loop with nested child resources in the same way; child resources that need loops are usually moved to top-level declarations with a `parent` property. That exception is not needed here because NSGs are top-level resources.",
+      "wrongOptions": {
+        "B": "This expression tries to interpolate the whole array into one resource name, so it still declares a single NSG rather than three NSGs. Misconception: putting an array variable inside a string makes Bicep expand one resource per value. Could be correct only if the requirement were to create one resource with a name derived from a single string value, not a collection.",
+        "C": "This option uses a valid loop shape but gives every iteration the same name, `nsg-web`. Bicep looped resource instances must have unique names. Misconception: the loop index automatically makes Azure resource names unique even when the name property is constant. Could be correct if the name included the index, such as `nsg-${tier}`, after mapping the index to meaningful names.",
+        "D": "This is not valid Bicep resource loop syntax because the `for` expression must be enclosed in brackets after the equals sign. It also uses the raw tier value as the NSG name, losing the required `nsg-` naming pattern. Misconception: Bicep loops use imperative-language syntax like a script. Could be correct in a programming language loop, but Bicep is declarative."
+      },
+      "plainEnglish": "Instead of writing three nearly identical NSG blocks, make a small list of names and tell Bicep to repeat the block once for each list item. Inside each repeat, use the current item to form the resource name. That creates `nsg-web`, `nsg-api`, and `nsg-data`. The file stays shorter, and adding a fourth tier later means adding one value to the list rather than copying an entire resource definition.",
+      "analogy": "Think of printing door signs for three rooms. You create a list of room labels and use one sign template. The printer produces one sign for each label, and each sign has a different final text.\n\n| Analogy | Bicep reality |\n|---|---|\n| Room-label list | `tiers` array |\n| Sign template | NSG resource declaration |\n| One print per label | Resource loop iteration |\n| `nsg-web` sign text | Interpolated `name` property |\n\n**Where the analogy breaks down:** Azure resources have provider validation and dependency rules; a printer does not check deployment-time expressions or resource type versions.",
+      "jargon": [
+        {
+          "term": "Resource loop",
+          "definition": "A Bicep `for` expression that creates multiple instances of a resource declaration."
+        },
+        {
+          "term": "Array",
+          "definition": "An ordered collection of values, such as `['web', 'api', 'data']`, used for iteration or parameter input."
+        },
+        {
+          "term": "Network security group",
+          "definition": "An Azure networking resource that contains security rules for filtering network traffic."
+        },
+        {
+          "term": "Iteration",
+          "definition": "One pass through a loop, producing one resource instance or one value."
+        },
+        {
+          "term": "`range()`",
+          "definition": "A Bicep array function that creates a sequence of integers for count-based loops."
+        },
+        {
+          "term": "Resource name",
+          "definition": "The `name` property Azure Resource Manager uses to identify a resource within the appropriate scope."
+        },
+        {
+          "term": "Parallel deployment",
+          "definition": "Azure Resource Manager behaviour where independent resources can be deployed at the same time."
+        },
+        {
+          "term": "Symbolic name",
+          "definition": "The local Bicep identifier, such as `nsg`, used to reference a resource within the file."
+        }
+      ],
+      "watchOut": "- In a resource loop, each instance still needs a distinct Azure `name`.\n- Use array loops when labels matter; use `range()` when only a count matters.\n- A Bicep loop is declarative syntax, not a PowerShell or JavaScript loop.\n- Do not add `dependsOn` between resources just to force an order when no dependency exists.",
+      "productionTip": {
+        "official": "Microsoft documents `for` syntax for iterating over array items, integer ranges, dictionaries, and item-plus-index pairs. The same loop documentation states that each resource or module instance created by a loop must have a unique `name` value.",
+        "recommendation": "Use arrays of small configuration objects when real environments need more than names, such as priorities, tags, or locations. Keep resource loops readable, and review generated names because a compact loop can create many resources very quickly."
+      },
+      "memoryTrick": "For looped resources, remember **many blocks from one block, many names from one pattern**. The mnemonic fails if the pattern does not include a value that makes each name unique.",
+      "examTip": "The exam clue is **without copying the resource block**. Choose the bracketed `for` expression and check that the `name` property changes per iteration. A harder version may include child resources; then you need to know that looped child resources often belong as top-level declarations with `parent`."
+    },
+    "sources": [
+      {
+        "title": "Iterative loops in Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/loops"
+      },
+      {
+        "title": "Set resource dependencies in Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/resource-dependencies"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.3-04",
+    "objective": "D3.1.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "A Fabrikam Bicep file creates a public IP address and returns its resource ID. The security team wants the public IP address to be optional for private test deployments.\n\nCurrent file:\n\n```bicep\nparam location string = resourceGroup().location\n\nresource pip 'Microsoft.Network/publicIPAddresses@2025-01-01' = {\n  name: 'pip-web'\n  location: location\n  sku: {\n    name: 'Standard'\n  }\n  properties: {\n    publicIPAllocationMethod: 'Static'\n  }\n}\n\noutput publicIpId string = pip.id\n```\n\nWhich two changes should you make so deployment succeeds whether the public IP address is deployed or skipped? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add a Boolean parameter and apply an `if` expression to the public IP resource declaration.\n\n```bicep\nparam deployPublicIp bool = true\n\nresource pip 'Microsoft.Network/publicIPAddresses@2025-01-01' = if (deployPublicIp) {\n  name: 'pip-web'\n  location: location\n  sku: {\n    name: 'Standard'\n  }\n  properties: {\n    publicIPAllocationMethod: 'Static'\n  }\n}\n```"
+      },
+      {
+        "id": "B",
+        "text": "Leave the resource unconditional and put `if (deployPublicIp)` inside the `properties` object.\n\n```bicep\nproperties: if (deployPublicIp) {\n  publicIPAllocationMethod: 'Static'\n}\n```"
+      },
+      {
+        "id": "C",
+        "text": "Change the output so it does not dereference `pip.id` when the resource is not deployed.\n\n```bicep\noutput publicIpId string = deployPublicIp ? pip.id : ''\n```"
+      },
+      {
+        "id": "D",
+        "text": "Add `dependsOn: []` to the output so Azure Resource Manager knows the output is optional."
+      },
+      {
+        "id": "E",
+        "text": "Set `location` to an empty string when `deployPublicIp` is false so the resource is ignored by the provider."
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The file is deployed at resource group scope. An empty string is acceptable to the consuming script when the public IP address is not deployed.",
+    "sections": {
+      "correctAnswer": "**A. Add a Boolean parameter and apply an `if` expression to the public IP resource declaration** and **C. Change the output so it does not dereference `pip.id` when the resource is not deployed**. Bicep conditional deployment applies to a whole resource or module, and outputs that read a conditional resource must guard the reference.",
+      "technical": "Bicep uses the `if` expression to optionally deploy an entire resource or module. The expression is attached to the resource declaration after the equals sign: `resource name 'type@version' = if (condition) { ... }`. When the condition is true, the resource is included in the deployment. When the condition is false, the resource is not created.\n\nThe existing output is the second problem. Microsoft documents diagnostic BCP318 for cases where a conditional resource might be null if it is not deployed. If `deployPublicIp` is false, `pip.id` is not a safe value to read unconditionally. The conditional operator in the output keeps the expression aligned with the deployment decision: return the resource ID only when the resource exists; otherwise return an empty string.\n\nThe order is: first resolve the parameter, then evaluate the resource condition, then evaluate outputs at deployment completion. Dependencies tied to skipped conditional resources are automatically removed for explicit dependencies, but property references must still be logically safe.\n\nA warning worth remembering is that conditional deployment does not cascade to child resources. If this public IP had child resources, each child declaration would need the same condition or a design that avoids deploying the child when the parent is skipped.",
+      "wrongOptions": {
+        "B": "A Bicep condition can be applied to the whole resource or module, not directly as a replacement for the `properties` object in this way. The resource would still be declared and would be malformed when the object is skipped. Misconception: an `if` can be attached to any object block the way it can be attached to a resource. Could be correct when using conditional expressions for individual property values, but not as resource deployment syntax.",
+        "D": "Outputs do not use `dependsOn`, and an empty dependency list would not make a property reference safe when the resource is skipped. Misconception: deployment order metadata can change whether an expression is valid. Could be correct on a resource or module declaration in rare cases where an explicit dependency is genuinely needed.",
+        "E": "An empty location is not a supported way to skip deployment; it would still send an invalid or unwanted resource declaration to the provider. Misconception: invalid property values can act like feature flags. Could be correct never for optional public IP deployment; use a real condition instead."
+      },
+      "plainEnglish": "The public IP should sometimes exist and sometimes not. The right switch is a Boolean parameter such as `deployPublicIp`. Attach that switch to the resource itself, so Azure only receives the resource definition when the switch is on. Then fix the output. If the resource was skipped, asking for its ID is like asking for the tracking number of a package you never shipped. Return a blank value or another safe value instead.",
+      "analogy": "A build checklist has an optional outdoor sign. If the customer says no sign, the workshop should not order sign materials. The final invoice also should not print a sign serial number.\n\n| Analogy | Bicep reality |\n|---|---|\n| Customer yes/no box | `deployPublicIp` parameter |\n| Order sign materials | Deploy the public IP resource |\n| Skip sign order | `if (deployPublicIp)` evaluates false |\n| Invoice serial number | `publicIpId` output |\n\n**Where the analogy breaks down:** Deployment expressions are evaluated by Azure Resource Manager, and unsafe references can fail a deployment even though a human invoice writer would simply leave a field blank.",
+      "jargon": [
+        {
+          "term": "Conditional deployment",
+          "definition": "A Bicep pattern that uses `if (condition)` to deploy or skip an entire resource or module."
+        },
+        {
+          "term": "Boolean parameter",
+          "definition": "A true-or-false input declared with type `bool`, often used as a feature switch."
+        },
+        {
+          "term": "Public IP address",
+          "definition": "An Azure networking resource that provides a public endpoint address for another network resource."
+        },
+        {
+          "term": "Output",
+          "definition": "A value returned by a deployment after resources are processed."
+        },
+        {
+          "term": "Conditional operator",
+          "definition": "The `condition ? trueValue : falseValue` expression that chooses between two values."
+        },
+        {
+          "term": "BCP318",
+          "definition": "A Bicep diagnostic for accessing a property on a conditional resource that may not exist."
+        },
+        {
+          "term": "Child resource",
+          "definition": "A resource type that exists only within the context of a parent resource."
+        },
+        {
+          "term": "`dependsOn`",
+          "definition": "A resource or module property for explicit deployment ordering when implicit references are not enough."
+        }
+      ],
+      "watchOut": "- The `if` expression controls a whole resource or module.\n- Conditional deployment does not automatically apply to child resources.\n- Guard outputs that reference a resource which may be skipped.\n- Do not use invalid property values as a substitute for a deployment condition.",
+      "productionTip": {
+        "official": "Microsoft documents `if` expressions for conditionally deploying Bicep resources and modules, and warns that conditions do not cascade to child resources. The conditional deployment article also notes BCP318 when a conditional resource might be null.",
+        "recommendation": "When adding optional resources, define the off-state contract before coding outputs. Return a documented empty string or object, and keep consuming scripts from assuming a resource ID exists when the deployment switch is false."
+      },
+      "memoryTrick": "Optional resource, optional reference: if the resource has an `if`, every direct output or property read should have a safe path too. This rule of thumb is conservative, but it prevents common conditional deployment failures.",
+      "examTip": "Clue words are **optional** and **deployment succeeds whether deployed or skipped**. Pick the resource-level `if` and the guarded output. A harder item may replace the output with a `listKeys()` call; runtime functions also need conditional protection when the resource might not exist."
+    },
+    "sources": [
+      {
+        "title": "Conditional deployments in Bicep with the if expression",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/conditional-resource-deployment"
+      },
+      {
+        "title": "Outputs in Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/outputs"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.3-05",
+    "objective": "D3.1.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Woodgrove Bank has an existing virtual network named `vnet-shared` with a subnet named `app`. You are modifying a Bicep file that creates a network interface and must attach it to that existing subnet.\n\nCurrent incomplete file:\n\n```bicep\nparam location string = resourceGroup().location\n\nresource nic 'Microsoft.Network/networkInterfaces@2025-01-01' = {\n  name: 'nic-app-01'\n  location: location\n  properties: {\n    ipConfigurations: [\n      {\n        name: 'ipconfig1'\n        properties: {\n          subnet: {\n            id: 'TODO'\n          }\n          privateIPAllocationMethod: 'Dynamic'\n        }\n      }\n    ]\n  }\n}\n```\n\nYou need to reference the existing subnet without redeploying the virtual network.\n\nWhich change should you make?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```bicep\nresource vnet 'Microsoft.Network/virtualNetworks@2025-01-01' = {\n  name: 'vnet-shared'\n  location: location\n}\n\nresource appSubnet 'Microsoft.Network/virtualNetworks/subnets@2025-01-01' = {\n  name: 'app'\n  parent: vnet\n}\n\n// use appSubnet.id\n```"
+      },
+      {
+        "id": "B",
+        "text": "```bicep\nresource vnet 'Microsoft.Network/virtualNetworks@2025-01-01' existing = {\n  name: 'vnet-shared'\n}\n\nresource appSubnet 'Microsoft.Network/virtualNetworks/subnets@2025-01-01' existing = {\n  name: 'app'\n  parent: vnet\n}\n\n// use appSubnet.id\n```"
+      },
+      {
+        "id": "C",
+        "text": "```bicep\nvar appSubnet = 'vnet-shared/app'\n\n// use appSubnet.id\n```"
+      },
+      {
+        "id": "D",
+        "text": "```bicep\nresource appSubnet 'Microsoft.Network/virtualNetworks/subnets@2025-01-01' existing = {\n  name: 'vnet-shared/app'\n}\n\n// use appSubnet.properties.id\n```"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The existing virtual network and subnet are in the same resource group and subscription as the deployment. The network interface is new, but the virtual network and subnet must not be redeployed by this file.",
+    "sections": {
+      "correctAnswer": "**B. Declare the virtual network and subnet with `existing`, set the subnet's `parent` to the virtual network, and use `appSubnet.id`**. The `existing` keyword references resources that are not deployed by the current file, and a child resource declared outside the parent can use the `parent` property.",
+      "technical": "Bicep separates a resource declaration that deploys or updates a resource from an `existing` declaration that only references a resource already present in Azure. Microsoft documents that the `existing` keyword is used when a deployment needs a value from an existing resource, and that the resource does not deploy again. You access its properties through the symbolic name.\n\nThe subnet is a child resource of the virtual network. For child resources declared outside the parent body, Bicep uses the full child resource type and a `parent` property set to the parent symbolic name. In this question, `appSubnet.id` resolves to the Azure resource ID for `/virtualNetworks/vnet-shared/subnets/app`, which is the value the network interface's IP configuration needs.\n\nThe order of reasoning is important. First, declare the existing parent virtual network because the child declaration needs a parent symbol. Second, declare the existing subnet as a child with the full type `Microsoft.Network/virtualNetworks/subnets@...`. Third, replace the placeholder with `appSubnet.id`. Bicep creates an implicit dependency from the NIC to the existing symbolic reference for expression evaluation, but it does not redeploy the virtual network or subnet.\n\nIf the named existing resource is not found at the specified scope, deployment fails with a not-found style error, so names and scopes still matter.",
+      "wrongOptions": {
+        "A": "This declares new resources instead of references to existing resources. It could cause Azure Resource Manager to attempt a create or update operation for the virtual network and subnet. Misconception: writing the same name in Bicep automatically means reference-only. Could be correct when the requirement is to deploy or update the VNet in the same file.",
+        "C": "A string variable containing `vnet-shared/app` is not a resource object and has no `.id` property. Misconception: a slash-delimited name string is equivalent to a Bicep resource reference. Could be correct if the consuming property truly expected only a string name, not an Azure resource ID.",
+        "D": "This tries to declare the child with a combined name but omits the parent relationship and then reads a non-existent `properties.id` value. The resource ID is available as `.id` on the symbolic resource. Misconception: child resources are safest when written as full slash names everywhere. Could be correct only in a different pattern that uses the full name plus explicit dependencies, but Microsoft recommends the `parent` property approach for type safety."
+      },
+      "plainEnglish": "The Bicep file needs to point to a subnet that already exists. It should not build that network again. The word `existing` tells Bicep, `look this up; do not create it`. Because a subnet belongs inside a virtual network, you first name the existing virtual network, then name the existing subnet and say its parent is that virtual network. After that, the subnet has an ID you can plug into the network interface.",
+      "analogy": "A contractor is installing a new office phone and needs the jack number for an existing wall port. The contractor records the building and room, but does not rebuild the building.\n\n| Analogy | Bicep reality |\n|---|---|\n| Existing building | Existing virtual network |\n| Wall port inside the room | Existing subnet child resource |\n| Building-room relationship | `parent: vnet` |\n| Jack identifier | `appSubnet.id` |\n\n**Where the analogy breaks down:** Azure validates resource provider types, API versions, and deployment scopes, while a contractor can often identify a wall port by sight.",
+      "jargon": [
+        {
+          "term": "`existing`",
+          "definition": "A Bicep keyword that declares a reference to a resource that already exists and is not deployed by the current file."
+        },
+        {
+          "term": "Virtual network",
+          "definition": "An Azure networking resource that provides an isolated private network address space."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A child resource within a virtual network that represents a portion of the address space."
+        },
+        {
+          "term": "Child resource",
+          "definition": "A resource that exists only within a parent resource, such as a subnet inside a virtual network."
+        },
+        {
+          "term": "`parent` property",
+          "definition": "A Bicep child-resource property that points to the symbolic name of the parent resource."
+        },
+        {
+          "term": "Symbolic name",
+          "definition": "The local Bicep identifier used to reference a resource in expressions, such as `appSubnet`."
+        },
+        {
+          "term": "Resource ID",
+          "definition": "The full Azure identifier for a resource, exposed as `.id` on a Bicep resource symbol."
+        },
+        {
+          "term": "Network interface",
+          "definition": "An Azure network resource that connects a virtual machine or similar resource to a virtual network."
+        }
+      ],
+      "watchOut": "- `existing` references still require the correct name and scope.\n- A child resource declared outside its parent should use the full type and the `parent` property.\n- Use `.id`, not `.properties.id`, for the resource identifier exposed by Bicep.\n- A plain string is not a resource reference and will not provide typed properties.",
+      "productionTip": {
+        "official": "Microsoft documents the `existing` keyword for referencing resources not deployed in the current Bicep file, and documents child resources declared outside the parent by using the full resource type with the `parent` property.",
+        "recommendation": "When referencing shared networking, keep the shared resource names and scopes as parameters and validate them in a pre-deployment check. This avoids accidentally deploying into the wrong VNet because a copied template contained a hard-coded network name."
+      },
+      "memoryTrick": "For existing children, say **existing parent, existing child, parent link, child ID**. It is a simplification because cross-resource-group or cross-subscription references also need an explicit `scope`.",
+      "examTip": "Clue words are **existing subnet** and **without redeploying**. Choose `existing` plus `parent`, then use the symbolic child's `.id`. A harder version may put the VNet in a different resource group; then the parent `existing` declaration needs the correct `scope`."
+    },
+    "sources": [
+      {
+        "title": "Reference existing resource in Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/existing-resource"
+      },
+      {
+        "title": "Child resources in Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/child-resource-name-type"
+      },
+      {
+        "title": "Set resource dependencies in Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/resource-dependencies"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.3-06",
+    "objective": "D3.1.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Adatum deploys a storage account by using Bicep. A release pipeline needs the blob service endpoint after deployment so it can write the value into an application configuration step.\n\nCurrent file:\n\n```bicep\nparam location string = resourceGroup().location\nparam storageName string\n\nresource stg 'Microsoft.Storage/storageAccounts@2025-06-01' = {\n  name: storageName\n  location: location\n  sku: {\n    name: 'Standard_LRS'\n  }\n  kind: 'StorageV2'\n}\n```\n\nWhich change should you add to return the blob endpoint from the deployment?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```bicep\nparam blobEndpoint string = stg.properties.primaryEndpoints.blob\n```"
+      },
+      {
+        "id": "B",
+        "text": "```bicep\nvar blobEndpoint = stg.properties.primaryEndpoints.blob\n```"
+      },
+      {
+        "id": "C",
+        "text": "```bicep\noutput blobEndpoint string = stg.properties.primaryEndpoints.blob\n```"
+      },
+      {
+        "id": "D",
+        "text": "```bicep\nresource blobEndpoint 'Microsoft.Storage/storageAccounts/blobServices@2025-06-01' existing = {\n  name: 'default'\n  parent: stg\n}\n```"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The storage account is deployed by this Bicep file, and the pipeline reads normal deployment outputs after the deployment finishes. The endpoint value is not treated as a secret.",
+    "sections": {
+      "correctAnswer": "**C. `output blobEndpoint string = stg.properties.primaryEndpoints.blob`**. Bicep outputs are designed to return values from deployed resources, and the syntax is `output <name> <type> = <value>`.",
+      "technical": "Bicep outputs are evaluated after the deployment has processed the resources they reference. Microsoft documents outputs for exactly this purpose: returning values from deployed resources. The syntax has three required parts: an output name, a data type or type expression, and the expression whose value should be returned.\n\nIn this file, `stg` is the symbolic name of the storage account resource. Referencing `stg.properties.primaryEndpoints.blob` in an output creates an implicit dependency for expression evaluation. The deployment result exposes an output named `blobEndpoint` with type `string`, which a release pipeline can read from the deployment operation.\n\nA variable is not enough because variables are internal to the Bicep file. They help avoid repeating expressions, but they are not returned to the deployment caller. A parameter is also the wrong direction; parameters are inputs resolved before deployment operations. An existing child resource declaration would reference the blob service resource, but it would not return a value unless you also declared an output.\n\nOutputs have limits. Microsoft documents a limit of 64 outputs in a Bicep file. Bicep also supports decorators on outputs, including `@description` and, in current versions, `@secure()` for sensitive string or object outputs. This endpoint is not a secret, so a normal string output is appropriate.",
+      "wrongOptions": {
+        "A": "A parameter is an input, not a returned deployment result. It is resolved before deployment, so it is not the right place to expose a property from a just-created storage account. Misconception: any named declaration can pass data out of a Bicep file. Could be correct when the pipeline supplies a value into the deployment rather than reading one from it.",
+        "B": "A variable can store the expression inside the Bicep file, but callers do not receive variables as deployment outputs. Misconception: variables are visible outside the template after deployment. Could be correct as a helper if a separate `output blobEndpoint string = blobEndpoint` line were also added.",
+        "D": "This declares or references a blob service child resource but does not return the endpoint value to the pipeline. It also solves a different problem from exposing a deployment result. Misconception: declaring a resource is the same as outputting a property. Could be correct when you need to configure or reference the blob service resource itself."
+      },
+      "plainEnglish": "The pipeline needs a value back from the deployment. Parameters go into the deployment. Variables stay inside the file. Outputs come out of the deployment. The correct line says: create an output named `blobEndpoint`, make it a string, and set it to the blob endpoint property of the storage account that was just deployed.",
+      "analogy": "A restaurant order form has input boxes for the meal choice, kitchen notes for internal instructions, and a receipt returned to the customer. The pipeline needs the receipt, not another input box.\n\n| Analogy | Bicep reality |\n|---|---|\n| Meal choice on order form | Parameter |\n| Kitchen note | Variable |\n| Receipt line | Output |\n| Prepared dish information | Resource property |\n\n**Where the analogy breaks down:** Deployment outputs are structured data returned by Azure Resource Manager, not printed paper, and some output values should be protected if they contain secrets.",
+      "jargon": [
+        {
+          "term": "Output",
+          "definition": "A value returned from a Bicep deployment using the `output` keyword."
+        },
+        {
+          "term": "Symbolic name",
+          "definition": "The local Bicep identifier for a resource, such as `stg`, used to read properties or create dependencies."
+        },
+        {
+          "term": "Blob endpoint",
+          "definition": "The Blob Storage service endpoint URL exposed by a storage account."
+        },
+        {
+          "term": "Parameter",
+          "definition": "A deployment input declared with `param`, supplied before resources are deployed."
+        },
+        {
+          "term": "Variable",
+          "definition": "An internal computed value declared with `var`, useful inside the Bicep file but not returned to callers by itself."
+        },
+        {
+          "term": "Implicit dependency",
+          "definition": "A dependency Azure Resource Manager infers when one declaration references another by symbolic name."
+        },
+        {
+          "term": "Deployment result",
+          "definition": "The status and data returned after Azure Resource Manager processes a deployment."
+        },
+        {
+          "term": "`@secure()` output",
+          "definition": "A secure output decorator for string or object outputs in supported Bicep versions when output data is sensitive."
+        }
+      ],
+      "watchOut": "- Use outputs for values a pipeline or operator must read after deployment.\n- Variables are not visible to deployment callers unless you output them.\n- Parameters flow into a deployment, not out of it.\n- Do not output secrets as normal strings; use secure outputs where supported or avoid returning the secret.",
+      "productionTip": {
+        "official": "Microsoft documents Bicep outputs with the syntax `output <name> <data-type or type-expression> = <value>` and states that outputs return values from deployed resources. The same page documents a 64-output limit in a Bicep file.",
+        "recommendation": "Name outputs for consumers, not just authors. For pipelines, use stable output names, document their expected type, and avoid returning values that downstream jobs can compute safely from resource IDs or names."
+      },
+      "memoryTrick": "Inputs are `param`, inside helpers are `var`, and returned answers are `output`. This is simple but reliable for exam questions about passing values between deployment steps.",
+      "examTip": "Clue words are **needs the value after deployment** and **release pipeline reads it**. Pick the `output` declaration. A harder question may ask about a conditionally deployed resource, where the output expression must also handle the skipped-resource case."
+    },
+    "sources": [
+      {
+        "title": "Outputs in Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/outputs"
+      },
+      {
+        "title": "Set resource dependencies in Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/resource-dependencies"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.3-07",
+    "objective": "D3.1.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A Contoso Bicep file has grown too large. You are moving storage-account creation into `modules/storage.bicep`. The main deployment runs at resource group scope, but the storage account must be deployed to an existing resource group named by the `storageRgName` parameter. The team also wants a production `.bicepparam` file that is linked to `main.bicep`.\n\nCurrent main file excerpt:\n\n```bicep\nparam storageRgName string\nparam storageName string\nparam location string = resourceGroup().location\n```\n\nThe module file accepts parameters named `name` and `location`. Which change should you make?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```bicep\nmodule storage 'modules\\storage.bicep' = {\n  name: 'storageDeploy'\n  resourceGroup: storageRgName\n  parameters: {\n    name: storageName\n    location: location\n  }\n}\n```\n\n```bicep\nusing none\nparam storageName = 'contosoprod01'\n```"
+      },
+      {
+        "id": "B",
+        "text": "```bicep\nmodule storage './modules/storage.bicep' = {\n  name: 'storageDeploy'\n  scope: resourceGroup(storageRgName)\n  params: {\n    name: storageName\n    location: location\n  }\n}\n```\n\n```bicep\nusing './main.bicep'\nparam storageRgName = 'rg-prod-storage'\nparam storageName = 'contosoprod01'\n```"
+      },
+      {
+        "id": "C",
+        "text": "```bicep\nresource storage './modules/storage.bicep' = {\n  name: storageName\n  scope: resourceGroup(storageRgName)\n  params: {\n    location: location\n  }\n}\n```\n\n```json\n{\n  \"using\": \"./main.bicep\",\n  \"storageName\": \"contosoprod01\"\n}\n```"
+      },
+      {
+        "id": "D",
+        "text": "```bicep\nmodule storage './modules/storage.bicep' = {\n  name: storageName\n  params: {\n    storageRgName: storageRgName\n    storageName: storageName\n  }\n}\n```\n\n```bicep\nparam storageRgName = 'rg-prod-storage'\nparam storageName = 'contosoprod01'\n```"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. `main.bicep`, the `modules` folder, and the production `.bicepparam` file are in the same solution. The deployment identity has permission to deploy to the target resource group.",
+    "sections": {
+      "correctAnswer": "**B. Declare a `module` with a relative Bicep path, set `scope: resourceGroup(storageRgName)`, pass values through `params`, and use `using './main.bicep'` in the `.bicepparam` file**. That syntax matches the documented module shape and links the parameter file to the Bicep file it supplies.",
+      "technical": "A Bicep module is another Bicep file deployed by a parent Bicep file. Microsoft documents the module syntax as `module <symbolic-name> '<path-to-file>' = { name: ... params: { ... } }`. The module can include a `scope` property when it must deploy somewhere other than the parent file's current scope. At resource group deployment scope, `resourceGroup(storageRgName)` returns a scope object suitable for the module `scope` property.\n\nThe relative path matters. Bicep module paths use forward slashes for consistent compilation across platforms. Even on Windows, the Bicep source path should be `./modules/storage.bicep`, not a backslash path. The module's `params` object must use the parameter names expected by the module file, which the scenario says are `name` and `location`.\n\nA native `.bicepparam` file is linked to a Bicep file with a `using` statement. After that, each `param` assignment supplies a value for a parameter defined in the Bicep file. The Bicep parameters-file documentation says parameter values in the file override Bicep defaults and that extra parameters not defined in the linked Bicep file produce an error.\n\nOne operational nuance: a module's `name` is the nested deployment name. Microsoft notes that static module names can interfere with concurrent deployments to the same scope, so unique names or omitted names may be preferred in busy automation. The exam scenario, however, is testing basic module extraction, scope, and parameter-file linkage.",
+      "wrongOptions": {
+        "A": "This uses a Windows backslash in the Bicep module path, uses non-Bicep properties named `resourceGroup` and `parameters`, and leaves the parameter file unlinked by using `using none`. Misconception: Bicep file paths and property names mirror local shell conventions. Could be correct only as a rough conceptual description outside actual Bicep syntax, not as a valid source change.",
+        "C": "A Bicep module is declared with the `module` keyword, not `resource`, and the shown JSON is not the native `.bicepparam` syntax. Misconception: a module file can be treated like a resource type. Could be correct when declaring an actual Azure resource with a resource provider type, or when using a valid JSON parameters file with the documented JSON schema.",
+        "D": "This omits the required different `scope`, passes parameter names the module does not define, and the parameter file lacks a `using` statement. Misconception: parameter names from the parent automatically flow into a module or parameter file. Could be correct if the module really accepted `storageRgName` and `storageName`, deployed to the current group, and values were supplied through another supported mechanism."
+      },
+      "plainEnglish": "Splitting a Bicep file into a module is like moving one chapter into a separate file and then calling that chapter from the main book. The main file must say where the chapter lives, what deployment name to use, where to deploy it, and what inputs to pass. The production parameter file also needs to point at the main Bicep file with `using`, so tools know which parameters it is allowed to set.",
+      "analogy": "A project manager asks a specialist team to build only the storage room in a different building. The work order names the specialist instructions, gives the target building, and fills in the specialist's input fields.\n\n| Analogy | Bicep reality |\n|---|---|\n| Specialist instructions | `modules/storage.bicep` |\n| Work order line | `module storage ...` declaration |\n| Target building | `scope: resourceGroup(storageRgName)` |\n| Specialist input fields | `params` object |\n| Production checklist | `.bicepparam` file with `using` |\n\n**Where the analogy breaks down:** Bicep compiles modules into nested deployments and validates paths, scopes, and parameter names before Azure resources are created.",
+      "jargon": [
+        {
+          "term": "Module",
+          "definition": "A Bicep file deployed from another Bicep file to organize and reuse deployment logic."
+        },
+        {
+          "term": "Module path",
+          "definition": "The local or registry reference that tells Bicep where the module content is located."
+        },
+        {
+          "term": "`scope`",
+          "definition": "A module property that sets the deployment scope when the module should target a different resource group, subscription, management group, or tenant."
+        },
+        {
+          "term": "`resourceGroup(name)`",
+          "definition": "A Bicep scope function that can return a scope object for a named resource group when used in a module `scope` property."
+        },
+        {
+          "term": "`params`",
+          "definition": "The object inside a module declaration that maps values from the parent file to parameters declared by the module."
+        },
+        {
+          "term": "`.bicepparam` file",
+          "definition": "A native Bicep parameters file that stores deployment parameter values separately from the main Bicep file."
+        },
+        {
+          "term": "`using` statement",
+          "definition": "The statement in a `.bicepparam` file that links the parameter file to a Bicep file, or uses `none` when deliberately unlinked."
+        },
+        {
+          "term": "Nested deployment",
+          "definition": "The ARM deployment resource generated behind the scenes for a Bicep module."
+        }
+      ],
+      "watchOut": "- Bicep module paths use forward slashes, not Windows backslashes.\n- The module `params` names must match the module file's parameter names, not the parent's preferred names.\n- Use `scope`, not a made-up `resourceGroup` property, to target another resource group.\n- A `.bicepparam` file normally starts with `using './main.bicep'` so tools can validate the parameter names.",
+      "productionTip": {
+        "official": "Microsoft documents Bicep modules with `module`, `name`, optional `scope`, and `params`, and states that local module paths must use forward slashes. Microsoft also documents `.bicepparam` files with a `using` statement that links the file to a Bicep file.",
+        "recommendation": "When extracting modules, keep the module interface small and stable. Use environment-specific `.bicepparam` files for non-secret differences, and avoid storing passwords or other sensitive values as plain text in parameter files."
+      },
+      "memoryTrick": "For modules remember **file, deployment name, scope, params**; for `.bicepparam` remember **using then values**. This shortcut does not cover registry modules or advanced parameter-file features such as `extends`.",
+      "examTip": "Clue words are **split into a module**, **different resource group**, and **production `.bicepparam` file**. Choose the answer with the `module` keyword, `scope: resourceGroup(...)`, a `params` block, and a `using` statement. A harder version may ask about concurrent deployments, where a static module `name` can become a deployment-output problem."
+    },
+    "sources": [
+      {
+        "title": "Bicep modules",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+      },
+      {
+        "title": "Create a parameters file for bicep deployment",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameter-files"
+      },
+      {
+        "title": "Bicep functions - scopes",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/bicep-functions-scope"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

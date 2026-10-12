@@ -1,0 +1,661 @@
+[
+  {
+    "id": "D3.4.3-01",
+    "objective": "D3.4.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a source-code repository for a Node.js web API named `orders-api`. The application uses a supported Node.js long-term support version and does not require custom operating-system packages. You must create a new Azure App Service app with the least image-management effort. The operations team also wants Microsoft to maintain the runtime stack rather than asking developers to build and patch a Docker image.\n\nWhich creation choice should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Publish as **Container** on Linux and provide a custom Docker image for Node.js"
+      },
+      {
+        "id": "B",
+        "text": "Publish as **Code**, choose a supported Node.js runtime stack, and choose the required App Service operating system"
+      },
+      {
+        "id": "C",
+        "text": "Publish as **Code** on Windows but select ASP.NET V4.8 because App Service uses IIS"
+      },
+      {
+        "id": "D",
+        "text": "Create a Windows custom container because Node.js is unsupported as an App Service built-in stack"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The app is a normal web API that can run on an App Service built-in Node.js stack. The question is about creating an App Service web app, not Azure Container Apps, Azure Kubernetes Service, or custom DNS.",
+    "sections": {
+      "correctAnswer": "**B. Publish as Code, choose a supported Node.js runtime stack, and choose the required App Service operating system**. App Service supports built-in web stacks such as Node.js, and the Code path lets Azure provide and patch the managed runtime instead of requiring a custom container image.",
+      "technical": "Azure App Service has two major creation paths for a web app workload: a built-in code stack or a custom container. The built-in path is selected by choosing **Publish: Code**, then choosing the runtime stack, version, region, App Service plan, and operating system that match the application. Microsoft documents App Service support for stacks such as .NET, Java, Node.js, Python, and PHP, and the quickstart creation flow includes a **Publish** value of **Code**, a **Runtime stack**, and an **Operating System** choice.\n\nThe custom-container path is selected when the app needs an image that you build and publish to a registry. Container creation asks for **Publish: Container**, an operating system, an image source, and image information. The container path is useful when the application needs dependencies, startup behavior, or OS-level contents that a built-in App Service stack does not provide. It is not the lowest-effort choice when the app fits a managed runtime stack.\n\nThe decision order is:\n\n1. Identify whether the application can run on a supported built-in stack.\n2. If yes, use **Code** and choose the matching stack and OS.\n3. If the runtime, dependency, or OS shape is not available, move to **Container** and provide an image.\n4. Check special framework rules. For example, ASP.NET Framework applications target Windows, while ASP.NET Core can run cross-platform.\n\nFor the scenario, the app is Node.js source code and has no custom image requirement. Choosing Container would add build, registry, scanning, and patching work that the requirement explicitly tries to avoid.",
+      "wrongOptions": {
+        "A": "A container can host Node.js, but it is not the least image-management effort when a supported built-in Node.js stack is sufficient. Misconception: every modern web app should be containerized before App Service can run it. Could be correct when the application needs a custom image, unsupported runtime version, native packages, or an identical container artifact across environments.",
+        "C": "ASP.NET V4.8 is for .NET Framework style Windows applications, not a Node.js API. Misconception: because Windows App Service uses IIS in many examples, all code apps should pick an ASP.NET stack. Could be correct when the workload is an ASP.NET Framework 4.8 app that must run on Windows.",
+        "D": "Node.js is documented as an App Service web stack, so a Windows custom container is not required just to run Node.js. Misconception: App Service containers are the only way to use non-.NET languages. Could be correct when the Node.js app depends on Windows-only components packaged into a supported Windows container image."
+      },
+      "plainEnglish": "App Service can work in two different ways. In the easier code model, Azure already has shelves of common runtimes, such as Node.js. You put your application code on the shelf that matches it, and Azure looks after the underlying web-hosting platform. In the container model, you bring an entire packed box: your app, runtime, libraries, and image configuration. That gives more control, but someone must build and maintain the box. Because this app is a normal Node.js app and does not need special packages, the managed Code option is the better fit.",
+      "analogy": "Imagine renting a commercial kitchen. If your recipe only needs standard ovens and refrigerators, you reserve a normal kitchen station. If your dish needs a custom smoker and unusual equipment, you bring a food truck with all equipment inside.\n\n| Analogy | Azure reality |\n|---|---|\n| Standard kitchen station | App Service **Code** with a built-in runtime |\n| Recipe type | Runtime stack such as Node.js |\n| Kitchen building | App Service operating system |\n| Food truck | Custom container image |\n\n**Where the analogy breaks down:** Azure runtime stacks are versioned software platforms, not physical appliances, and container images still run under App Service platform constraints.",
+      "jargon": [
+        {
+          "term": "Azure App Service",
+          "definition": "A managed Azure platform for hosting web apps, APIs, and mobile back ends without managing the underlying servers."
+        },
+        {
+          "term": "Publish",
+          "definition": "A creation choice that identifies whether the app is deployed as source/code on a managed stack or as a container image."
+        },
+        {
+          "term": "Code",
+          "definition": "The App Service publish option where the app uses a Microsoft-provided runtime stack such as Node.js, .NET, Java, Python, or PHP."
+        },
+        {
+          "term": "Container",
+          "definition": "The App Service publish option where the app runs from a Docker-compatible image supplied from a registry."
+        },
+        {
+          "term": "Runtime stack",
+          "definition": "The language and framework environment selected for a code-based App Service app, such as Node.js or .NET."
+        },
+        {
+          "term": "Long-term support",
+          "definition": "A runtime release line intended to receive support and fixes for a longer lifecycle than short-lived releases."
+        },
+        {
+          "term": "IIS",
+          "definition": "Internet Information Services, the Windows web server used by many Windows App Service workloads."
+        }
+      ],
+      "watchOut": "- Do not pick a container just because the word sounds modern.\n- Match the stack to the application language, not to the example you last saw.\n- ASP.NET Framework is a Windows-specific clue; Node.js is not.\n- A custom container increases control and increases image ownership work.",
+      "productionTip": {
+        "official": "Microsoft documents App Service support for multiple built-in web stacks and also documents a separate custom-container quickstart where you select Container and provide an image source. The .NET quickstart creation flow shows **Publish: Code**, runtime stack, operating system, plan, and region choices.",
+        "recommendation": "Use the built-in Code path when it supports your runtime and dependency needs. Choose Container only when you need reproducible image contents, unsupported packages, or stronger control over the runtime surface, and then add image scanning and patch ownership to the runbook."
+      },
+      "memoryTrick": "**Code means choose a stack; Container means bring a stack.** This is a simplification because both still run on App Service and both require deployment planning.",
+      "examTip": "Clue words are **supported Node.js**, **no custom packages**, and **least image-management effort**. Those clues point to a built-in runtime stack. A harder version might mention a native library or unsupported runtime version; that would make the container option more attractive."
+    },
+    "sources": [
+      {
+        "title": "Overview of Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+      },
+      {
+        "title": "Quickstart: Deploy an ASP.NET web app",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/quickstart-dotnetcore"
+      },
+      {
+        "title": "Quickstart: Run a Custom Container on App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/quickstart-custom-container"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.3-02",
+    "objective": "D3.4.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A team at Fabrikam creates a new web app named `catalog` in the Azure portal. The security team asks why the default domain shown on the **Basics** tab is not simply `catalog.azurewebsites.net`. You must explain the current App Service default-hostname behavior for new portal-created web apps.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "New App Service web apps always use only `<AppName>.azurewebsites.net`; any hash indicates a custom domain was added"
+      },
+      {
+        "id": "B",
+        "text": "The portal generates `<AppName>-<Hash>.<Region>.azurewebsites.net` by default on supported SKUs to help reduce dangling-subdomain takeover risk"
+      },
+      {
+        "id": "C",
+        "text": "The hash is added only after you bind a TLS certificate to the default domain"
+      },
+      {
+        "id": "D",
+        "text": "You can enable secure unique default hostnames later on an existing app by changing the runtime stack"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The app is newly created in the Azure portal on a supported App Service SKU. The question is about the default App Service hostname, not a custom DNS name or private endpoint name.",
+    "sections": {
+      "correctAnswer": "**B. The portal generates `<AppName>-<Hash>.<Region>.azurewebsites.net` by default on supported SKUs to help reduce dangling-subdomain takeover risk**. Microsoft documents secure unique default hostnames as generally available for Web Apps and shows that portal-created resources use the feature automatically.",
+      "technical": "Traditional App Service hostnames used the predictable format `<AppName>.azurewebsites.net`. Microsoft now documents **secure unique default hostnames** for Web Apps, Function Apps, and Logic Apps Standard. With the feature enabled, the default hostname includes a randomized deterministic hash and a region identifier, such as `contoso-a6gqaeashthkhkeu.eastus-01.azurewebsites.net`. The matching SCM endpoint also includes the hash and region in its own format.\n\nThe security reason is subdomain takeover prevention. A dangling DNS entry can occur when a DNS record points to a deleted cloud resource. A malicious actor might try to recreate a resource with the old predictable name. The secure unique hostname adds tenant-related uniqueness so an external actor cannot simply claim the same default hostname.\n\nCreation behavior matters:\n\n1. In the Azure portal, new Web Apps on supported SKUs use secure unique default hostnames automatically.\n2. Portal-created resources use the **Tenant Reuse** hash scope.\n3. Azure CLI, ARM templates, and REST API deployments must opt in by setting the hostname scope, such as `--domain-name-scope TenantReuse` for `az webapp create`.\n4. The feature is set when the resource is created. Microsoft says it cannot be applied retroactively to an existing resource.\n\nThe exact region identifier can include a suffix such as `eastus-01`, and Microsoft warns not to depend on a specific region-number combination. The exam-safe recognition point is the shape: app name, hash, region, and `azurewebsites.net`.",
+      "wrongOptions": {
+        "A": "The original predictable hostname exists in Microsoft documentation as the older global format, but the portal now creates secure unique default hostnames for new Web Apps on supported SKUs. Misconception: older App Service examples still describe every new app. Could be correct only for a pre-existing app or a resource created without the unique-hostname feature.",
+        "C": "The hash is part of the default hostname feature, not a side effect of binding a certificate. The default `azurewebsites.net` domain is already covered by platform certificates. Misconception: every HTTPS-related name change must be caused by certificate configuration. Could be correct when discussing custom domain certificate binding, which is a separate objective.",
+        "D": "Microsoft documents that secure unique default hostnames are configured at resource creation and cannot be added retroactively by changing a runtime stack. Misconception: stack settings can reshape the platform DNS identity of an existing app. Could be correct only if the team creates or restores to a new app with the feature enabled."
+      },
+      "plainEnglish": "The old pattern was easy to guess: if the app was called `catalog`, the address was `catalog.azurewebsites.net`. That was convenient, but predictable names can be risky after resources are deleted. Azure can now add a hash and region to the default address when the app is created. The extra characters are not random decoration; they make the address much harder for someone outside the organization to recreate later. The app still has an Azure-provided default web address, but the address is no longer only the app name.",
+      "analogy": "A building used to assign mailboxes by first name only, such as `catalog`. Now it prints a badge with the name, a building code, and a floor code so another tenant cannot grab the same-looking mailbox after someone moves out.\n\n| Analogy | Azure reality |\n|---|---|\n| First-name mailbox | Original `<AppName>.azurewebsites.net` hostname |\n| Badge code | Deterministic 16-character hash |\n| Floor code | Region identifier |\n| Tenant move-out risk | Dangling DNS after resource deletion |\n\n**Where the analogy breaks down:** DNS resolution and resource ownership are enforced by Azure control-plane rules, not by a mailroom clerk checking paper badges.",
+      "jargon": [
+        {
+          "term": "Default hostname",
+          "definition": "The Azure-provided web address assigned to an App Service app without adding a custom domain."
+        },
+        {
+          "term": "Secure unique default hostname",
+          "definition": "An App Service hostname format that includes a hash and region identifier to reduce subdomain takeover risk."
+        },
+        {
+          "term": "Hash",
+          "definition": "A deterministic string added to the generated hostname within a configured scope."
+        },
+        {
+          "term": "Region identifier",
+          "definition": "The location part in the generated hostname, such as `eastus-01`, that identifies the Azure region label used in the name."
+        },
+        {
+          "term": "Subdomain takeover",
+          "definition": "A threat where an attacker claims a cloud resource name still referenced by someone else's DNS record."
+        },
+        {
+          "term": "SCM endpoint",
+          "definition": "The Source Control Manager or Kudu endpoint for deployment and management operations on an App Service app."
+        },
+        {
+          "term": "Tenant Reuse",
+          "definition": "A hostname hash scope where the same app name gets the same hash across subscriptions in the same Microsoft Entra tenant."
+        }
+      ],
+      "watchOut": "- Do not memorize only the older `<app>.azurewebsites.net` pattern.\n- The unique default hostname is chosen at creation time.\n- Portal-created resources use Tenant Reuse; CLI and templates need an explicit scope.\n- The region-number suffix can vary, so avoid hard-coding it in automation.",
+      "productionTip": {
+        "official": "Microsoft documents the unique format, the hash-scope choices, the portal default behavior, and the fact that the feature cannot be enabled retroactively on an existing App Service resource. The same page explains the dangling DNS scenario that the feature is designed to mitigate.",
+        "recommendation": "For new scripted deployments, explicitly set `--domain-name-scope TenantReuse` or another chosen scope so automation matches portal-created apps. For existing apps with older names, plan a migration only when the risk and application cutover effort justify it."
+      },
+      "memoryTrick": "**Name, hash, region, domain** is the new default-name pattern. This shortcut helps identify the format, but the exact hash and region suffix are generated by Azure.",
+      "examTip": "Clue words are **new web app**, **Azure portal**, and **default domain**. Pick the answer that includes both the hash and region and connects the feature to subdomain-takeover protection. A harder item may ask how to make CLI-created apps use the same pattern; look for `--domain-name-scope`."
+    },
+    "sources": [
+      {
+        "title": "Prevent Subdomain Takeovers - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/reference-dangling-subdomain-prevention"
+      },
+      {
+        "title": "Quickstart: Deploy an ASP.NET web app",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/quickstart-dotnetcore"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.3-03",
+    "objective": "D3.4.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You create an App Service app for a Woodgrove Bank ASP.NET Core application. The repository contains development values in `appsettings.json`. Production must use Azure-provided values without changing code. A staging slot and the production slot will use different database values, and those values must not trade places during a slot swap.\n\nWhich three configuration choices should you make? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add production values as App Service app settings because they are exposed to the app as environment variables"
+      },
+      {
+        "id": "B",
+        "text": "Rely on `appsettings.json` in the deployed ZIP package because App Service settings never override application files"
+      },
+      {
+        "id": "C",
+        "text": "Mark the production database setting as a deployment slot setting so it sticks to the slot"
+      },
+      {
+        "id": "D",
+        "text": "Use App Service connection strings for .NET database strings when you want them to override `<connectionStrings>` values"
+      },
+      {
+        "id": "E",
+        "text": "Store the database password in a custom default document so the app can read it at startup"
+      },
+      {
+        "id": "F",
+        "text": "Put the setting only in the staging slot and expect a swap to copy it into production permanently"
+      }
+    ],
+    "correct": [
+      "A",
+      "C",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The application can read configuration from environment variables and .NET configuration providers. The question is limited to App Service app settings, connection strings, and slot stickiness, not Key Vault references or networking.",
+    "sections": {
+      "correctAnswer": "**A. Add production values as App Service app settings because they are exposed to the app as environment variables**, **C. Mark the production database setting as a deployment slot setting so it sticks to the slot**, and **D. Use App Service connection strings for .NET database strings when you want them to override `<connectionStrings>` values**. These choices use documented App Service configuration precedence and slot-specific behavior.",
+      "technical": "App Service app settings are name/value pairs that the platform passes to application code as environment variables. Microsoft states that for ASP.NET and ASP.NET Core developers, App Service app settings behave like values in `Web.config` or `appsettings.json`, and App Service values override the values in those files. That allows the same code package to keep development values in the repository while production values are supplied by the App Service resource.\n\nConnection strings are a related configuration area. For .NET applications, App Service connection strings are like `<connectionStrings>` entries in `Web.config`, and the App Service values override the file values. At runtime, connection strings are also available as environment variables with prefixes such as `SQLAZURECONNSTR_`, `SQLCONNSTR_`, `MYSQLCONNSTR_`, and `CUSTOMCONNSTR_`. Microsoft notes that for non-.NET stacks, app settings are often simpler unless a backup feature specifically needs a connection string.\n\nDeployment slots add a second scope decision. In the portal, the app setting or connection string dialog can stick a setting to the current slot. In JSON bulk editing, this is represented by `slotSetting`. A slot-specific production database value remains with the production slot during swap operations rather than following the application content into staging.\n\nThe practical order is:\n\n1. Keep safe development defaults in the repository.\n2. Add production runtime values as App Service settings or connection strings.\n3. Mark environment-specific secrets and endpoints as slot settings.\n4. Verify the app reads environment configuration before swapping slots.\n\nAdding or changing app settings triggers an app restart, so production changes should be planned.",
+      "wrongOptions": {
+        "B": "Microsoft documents that App Service app settings override `Web.config` and `appsettings.json` values for ASP.NET and ASP.NET Core. Misconception: deployed configuration files always win over platform settings. Could be correct when running the app locally without App Service-provided environment variables.",
+        "E": "A default document is for serving a page at the root URL, not for secret storage. Misconception: any file in the app can safely serve as production configuration. Could be correct when the requirement is to choose which public page appears at `/`, not to store a password.",
+        "F": "A normal swap exchanges content and many configuration elements; environment-specific database values should be made slot-specific instead of depending on a one-time copy. Misconception: staging settings automatically become the long-term production settings after every swap. Could be correct only for a setting that intentionally should travel with the app content."
+      },
+      "plainEnglish": "Think of the code package as a suitcase that travels from development to Azure. You can leave harmless practice values inside the suitcase. When the suitcase arrives at the production hotel, the front desk hands the app the real values as environment variables. If there are two hotel rooms, staging and production, each room should keep its own database key. Marking a value as a deployment slot setting is how you tell Azure that the key belongs to the room, not to the suitcase.",
+      "analogy": "A theater troupe carries the same script to every venue, but each venue provides its own lighting board password and emergency contact list. The touring script should not contain the final venue secrets.\n\n| Analogy | Azure reality |\n|---|---|\n| Touring script | Deployed application files |\n| Venue-provided notes | App settings and connection strings |\n| Main stage and rehearsal room | Production and staging slots |\n| Notes taped to a room door | Slot-specific setting |\n\n**Where the analogy breaks down:** App Service injects settings through process environment and platform configuration, while a theater note is read manually and has no restart behavior.",
+      "jargon": [
+        {
+          "term": "App setting",
+          "definition": "An App Service name/value configuration entry injected into the app environment at startup."
+        },
+        {
+          "term": "Environment variable",
+          "definition": "A runtime key/value value that application code can read from the process environment."
+        },
+        {
+          "term": "Connection string",
+          "definition": "A configuration value that tells an application how to connect to a database or other backing service."
+        },
+        {
+          "term": "Deployment slot setting",
+          "definition": "A setting marked to stay with a specific slot during swap operations."
+        },
+        {
+          "term": "`appsettings.json`",
+          "definition": "A common ASP.NET Core configuration file often used for local or default application settings."
+        },
+        {
+          "term": "`Web.config`",
+          "definition": "A .NET application configuration file used by many ASP.NET applications."
+        },
+        {
+          "term": "Slot swap",
+          "definition": "An App Service operation that exchanges app content and selected configuration between two deployment slots."
+        }
+      ],
+      "watchOut": "- App Service settings can override file-based .NET settings.\n- Slot-specific values are essential for database endpoints, API keys, and environment labels.\n- Changing app settings can restart the app.\n- Connection strings get runtime prefixes, so non-.NET code may prefer app settings.",
+      "productionTip": {
+        "official": "Microsoft documents app settings as environment variables, explains that App Service values override `Web.config` and `appsettings.json` for ASP.NET workloads, and shows `slotSetting` in bulk-edit JSON. The same configuration article lists the runtime prefixes used for connection strings.",
+        "recommendation": "Keep secrets out of source control, name settings consistently across slots, and mark only environment-bound values as sticky. For stronger secret governance, move the secret material to Key Vault references after the basic App Service configuration pattern is working."
+      },
+      "memoryTrick": "**Files travel; slot settings stay.** This is a simplification because some configuration does swap unless you mark it sticky or it is on the documented non-swapped list.",
+      "examTip": "Clue words are **override `appsettings.json`**, **different database values**, and **must not trade places during swap**. Choose platform settings plus slot stickiness. A harder question may mix app settings, connection strings, and Key Vault references; first decide whether the value should travel with code or remain with an environment."
+    },
+    "sources": [
+      {
+        "title": "Configure an App Service app",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+      },
+      {
+        "title": "Set Up Staging Environments - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.3-04",
+    "objective": "D3.4.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You create a new App Service app for Adatum. The security baseline keeps basic authentication disabled for deployment publishing credentials. Developers still need supported deployment paths for application updates.\n\nWhich two deployment approaches can meet the requirement without turning on basic authentication? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Deploy a ZIP package by using `az webapp deploy` with a current Azure CLI sign-in"
+      },
+      {
+        "id": "B",
+        "text": "Use FTP/S with the application-scope publishing user name and password"
+      },
+      {
+        "id": "C",
+        "text": "Configure GitHub Actions from Deployment Center by using the user-assigned identity option"
+      },
+      {
+        "id": "D",
+        "text": "Configure Local Git deployment and push to `https://<app>.scm.azurewebsites.net/<app>.git`"
+      },
+      {
+        "id": "E",
+        "text": "Use the Kudu ZIP Deploy UI because it works on App Service on Linux and ignores publishing credentials"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Azure CLI is version 2.48.1 or later where documented fallback behavior applies. The app is a new App Service app with both SCM and FTP basic authentication publishing credentials disabled.",
+    "sections": {
+      "correctAnswer": "**A. Deploy a ZIP package by using `az webapp deploy` with a current Azure CLI sign-in** and **C. Configure GitHub Actions from Deployment Center by using the user-assigned identity option**. Microsoft documents Azure CLI deployment fallback to Microsoft Entra authentication when basic authentication is disabled, and new GitHub Actions configurations can use user-assigned identity.",
+      "technical": "App Service supports several deployment methods, but they do not all authenticate the same way. Basic authentication uses username and password publishing credentials. Microsoft documents that basic authentication is less secure, disabled by default for new apps, and controlled separately for SCM and FTP publishing credentials. When it is disabled, methods that require those credentials fail.\n\nZIP deployment with Azure CLI is different from old FTP-style publishing. The `az webapp deploy` command uses the Kudu publish API and, in Azure CLI 2.48.1 or higher, is listed as one of the commands that can fall back to Microsoft Entra authentication when basic authentication is disabled. The ZIP package must contain the application files, not an extra top-level GitHub repository folder. App Service unpacks ZIP content to the default app path unless you choose a run-from-package pattern outside this question.\n\nGitHub Actions is also viable when configured with a modern identity path. The continuous deployment article states that GitHub Actions is the default GitHub build provider, and the portal can configure deployments that use a user-assigned managed identity with OpenID Connect. The basic-auth disable article says existing workflows that use basic authentication do not work, but new GitHub Actions workflows should use the user-assigned identity option.\n\nFTP/S and Local Git are the traps. FTP/S needs both SCM Basic Auth Publishing Credentials and FTP Basic Auth Publishing Credentials enabled. Local Git requires SCM basic authentication. Those are exactly what the baseline keeps disabled.",
+      "wrongOptions": {
+        "B": "FTP/S deployment depends on basic publishing credentials, and Microsoft states FTP/S does not work when basic authentication is disabled. Misconception: FTPS encryption removes the need for username/password publishing credentials. Could be correct when both SCM and FTP basic publishing credentials are explicitly enabled and FTPS is allowed by policy.",
+        "D": "Local Git requires SCM basic authentication; if basic authentication is disabled, local Git deployment cannot be configured in Deployment Center. Misconception: Git over HTTPS always uses the same Microsoft Entra sign-in as the Azure portal. Could be correct for a legacy workflow where SCM basic authentication is allowed.",
+        "E": "Microsoft documents that the Kudu ZIP Push Deploy UI endpoint does not work for App Service on Linux at this time, and the answer also incorrectly assumes credential requirements vanish. Misconception: every ZIP-related interface behaves like `az webapp deploy`. Could be correct for a supported Windows Kudu UI scenario with appropriate authentication."
+      },
+      "plainEnglish": "Disabling basic authentication means the old username-and-password doors are closed. That is good for security, but it means some deployment tools cannot enter. Modern Azure CLI deployment can use your Azure sign-in token instead of a publishing password. GitHub Actions can also be wired to Azure with an identity rather than a stored publishing profile. FTP and Local Git are older doors that still expect publishing credentials, so they do not match the baseline.",
+      "analogy": "A company disables reusable door codes and requires badge-based entry. Couriers with old door-code instructions cannot enter, but employees with badges and trusted partner workflows can.\n\n| Analogy | Azure reality |\n|---|---|\n| Door code | Basic publishing credential |\n| Employee badge | Microsoft Entra-authenticated Azure CLI command |\n| Trusted partner workflow | GitHub Actions with user-assigned identity |\n| Old courier route | FTP/S or Local Git deployment |\n\n**Where the analogy breaks down:** Azure authentication uses OAuth tokens, managed identities, and deployment APIs; a physical badge system does not unpack ZIP packages or run build providers.",
+      "jargon": [
+        {
+          "term": "Basic authentication",
+          "definition": "Username-and-password authentication used by older App Service publishing methods such as FTP and Local Git."
+        },
+        {
+          "term": "SCM",
+          "definition": "Source Control Manager, also called Kudu, the App Service site used for deployment and diagnostics."
+        },
+        {
+          "term": "FTP/S",
+          "definition": "File Transfer Protocol over TLS, a file-copy deployment method for App Service content."
+        },
+        {
+          "term": "ZIP deploy",
+          "definition": "A deployment method that uploads a ZIP package and publishes its contents to the App Service app."
+        },
+        {
+          "term": "GitHub Actions",
+          "definition": "GitHub's workflow automation platform, which App Service can configure for continuous deployment."
+        },
+        {
+          "term": "User-assigned identity",
+          "definition": "A standalone managed identity resource that can be assigned to an app or workflow integration."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity platform used for Azure sign-in and token-based authorization."
+        }
+      ],
+      "watchOut": "- FTPS is encrypted, but it still uses publishing credentials.\n- Local Git is simple, but SCM basic authentication is a dependency.\n- `az webapp deploy` and GitHub Actions can be safer choices for new secured apps.\n- Downloaded GitHub repository ZIP files often include a top-level folder that must be repackaged before ZIP deploy.",
+      "productionTip": {
+        "official": "Microsoft documents that new apps disable basic authentication by default, that FTP and Local Git do not work without the relevant basic-auth settings, and that Azure CLI deployment commands can fall back to Microsoft Entra authentication. The continuous deployment documentation describes GitHub Actions and identity-based configuration.",
+        "recommendation": "Prefer OIDC-based CI/CD or Azure CLI deployments tied to human or workload identities. Avoid re-enabling basic authentication just to rescue an old deployment habit unless you have a time-bound exception, compensating monitoring, and a clear migration date."
+      },
+      "memoryTrick": "**FTP and Local Git need old keys; CLI ZIP and identity workflows can use modern badges.** This is simplified because exact support depends on tool version and workflow configuration.",
+      "examTip": "Clue words are **basic authentication disabled** and **new app**. Eliminate FTP and Local Git first. A harder version may mention an existing GitHub workflow that uses a publish profile; that workflow must be updated rather than assumed safe."
+    },
+    "sources": [
+      {
+        "title": "Disable Basic Authentication for Deployment - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-basic-auth-disable"
+      },
+      {
+        "title": "Deploy Files - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-zip"
+      },
+      {
+        "title": "Configure continuous deployment - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-continuous-deployment"
+      },
+      {
+        "title": "Deploy Content Using FTP/S - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-ftp"
+      },
+      {
+        "title": "Deploy From a Local Git Repository - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-local-git"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.3-05",
+    "objective": "D3.4.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You create an App Service app named `claimsweb` for a Windows-based ASP.NET Core application. During initial testing, users receive intermittent HTTP 500 errors. You need to enable a basic troubleshooting path that lets you view application messages in real time from the Azure portal. You also want to avoid assuming that deployment logs prove what the application code did at runtime.\n\nWhat should you configure first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable application logging for the App Service app, then open **Monitoring** > **Log stream** to view the runtime log output"
+      },
+      {
+        "id": "B",
+        "text": "Enable Local Git deployment because every Git push automatically records all application exceptions"
+      },
+      {
+        "id": "C",
+        "text": "Turn on HTTPS Only because HTTP-to-HTTPS redirection writes failed request traces for all HTTP 500 responses"
+      },
+      {
+        "id": "D",
+        "text": "Open the deployment logs because deployment logging is the configurable application log for runtime code messages"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The app runs in Azure App Service and the requirement is basic App Service diagnostic logging and live log streaming, not Azure Monitor workspace design, Application Insights configuration, or deployment pipeline troubleshooting.",
+    "sections": {
+      "correctAnswer": "**A. Enable application logging for the App Service app, then open Monitoring > Log stream to view the runtime log output**. Microsoft documents application logs as messages generated by application code and Log stream as the portal location for streaming enabled logs in real time.",
+      "technical": "App Service has several log types, and the exam often tests which one fits the problem. Application logs are for messages generated by the application's framework or code. They can be stored in the App Service file system and, for some scenarios, Azure Storage blobs. On Windows apps, the portal path is **Monitoring** > **App Service logs**, where you can turn on application logging to the file system for temporary debugging or to blob storage for longer-term logging. Microsoft documents that Windows file-system application logging is intended for temporary debugging and turns itself off after 12 hours.\n\nLog stream is the live viewing path. Before streaming logs, Microsoft says to enable the log type that you want. In the Azure portal, you go to the app and select **Monitoring** > **Log stream**. App Service streams information written to console output or to files with supported log extensions in the LogFiles directory. For Windows apps, Kudu diagnostic dumps and file-system logs are under `D:\\Home\\LogFiles`; for Linux or custom containers, logs are under `/home/LogFiles`.\n\nThe order for this scenario is:\n\n1. Decide whether the symptom is runtime behavior or deployment behavior. HTTP 500 responses during testing are runtime behavior.\n2. Enable the relevant runtime log type, such as application logging.\n3. Generate a test request that reproduces the error.\n4. Use Log stream to watch live output, or access stored log files later through Kudu or configured storage.\n\nDeployment logs are separate. They are created automatically when content is published and help diagnose deployment failures or deployment scripts. They do not replace application logging for runtime exceptions. HTTPS Only is a security and redirection setting, not a diagnostic-log switch.",
+      "wrongOptions": {
+        "B": "Local Git can deploy code, but it is not the feature that turns on runtime application logging for all exceptions. Misconception: any deployment method automatically captures full runtime diagnostics. Could be correct when the problem is getting source code into App Service through a Git workflow, not viewing live app messages.",
+        "C": "HTTPS Only redirects HTTP traffic to HTTPS; it does not enable failed request traces or application log streaming for HTTP 500 errors. Misconception: security transport settings also activate diagnostics. Could be correct when the requirement is to reject or redirect plain HTTP traffic, not troubleshoot runtime failures.",
+        "D": "Deployment logs are automatic logs for publishing content and deployment processes, not the configurable application log for code-generated runtime messages. Misconception: a successful or failed deployment log explains every later application error. Could be correct when the deployment itself failed or a custom deployment script produced an error."
+      },
+      "plainEnglish": "There are different notebooks for different jobs. Deployment logs are the notebook for moving the app into Azure. Application logs are the notebook for what the app says while it is running. If users get HTTP 500 errors after the app is already deployed, start with the running-app notebook. Turn on application logging, reproduce the problem, and open Log stream to watch messages as they arrive. HTTPS settings and Git deployment settings are important, but they do not show you the app's live runtime messages by themselves.",
+      "analogy": "A hotel has a construction diary and a front-desk incident radio. If a guest reports that room service is failing tonight, you listen to the front-desk radio, not the construction diary from when the hotel was built.\n\n| Analogy | Azure reality |\n|---|---|\n| Front-desk incident radio | Log stream |\n| Staff incident notes | Application logs |\n| Construction diary | Deployment logs |\n| Broken room-service request | Runtime HTTP 500 error |\n| Security door policy | HTTPS Only |\n\n**Where the analogy breaks down:** App Service logs are files, console output, and platform diagnostics with retention and storage rules; a hotel radio does not have severity levels or Kudu file paths.",
+      "jargon": [
+        {
+          "term": "Application logs",
+          "definition": "App Service logs that contain messages produced by the application code or web framework."
+        },
+        {
+          "term": "Log stream",
+          "definition": "A portal and CLI feature for viewing enabled App Service logs in real time."
+        },
+        {
+          "term": "Deployment logs",
+          "definition": "Logs created by App Service deployment processes when content is published to the app."
+        },
+        {
+          "term": "HTTP 500",
+          "definition": "A server error response indicating that the application or server failed while processing the request."
+        },
+        {
+          "term": "App Service file system",
+          "definition": "The storage area exposed to an App Service app for content and logs, subject to plan storage limits."
+        },
+        {
+          "term": "Kudu",
+          "definition": "The App Service SCM site used for deployment, diagnostics, advanced tools, and log file access."
+        },
+        {
+          "term": "HTTPS Only",
+          "definition": "An App Service setting that redirects HTTP requests to HTTPS but does not enable runtime logging."
+        }
+      ],
+      "watchOut": "- Enable the log type before expecting Log stream to show it.\n- Do not confuse deployment logs with runtime application logs.\n- Windows-only log types include detailed error messages and failed request tracing.\n- File-system logs consume App Service storage and may have temporary-debugging behavior.",
+      "productionTip": {
+        "official": "Microsoft documents App Service log categories including application logs, web server logs, detailed error messages, failed request tracing, and deployment logs. The same article states that you must enable the log type before streaming and shows the portal path **Monitoring** > **Log stream**.",
+        "recommendation": "Use application logging and Log stream for short investigations, then move recurring production telemetry into Azure Monitor or Application Insights. Keep log levels low enough for cost and noise control, and avoid leaving verbose file-system logging on without a retention plan."
+      },
+      "memoryTrick": "**Deploy logs explain arrival; app logs explain behavior.** This is a simplification because a broken deployment can cause later runtime errors, but the first log to inspect depends on which phase is failing.",
+      "examTip": "Clue words are **HTTP 500**, **application messages**, and **real time from the Azure portal**. Those point to application logging plus Log stream. A harder question may ask about raw HTTP request rows or IIS tracing; then web server logs or failed request tracing may be the better choice."
+    },
+    "sources": [
+      {
+        "title": "Enable Diagnostic Logs - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/troubleshoot-diagnostic-logs"
+      },
+      {
+        "title": "Configure an App Service App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.3-06",
+    "objective": "D3.4.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You create an App Service app named `payroll-api`. The application must read a secret from Azure Key Vault at runtime without storing a client secret or certificate in App Service. You want the identity lifecycle to be tied to the app, and the Key Vault reference should use the default identity behavior.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable the system-assigned managed identity for the app, grant it secret read access in Key Vault, and use a Key Vault reference app setting"
+      },
+      {
+        "id": "B",
+        "text": "Create an app setting named `CLIENT_SECRET` that contains a Microsoft Entra application password"
+      },
+      {
+        "id": "C",
+        "text": "Download the Key Vault secret into `appsettings.json` before deploying the code package"
+      },
+      {
+        "id": "D",
+        "text": "Assign the Reader role on the App Service plan and expect the app to inherit Key Vault secret access"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The vault permission model is either Azure RBAC or vault access policies. The app can consume the secret through an App Service Key Vault reference app setting.",
+    "sections": {
+      "correctAnswer": "**A. Enable the system-assigned managed identity for the app, grant it secret read access in Key Vault, and use a Key Vault reference app setting**. Key Vault references use the app's system-assigned identity by default, and managed identities avoid storing credentials in the app configuration.",
+      "technical": "Managed identities give App Service an identity from Microsoft Entra ID. A system-assigned identity is tied to the app and is deleted when the app is deleted. Microsoft documents that an app can have only one system-assigned identity, and that the platform manages it so you do not provision or rotate secrets. That matches the lifecycle requirement in the scenario.\n\nKey Vault references let app settings or connection strings point to Key Vault secrets. The app still reads the setting as normal configuration, but App Service resolves the value from Key Vault. Microsoft states that Key Vault references use the app's system-assigned identity by default, although a user-assigned identity can be configured when needed.\n\nThe setup order is:\n\n1. Create or identify the Key Vault and secret.\n2. Enable the system-assigned managed identity on the App Service app, for example with `az webapp identity assign`.\n3. Authorize the identity for secret reads. With Azure RBAC, assign **Key Vault Secrets User** at the appropriate scope. With vault access policies, grant the **Get** secrets permission.\n4. Create an app setting whose value is a Key Vault reference such as `@Microsoft.KeyVault(SecretUri=https://vault.vault.azure.net/secrets/name)` or the vault-name and secret-name form.\n5. Restart or refresh configuration if needed.\n\nThe identity is specific to the slot, so a deployment slot that also resolves Key Vault references needs its own identity and permissions. Key Vault reference values are cached and normally refreshed within 24 hours when a version is not specified; any app configuration change causes an immediate refetch.",
+      "wrongOptions": {
+        "B": "Storing a client secret in an app setting violates the requirement to avoid app-held credentials. Misconception: replacing a database password with an application password solves secret management. Could be correct only for a legacy design that cannot use managed identity and has compensating rotation controls.",
+        "C": "Putting the secret in `appsettings.json` embeds production secret material into the deployment package and likely source control. Misconception: the app must have the literal secret at build time to read it at runtime. Could be correct for harmless non-secret defaults, not Key Vault secrets.",
+        "D": "Reader on the App Service plan lets a user read Azure resource metadata; it does not grant the app's runtime identity permission to read Key Vault secrets. Misconception: Azure management-plane read access automatically becomes data-plane secret access. Could be correct when an operator only needs to inspect plan configuration."
+      },
+      "plainEnglish": "The app needs its own Azure identity, almost like an employee badge. A system-assigned managed identity gives the app a badge that exists only as long as the app exists. Then Key Vault is told, \"this badge may read secrets.\" The app setting can point to the secret instead of containing the secret. The code can read the configuration value normally, while Azure handles the secure lookup behind the scenes.",
+      "analogy": "A pharmacy does not give every delivery robot a copy of the medicine-cabinet key. Instead, it gives the robot an ID badge and tells the cabinet lock that this badge may open the secret drawer.\n\n| Analogy | Azure reality |\n|---|---|\n| Delivery robot | App Service app |\n| ID badge | System-assigned managed identity |\n| Medicine cabinet | Azure Key Vault |\n| Lock permission | Key Vault Secrets User role or Get secret policy |\n| Pickup note | Key Vault reference app setting |\n\n**Where the analogy breaks down:** Azure uses token-based authorization, cache behavior, and RBAC or access policy models; no physical key is copied to the app.",
+      "jargon": [
+        {
+          "term": "Managed identity",
+          "definition": "A Microsoft Entra identity managed by Azure that an app can use to access protected resources."
+        },
+        {
+          "term": "System-assigned identity",
+          "definition": "A managed identity tied to one Azure resource and removed when that resource is deleted."
+        },
+        {
+          "term": "User-assigned identity",
+          "definition": "A standalone managed identity that can be assigned to one or more Azure resources."
+        },
+        {
+          "term": "Azure Key Vault",
+          "definition": "An Azure service for centrally storing and controlling access to secrets, keys, and certificates."
+        },
+        {
+          "term": "Key Vault reference",
+          "definition": "An App Service setting value that points to a Key Vault secret so the platform resolves it for the app."
+        },
+        {
+          "term": "Key Vault Secrets User",
+          "definition": "A built-in Azure RBAC role that allows reading secret values from a Key Vault."
+        },
+        {
+          "term": "Access policy",
+          "definition": "A Key Vault permission model that can grant actions such as Get for secrets."
+        }
+      ],
+      "watchOut": "- The managed identity must be granted permission on Key Vault; enabling identity alone is not enough.\n- Key Vault references use the system-assigned identity by default unless configured otherwise.\n- Managed identity configuration is slot-specific.\n- If a secret version is omitted, App Service may cache the value and refresh later unless configuration changes force a refresh.",
+      "productionTip": {
+        "official": "Microsoft documents system-assigned managed identities for App Service, Key Vault references as app settings or connection strings, the default use of the system-assigned identity, and the required Key Vault authorization through Azure RBAC or vault access policy permissions.",
+        "recommendation": "Use a system-assigned identity for simple one-app ownership and a user-assigned identity when several apps share the same access boundary or when the app must resolve secrets during creation. Grant only secret read permissions needed by the app, not broad vault administration."
+      },
+      "memoryTrick": "**Identity first, permission second, reference third.** This sequence is simplified because network-restricted vaults may need virtual network routing before secret resolution succeeds.",
+      "examTip": "Clue words are **without storing a client secret**, **identity lifecycle tied to the app**, and **default identity behavior**. Those point directly to a system-assigned managed identity plus Key Vault authorization. A harder item may mention creation-time secret resolution; that is where a user-assigned identity can become the better answer."
+    },
+    "sources": [
+      {
+        "title": "Managed Identities - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-managed-identity"
+      },
+      {
+        "title": "Use Key Vault References as App Settings - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-key-vault-references"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.3-07",
+    "objective": "D3.4.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a local ASP.NET Core web app that you want to create and deploy to App Service from Azure CLI in one step. The app must run on Linux, reject plain HTTP by redirecting to HTTPS, require TLS 1.2 or later for inbound client traffic, remain loaded during idle periods, and avoid sticky sessions because the app stores session state in a shared external cache.\n\nWhich plan should you implement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Run `az webapp up --sku B1 --name <app-name> --os-type linux`, then enable Always On, enable HTTPS Only, set minimum inbound TLS to 1.2 or later, and turn Session affinity Off"
+      },
+      {
+        "id": "B",
+        "text": "Run `az webapp create` without deployment settings, leave HTTPS Only disabled, and keep Session affinity On so all clients use the same instance"
+      },
+      {
+        "id": "C",
+        "text": "Use the Free F1 tier, set minimum TLS to 1.0 for compatibility, and rely on idle unload to save startup time"
+      },
+      {
+        "id": "D",
+        "text": "Create a custom domain certificate binding before app creation because HTTPS Only cannot work on the default App Service hostname"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The Azure CLI is signed in and run from the application root folder. The default App Service hostname is acceptable; custom domains and custom certificates are outside this objective.",
+    "sections": {
+      "correctAnswer": "**A. Run `az webapp up --sku B1 --name <app-name> --os-type linux`, then enable Always On, enable HTTPS Only, set minimum inbound TLS to 1.2 or later, and turn Session affinity Off**. This combines the documented one-step CLI create-and-deploy command with the required App Service general settings.",
+      "technical": "The App Service quickstart documents `az webapp up` as a command that can deploy code from the local application directory while creating the resource group, App Service plan, and hosting app if needed. The command accepts `--sku`, `--name`, and `--os-type`; the quickstart says `--os-type` can be `linux` or `windows`. By choosing `--sku B1`, the app is in Basic rather than Free. The App Service limits table shows Always On is available starting in Basic, while Free and Shared do not have that feature.\n\nThe required runtime settings are on the app's General settings page or available through CLI and resource configuration. **Always On** keeps the app loaded by having the front-end load balancer send a request to the application root every five minutes; when it is off, the app can unload after 20 minutes without incoming requests. **HTTPS Only** redirects HTTP traffic to HTTPS. **Minimum TLS version** controls the minimum TLS encryption version accepted for inbound client traffic; Microsoft documents TLS 1.2 as the default minimum for new web apps and says apps should use TLS 1.2 or later as TLS 1.0 and 1.1 retire.\n\nSession affinity is the setting that routes a client to the same instance for the life of the session. For a stateless or externally stateful application, turning it Off allows more even distribution across instances. This is different from Always On: Always On controls idle unloading, while session affinity controls repeat-request routing.\n\nThe order is: create and deploy with `az webapp up`, then verify general settings. If automation is used, `az webapp config set` can set options such as Always On, and other site configuration properties can be managed by CLI or resource update commands.",
+      "wrongOptions": {
+        "B": "`az webapp create` creates an app but does not by itself perform the same local-code deployment described for `az webapp up`, and the proposed security and routing settings contradict the requirements. Misconception: creating the resource and deploying the local app are always the same operation. Could be correct when the app will be deployed later by a separate pipeline.",
+        "C": "Free F1 lacks Always On in the App Service limits table, and TLS 1.0 is a legacy protocol scheduled for inbound retirement. Idle unload also increases cold-start latency instead of saving startup time. Misconception: the cheapest tier can satisfy every runtime behavior if the code is small. Could be correct only for a disposable development demo without the listed availability and TLS requirements.",
+        "D": "The default App Service hostname is already secured by platform certificates, and HTTPS Only is a platform setting that redirects HTTP to HTTPS. Misconception: HTTPS settings require a custom domain before the app can be created. Could be correct when the requirement specifically includes a private branded domain and custom certificate binding, which is a separate objective."
+      },
+      "plainEnglish": "The command `az webapp up` is the shortcut that both makes the App Service resources and sends your local code. After the app exists, you set how the front door behaves. HTTPS Only says visitors should use the secure entrance. Minimum TLS 1.2 says old insecure handshake methods are not accepted. Always On keeps the app awake so the first user after a quiet period does not wait for a cold start. Session affinity Off says users do not need to return to the same server because the app stores shared state somewhere else.",
+      "analogy": "You are opening a small clinic. One service opens the clinic and moves in the equipment. Then you set entrance and staffing rules: use the secure door, reject outdated ID cards, keep a receptionist on duty, and let any available doctor see returning patients because records are in a shared system.\n\n| Analogy | Azure reality |\n|---|---|\n| Open clinic and move equipment | `az webapp up` create-and-deploy flow |\n| Secure door | HTTPS Only |\n| Outdated ID cards rejected | Minimum TLS 1.2 or later |\n| Receptionist remains on duty | Always On |\n| Any doctor can continue care | Session affinity Off with shared state |\n\n**Where the analogy breaks down:** App Service settings affect HTTP routing, TLS negotiation, and worker process loading, not human scheduling or medical records.",
+      "jargon": [
+        {
+          "term": "`az webapp up`",
+          "definition": "An Azure CLI command that can create App Service resources and deploy code from the local directory."
+        },
+        {
+          "term": "SKU",
+          "definition": "The pricing tier or size selection for an App Service plan, such as F1 or B1."
+        },
+        {
+          "term": "Always On",
+          "definition": "An App Service setting that keeps the app loaded by periodically pinging the application root."
+        },
+        {
+          "term": "HTTPS Only",
+          "definition": "An App Service setting that redirects HTTP traffic to HTTPS."
+        },
+        {
+          "term": "TLS",
+          "definition": "Transport Layer Security, the protocol family used to encrypt HTTPS connections."
+        },
+        {
+          "term": "Session affinity",
+          "definition": "A platform routing behavior that tries to send a client's repeat requests to the same app instance."
+        },
+        {
+          "term": "External cache",
+          "definition": "A separate shared store, such as Redis, used so app instances do not depend on local in-memory session state."
+        }
+      ],
+      "watchOut": "- `az webapp up` is the quick create-and-deploy command; `az webapp create` is not the same as deploying local files.\n- Always On and session affinity solve different problems.\n- TLS 1.2 is the default minimum for new apps, but exam questions may still ask you to enforce or verify it.\n- Default `azurewebsites.net` hostnames already support HTTPS through platform certificates.",
+      "productionTip": {
+        "official": "Microsoft's quickstart documents the `az webapp up --sku F1 --name <app-name> --os-type <os>` pattern and states that it creates the resource group, App Service plan, hosting app, logging, and ZIP deployment. App Service configuration documentation describes Always On, Session affinity, HTTPS Only, and Minimum TLS version settings.",
+        "recommendation": "Automate the post-create configuration instead of relying on a portal checklist. For stateless apps, disable session affinity only after confirming session data, caches, and uploaded files do not depend on one worker instance."
+      },
+      "memoryTrick": "**Up builds the house; settings set the doors, locks, lights, and traffic flow.** It is a simplification because real production deployment often uses infrastructure as code and CI/CD rather than a single operator command.",
+      "examTip": "Clue words are **one step from local code**, **Linux**, **HTTPS**, **TLS 1.2**, **idle**, and **shared external cache**. Choose the answer with `az webapp up`, Always On, HTTPS Only, minimum TLS, and Session affinity Off. A harder version may replace Basic with Free; then Always On becomes the blocker."
+    },
+    "sources": [
+      {
+        "title": "Quickstart: Deploy an ASP.NET web app",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/quickstart-dotnetcore"
+      },
+      {
+        "title": "Configure an App Service app",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+      },
+      {
+        "title": "Manage minimum TLS versions for Azure App Service, Azure Functions, and Logic Apps (Standard)",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/tls-minimum-version"
+      },
+      {
+        "title": "What Is TLS/SSL in Azure App Service?",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-tls"
+      },
+      {
+        "title": "Azure subscription and service limits, quotas, and constraints",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits#app-service-limits"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

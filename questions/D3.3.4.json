@@ -1,0 +1,672 @@
+[
+  {
+    "id": "D3.3.4-01",
+    "objective": "D3.3.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains an Azure Container Instances container group named `cg-api`. The group will run two Linux containers on the same host. You are preparing a YAML deployment file with the following resource settings.\n\n| Container | CPU request | Memory request | CPU limit | Memory limit |\n|---|---:|---:|---:|---:|\n| `web` | 0.75 vCPU | 1.5 GB | 1.5 vCPU | 2.0 GB |\n| `worker` | 0.25 vCPU | 0.5 GB | not set | not set |\n\nYou need to predict the resources Azure allocates to the container group and the maximum CPU that `web` can use if spare CPU is available.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The group is allocated 2 vCPUs and 2.5 GB because Azure adds the CPU and memory limits for all containers."
+      },
+      {
+        "id": "B",
+        "text": "The group is allocated 1 vCPU and 2 GB, and `web` can use up to 1 vCPU because no container can exceed the group request."
+      },
+      {
+        "id": "C",
+        "text": "The group is allocated 1 vCPU and 2 GB, and `web` can use up to 1.5 vCPU if the group has available CPU capacity."
+      },
+      {
+        "id": "D",
+        "text": "The deployment is invalid because every container in a group must request at least 1 vCPU and 1 GB of memory."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The deployment is a standard Linux Azure Container Instances container group. GB and vCPU values are treated as the resource request values supplied in the ACI deployment definition.",
+    "sections": {
+      "correctAnswer": "**C. The group is allocated 1 vCPU and 2 GB, and `web` can use up to 1.5 vCPU if the group has available CPU capacity**. Azure Container Instances allocates a multi-container group by adding container resource requests, while an optional per-container limit can allow one container to burst above its request up to the configured limit.",
+      "technical": "In Azure Container Instances, the container group is the scheduling unit. Containers in the same group share a lifecycle, a host, local networking, and the resources allocated to the group. Microsoft documents that ACI allocates CPU, memory, and optional GPU resources to a multi-container group by adding the resource requests of the container instances in that group.\n\nFor this scenario, the request arithmetic is direct:\n\n| Resource | `web` request | `worker` request | Group allocation |\n|---|---:|---:|---:|\n| CPU | 0.75 | 0.25 | 1.0 vCPU |\n| Memory | 1.5 GB | 0.5 GB | 2.0 GB |\n\nResource limits are a second layer. A container's limit must be greater than or equal to its request. If no limit is specified, the container's maximum usage is the same as its request. If a limit is specified, the container can use more than its request, up to that limit, and other containers might receive less of the shared group capacity at that moment. The maximum limit for a container is the total resources allocated to the group.\n\nThe order to reason through an AZ-104 sizing item is: first add requests to find what the group gets, then check optional limits to find what an individual container might consume, then verify service-level minimums and regional availability. ACI requires a minimum of 1 CPU and 1 GB of memory for the group, but individual containers inside the group can be provisioned with less than 1 CPU and 1 GB. A small amount of the allocated group resources is also consumed by ACI infrastructure, so production sizing should include buffer rather than treating the entire allocation as application headroom.",
+      "wrongOptions": {
+        "A": "Limits do not determine the group allocation. They define a possible maximum for a container after the group has been allocated from requests. Misconception: a limit is a reservation. Could be correct when a platform reserves resources from limits, but ACI documents group allocation from requests.",
+        "B": "The group allocation is correct, but the maximum CPU statement is too strict. The `web` container has a 1.5 vCPU limit and can use more than its 0.75 request if capacity is available in the group. Misconception: requests and limits are always identical caps. Could be correct for a container where no limit is configured because then its maximum equals its request.",
+        "D": "The minimum applies to the container group, not to every individual container instance inside it. This group reaches 1 vCPU and 2 GB in total. Misconception: the group minimum must be repeated on every container. Could be correct if the group total were below 1 CPU or below 1 GB of memory."
+      },
+      "plainEnglish": "Think of the two containers as two small processes sharing one rented workspace. Azure rents the workspace by adding up what each process asks to reserve. The web process asks for 0.75 CPU and 1.5 GB of memory. The worker process asks for 0.25 CPU and 0.5 GB. Together they reserve 1 CPU and 2 GB. The web process also has a rule saying it may borrow up to 1.5 CPU when the group has spare capacity. The worker did not receive such a borrowing rule, so its maximum is its request. The key distinction is that a request is the amount used to size the group, while a limit is the ceiling for one container's behavior after the group exists.",
+      "analogy": "A small studio rents desks to two teams. One team reserves three quarters of a desk and the other reserves one quarter, so the studio must provide one full desk. The first team also has permission to spread out to one and a half desks when the extra surface is free, but that permission does not make the studio rent one and a half desks all day.\n\n| Analogy | Azure reality |\n|---|---|\n| Studio room | ACI container group |\n| Teams in the room | Containers in the group |\n| Reserved desk space | Resource requests |\n| Permission to spread out | Resource limits |\n| Adding reservations | Group allocation calculation |\n\n**Where the analogy breaks down:** CPU and memory are scheduled by a cloud platform, not handed out like furniture, and ACI infrastructure uses a small portion of the resources for service overhead.",
+      "jargon": [
+        {
+          "term": "Azure Container Instances",
+          "definition": "A service for running containers directly in Azure without managing virtual machines or a Kubernetes cluster."
+        },
+        {
+          "term": "Container group",
+          "definition": "The top-level ACI resource that schedules one or more containers on the same host with a shared lifecycle, network, storage, and resource allocation."
+        },
+        {
+          "term": "Resource request",
+          "definition": "The CPU or memory amount a container asks Azure to allocate as part of the container group sizing calculation."
+        },
+        {
+          "term": "Resource limit",
+          "definition": "An optional maximum CPU or memory amount a container can use; it must be greater than or equal to the request."
+        },
+        {
+          "term": "vCPU",
+          "definition": "A virtual CPU unit used to express compute capacity for Azure container resources."
+        },
+        {
+          "term": "Linux container",
+          "definition": "A container image and runtime environment based on Linux. ACI multi-container groups currently support Linux containers."
+        },
+        {
+          "term": "YAML",
+          "definition": "A structured text format commonly used to define Azure Container Instances deployments."
+        },
+        {
+          "term": "Infrastructure overhead",
+          "definition": "A small amount of allocated resources consumed by the platform components that run and manage the group."
+        }
+      ],
+      "watchOut": "- Add requests, not limits, to work out the container group's allocation.\n- A container without an explicit limit is capped at its request.\n- The group has a minimum of 1 CPU and 1 GB memory, but a container inside the group can request less.\n- Do not forget the small ACI infrastructure buffer when turning exam math into production sizing.",
+      "productionTip": {
+        "official": "Microsoft documents request summing for ACI container groups, optional per-container limits, the rule that a limit must be at least the request, and a group minimum of 1 CPU and 1 GB memory. It also notes that some group resources are used by underlying infrastructure.",
+        "recommendation": "Begin with measured CPU and memory usage, then set requests from normal load and limits from safe burst behavior. Keep a modest buffer inside the group so a sidecar or worker cannot starve the main process during a traffic spike."
+      },
+      "memoryTrick": "For ACI, remember **requests rent the house; limits police the rooms**. The phrase is a simplification because regional capacity and service overhead can still affect whether the requested house is available.",
+      "examTip": "Look for a table with both requests and limits. If the question asks what Azure allocates to the group, add requests. If it asks what one container can consume, inspect that container's limit and compare it with the group total. A tougher exam version may include three containers and one missing limit; treat the missing limit as equal to that container's request."
+    },
+    "sources": [
+      {
+        "title": "Introduction to container groups - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-container-groups"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.4-02",
+    "objective": "D3.3.4",
+    "type": "multiple",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure Container Instances container group named `cg-render` that runs a stateless image conversion job. The number of jobs in the queue varies throughout the day. A developer proposes to turn on an autoscale setting on the existing container group so that ACI automatically adds replicas of the group when the queue grows.\n\nYou need a supported design that can increase processing capacity.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Azure Container Instances does not provide built-in scaling for containers or container groups."
+      },
+      {
+        "id": "B",
+        "text": "Increase the replica count property on the existing ACI container group to let ACI create more group copies."
+      },
+      {
+        "id": "C",
+        "text": "Configure an HTTP scale rule on the ACI container group with minimum and maximum replicas."
+      },
+      {
+        "id": "D",
+        "text": "Automate creation of additional container groups through the ACI API, or use a service such as Azure Container Apps when autoscale rules are required."
+      },
+      {
+        "id": "E",
+        "text": "Use a container resource limit greater than the request; ACI will create new groups when the limit is exceeded."
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The workload is stateless enough to run in multiple independent container groups or to be moved to Azure Container Apps. The question is about service scaling behavior, not application-level queue locking.",
+    "sections": {
+      "correctAnswer": "**A. Azure Container Instances does not provide built-in scaling for containers or container groups** and **D. Automate creation of additional container groups through the ACI API, or use a service such as Azure Container Apps when autoscale rules are required**. Microsoft states that scaling is not available for ACI containers or container groups, and recommends using the API to automate additional group creation when more instances are needed.",
+      "technical": "ACI is a fast way to run a container group, but the group is not an autoscaling replica set. The Microsoft ACI FAQ asks how to scale a container group and answers that scaling currently is not available for containers or container groups. If you need more instances, you should use the API to automate more container group creation requests to the service. That is horizontal scaling by orchestration outside the existing group, not by changing a replica property on one group.\n\nThis matters because AZ-104 questions often contrast ACI and Azure Container Apps. Container Apps has declarative scale limits and scale rules; ACI does not. Container Apps can create replicas based on HTTP concurrency, TCP connections, CPU, memory, or custom KEDA event sources such as Azure Service Bus. ACI can be part of an automated workflow, but the workflow must create or delete separate groups.\n\nThe design order is: identify whether the service itself has a replica model, choose a scale controller if one is required, and decide how each worker gets work. For ACI, an external scheduler might inspect queue depth and submit additional groups. For Container Apps, the scale definition can live with the app revision. Resource limits in ACI only bound container usage inside a group; they are not triggers for creating another group.",
+      "wrongOptions": {
+        "B": "An ACI container group does not have a supported replica count property that acts like a deployment replica setting. Misconception: every Azure container service exposes Kubernetes-style replicas. Could be correct for services that manage replica sets, such as Container Apps revisions or Kubernetes deployments, but not for an ACI group.",
+        "C": "HTTP scale rules are an Azure Container Apps concept, not an ACI container group setting. Misconception: scale rule terminology transfers unchanged between Azure container services. Could be correct after moving the workload to Azure Container Apps with ingress and an HTTP workload.",
+        "E": "Limits allow a container to use more resources inside an already allocated group if capacity exists. They do not create additional groups. Misconception: hitting a CPU ceiling automatically scales infrastructure. Could be correct as a performance-tuning setting for a single ACI group, not as autoscale."
+      },
+      "plainEnglish": "ACI is like asking Azure to start a specific container group for you. Azure starts that group, but it does not watch your queue and make more copies of the group automatically. If you want more workers with ACI, your automation has to ask Azure to create more container groups. If you want a built-in rule that says, for example, make more replicas when requests or queue messages increase, Azure Container Apps is designed for that style of scaling. The exam distinction is not that ACI cannot run many groups; it can. The distinction is that ACI will not automatically multiply one group based on load.",
+      "analogy": "ACI is like ordering individual food trucks for an event. You can call the company and order five more trucks when the crowd grows, but the first truck does not clone itself. Container Apps is closer to a managed catering contract that watches the line and sends more serving stations based on rules.\n\n| Analogy | Azure reality |\n|---|---|\n| One ordered truck | One ACI container group |\n| Calling for more trucks | API automation that creates more groups |\n| Managed serving rule | Container Apps scale rule |\n| Crowd size | Queue depth, requests, or other workload demand |\n\n**Where the analogy breaks down:** Azure automation is programmable and can be precise, while a food truck company does not expose resource provider APIs or KEDA scalers.",
+      "jargon": [
+        {
+          "term": "Autoscale",
+          "definition": "A platform capability that changes the number of running instances automatically based on metrics or events."
+        },
+        {
+          "term": "Horizontal scaling",
+          "definition": "Increasing capacity by adding more instances, replicas, or container groups rather than making one instance larger."
+        },
+        {
+          "term": "Azure Container Instances",
+          "definition": "An Azure service that runs container groups without requiring you to manage a cluster."
+        },
+        {
+          "term": "Container group",
+          "definition": "The deployable ACI unit that contains one or more containers with a shared lifecycle and host."
+        },
+        {
+          "term": "Azure Container Apps",
+          "definition": "A managed Azure service for containerized applications that supports revisions, replicas, and declarative scaling rules."
+        },
+        {
+          "term": "KEDA",
+          "definition": "Kubernetes Event-driven Autoscaling, the technology used by Container Apps for event-based scaling."
+        },
+        {
+          "term": "API",
+          "definition": "An application programming interface used by automation to create, update, or delete Azure resources."
+        },
+        {
+          "term": "Stateless workload",
+          "definition": "A workload where each instance can process work independently without requiring local persistent session state."
+        }
+      ],
+      "watchOut": "- ACI can run many groups, but the service does not autoscale one group for you.\n- Container Apps scale rules should not be applied mentally to ACI questions.\n- External automation must also handle work distribution, cleanup, quota, and failure retries.\n- Queue-driven work is often a clue that Container Apps or another orchestrator may be a better fit than raw ACI.",
+      "productionTip": {
+        "official": "The ACI FAQ states that scaling is not available for containers or container groups and says to use the API to automate more container group creation requests when more instances are needed. Container Apps documentation separately describes declarative scaling rules and replicas.",
+        "recommendation": "Use ACI for burst jobs when you already have reliable orchestration, naming, cleanup, and quota handling. Choose Container Apps when the operational requirement is rule-based scaling, minimum and maximum replicas, or KEDA event triggers managed with the application."
+      },
+      "memoryTrick": "ACI is **start it**, not **scale it**. That is a memory aid, not a universal criticism, because you can still scale out by creating more ACI groups with your own automation.",
+      "examTip": "When an option says to enable autoscale on an ACI container group, be suspicious. The supported ACI answer is usually external creation of more groups; the built-in rule answer usually belongs to Container Apps. A harder item may ask for least administrative effort, and then Container Apps may win because it owns the scaler."
+    },
+    "sources": [
+      {
+        "title": "Frequently asked questions - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-faq"
+      },
+      {
+        "title": "Scaling in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.4-03",
+    "objective": "D3.3.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure Container Instances container group named `cg-processor`. It is running two containers and was created with 2 vCPUs and 4 GB of memory. Performance tests show that the group now needs 4 vCPUs and 8 GB of memory. The application owner asks you to resize the running group without interrupting either container.\n\nWhat should you tell the application owner?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Update the CPU and memory values on the existing group; ACI applies those resource changes without restarting containers."
+      },
+      {
+        "id": "B",
+        "text": "Run `az container restart`; ACI restarts the processes and automatically doubles the allocated CPU and memory."
+      },
+      {
+        "id": "C",
+        "text": "Delete the container group and create it again with the new CPU and memory values; resource changes are not supported as an in-place update."
+      },
+      {
+        "id": "D",
+        "text": "Change only the CPU limit on one container because ACI derives the group allocation from limits during an update."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The requested change is to the ACI container group CPU and memory resources, not only to an application setting inside the image. The owner wants guaranteed additional allocation, not a best-effort process restart.",
+    "sections": {
+      "correctAnswer": "**C. Delete the container group and create it again with the new CPU and memory values; resource changes are not supported as an in-place update**. Microsoft lists CPU, memory, and GPU resources among the properties that require container group deletion before redeployment.",
+      "technical": "ACI supports updating some properties of a running container group by redeploying an existing group with at least one changed property. Microsoft describes this as issuing the create command or using the portal with the name of an existing group. When a supported property is updated, all running containers in the group are restarted in-place, usually on the same underlying host. That update behavior is useful for properties such as image version, DNS name, or environment variables.\n\nCPU and memory resources are different. The ACI update documentation has a specific list named properties that require container delete, and it includes CPU, memory, or GPU resources. To change those values, you must first delete the container group and then create it again. When you delete and recreate the group, it is a new deployment, image layers are pulled fresh rather than reused from the previous host cache, and the IP address might change.\n\nThe practical sequence is: export or preserve the configuration, change the resource requests, plan downtime or parallel replacement, delete the old group when safe, and create the group with the new resources. If continuity is important, place a stable front end or DNS strategy in front of the workload. Do not promise a no-interruption vertical resize for ACI because the documented service behavior does not support that for CPU and memory.",
+      "wrongOptions": {
+        "A": "ACI can update certain properties, but CPU and memory are explicitly listed as requiring deletion before redeployment. Misconception: every property accepted by the create command can be changed in place. Could be correct for a supported update property such as a DNS name label, with the caveat that containers restart.",
+        "B": "Restarting a container group restarts processes; it does not change the resource allocation. Misconception: restart means resize. Could be correct when the application merely needs to reload code or recover from a transient crash without changing CPU or memory.",
+        "D": "Group allocation is based on requests, and changing resources is the unsupported in-place property. Raising one container's limit is not a supported way to resize the group allocation. Misconception: limits can secretly expand the group. Could be correct when setting an allowed burst ceiling during a new deployment that already has enough group resources."
+      },
+      "plainEnglish": "The owner is asking for the container equivalent of making a running machine bigger without disturbing anything. ACI does not support that for CPU and memory. Some settings can be changed by redeploying the existing group, but those changes restart all containers. Resource size changes are stricter: delete the group and create a new one with the larger numbers. If the app cannot tolerate downtime, you need a replacement plan, such as creating a new group under a new name, shifting traffic, and then removing the old group. The key exam idea is that ACI is simple and fast, but it is not a live vertical-resize platform.",
+      "analogy": "A food stand was built with two counters and now needs four. You can repaint the sign while the stand is briefly closed, but you cannot magically widen the physical stand while customers keep ordering. To get the bigger stand, you build a replacement and move traffic to it.\n\n| Analogy | Azure reality |\n|---|---|\n| Current food stand | Existing ACI container group |\n| Number of counters | CPU and memory allocation |\n| Repainting the sign | Supported property update |\n| Building a larger stand | Delete and recreate with new resources |\n| Moving customers | Planned traffic cutover or DNS update |\n\n**Where the analogy breaks down:** Azure resource creation can be automated, and the exact cutover pattern depends on networking, naming, image pull time, and application readiness checks.",
+      "jargon": [
+        {
+          "term": "Vertical scaling",
+          "definition": "Increasing the size of a single instance by adding CPU or memory rather than adding more instances."
+        },
+        {
+          "term": "Redeploy",
+          "definition": "Submitting a deployment for an existing resource name, either to update supported properties or to create a replacement after deletion."
+        },
+        {
+          "term": "In-place update",
+          "definition": "A change applied to an existing resource without deleting and recreating it as a new resource."
+        },
+        {
+          "term": "Container group",
+          "definition": "The ACI resource containing one or more containers that share host placement, lifecycle, network, and resources."
+        },
+        {
+          "term": "Resource request",
+          "definition": "The CPU and memory values used to size a container or group deployment."
+        },
+        {
+          "term": "DNS name label",
+          "definition": "A configurable label that can provide a stable fully qualified domain name for an ACI group endpoint."
+        },
+        {
+          "term": "Image layer cache",
+          "definition": "Previously pulled container image layers that can make certain redeployments faster when they remain on the same underlying host."
+        },
+        {
+          "term": "IP address",
+          "definition": "The network address assigned to a container group; ACI documentation notes it is not guaranteed to stay the same across updates and can change after new deployment."
+        }
+      ],
+      "watchOut": "- Supported ACI updates restart all containers in the group; they are not zero-downtime container-by-container changes.\n- CPU, memory, GPU resources, restart policy, OS type, network profile, and availability zone require delete and recreate.\n- If you omit properties during an update, they can revert to defaults.\n- A terminated or deleted group cannot be updated; it must be deployed as new.",
+      "productionTip": {
+        "official": "Microsoft states that all containers in a group are restarted when an updatable property changes and that CPU, memory, or GPU resource changes require container group deletion before redeployment. The documentation also warns that the IP address is usually retained for updates but is not guaranteed.",
+        "recommendation": "Treat an ACI resource-size change as a replacement event. Keep deployment configuration in YAML or ARM/Bicep, use DNS rather than hard-coded IP addresses, and run a parallel group for validation when the workload needs a controlled cutover."
+      },
+      "memoryTrick": "For ACI, **settings may restart; size must replace**. This shortcut works for CPU and memory questions, but always check the documented update list for the exact property being changed.",
+      "examTip": "The clue is the request to resize CPU and memory on a running ACI group without interruption. Rule out any option promising live resource mutation. A more advanced version may mix an image tag change and a memory change; the memory change controls the answer because it forces delete and recreate."
+    },
+    "sources": [
+      {
+        "title": "Update container group - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-update"
+      },
+      {
+        "title": "Introduction to container groups - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-container-groups"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.4-04",
+    "objective": "D3.3.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A research team at Fabrikam wants to run a new GPU-accelerated container workload in Azure. An engineer suggests deploying an Azure Container Instances GPU container group with a V100 GPU because an old runbook contains ACI GPU examples. You must choose a current supported direction for October 2026 and avoid retired features.\n\nWhat should you recommend?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Deploy the workload as an ACI GPU container group because ACI GPU support is generally available in every Azure region."
+      },
+      {
+        "id": "B",
+        "text": "Do not design a new ACI GPU deployment; ACI GPU resources are documented as retired, so evaluate Azure Container Apps GPU workload profiles or another current compute service."
+      },
+      {
+        "id": "C",
+        "text": "Use ACI Spot containers with a V100 GPU because Spot removes the retirement limitation."
+      },
+      {
+        "id": "D",
+        "text": "Use confidential containers on ACI with GPU resources because confidential computing re-enables GPU support."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud in October 2026. The team is planning a new production design rather than maintaining a legacy deployment during an earlier preview period. The recommendation may include Container Apps only as a current service to evaluate, not as an unconditional fit for every GPU workload.",
+    "sections": {
+      "correctAnswer": "**B. Do not design a new ACI GPU deployment; ACI GPU resources are documented as retired, so evaluate Azure Container Apps GPU workload profiles or another current compute service**. Microsoft Learn marks the ACI GPU feature as retired as of July 14, 2025, while Container Apps documentation describes GPU-capable workload profiles with region and capacity caveats.",
+      "technical": "This question tests current feature status, not YAML syntax. The ACI GPU article and the ACI resource limits page both include an important statement that the ACI GPU product is retired as of July 14, 2025. Older examples might still show `gpu` resources with V100 count values, but the retirement notice means those examples are not a valid basis for a new October 2026 design.\n\nAzure Container Apps has a different workload profile model. Its workload profile overview describes Consumption, Dedicated, and Flexible profile types. It lists Consumption GPU profiles in selected regions and Dedicated GPU profiles such as NC24-A100, NC48-A100, and NC96-A100 in selected regions. The same page warns that GPU-enabled Dedicated profiles must be configured when creating an environment, and the quotas page says GPU quota may be a managed-environment or subscription-region quota depending on the profile. Dedicated GPU capacity can require a support ticket.\n\nThe selection order is: first exclude retired features, then check whether a current service supports the needed accelerator, then verify region availability, quota, environment creation requirements, image compatibility, and cost. It would be unsafe to promise that Container Apps is always the final answer, because VM-based, AKS, Azure Machine Learning, or Batch designs may be better for some GPU jobs. But it is safe to reject new ACI GPU design because the official ACI page says the product is retired.",
+      "wrongOptions": {
+        "A": "The official ACI GPU documentation says the product is retired, and even the old preview content listed region and Linux-only limitations rather than general availability in every region. Misconception: examples in an old runbook imply current support. Could be correct only for a historical question set before retirement, not for October 2026.",
+        "C": "ACI Spot containers are separate interruptible-capacity containers and do not restore a retired ACI GPU feature. The resource limits page also lists Spot limitations separately from retired GPU resources. Misconception: a cheaper or preview hosting mode bypasses feature retirement. Could be correct for non-GPU interruptible workloads that fit Spot support and regional limits.",
+        "D": "Confidential containers are documented separately, and the FAQ states GPU-based ACI deployments are not supported with confidential containers. Misconception: confidential computing is a superset of standard ACI. Could be correct for sensitive CPU-only workloads that fit confidential container requirements."
+      },
+      "plainEnglish": "The old runbook is tempting because it has commands and examples, but the official status has changed. ACI GPU was a preview-style feature and is now documented as retired. For a new design, you should not build on it. Instead, pick a currently supported GPU hosting option and then check the fine print. Azure Container Apps has GPU workload profile options, but they are not automatically available everywhere. You still need the right region, quota, environment configuration, and capacity. The exam lesson is to notice retirement and regional caveats before memorizing a command sample.",
+      "analogy": "A lab has an old manual for a microscope model that the manufacturer stopped supporting. The manual still explains how the knobs worked, but buying that model for a new project would be a mistake. You should select a supported microscope line and verify that the local lab can order the needed lens.\n\n| Analogy | Azure reality |\n|---|---|\n| Old microscope manual | Legacy ACI GPU examples |\n| Discontinued model | Retired ACI GPU product |\n| Supported microscope line | Current GPU-capable compute service |\n| Local lens availability | Region, quota, and capacity checks |\n\n**Where the analogy breaks down:** Cloud services can have complex migration paths, preview histories, and quota systems, while a physical product catalog is simpler.",
+      "jargon": [
+        {
+          "term": "GPU",
+          "definition": "Graphics processing unit, specialized hardware often used for parallel compute, machine learning, rendering, or CUDA workloads."
+        },
+        {
+          "term": "V100",
+          "definition": "An NVIDIA Tesla GPU generation formerly referenced by ACI GPU preview examples."
+        },
+        {
+          "term": "Retired feature",
+          "definition": "A product capability Microsoft documents as no longer available for new supported use after a stated retirement date."
+        },
+        {
+          "term": "Workload profile",
+          "definition": "An Azure Container Apps environment profile that defines the type and amount of compute and memory available to apps."
+        },
+        {
+          "term": "Consumption GPU profile",
+          "definition": "A Container Apps serverless GPU profile available only in supported regions and billed per replica usage."
+        },
+        {
+          "term": "Dedicated GPU profile",
+          "definition": "A Container Apps workload profile using dedicated GPU-enabled compute capacity, available in select regions with capacity planning requirements."
+        },
+        {
+          "term": "Quota",
+          "definition": "A service limit that controls how many resources, cores, environments, or GPUs a subscription or environment can use."
+        },
+        {
+          "term": "Confidential containers",
+          "definition": "ACI containers using hardware-backed trusted execution features for data protection, with their own support limitations."
+        }
+      ],
+      "watchOut": "- Do not use old ACI GPU syntax as evidence of current support.\n- A retired feature is not saved by Spot containers, confidential containers, or a larger quota request.\n- Container Apps GPU options have region, capacity, quota, and environment-creation details to verify.\n- For exam questions dated after July 2025, ACI GPU should trigger a retirement check.",
+      "productionTip": {
+        "official": "Microsoft Learn marks ACI GPU resources as retired as of July 14, 2025. Container Apps workload profile documentation lists GPU profile types and regions, and the quota documentation describes separate GPU quota categories and request paths.",
+        "recommendation": "For new GPU container workloads, shortlist only currently supported services, then validate the target region, capacity request process, image requirements, and cost model before committing architecture. Keep old ACI GPU runbooks as migration evidence, not as deployment guidance."
+      },
+      "memoryTrick": "For post-2025 questions, remember **ACI GPU is gone; check current GPU homes**. It is a date-sensitive simplification, so always trust the current Microsoft Learn retirement notice over memory.",
+      "examTip": "The clue words are **old runbook**, **new workload**, and **October 2026**. Any answer that treats ACI GPU as generally available is wrong. A harder version may ask which Container Apps profile to use; then you must inspect whether the workload needs Consumption GPU burst capacity or Dedicated GPU nodes."
+    },
+    "sources": [
+      {
+        "title": "Deploy GPU-Enabled Container Instance - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-gpu"
+      },
+      {
+        "title": "Resource availability and quota limits for Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-resource-and-quota-limits"
+      },
+      {
+        "title": "Workload profiles in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/workload-profiles-overview"
+      },
+      {
+        "title": "Quotas for Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/quotas"
+      },
+      {
+        "title": "Frequently asked questions - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-faq"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.4-05",
+    "objective": "D3.3.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You deploy an Azure Container Apps app named `portal-api` with external HTTP ingress enabled. You do not configure any custom scale rule and you leave the replica settings at their defaults. A support engineer asks what scaling behavior should be expected before any custom rule is added.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The app uses the default HTTP scale rule with 0 minimum replicas and 10 maximum replicas; the default HTTP concurrency threshold is 10."
+      },
+      {
+        "id": "B",
+        "text": "The app always keeps one replica running because HTTP ingress disables scale-to-zero by default."
+      },
+      {
+        "id": "C",
+        "text": "The app uses a CPU scale rule by default and scales out when average CPU exceeds 80 percent."
+      },
+      {
+        "id": "D",
+        "text": "The app cannot scale at all until you add a custom KEDA rule manually."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The app is a regular Azure Container Apps app with HTTP ingress enabled and is not a Functions on Container Apps app with generated function-trigger rules. No explicit minReplicas, maxReplicas, or scale rule has been set.",
+    "sections": {
+      "correctAnswer": "**A. The app uses the default HTTP scale rule with 0 minimum replicas and 10 maximum replicas; the default HTTP concurrency threshold is 10**. Microsoft documents a default scale rule for Container Apps when no scale rule is created, and the HTTP rule table lists 10 as the default concurrent request threshold.",
+      "technical": "Azure Container Apps scaling is defined by limits, rules, and behavior. Limits set the minimum and maximum number of replicas per revision. The documented default minimum is 0 and the documented default maximum is 10. A minimum of 0 allows the app to scale to zero, which means you do not incur usage charges while no replica is running. If you need a revision always ready, set the minimum replicas to 1 or higher.\n\nRules decide when to add or remove replicas. Container Apps supports HTTP, TCP, and custom scale rules. When no scale rule is created, Microsoft documents a default scale rule with trigger HTTP, min replicas 0, and max replicas 10. In the HTTP scale rule table, `concurrentRequests` has a default value of 10 and a minimum value of 1. The platform calculates concurrent HTTP requests every 15 seconds as requests in the past 15 seconds divided by 15.\n\nThe order is: first apply replica limits, then evaluate a rule, then use scale behavior over time. The scale behavior section documents a 30-second polling interval for event sources, a 300-second cool down period, scale-up steps, scale-down windows, and the desired replica formula for metric-driven rules. HTTP and TCP have their own request or connection calculations. A special warning applies if ingress is disabled: without ingress, min replicas, or a custom rule, the app can scale to zero and have no way to start back up. That warning does not change this HTTP ingress default scenario.",
+      "wrongOptions": {
+        "B": "HTTP ingress does not force one always-running replica by default. The documented minimum default is 0, and Microsoft says to set the minimum to 1 or higher if you want an instance always running. Misconception: public reachability implies a warm instance. Could be correct after you explicitly configure `minReplicas` to 1.",
+        "C": "The default rule for an app with no scale rule is documented as HTTP, not CPU. CPU can be used in a custom rule category, but it is not the stated default. Misconception: compute services always autoscale first on CPU percentage. Could be correct for a deliberately configured CPU-based custom scale rule.",
+        "D": "Container Apps can apply a default HTTP scale rule when no rule is configured. Misconception: KEDA must always be manually configured before any Container Apps scaling occurs. Could be correct for a workload with ingress disabled and no min replicas or custom scale rule, because it may scale to zero with no trigger to wake it."
+      },
+      "plainEnglish": "If you publish a normal Container Apps web application and do not touch scaling, Azure still gives it a basic web scaling setup. It may go down to zero replicas when idle, it may scale up as HTTP requests arrive, and by default it is limited to ten replicas. The default request threshold is ten concurrent HTTP requests. If the business wants no cold wait for the first request, you must choose that intentionally by setting the minimum replica count to one or more. If the app is not an HTTP app, the default behavior can be dangerous because there may be no event that wakes it up.",
+      "analogy": "A help desk opens extra windows when the line of web visitors grows. By default, the office may close all windows when nobody is waiting, and it can open up to ten windows. If management wants one clerk always present, they must schedule that clerk explicitly.\n\n| Analogy | Azure reality |\n|---|---|\n| Help desk windows | Container Apps replicas |\n| Visitor line | Concurrent HTTP requests |\n| Closed office when empty | Scale to zero with min replicas 0 |\n| Ten-window cap | Default max replicas 10 |\n| Scheduled clerk | Minimum replicas set to 1 or more |\n\n**Where the analogy breaks down:** A web request can be routed through platform components even when replicas scale from zero, and the real scaling behavior includes stabilization windows and revision-specific rules.",
+      "jargon": [
+        {
+          "term": "Azure Container Apps",
+          "definition": "A managed service for running containerized applications with revisions, replicas, ingress, and autoscaling."
+        },
+        {
+          "term": "Replica",
+          "definition": "A running instance of a Container Apps revision that can receive traffic or process events."
+        },
+        {
+          "term": "Revision",
+          "definition": "An immutable snapshot of a container app configuration. Some changes, including scaling rule changes, create a new revision."
+        },
+        {
+          "term": "HTTP ingress",
+          "definition": "Container Apps configuration that allows HTTP traffic to reach the app through an internal or external endpoint."
+        },
+        {
+          "term": "Scale rule",
+          "definition": "A declarative trigger that tells Container Apps when to add or remove replicas."
+        },
+        {
+          "term": "Concurrent requests",
+          "definition": "The number of HTTP requests being processed at the same time, measured by Container Apps over a documented interval for scaling."
+        },
+        {
+          "term": "Scale to zero",
+          "definition": "A behavior where the minimum replica count is 0, allowing no running app replicas while idle."
+        },
+        {
+          "term": "KEDA",
+          "definition": "Kubernetes Event-driven Autoscaling, the scaling technology used by Azure Container Apps."
+        }
+      ],
+      "watchOut": "- Default min replicas is 0, so do not assume a web app always has a warm replica.\n- Default max replicas is 10 unless configured otherwise.\n- The HTTP concurrent request default is 10, but you can set a different threshold.\n- If ingress is disabled and no rule or minimum replica is set, an app that scales to zero may have no trigger to restart.",
+      "productionTip": {
+        "official": "Microsoft documents default Container Apps scale limits of minimum 0 and maximum 10 replicas, a default HTTP scale rule when none is configured, and 10 as the default HTTP concurrent request threshold. It also states that setting minimum replicas to 1 or higher keeps an instance running.",
+        "recommendation": "For customer-facing APIs, decide deliberately between cost-saving scale-to-zero and latency-sensitive warm capacity. Set min replicas to at least 1 for endpoints where first-request delay is unacceptable, and define a tested maximum that respects downstream dependencies."
+      },
+      "memoryTrick": "Default web scaling is **0 to 10 with 10 requests**. This mnemonic is only for ordinary HTTP Container Apps with no custom settings; non-HTTP workloads need their own wake-up rule or minimum replica.",
+      "examTip": "Clue words are **HTTP ingress**, **no custom scale rule**, and **defaults**. Pick the answer with HTTP, min 0, max 10, and concurrency 10. A harder version may disable ingress; then the warning about no trigger after scale-to-zero becomes the key detail."
+    },
+    "sources": [
+      {
+        "title": "Scaling in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.4-06",
+    "objective": "D3.3.4",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You have an Azure Container Apps app named `queue-worker` that processes messages from an Azure Service Bus queue. The security team wants to avoid storing a Service Bus connection string if possible. The operations team wants the app to scale out when the queue contains messages and scale back to zero when the queue is empty. You plan to configure the rule by using Azure CLI or an ARM/Bicep template.\n\nWhich two configuration choices should you make? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a custom scale rule that uses the KEDA `azure-servicebus` scaler metadata, including the queue and namespace details."
+      },
+      {
+        "id": "B",
+        "text": "Configure an HTTP scale rule because Service Bus queues are treated as HTTP concurrency by Container Apps."
+      },
+      {
+        "id": "C",
+        "text": "Put the Service Bus connection string in the container image so KEDA can read it during startup."
+      },
+      {
+        "id": "D",
+        "text": "Use a managed identity for scale-rule authentication when supported, and grant that identity the required Service Bus permissions."
+      },
+      {
+        "id": "E",
+        "text": "Set minimum replicas to 1 because Container Apps custom scale rules cannot scale to zero."
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The selected Azure Service Bus scaler supports Microsoft Entra authentication for the required queue operation, and the team can assign appropriate Azure RBAC permissions to the managed identity. The app is not a Container Apps job.",
+    "sections": {
+      "correctAnswer": "**A. Create a custom scale rule that uses the KEDA `azure-servicebus` scaler metadata, including the queue and namespace details** and **D. Use a managed identity for scale-rule authentication when supported, and grant that identity the required Service Bus permissions**. Container Apps custom scale rules map KEDA scaler type and metadata into the app, and Microsoft documents managed identity support for scale rules that target Azure resources including Azure Service Bus.",
+      "technical": "Container Apps uses KEDA for autoscaling. For queue-driven scaling, the HTTP and TCP rule types are the wrong shape because the trigger is not a request arriving at the app endpoint. Microsoft documents custom Container Apps scale rules based on KEDA ScaledObject scalers and shows an Azure Service Bus scaler converted into a Container Apps rule. The rule type is `azure-servicebus`, and the metadata includes values such as `queueName`, `namespace`, and `messageCount`.\n\nAuthentication is separate from the metric metadata. Scale rules can use secrets-based authentication, where a Container Apps secret is referenced in the rule's `auth` array or by CLI `--scale-rule-auth`. The scale-rule page also states that scale rules for Azure resources, including Azure Queue Storage, Azure Service Bus, and Azure Event Hubs, support managed identity. The documented guidance says to use managed identity where possible to avoid storing secrets within the app. CLI examples use `--scale-rule-identity` with a user-assigned identity for a queue scaler; ARM and Bicep examples use an `identity` property such as `system`.\n\nFor the requested scale behavior, configure `minReplicas` as 0 and an appropriate `maxReplicas`. Custom KEDA rules have a default polling interval of 30 seconds and a cool down period of 300 seconds. Container Apps can scale to zero, and no usage charges are incurred while the app has zero replicas. For non-HTTP event scale rules, Microsoft notes to set active revisions mode to `single`, because multiple active revisions can complicate event consumption.",
+      "wrongOptions": {
+        "B": "Service Bus queue length is an event-source metric exposed through a custom KEDA scaler, not HTTP request concurrency. Misconception: every Container Apps scaler is ultimately HTTP. Could be correct for a web API where incoming HTTP requests are the scaling signal.",
+        "C": "Baking a connection string into an image is not how Container Apps scale-rule authentication should be handled and creates secret-management risk. Misconception: KEDA must read credentials from the application image. Could be correct never as a recommended production pattern; a secret reference or managed identity is the supported direction.",
+        "E": "Custom scale rules can scale to zero when the minimum replica count is 0. Misconception: only HTTP apps can scale to zero. Could be correct when the application must remain warm or when another feature requires a running replica, but not for the stated queue-empty goal."
+      },
+      "plainEnglish": "The worker is not scaled by visitors clicking a website. It is scaled by messages waiting in a queue. Container Apps handles that by using a custom KEDA rule that knows how to look at Service Bus. The rule says which queue to inspect and how many messages should cause more replicas. The rule also needs permission to read queue length. Instead of hiding a password-like connection string in the app or image, you can use an Azure managed identity and grant that identity the right access to Service Bus. With minimum replicas set to zero, the worker can disappear when the queue is empty and come back when messages arrive.",
+      "analogy": "A warehouse hires packers based on how many parcels sit on the loading dock. A supervisor checks the dock every so often and calls in more packers when the stack grows. The supervisor uses an employee badge to enter the dock area instead of carrying a copied master key.\n\n| Analogy | Azure reality |\n|---|---|\n| Loading dock parcels | Service Bus queue messages |\n| Supervisor's counting rule | KEDA custom scale rule |\n| Employee badge | Managed identity |\n| Copied master key | Connection string stored as a secret |\n| Packers called in | Container Apps replicas |\n\n**Where the analogy breaks down:** Real KEDA scalers use metadata, polling intervals, authentication parameters, and Azure RBAC permissions rather than human counting.",
+      "jargon": [
+        {
+          "term": "Azure Service Bus",
+          "definition": "An Azure messaging service that provides queues and topics for decoupled application communication."
+        },
+        {
+          "term": "KEDA scaler",
+          "definition": "A trigger definition used by Kubernetes Event-driven Autoscaling to calculate desired replicas from an event source or metric."
+        },
+        {
+          "term": "Custom scale rule",
+          "definition": "A Container Apps scale rule based on a KEDA ScaledObject scaler rather than the built-in HTTP or TCP rule types."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "A Microsoft Entra identity automatically managed by Azure and assignable to an app so it can access Azure resources without stored credentials."
+        },
+        {
+          "term": "System-assigned identity",
+          "definition": "A managed identity tied to one Azure resource and deleted with that resource."
+        },
+        {
+          "term": "User-assigned identity",
+          "definition": "A standalone managed identity resource that can be assigned to one or more Azure resources."
+        },
+        {
+          "term": "Secret",
+          "definition": "A protected Container Apps value that can hold sensitive data and be referenced by an app or scale rule."
+        },
+        {
+          "term": "Minimum replicas",
+          "definition": "The lowest number of replicas a Container Apps revision is allowed to run, including zero when scale-to-zero is desired."
+        },
+        {
+          "term": "Active revisions mode",
+          "definition": "A Container Apps setting that controls whether one or multiple revisions can actively receive traffic or process work."
+        }
+      ],
+      "watchOut": "- Queue length belongs to a custom KEDA scaler, not an HTTP rule.\n- Scale metadata identifies the queue and threshold; authentication proves the scaler may read the source.\n- Managed identity avoids storing a connection string, but it still needs correct Service Bus permissions.\n- For non-HTTP event rules, review active revision mode so two revisions do not both compete for queue work unexpectedly.",
+      "productionTip": {
+        "official": "Microsoft documents custom Container Apps scale rules based on KEDA scalers, shows an Azure Service Bus scaler with `queueName`, `namespace`, and `messageCount` metadata, and states that Azure resource scale rules including Service Bus support managed identity authentication as well as secrets.",
+        "recommendation": "Prefer managed identity for Azure queue and event-source scalers, then assign only the permissions required to inspect and process the queue. Keep max replicas aligned with Service Bus throughput, downstream database capacity, and message lock duration so scale-out does not create avoidable retries."
+      },
+      "memoryTrick": "For queues, remember **metric first, identity second**: define what to count, then define how the scaler is allowed to count it. This is a simplification because production designs also need max replicas, revision mode, and poison-message handling.",
+      "examTip": "Clue words are **Service Bus queue**, **avoid connection string**, and **scale to zero**. Select custom KEDA scaler plus managed identity. A harder version may include an Azure portal-only requirement; the scale documentation notes managed identity authentication for scale rules is not configured in the portal, so CLI or ARM/Bicep becomes important."
+    },
+    "sources": [
+      {
+        "title": "Scaling in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/scale-app"
+      },
+      {
+        "title": "Manage secrets in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/manage-secrets"
+      },
+      {
+        "title": "Managed identities in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/managed-identity"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.4-07",
+    "objective": "D3.3.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You manage an Azure Container Apps environment. An app named `analytics-web` currently runs on the Consumption plan and contains a main container plus a sidecar. You need to choose a valid CPU and memory sizing approach. The team also asks what to do if a future version requires substantially more memory than the Consumption combinations allow.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "In the Consumption plan, the total CPU and memory across all containers in the app must match an allowed combination, such as 0.75 vCPU with 1.5 Gi memory; larger needs can require an appropriate Dedicated workload profile."
+      },
+      {
+        "id": "B",
+        "text": "Each container in a Consumption app independently gets up to 4 vCPU and 8 Gi memory, so a sidecar does not affect the main container's allowed sizing."
+      },
+      {
+        "id": "C",
+        "text": "Any CPU and memory pair is valid in Consumption as long as memory is at least twice the CPU number."
+      },
+      {
+        "id": "D",
+        "text": "Dedicated workload profiles are only for GPU workloads, so memory-heavy non-GPU apps must remain on Consumption."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The question concerns Azure Container Apps app container resource sizing, not ACI resource requests. The environment can be planned or recreated with workload profiles if the future workload needs them.",
+    "sections": {
+      "correctAnswer": "**A. In the Consumption plan, the total CPU and memory across all containers in the app must match an allowed combination, such as 0.75 vCPU with 1.5 Gi memory; larger needs can require an appropriate Dedicated workload profile**. Microsoft documents exact Consumption CPU and memory combinations and says the total allocated to all containers in a container app must add up to one of them.",
+      "technical": "Azure Container Apps container resources are configured in the app template through `resources.cpu` and `resources.memory`. The important Consumption rule is total-based: when using the Consumption plan, the total CPU and memory allocated to all containers in a container app must add up to one of the documented combinations. The table includes pairs such as 0.25 vCPU with 0.5 Gi, 0.5 with 1.0 Gi, 0.75 with 1.5 Gi, and continues in 0.25 vCPU and 0.5 Gi steps up to 4.0 vCPU and 8.0 Gi. Microsoft also notes that apps using the Consumption plan in a Consumption-only environment are limited to a maximum of 2 cores and 4 Gi of memory.\n\nSidecars count because the rule applies to all containers in the app. For example, a main container at 0.5 vCPU and 1.0 Gi plus a sidecar at 0.25 vCPU and 0.5 Gi totals 0.75 vCPU and 1.5 Gi, which is an allowed Consumption combination. A main container at 0.5 vCPU and 1.5 Gi plus a sidecar at 0.25 vCPU and 0.5 Gi totals 0.75 vCPU and 2.0 Gi, which is not one of the documented pairs.\n\nWorkload profiles change the capacity model. The workload profile overview describes Consumption, Dedicated, and Flexible profiles. Dedicated profiles run on reserved compute in a dedicated pool and include general purpose D-series and memory-optimized E-series profile families. Those profiles are used for larger CPU or memory needs, steady workloads, isolation, or specialized hardware. Quotas still apply at the environment and subscription level, so sizing is not only a JSON exercise.",
+      "wrongOptions": {
+        "B": "The Consumption sizing rule applies to the total across all containers in the app, so sidecars consume part of the allowed combination. Misconception: every container receives the full app-sized envelope independently. Could be correct only when describing separate container apps, each with its own resource configuration.",
+        "C": "The documented Consumption table contains specific pairs, not a free-form ratio rule. Misconception: the visible 1:2 vCPU-to-Gi pattern means any matching ratio is accepted. Could be correct for listed pairs such as 1 vCPU and 2 Gi, but not for arbitrary intermediate values.",
+        "D": "Dedicated workload profiles include general purpose and memory-optimized options, not only GPU profiles. Misconception: Dedicated means accelerator hardware. Could be correct only if the requirement specifically demanded a Dedicated GPU profile."
+      },
+      "plainEnglish": "In Container Apps Consumption, you do not pick any random CPU and memory numbers. Azure has a menu of valid combinations. The whole app order must match the menu, including sidecars. If the main container and the sidecar together add up to 0.75 CPU and 1.5 Gi of memory, that is on the menu. If they add up to a pair that is not listed, the deployment is not the right shape. If the application grows beyond what Consumption is meant to provide, you look at workload profiles, especially Dedicated general purpose or memory-optimized profiles, and you check quota and cost before moving.",
+      "analogy": "A restaurant offers fixed lunch boxes. You can split a lunch box between a main dish and a side dish, but the final tray must match one of the menu sizes. If the meal gets too large for the lunch-box menu, you book a catered table with larger serving options.\n\n| Analogy | Azure reality |\n|---|---|\n| Fixed lunch-box menu | Consumption CPU and memory combinations |\n| Main dish | Main app container |\n| Side dish | Sidecar container |\n| Total tray size | Sum of all container resources |\n| Catered table | Dedicated workload profile |\n\n**Where the analogy breaks down:** Azure also has quota, replica count, workload profile nodes, and scale behavior; a restaurant menu does not autoscale or reserve compute capacity.",
+      "jargon": [
+        {
+          "term": "Azure Container Apps Consumption plan",
+          "definition": "A serverless Container Apps compute option where apps scale on demand and use documented per-replica CPU and memory combinations."
+        },
+        {
+          "term": "Sidecar",
+          "definition": "An additional container in the same app replica that supports the main container, commonly used for logging, proxying, or helper tasks."
+        },
+        {
+          "term": "Gi",
+          "definition": "Gibibyte, a binary memory unit used in Container Apps resource settings such as `0.5Gi` or `8.0Gi`."
+        },
+        {
+          "term": "Workload profile",
+          "definition": "A Container Apps environment compute profile that determines available CPU, memory, scaling model, isolation, and billing behavior."
+        },
+        {
+          "term": "Dedicated profile",
+          "definition": "A workload profile type that runs on reserved compute resources in a dedicated pool, billed per profile instance."
+        },
+        {
+          "term": "Memory optimized",
+          "definition": "A workload profile classification designed for apps needing more memory relative to CPU, such as in-memory processing or models."
+        },
+        {
+          "term": "Replica",
+          "definition": "A running instance of a Container Apps revision; resource settings apply to each replica."
+        },
+        {
+          "term": "Quota",
+          "definition": "A resource limit at subscription, region, or environment scope that can constrain cores, GPUs, environments, or profile capacity."
+        }
+      ],
+      "watchOut": "- In Consumption, add the main container and sidecar resources before comparing with the allowed table.\n- Do not infer unsupported values from the ratio pattern; use documented combinations.\n- Consumption-only environments have a lower maximum than workload-profile Consumption environments.\n- Dedicated does not mean GPU-only; general purpose and memory-optimized dedicated profiles are documented options.",
+      "productionTip": {
+        "official": "Microsoft documents the Consumption plan CPU and memory combination table and states the total allocated to all containers in an app must add up to one listed combination. The workload profile documentation describes Dedicated general purpose and memory-optimized profiles for larger CPU or memory needs.",
+        "recommendation": "Keep sidecars small and measured, then choose the smallest valid combination that leaves safe headroom. For memory-heavy production apps, test on the target workload profile and monitor environment quotas before traffic migration, because replica count multiplied by per-replica size drives capacity usage."
+      },
+      "memoryTrick": "Consumption sizing is **the whole tray, not each item**. The trick is safe for sidecar math, but it does not replace checking the current Microsoft table or environment-specific maxima.",
+      "examTip": "Clue words are **Consumption plan**, **main container plus sidecar**, and **valid CPU and memory**. Add the containers first, then match a listed pair. A harder question may include a Consumption-only environment; remember the documented note that those apps are limited to 2 cores and 4 Gi."
+    },
+    "sources": [
+      {
+        "title": "Containers in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/containers"
+      },
+      {
+        "title": "Workload profiles in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/workload-profiles-overview"
+      },
+      {
+        "title": "Quotas for Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/quotas"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

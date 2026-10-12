@@ -1,0 +1,707 @@
+[
+  {
+    "id": "D3.2.3-01",
+    "objective": "D3.2.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains a resource group named `RG-App-Prod` in the Australia East region. The resource group contains a virtual machine named `vm-payroll`, its managed disks, a network interface, a public IP address, and a network security group. The finance team asks you to reorganize billing by moving the resources to a new resource group named `RG-Finance-Prod` in the same subscription. The team also has scripts that call the VM by its full Azure resource ID, and a custom role assignment that was applied directly at the VM scope.\n\nWhich two statements are true after the move completes? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "The VM's Azure region remains Australia East, but the resource ID changes because the resource group segment changes."
+      },
+      {
+        "id": "B",
+        "text": "The VM is redeployed into the region of `RG-Finance-Prod`, because a resource group move is also a region move."
+      },
+      {
+        "id": "C",
+        "text": "The scripts that store the old resource ID should be updated, and the direct VM role assignment should be recreated if it is still needed."
+      },
+      {
+        "id": "D",
+        "text": "The old resource ID remains as an alias, so scripts and dashboards can continue to use it without changes."
+      },
+      {
+        "id": "E",
+        "text": "The direct VM role assignment moves with the VM because Azure RBAC assignments are child resources of the VM."
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The move is between resource groups in the same subscription, not a move across Azure regions. The role assignment is scoped directly to the VM or one of its child resources, not inherited from the subscription or destination resource group.",
+    "sections": {
+      "correctAnswer": "**A. The VM's Azure region remains Australia East, but the resource ID changes because the resource group segment changes** and **C. The scripts that store the old resource ID should be updated, and the direct VM role assignment should be recreated if it is still needed**. A resource group or subscription move changes management scope, not the physical location of the VM, and Microsoft documents that role assignments at the moved resource scope do not move with the resource.",
+      "technical": "Moving a VM between resource groups with Azure Resource Manager is a control-plane move. The resource is associated with a different resource group, and its Azure resource ID changes because a resource ID includes the subscription ID, resource group name, provider namespace, resource type, and resource name.\n\nFor this scenario, the important sequence is:\n\n1. Azure validates that the VM and required dependent resources can be moved.\n2. The move changes the resource group's place in the resource ID path from `RG-App-Prod` to `RG-Finance-Prod`.\n3. The VM remains in its existing physical region. A resource group move does not copy or recreate the VM in another Azure datacenter.\n4. Anything that stored the exact old resource ID must be reviewed. Microsoft specifically calls out scripts, templates, and custom dashboards as examples that may need updates.\n5. Azure role assignments that were active at the moved resource scope do not move. They become orphaned and need to be created again if that same direct assignment is still required.\n\nThe scope distinction matters. A role assignment inherited from the subscription or from a parent management group is not attached to the VM resource ID in the same way, so it may still apply after the move depending on the target location and scope. A direct assignment at `/resourceGroups/RG-App-Prod/providers/Microsoft.Compute/virtualMachines/vm-payroll` is different: after the VM moves, that exact scope is no longer the VM's live resource ID. The official behavior is about the resource ID and assignment scope, not about guest operating system accounts inside the VM.",
+      "wrongOptions": {
+        "B": "A move to another resource group does not change the VM's physical Azure region. Misconception: A resource group has a location, so all contained resources must be relocated when the group changes. Could be correct when the task is a true region move using Azure Resource Mover or Azure Site Recovery, not when using the resource group or subscription move operation.",
+        "D": "Microsoft tells you to update values that use the old resource ID, which means the old path should not be treated as a durable alias. Misconception: Azure keeps management-plane aliases for moved resources indefinitely. Could be correct for some service-specific DNS names or application endpoints that do not depend on the Azure resource ID, but not for scripts that call the old ARM ID.",
+        "E": "The documentation states that an active Azure role assignment at the resource or child-resource scope does not move and becomes orphaned. Misconception: Role assignments follow the resource because they look like permissions attached to it in the portal. Could be correct for access inherited from a broader scope, such as an unchanged subscription-level assignment, but not for a direct assignment on the moved VM."
+      },
+      "plainEnglish": "Think of a VM move between resource groups as moving a file to a different folder in a management catalog. The computer does not travel to a new city. It keeps running in the same Azure region. What changes is the official address that Azure Resource Manager uses to identify it. If your automation has the old address written down, the automation needs the new address. Permissions that were stuck to the old exact address do not automatically appear at the new address, so you must put them back if users or automation still need them.",
+      "analogy": "A company can move an employee's record from the \"Apps\" department folder to the \"Finance\" department folder without moving the employee's desk. The desk location stays the same, but the HR record number that includes the department path changes.\n\n| Analogy | Azure reality |\n|---|---|\n| Employee's desk | VM's physical region |\n| Department folder | Resource group |\n| HR record number | Azure resource ID |\n| Old badge approval tied to old folder | Direct Azure role assignment at the old resource scope |\n| Payroll script with old record number | Automation that stores the old ARM ID |\n\n**Where the analogy breaks down:** Azure resource IDs are formal API paths used by Azure Resource Manager. A human office record may have forwarding notes, but ARM clients should use the new resource ID after a move.",
+      "jargon": [
+        {
+          "term": "Azure Resource Manager",
+          "definition": "The Azure deployment and management layer that tracks resources, resource groups, subscriptions, providers, and resource IDs."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A management container for Azure resources that share lifecycle, permissions, billing organization, or administration needs."
+        },
+        {
+          "term": "Azure region",
+          "definition": "A geographic Azure location where a resource's service infrastructure runs, such as Australia East."
+        },
+        {
+          "term": "Resource ID",
+          "definition": "The full ARM path that uniquely identifies a resource, including subscription, resource group, provider, type, and name."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system that assigns roles such as Reader or Contributor at a scope."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A binding between a security principal, a role definition, and a scope such as a resource group or VM."
+        },
+        {
+          "term": "Scope",
+          "definition": "The level where an Azure permission applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Managed disk",
+          "definition": "An Azure-managed block storage disk resource used as an OS disk or data disk for a virtual machine."
+        },
+        {
+          "term": "Network interface",
+          "definition": "The Azure networking resource that connects a VM to a virtual network subnet."
+        }
+      ],
+      "watchOut": "- A resource group move is not a region move.\n- Resource IDs change when the subscription or resource group part of the path changes.\n- Direct Azure RBAC assignments at the moved resource scope need attention after the move.\n- Guest operating system accounts and files inside the VM are not the same thing as ARM role assignments.\n- Update scripts, templates, dashboards, and monitoring queries that use full resource IDs.",
+      "productionTip": {
+        "official": "Microsoft documents that moving a resource changes its resource ID and that any scripts, templates, or dashboards that reference the old ID should be updated. The same move checklist says active Azure role assignments at the moved resource or child-resource scope do not move and must be created again if needed.",
+        "recommendation": "Before a production move, export the resource IDs used by deployment pipelines, alerts, dashboards, backup jobs, and access reviews. Recreate only the role assignments that are still required, preferably at the least broad scope that supports operations after the resource lands in the target resource group."
+      },
+      "memoryTrick": "A resource group move changes the VM's **address in Azure management**, not its **home region**. This is a simplification because dependencies, locks, and permissions still need separate checks.",
+      "examTip": "Clue words are **new resource group**, **same subscription**, **full resource ID**, and **role assignment at the VM scope**. Rule out answers that turn a scope move into a region migration. A harder version may put the role assignment at subscription scope; then inherited access can continue even though the VM's resource ID changes."
+    },
+    "sources": [
+      {
+        "title": "Move Azure resources to a new resource group or subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.3-02",
+    "objective": "D3.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains a resource group named `RG-East`. The group contains a virtual network named `vnet-prod`, a VM named `vm-api`, the VM's network interface, two managed disks, a public IP address, and a network security group. You plan to move `vm-api` to another subscription. You want to minimize failed move attempts and avoid breaking VM connectivity.\n\nWhat should you do first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Move only `Microsoft.Compute/virtualMachines/vm-api`; child and peer resources will be discovered after the move."
+      },
+      {
+        "id": "B",
+        "text": "Run a validate move operation for the VM and required dependent resources, then include the dependencies in the same move request."
+      },
+      {
+        "id": "C",
+        "text": "Detach all data disks and delete the network interface so the VM has no dependent resources during the move."
+      },
+      {
+        "id": "D",
+        "text": "Move the virtual network first and then move the VM later, because a VM can use a network in another subscription during the transition."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The target subscription is in the same Microsoft Entra tenant and otherwise eligible. The VM uses Azure Resource Manager resources, not the classic deployment model.",
+    "sections": {
+      "correctAnswer": "**B. Run a validate move operation for the VM and required dependent resources, then include the dependencies in the same move request**. Microsoft documents a validate move action and requires dependent resources to be included or already available in the destination scope, especially for cross-subscription moves.",
+      "technical": "A VM is not useful by itself in an Azure Resource Manager move. It depends on other resources that define storage and networking. Managed disks, network interfaces, public IP addresses, network security groups, and virtual networks can all matter to a move request.\n\nFor a cross-subscription VM move, Microsoft gives a specific dependency rule: the resource and its dependent resources must be in the same resource group and moved together. If dependencies are spread across resource groups, consolidate them first, then move them together to the target subscription, and optionally redistribute them after the subscription move.\n\nThe practical order is:\n\n1. Inventory the VM, disks, NICs, virtual network, public IP addresses, NSGs, route tables, and other linked resources.\n2. Check whether all dependent resources are in the same resource group. If not, move them into a single source group where supported.\n3. Run `validateMoveResources`, `az resource invoke-action --action validateMoveResources`, or the equivalent portal validation to test the move request before executing it.\n4. Read any validation error. A `MissingMoveDependentResources` error tells you which linked resource must be included or available.\n5. Start the move only when the VM and the needed dependent resources are included in a valid move set.\n\nNetworking has its own additional trap. To move a VM with a network interface card to a new subscription, Microsoft says to move all dependent resources, including the virtual network for the NIC and the other network interface cards for that virtual network. This prevents the VM from landing with references to networking resources that cannot be resolved in the target subscription.",
+      "wrongOptions": {
+        "A": "Moving only the VM ignores the documented requirement to handle dependent resources. Misconception: Azure can always infer and move every related top-level resource after the fact. Could be correct only for child resources that automatically move with a parent, such as a VM extension under the VM, not for separate top-level resources like NICs and disks.",
+        "C": "Deleting or detaching resources is a destructive workaround and is not the required first step for a normal move. Misconception: A resource with fewer attachments is always easier and safer to move. Could be correct in a narrow remediation plan when a specific unsupported dependency must be removed, such as disassociating a Standard SKU public IP before a cross-subscription networking move.",
+        "D": "A VM should not be split from the networking resources it needs for a cross-subscription move. Misconception: A VM can temporarily keep using a virtual network that was moved away to another subscription. Could be correct when moving a complete set of networking resources together after validation, but not as an isolated first move for just the VNet."
+      },
+      "plainEnglish": "A VM is like a server, but Azure represents its parts as separate objects. The computer object needs disk objects to store data and network objects to communicate. If you try to move only the computer record, Azure may stop you because the computer still points to parts left behind. The safe first move is not to guess. Ask Azure to validate the complete list. If Azure says a disk, network interface, public IP, or virtual network must come too, add it to the same moving bundle before you start.",
+      "analogy": "Moving a VM to another subscription is like moving a restaurant to a new legal company. You cannot transfer only the restaurant sign and leave the kitchen lease, payment terminal, and phone line registered under the old company.\n\n| Analogy | Azure reality |\n|---|---|\n| Restaurant sign | VM resource |\n| Kitchen equipment | Managed disks |\n| Phone and payment lines | Network interface, public IP, NSG, and VNet |\n| Legal transfer checklist | Validate move operation |\n| Missing paperwork warning | `MissingMoveDependentResources` validation error |\n\n**Where the analogy breaks down:** Azure dependencies are exact resource references enforced by providers. A business might use temporary contracts, but Azure resource providers require supported relationships at move time.",
+      "jargon": [
+        {
+          "term": "Dependent resource",
+          "definition": "A separate Azure resource that another resource references or needs in order to function correctly."
+        },
+        {
+          "term": "Top-level resource",
+          "definition": "An Azure resource that is moved explicitly, unlike a child resource that moves automatically with its parent."
+        },
+        {
+          "term": "Child resource",
+          "definition": "A resource whose type is under a parent type, such as a VM extension under a virtual machine."
+        },
+        {
+          "term": "Network interface card",
+          "definition": "The Azure resource that connects a virtual machine to a subnet in a virtual network."
+        },
+        {
+          "term": "Managed disk",
+          "definition": "An Azure-managed disk resource attached to a VM as an OS or data disk."
+        },
+        {
+          "term": "Virtual network",
+          "definition": "An Azure networking boundary that contains subnets and provides private IP connectivity."
+        },
+        {
+          "term": "Network security group",
+          "definition": "A resource containing security rules that allow or deny network traffic to subnets or network interfaces."
+        },
+        {
+          "term": "Public IP address",
+          "definition": "An Azure networking resource that gives a public address to another resource, such as a VM through its network interface."
+        },
+        {
+          "term": "Validate move operation",
+          "definition": "An ARM operation that checks whether a proposed resource move can succeed without actually moving the resources."
+        },
+        {
+          "term": "`MissingMoveDependentResources`",
+          "definition": "An Azure Resource Manager error indicating that a required dependent resource was not included or available for the move."
+        }
+      ],
+      "watchOut": "- Cross-subscription VM moves are dependency-heavy.\n- Child resources are different from separate top-level resources.\n- A VM with a NIC normally pulls in networking dependency checks, not only compute checks.\n- Validation errors are useful; they often name the exact missing resource.\n- Do not split a virtual network from resources that must move with it unless Microsoft documents that split as supported.",
+      "productionTip": {
+        "official": "Microsoft documents `validateMoveResources` for testing a move request and says that cross-subscription moves require the resource and dependent resources to be in the same resource group and moved together. The FAQ explains that `MissingMoveDependentResources` identifies dependencies that must be included or already exist at the destination.",
+        "recommendation": "Create a dependency inventory before the maintenance window, then run validation with the full candidate list. Treat a successful validation as a prerequisite, not as a replacement for change approval, backups, and rollback planning for applications that depend on the VM."
+      },
+      "memoryTrick": "Move a VM as a **bundle**, not as a lonely box. This is a simplification because some child resources move automatically, while separate top-level dependencies must still be discovered and included.",
+      "examTip": "Clue words are **another subscription**, **VM**, **NIC**, **disks**, and **minimize failed attempts**. The exam is testing dependency handling and validation. A harder version may include a virtual network gateway or a Standard SKU public IP; then read the exact limitation and adjust the dependency plan before moving."
+    },
+    "sources": [
+      {
+        "title": "Move Azure resources to a new resource group or subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+      },
+      {
+        "title": "Move Azure Networking resources to new subscription or resource group",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/networking-move-limitations"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.3-03",
+    "objective": "D3.2.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You plan to move a running VM named `vm-orders` from `RG-Old` to `RG-New` in the same subscription. The application owner asks whether users will lose access during the Azure Resource Manager move. Another administrator plans to resize a different VM in `RG-New` during the same maintenance window.\n\nWhat should you tell them?",
+    "options": [
+      {
+        "id": "A",
+        "text": "All resources in both resource groups are stopped until the move finishes."
+      },
+      {
+        "id": "B",
+        "text": "Existing resources keep running, but the source and target resource groups are locked against create, update, and delete operations during the move."
+      },
+      {
+        "id": "C",
+        "text": "Only the source resource group is locked, so updates in `RG-New` can continue normally."
+      },
+      {
+        "id": "D",
+        "text": "The move creates a read-only lock only on `vm-orders`; unrelated resources in both groups can still be changed."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. This is an Azure Resource Manager move between resource groups, not a region migration, failover, or guest operating system maintenance event.",
+    "sections": {
+      "correctAnswer": "**B. Existing resources keep running, but the source and target resource groups are locked against create, update, and delete operations during the move**. Microsoft states that resources remain operational, while both involved resource groups are locked to protect consistency during the move operation.",
+      "technical": "A resource move has a management-plane lock, not a guest shutdown requirement. During the move, Azure Resource Manager locks both the source and destination resource groups. The lock prevents creating resources, deleting resources, or updating properties of resources in those groups. Microsoft uses resizing a VM as an example of an update that is blocked while the resource group is locked.\n\nThe evaluation order for this scenario is:\n\n1. The move operation starts for resources in `RG-Old` with `RG-New` as the target.\n2. Azure Resource Manager locks both resource groups so other changes do not conflict with the move.\n3. Existing resources continue to run. A VM being moved from one group to another can keep serving workloads during the management move.\n4. Attempts to add a resource, delete a resource, resize a VM, or update properties inside either locked group fail while the lock is active.\n5. When the move completes, or when Azure Resource Manager stops retrying within its documented time window, the resource groups are unlocked.\n\nThe lock can last up to four hours, although most moves finish faster. The lock is broad at the resource group level. That means the other administrator's resize in `RG-New` can be blocked even if the VM being resized is not `vm-orders`. This is an exam trap because the running application and the management operations have different outcomes: runtime traffic can continue, while ARM changes are blocked.",
+      "wrongOptions": {
+        "A": "The documentation says existing resources remain fully operational during the move. Misconception: A management move is the same as powering off or migrating the VM workload. Could be correct for a different operation that explicitly stops or fails over a VM, such as some region move steps, but not for a normal resource group move.",
+        "C": "Both source and target resource groups are locked. Misconception: Only the group losing the resource needs protection. Could be correct for a service operation that affects only one resource group, but not for an ARM move between two groups.",
+        "D": "The lock is not limited to the VM being moved; it applies to both involved resource groups. Misconception: Azure locks only the selected resource and leaves all neighboring resources editable. Could be correct for a direct resource-level read-only lock that an administrator creates manually, but not for the temporary move lock."
+      },
+      "plainEnglish": "The move changes Azure's management records. It does not normally turn off the VM. Users can keep reaching the application if the application and network are healthy. However, Azure temporarily puts both folders involved in the move into a no-edit state. During that time, administrators cannot create new resources there, delete resources there, or change settings such as VM size. So the app owner should hear that runtime should continue, and the administrator should avoid scheduling unrelated changes in either resource group during the same window.",
+      "analogy": "A warehouse is transferring an item from one inventory aisle to another. Forklift traffic to customers can continue, but the inventory clerk freezes edits in both aisle records so nobody changes quantities while the transfer is being recorded.\n\n| Analogy | Azure reality |\n|---|---|\n| Warehouse item | VM resource being moved |\n| Aisle records | Source and target resource groups |\n| Customer deliveries | Existing workload traffic |\n| Freeze on inventory edits | Temporary ARM lock during the move |\n| Changing shelf size | Updating a VM property such as size |\n\n**Where the analogy breaks down:** Azure locks protect resource management consistency, not physical shelves. The VM's guest operating system and application are separate from the ARM metadata being moved.",
+      "jargon": [
+        {
+          "term": "Management plane",
+          "definition": "The Azure APIs and operations used to create, update, move, and delete resources."
+        },
+        {
+          "term": "Data plane",
+          "definition": "The service-specific path used by applications or users to access a running service or data."
+        },
+        {
+          "term": "Resource group lock during move",
+          "definition": "A temporary Azure Resource Manager protection that blocks create, update, and delete operations in the source and target groups."
+        },
+        {
+          "term": "Create operation",
+          "definition": "An operation that adds a new Azure resource to a scope such as a resource group."
+        },
+        {
+          "term": "Update operation",
+          "definition": "An operation that changes properties of an existing resource, such as resizing a VM."
+        },
+        {
+          "term": "Delete operation",
+          "definition": "An operation that removes an Azure resource or resource group."
+        },
+        {
+          "term": "Resize",
+          "definition": "Changing a VM to a different Azure VM size, which is a management-plane update."
+        },
+        {
+          "term": "Maintenance window",
+          "definition": "A scheduled period when administrators make changes that might affect normal operations."
+        }
+      ],
+      "watchOut": "- Do not promise that administrators can keep editing the target group during the move.\n- The temporary lock can affect resources that are not themselves moving.\n- A running VM can continue serving traffic while its resource group association changes.\n- Resource Manager allows up to four hours for a move before unlocking groups if resources do not move.\n- Avoid stacking unrelated deployments into either locked resource group during the same window.",
+      "productionTip": {
+        "official": "Microsoft documents that both source and target resource groups are locked during a move, and that existing resources remain fully operational. The FAQ adds that the lock prevents deleting either group and prevents creating, deleting, or updating resource properties inside the locked groups.",
+        "recommendation": "Plan the move as a management freeze for both groups. Notify teams that runtime traffic is expected to continue, but deployments, resizes, tag changes, lock changes, and cleanup jobs targeting either group should be paused until the move finishes."
+      },
+      "memoryTrick": "During a same-region resource move, **apps run, admins wait**. This is a simplification because application-level health can still depend on your own code, networking, and maintenance choices.",
+      "examTip": "Clue words are **running VM**, **same subscription**, **resize another VM**, and **during the move**. Choose the answer that separates workload availability from ARM write locks. A harder version may ask why a deployment to the destination group failed while an unrelated VM was being moved; the group-level lock is the reason."
+    },
+    "sources": [
+      {
+        "title": "Move Azure resources to a new resource group or subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.3-04",
+    "objective": "D3.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a custom Azure role named `MoveOperator`. An engineer will use it to move a VM and its dependencies from `RG-Source` to `RG-Target` in the same subscription. The engineer should have the minimum documented permissions required for the move operation. The engineer does not need broad Owner access.\n\nWhich pair of permissions should the custom role include at the appropriate scopes?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`Microsoft.Resources/subscriptions/resourceGroups/moveResources/action` on `RG-Source` and `Microsoft.Resources/subscriptions/resourceGroups/write` on `RG-Target`"
+      },
+      {
+        "id": "B",
+        "text": "`Microsoft.Compute/virtualMachines/write` on the VM and `Microsoft.Network/virtualNetworks/join/action` on the target virtual network"
+      },
+      {
+        "id": "C",
+        "text": "`Microsoft.Authorization/roleAssignments/write` on `RG-Source` and Reader on `RG-Target`"
+      },
+      {
+        "id": "D",
+        "text": "Owner on both subscriptions because Azure Resource Manager moves cannot use custom roles"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The custom role is assigned at the stated resource group scopes, and separate permissions for checking, reading, or managing individual dependent resources are handled as needed by the organization's access model.",
+    "sections": {
+      "correctAnswer": "**A. `Microsoft.Resources/subscriptions/resourceGroups/moveResources/action` on `RG-Source` and `Microsoft.Resources/subscriptions/resourceGroups/write` on `RG-Target`**. Microsoft lists these as the minimum move permissions on the source and destination resource groups.",
+      "technical": "Azure Resource Manager treats a move as an action on the source resource group plus a write to the destination resource group. The documented minimum permissions are specific and asymmetric:\n\n| Scope | Required permission |\n|---|---|\n| Source resource group | `Microsoft.Resources/subscriptions/resourceGroups/moveResources/action` |\n| Destination resource group | `Microsoft.Resources/subscriptions/resourceGroups/write` |\n\nThe first permission authorizes the operation that removes the resources from the source group as part of a move. The second permission authorizes the destination group to receive or update its resource collection. These permissions are about the ARM move operation itself. They are not the same as guest administrator permissions inside the VM and not the same as application access.\n\nThe order matters when designing least privilege. Assign the custom role at `RG-Source` for the move action and at `RG-Target` for the write action. Avoid assigning Owner when the move operator does not need role assignment management, policy exemption creation, or unrelated delete rights across the subscription. In production, you may still need read permissions to inspect resources and validation results, but the exam wording asks for the minimum documented move permissions.\n\nThere is a related exception for Azure Resource Mover across regions. Some Resource Mover workflows require managed identities and broader setup permissions, such as Owner when first adding resources through the portal so role assignments can be created for the move collection. That is a different service workflow from the base Azure Resource Manager resource group or subscription move permission pair asked here.",
+      "wrongOptions": {
+        "B": "Compute write and network join permissions are not the documented ARM resource move permission pair. Misconception: Moving a VM is just editing the VM and joining a target network. Could be correct for operations that modify VM settings or attach a network interface to a subnet, but not as the minimum permission set for moving resources between resource groups.",
+        "C": "Role assignment write is not listed as a required move permission for this operation, and Reader on the target group does not allow the target group write operation. Misconception: Because role assignments do not move, the mover must be able to create permissions during the move. Could be correct when the same person is also tasked with recreating RBAC assignments after the move, but that is a separate authorization task.",
+        "D": "Microsoft documents explicit permissions, so Owner is not inherently required for every ARM move. Misconception: Azure can only move resources with full subscription ownership. Could be correct for some Azure Resource Mover region workflows where the portal needs Owner to create and assign a managed identity, but it is broader than required for this resource group move question."
+      },
+      "plainEnglish": "The engineer needs permission to take resources out of one folder and permission to write into the other folder. Those are two different approvals. The source approval says, \"you may move resources out of here.\" The destination approval says, \"you may write changes into here.\" Giving Owner everywhere would work in many environments, but it grants much more power than this job requires. The exam is asking for the documented small set, not the easiest broad administrator role.",
+      "analogy": "A records clerk moving a file between departments needs a checkout stamp from the old department and a receiving stamp from the new department. The clerk does not need to be the company owner.\n\n| Analogy | Azure reality |\n|---|---|\n| Checkout stamp | `moveResources/action` on the source resource group |\n| Receiving stamp | `resourceGroups/write` on the destination resource group |\n| Company owner | Owner role at subscription scope |\n| Records clerk | Move operator using a custom Azure role |\n| Department folder | Resource group |\n\n**Where the analogy breaks down:** Azure permissions are exact operations evaluated by ARM and Azure RBAC, not paper stamps. A real clerk may rely on informal approval, but Azure requires assigned actions at the right scopes.",
+      "jargon": [
+        {
+          "term": "Custom Azure role",
+          "definition": "A role definition created by an organization with a selected list of Azure RBAC actions and data actions."
+        },
+        {
+          "term": "Least privilege",
+          "definition": "Granting only the permissions needed for a task and no unnecessary broader permissions."
+        },
+        {
+          "term": "Action",
+          "definition": "An Azure RBAC management permission string that authorizes a control-plane operation."
+        },
+        {
+          "term": "`moveResources/action`",
+          "definition": "The source resource group permission that allows resources to be moved out of that group."
+        },
+        {
+          "term": "`resourceGroups/write`",
+          "definition": "The destination resource group permission that allows changes to the group, including receiving moved resources."
+        },
+        {
+          "term": "Owner",
+          "definition": "A built-in Azure role that grants full management access, including managing access for others."
+        },
+        {
+          "term": "Reader",
+          "definition": "A built-in Azure role that can view resources but cannot make management changes."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, which evaluates role assignments at scopes to authorize operations."
+        },
+        {
+          "term": "Scope",
+          "definition": "The level where a role assignment applies, such as a subscription, resource group, or individual resource."
+        }
+      ],
+      "watchOut": "- The source and target permissions are different.\n- Reader on the destination is not enough because the target group must be written.\n- Owner may be convenient but is not the least-privilege answer for this ARM move.\n- Recreating role assignments after the move requires separate authorization planning.\n- Region move services can introduce additional identity and role requirements, so do not mix those workflows with this one.",
+      "productionTip": {
+        "official": "The Azure Resource Manager move checklist lists `Microsoft.Resources/subscriptions/resourceGroups/moveResources/action` at the source resource group and `Microsoft.Resources/subscriptions/resourceGroups/write` at the destination resource group as the permissions the moving account must have.",
+        "recommendation": "Create a time-bound custom role assignment for the move window, pair it with read permissions needed for validation, and remove it after the change is complete. Keep RBAC repair work as a separate task with explicit approval rather than bundling broad Owner access into the move role."
+      },
+      "memoryTrick": "Source needs **move**, target needs **write**. This is a simplification because real operators usually also need read visibility and may need separate permissions for post-move access cleanup.",
+      "examTip": "Clue words are **minimum documented permissions**, **source**, and **target**. Look for the exact ARM action names rather than VM-specific write permissions. A harder version may add post-move RBAC recreation; then include role assignment permissions only for that extra task, not as the move permission itself."
+    },
+    "sources": [
+      {
+        "title": "Move Azure resources to a new resource group or subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+      },
+      {
+        "title": "Common questions about Azure Resource Mover",
+        "url": "https://learn.microsoft.com/en-us/azure/resource-mover/common-questions"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.3-05",
+    "objective": "D3.2.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have two Azure subscriptions named `SubA` and `SubB`. A VM named `vm-inventory` and its dependent resources will be moved from `SubA` to `SubB`. Before the change window, you need to identify subscription-level requirements that can block the move.\n\nWhich three requirements should you verify? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "`SubA` and `SubB` are associated with the same Microsoft Entra tenant."
+      },
+      {
+        "id": "B",
+        "text": "The destination subscription is registered for the resource providers of the resources being moved."
+      },
+      {
+        "id": "C",
+        "text": "The destination subscription has enough quota for the VM and related resources."
+      },
+      {
+        "id": "D",
+        "text": "The destination resource group is in the same Azure region as the VM."
+      },
+      {
+        "id": "E",
+        "text": "The two subscriptions have the same billing account owner and invoice section."
+      },
+      {
+        "id": "F",
+        "text": "The VM is converted to an Azure Arc-enabled server before the move starts."
+      }
+    ],
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The resources support Azure Resource Manager move operations, and dependent resources are handled in the same move set or destination as required.",
+    "sections": {
+      "correctAnswer": "**A. `SubA` and `SubB` are associated with the same Microsoft Entra tenant**, **B. The destination subscription is registered for the resource providers of the resources being moved**, and **C. The destination subscription has enough quota for the VM and related resources**. These are documented pre-move checks for moving Azure resources across subscriptions.",
+      "technical": "A cross-subscription move is still an Azure Resource Manager move, but it adds subscription-level checks. Microsoft documents that the source and destination subscriptions must be active and must exist within the same Microsoft Entra tenant. Moving resources across Microsoft Entra tenants is not supported by the move operation.\n\nThe target subscription must also understand the resource types being moved. Azure resources are managed by resource providers such as `Microsoft.Compute`, `Microsoft.Network`, and `Microsoft.Storage`. If `SubB` has not registered a required provider, the move can fail with an error that the subscription is not registered for the resource type. This often appears when the target subscription has never used that service.\n\nQuota is a separate requirement. Moving resources into `SubB` can cause the target subscription to exceed service limits, such as VM family cores in a region. Microsoft tells you to check the quota for the subscription you are moving resources to and request an increase if needed.\n\nA compact pre-check list is:\n\n| Check | Why it matters |\n|---|---|\n| Same Microsoft Entra tenant | Cross-tenant resource moves are not supported |\n| Provider registration in destination | The target subscription must accept the resource types |\n| Destination quota | The target subscription must have capacity under Azure limits |\n| Resource support and dependencies | The specific resource types and linked resources must be movable |\n\nA resource group has its own location metadata, but that metadata is not the VM's running region and is not the subscription-level prerequisite in this question. Billing owner alignment may matter to internal accounting, but it is not listed as the ARM move requirement being tested here.",
+      "wrongOptions": {
+        "D": "A resource group location is metadata for the resource group, not a requirement that the VM's region match it for a subscription move. Misconception: The resource group location controls where every contained resource runs. Could be correct when choosing the destination for a true region move, but not as a subscription move prerequisite.",
+        "E": "Microsoft's documented move checklist names tenant, provider registration, quota, permissions, resource support, and dependencies; it does not require matching billing account owner and invoice section for the move operation. Misconception: Billing reorganization rules are the same as ARM technical move rules. Could be correct for an internal finance approval process, but not as an Azure Resource Manager requirement.",
+        "F": "Azure Arc is not a prerequisite for moving an Azure VM between subscriptions. Misconception: A VM must be converted to a hybrid management object before changing subscriptions. Could be correct for managing servers outside Azure with Azure control-plane features, but not for moving an existing Azure IaaS VM resource."
+      },
+      "plainEnglish": "Before moving a VM to another subscription, check whether the destination is allowed to receive it. The two subscriptions must belong to the same identity tenant, because Azure will not use this move operation to cross tenant boundaries. The destination must have the resource providers turned on so Azure knows how to manage compute, network, and storage resources there. It also needs enough quota, like enough available VM cores, so the move does not exceed service limits. These checks happen before worrying about your company's billing labels or internal cost-center names.",
+      "analogy": "Moving a truck from one branch office to another requires more than a driver. Both branches must belong to the same company, the receiving branch must be authorized to operate that truck type, and the receiving branch must have space in its fleet allowance.\n\n| Analogy | Azure reality |\n|---|---|\n| Same company | Same Microsoft Entra tenant |\n| Authorization to operate truck type | Resource provider registered in destination subscription |\n| Fleet allowance | Subscription quota |\n| Truck plus trailer parts | VM and dependent resources |\n| Branch accounting label | Internal billing organization, not the ARM move requirement |\n\n**Where the analogy breaks down:** Azure subscriptions and tenants are security and management boundaries enforced by ARM and Microsoft Entra ID. A business might transfer assets by paperwork, but Azure resource moves require supported provider operations.",
+      "jargon": [
+        {
+          "term": "Subscription",
+          "definition": "An Azure billing, management, and quota boundary that contains resource groups and resources."
+        },
+        {
+          "term": "Microsoft Entra tenant",
+          "definition": "The identity directory that contains users, groups, service principals, and subscription associations. It was formerly called an Azure Active Directory tenant."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "An Azure service namespace, such as `Microsoft.Compute`, that supplies resource types and management operations."
+        },
+        {
+          "term": "Provider registration",
+          "definition": "Enabling a resource provider namespace in a subscription so resources of that type can be used there."
+        },
+        {
+          "term": "Quota",
+          "definition": "A subscription or regional limit on how many service resources can be used, such as VM cores."
+        },
+        {
+          "term": "Service limit",
+          "definition": "A documented Azure limit or constraint that can cap resource creation or use."
+        },
+        {
+          "term": "Azure Arc",
+          "definition": "A service for extending Azure management to resources outside Azure or to supported hybrid resources."
+        },
+        {
+          "term": "IaaS VM",
+          "definition": "An infrastructure-as-a-service Azure virtual machine managed as a compute resource."
+        },
+        {
+          "term": "Cross-tenant",
+          "definition": "Across two different Microsoft Entra tenants, which is not supported for ARM resource move operations."
+        }
+      ],
+      "watchOut": "- Same tenant is mandatory for subscription moves.\n- Register providers in the destination before the move, especially in new subscriptions.\n- Quota problems can block a technically valid move.\n- Resource group location does not relocate the VM.\n- Internal billing approvals can be required by your company, but they are not the Azure move rule named in the documentation.",
+      "productionTip": {
+        "official": "The Azure Resource Manager checklist says both subscriptions must be active and in the same Microsoft Entra tenant, the destination subscription must be registered for the resource providers of moved resources, and quota should be checked before moving resources into the destination subscription.",
+        "recommendation": "For a VM move, pre-register `Microsoft.Compute`, `Microsoft.Network`, `Microsoft.Storage`, and any other providers used by dependencies in the target subscription. Request quota increases days before the change window, because quota approval is not guaranteed to fit a short outage plan."
+      },
+      "memoryTrick": "For subscription moves, remember **Tenant, Providers, Quota**. This is a simplification because resource support, dependencies, permissions, locks, and special VM limitations still decide whether the actual move can proceed.",
+      "examTip": "Clue words are **from one subscription to another** and **requirements that can block the move**. Pick checks that Azure Resource Manager validates, not company accounting preferences. A harder version may include subscriptions in different tenants; the move is not supported until the subscription association problem is resolved outside the resource move."
+    },
+    "sources": [
+      {
+        "title": "Move Azure resources to a new resource group or subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+      },
+      {
+        "title": "Azure resource types for move operations",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-support-resources"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.3-06",
+    "objective": "D3.2.3",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You are reviewing a proposed move of four Azure VMs to a new subscription. The VMs are in the same Microsoft Entra tenant as the target subscription. The proposal includes these notes:\n\n| VM | Note |\n|---|---|\n| `vm-market` | Created from a Marketplace image with a plan attached |\n| `vm-backup` | Protected by Azure Backup with instant restore points |\n| `vm-ade` | Uses Azure Disk Encryption integrated with a key vault |\n| `vm-avset1` | Member of an availability set with another VM |\n\nWhich three statements are accurate? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "`vm-market` cannot be moved directly across subscriptions while the Marketplace plan is attached."
+      },
+      {
+        "id": "B",
+        "text": "For `vm-backup`, restore point collections used for instant recovery must be deleted before the VM can be moved, while copied backup data in the vault can be retained."
+      },
+      {
+        "id": "C",
+        "text": "For `vm-ade`, Azure Disk Encryption must be disabled before moving the VM to another subscription."
+      },
+      {
+        "id": "D",
+        "text": "`vm-avset1` can be moved individually because availability set membership is recalculated after the move."
+      },
+      {
+        "id": "E",
+        "text": "All four VMs can be moved as long as the target subscription has the `Microsoft.Compute` provider registered."
+      },
+      {
+        "id": "F",
+        "text": "Azure Backup soft delete makes no difference to the move, because soft-deleted restore points are ignored by Resource Manager."
+      }
+    ],
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The question is about moving VMs to a new resource group or subscription with Azure Resource Manager operations, not rebuilding the workload as a new architecture or using Azure Resource Mover for a regional migration.",
+    "sections": {
+      "correctAnswer": "**A. `vm-market` cannot be moved directly across subscriptions while the Marketplace plan is attached**, **B. For `vm-backup`, restore point collections used for instant recovery must be deleted before the VM can be moved, while copied backup data in the vault can be retained**, and **C. For `vm-ade`, Azure Disk Encryption must be disabled before moving the VM to another subscription**. These are documented VM move special cases.",
+      "technical": "Virtual machines have move support, but several VM configurations add special requirements or block direct moves. Microsoft groups three major special cases together: disk encryption, Marketplace plans, and Azure Backup.\n\nMarketplace plans are commercial terms attached to some images. A VM created from a Marketplace resource with a plan attached cannot be moved across subscriptions. The documented workaround is to deprovision or recreate the VM in the destination subscription, verify the offer still exists, accept Marketplace terms in the destination, and recreate the VM from the disk with matching plan information. That is not a direct resource move.\n\nAzure Backup creates restore point collections for instant recovery. To move a protected VM, you temporarily stop backup while retaining backup data, delete the restore point collection resource, move the VM, and then reconfigure backup. Microsoft says deleting the restore point collection deletes instant recovery points, not the backed-up data already copied to the vault. If soft delete is enabled, the VM cannot be moved while those restore points are kept; disable soft delete or wait the documented period after deleting restore points.\n\nAzure Disk Encryption has two different move behaviors. A VM integrated with a key vault for Azure Disk Encryption can move to another resource group when deallocated, but to move it to another subscription, Microsoft says to disable encryption first.\n\nAvailability set membership is also a trap. The unsupported scenarios list says VMs in an availability set cannot be moved individually. You must plan the set and member VMs as a supported group or choose another migration approach.",
+      "wrongOptions": {
+        "D": "Microsoft states that VMs in an availability set cannot be moved individually. Misconception: Availability set membership is just a tag that Azure can recreate later. Could be correct when moving a supported availability set and its related VMs together according to documented guidance, but not for one member alone.",
+        "E": "Provider registration is necessary for many moves, but it does not override special VM limitations for Marketplace plans, Azure Backup restore point collections, disk encryption, or availability set membership. Misconception: Registering `Microsoft.Compute` solves every compute move blocker. Could be correct as one prerequisite for a simple supported VM move with no special cases.",
+        "F": "The VM move limitations page says a VM cannot be moved while soft-deleted restore points are kept. Misconception: Soft delete only affects recovery operations and is invisible to moves. Could be correct for a VM that is not protected by Azure Backup or has no retained restore points blocking the move, but not for the protected VM in this scenario."
+      },
+      "plainEnglish": "Some VMs carry extra baggage. A Marketplace VM can include purchase terms that belong to the current subscription, so Azure does not simply move it to another subscription. A backed-up VM can have short-term restore point resources that must be removed before the move, even if long-term backup data in the vault is kept. A VM using Azure Disk Encryption tied to a key vault must have that encryption disabled before a subscription move. An availability set is also a group reliability feature, so moving one member by itself is not supported.",
+      "analogy": "Imagine moving company laptops to a new legal entity. One laptop has a software license tied to the old company, one has snapshots stored in a recovery cabinet, one is locked with a key managed by the old security office, and one is part of a paired high-availability kit.\n\n| Analogy | Azure reality |\n|---|---|\n| Software license tied to old company | Marketplace plan attached to the VM |\n| Recovery cabinet snapshots | Azure Backup restore point collections |\n| Security office key | Azure Disk Encryption integrated with a key vault |\n| Paired high-availability kit | Availability set members |\n| New legal entity | Target subscription |\n\n**Where the analogy breaks down:** Azure enforces these cases through resource provider rules, backup resources, encryption states, and Marketplace terms. Human asset transfers can use exceptions that ARM does not support.",
+      "jargon": [
+        {
+          "term": "Marketplace plan",
+          "definition": "Commercial plan metadata attached to some Azure Marketplace VM images and required when using that image under accepted terms."
+        },
+        {
+          "term": "Azure Backup",
+          "definition": "Azure's backup service for protecting resources such as virtual machines and retaining recovery data."
+        },
+        {
+          "term": "Restore point collection",
+          "definition": "A `Microsoft.Compute` resource used by Azure Backup for VM instant recovery points."
+        },
+        {
+          "term": "Instant recovery point",
+          "definition": "A short-term VM recovery point that can be used quickly before or in addition to vault-retained backup data."
+        },
+        {
+          "term": "Soft delete",
+          "definition": "A protection feature that retains deleted backup data or restore points for a period to guard against accidental or malicious deletion."
+        },
+        {
+          "term": "Azure Disk Encryption",
+          "definition": "A VM disk encryption feature integrated with a key vault for encrypting Windows or Linux VM disks."
+        },
+        {
+          "term": "Key vault",
+          "definition": "An Azure service for storing and controlling access to keys, secrets, and certificates."
+        },
+        {
+          "term": "Availability set",
+          "definition": "A grouping that spreads VMs across fault and update domains for higher availability within a datacenter."
+        },
+        {
+          "term": "Deallocated",
+          "definition": "A VM state in which Azure has stopped the VM and released its compute allocation."
+        },
+        {
+          "term": "Resource provider registration",
+          "definition": "Enabling an Azure provider namespace in a subscription so resources of that provider can be managed there."
+        }
+      ],
+      "watchOut": "- Marketplace plan VMs are a cross-subscription special case.\n- Backup restore point collections are separate compute resources that can block a move.\n- Soft delete can keep backup artifacts long enough to delay the move.\n- Azure Disk Encryption rules differ between resource group moves and subscription moves.\n- Availability set member VMs should not be moved one at a time.",
+      "productionTip": {
+        "official": "Microsoft's VM move limitations documentation lists unsupported or special scenarios for Marketplace plans, Azure Backup, Azure Disk Encryption, and availability sets. It says Marketplace-plan VMs cannot be moved across subscriptions, backup restore point collections must be deleted for protected VMs, and Azure Disk Encryption must be disabled for subscription moves.",
+        "recommendation": "Run a VM move readiness checklist before the change date. Include image plan detection, backup state, soft delete status, encryption state, availability set membership, dependency validation, and a recovery plan that explains which artifacts are deleted, retained, recreated, or accepted again in the target subscription."
+      },
+      "memoryTrick": "For difficult VM subscription moves, remember **Plan, Points, Protection**: Marketplace plan, backup restore points, and disk encryption protection. This is a simplification because availability sets, networking, quotas, and other provider limitations can also block a move.",
+      "examTip": "Clue words are **Marketplace image with a plan**, **Azure Backup**, **Azure Disk Encryption**, and **availability set**. Pick the documented special handling, not a generic provider-registration answer. A harder version may ask for resource group rather than subscription moves; Azure Disk Encryption then has the deallocated-state rule instead of the disable-encryption subscription rule."
+    },
+    "sources": [
+      {
+        "title": "Special cases to move Azure VMs to new subscription or resource group",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-limitations/virtual-machines-move-limitations"
+      },
+      {
+        "title": "Azure resource types for move operations",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-support-resources"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.3-07",
+    "objective": "D3.2.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a VM named `vm-portal` in the East US region. The application owner wants the VM and its associated disks and networking resources moved to West US 3. The owner also wants an opportunity to test the moved VM before completing the move, and wants to know whether source resources are deleted automatically.\n\nWhat should you recommend?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use Azure Resource Manager Move to move the VM to a new resource group whose resource group location is West US 3."
+      },
+      {
+        "id": "B",
+        "text": "Use Azure Resource Mover, resolve dependencies, prepare the resources, initiate the move, then commit or discard it; delete source resources only after deciding to clean them up."
+      },
+      {
+        "id": "C",
+        "text": "Use `az resource move --destination-group` because the command changes the VM location when the target group is in another region."
+      },
+      {
+        "id": "D",
+        "text": "Use Azure Backup restore points because restoring the VM automatically preserves the original public IP address and all RBAC assignments in the target region."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The VM and related resources are supported by Azure Resource Mover for the selected source and target regions. The requirement is a region move, not merely a resource group or subscription reorganization.",
+    "sections": {
+      "correctAnswer": "**B. Use Azure Resource Mover, resolve dependencies, prepare the resources, initiate the move, then commit or discard it; delete source resources only after deciding to clean them up**. Resource Mover is the Microsoft service for moving supported VMs across regions and includes dependency handling, test/discard behavior, commit, and optional source cleanup.",
+      "technical": "Changing a VM's Azure region is not the same operation as changing its resource group or subscription. Azure Resource Manager Move keeps the resource's physical region and only changes management scope. For a cross-region VM move, Microsoft points to Azure Resource Mover and also documents Azure Site Recovery as a method, with Resource Mover recommended for Azure VM region moves.\n\nResource Mover works as a staged workflow rather than a simple metadata edit:\n\n1. Select the source subscription and region and the target region.\n2. Add the VM and supported related resources to a move collection.\n3. Validate and resolve dependencies. Resource Mover can identify related resources such as NICs, virtual networks, NSGs, and disks so the target environment works.\n4. Prepare resources. For VMs, preparation installs the Azure Site Recovery Mobility agent and starts replication of VM data to the target region.\n5. Initiate the move. For VMs, replica VMs are created in the target region, the source VM is shut down, and there is usually some downtime measured in minutes.\n6. Decide whether to commit or discard. Discarding returns resources to an earlier move state for testing scenarios; committing completes the move to the target region.\n7. After commit, decide whether to delete source resources. The tutorial describes source deletion as a later cleanup action, not as automatic deletion at the moment you initiate the move.\n\nThere are post-move details. Role-based access control rules may need modification after the move, extensions are not copied over to the target region according to the VM support matrix, and a public IP address is region-specific and is not retained across regions. Those facts make validation and post-move checks important.",
+      "wrongOptions": {
+        "A": "Moving to a resource group whose own location metadata is West US 3 does not change the VM's physical region. Misconception: Resource group location controls where existing resources run. Could be correct for reorganizing management scope while keeping the VM in East US, but not for a required East US to West US 3 region move.",
+        "C": "`az resource move` moves resources between resource groups or subscriptions; it does not convert a VM's running region to the target resource group's location. Misconception: The CLI move command performs both scope moves and region migrations. Could be correct when the goal is only to move resources to another group or subscription without changing region.",
+        "D": "Azure Backup restore is not the documented answer for preserving all networking and RBAC exactly across a region move, and public IP addresses are region-specific in Resource Mover scenarios. Misconception: Any restore operation is a complete region migration with identical identity and network metadata. Could be correct for recovering or cloning a VM from backup under a separate recovery plan, but not for this tested Resource Mover workflow."
+      },
+      "plainEnglish": "To move a VM to another Azure region, you need a migration workflow, not just a new folder. Azure Resource Mover collects the VM and its related parts, checks what else must move, prepares copies in the target region, and lets you start the move. After the first move, you can either accept the new target version by committing it or back out of that move state by discarding it. The original source resources are not simply erased at the beginning; cleanup is a later decision after the move is committed and checked.",
+      "analogy": "Moving a VM across regions is like relocating a shop from one city to another. You do not just change the shop's filing folder. You prepare the new site, copy inventory, arrange utilities, open the new location for testing, then decide whether to finalize and close the old site.\n\n| Analogy | Azure reality |\n|---|---|\n| New city | Target Azure region |\n| Utilities and leases | Networking resources and dependencies |\n| Copying inventory | Replicating VM disks during prepare |\n| Trial opening | Initiate move and test before commit |\n| Finalize relocation | Commit move |\n| Close old site | Delete source resources after commit |\n\n**Where the analogy breaks down:** Azure Resource Mover uses managed identities, replication, ARM templates, move collections, and provider-specific limits. A shop can sometimes operate both locations indefinitely, while the VM move has defined prepare, initiate, commit, discard, and cleanup states.",
+      "jargon": [
+        {
+          "term": "Azure Resource Mover",
+          "definition": "An Azure service that helps move supported Azure resources between regions through a guided workflow."
+        },
+        {
+          "term": "Region move",
+          "definition": "Moving a resource's workload to a different Azure geographic region rather than only changing its resource group or subscription."
+        },
+        {
+          "term": "Move collection",
+          "definition": "A Resource Mover tracking object that groups resources being moved for a source and target combination."
+        },
+        {
+          "term": "Prepare",
+          "definition": "A Resource Mover stage that prepares target-region resources and, for VMs, starts replication using the Mobility agent."
+        },
+        {
+          "term": "Initiate move",
+          "definition": "The Resource Mover stage that starts the actual move to the target region after resources are prepared."
+        },
+        {
+          "term": "Commit",
+          "definition": "The Resource Mover action that completes the move after the initial move has succeeded."
+        },
+        {
+          "term": "Discard",
+          "definition": "The Resource Mover action that abandons a move after initiation and returns resources to an earlier pending state."
+        },
+        {
+          "term": "Azure Site Recovery",
+          "definition": "A service for disaster recovery and migration that Resource Mover uses on the backend for VM region moves, and that can also be used directly in some migration scenarios."
+        },
+        {
+          "term": "Mobility agent",
+          "definition": "Software installed on VMs during preparation so data can be replicated for Site Recovery-based movement."
+        },
+        {
+          "term": "Public IP address",
+          "definition": "A region-specific Azure networking resource; Resource Mover documentation notes that public IP addresses are not retained across regions."
+        }
+      ],
+      "watchOut": "- Resource group moves do not change a VM's Azure region.\n- Resource Mover handles supported cross-region VM moves and dependency discovery.\n- The initiate stage for VMs involves shutdown and usually some downtime.\n- Commit is separate from deleting source resources.\n- Public IP addresses, VM extensions, and Azure RBAC settings need post-move review in target-region designs.",
+      "productionTip": {
+        "official": "Resource Mover documentation says it identifies dependencies, supports testing by allowing a move to be discarded, and lets you delete source resources after the move. The VM tutorial documents prepare, initiate move, commit or discard, and later source cleanup. The support matrix notes that public IP addresses are not retained across regions and that Azure RBAC policies and extensions are not copied to the target VM.",
+        "recommendation": "Use Resource Mover for supported Azure VM region moves unless a documented limitation pushes you to Azure Site Recovery or a rebuild approach. Build a post-move checklist for DNS, public IP changes, extensions, monitoring agents, RBAC, backup, and application validation before deleting anything in the source region."
+      },
+      "memoryTrick": "Region moves are **prepare, move, decide, clean**. This is a simplification because each stage has dependency, quota, network, identity, and support-matrix checks before production use.",
+      "examTip": "Clue words are **East US to West US 3**, **associated disks and networking**, **test before completing**, and **source resources deleted automatically**. Choose Azure Resource Mover, not an ARM resource group move. A harder version may mention Azure Site Recovery; remember Microsoft recommends Resource Mover for Azure VM region moves, while Site Recovery remains a documented alternative migration service."
+    },
+    "sources": [
+      {
+        "title": "What is Azure Resource Mover?",
+        "url": "https://learn.microsoft.com/en-us/azure/resource-mover/overview"
+      },
+      {
+        "title": "Move Azure VMs across regions with Azure Resource Mover",
+        "url": "https://learn.microsoft.com/en-us/azure/resource-mover/tutorial-move-region-virtual-machines"
+      },
+      {
+        "title": "Support matrix for moving Azure VMs to another region with Azure Resource Mover",
+        "url": "https://learn.microsoft.com/en-us/azure/resource-mover/support-matrix-move-region-azure-vm"
+      },
+      {
+        "title": "Move Azure VMs to a different Azure region with Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-migrate"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

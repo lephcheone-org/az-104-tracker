@@ -1,0 +1,846 @@
+[
+  {
+    "id": "D2.1.3-01",
+    "objective": "D2.1.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a storage account named `ststudy` that is used by several training applications. You want to issue service SAS tokens and later adjust their validity period from a central server-side setting instead of regenerating every token.\n\nWhich Azure Storage resources can directly contain a stored access policy?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A storage account, a resource group, or a subscription"
+      },
+      {
+        "id": "B",
+        "text": "A blob container, a file share, a queue, or a table"
+      },
+      {
+        "id": "C",
+        "text": "An individual blob, an individual file, a queue message, or a table entity"
+      },
+      {
+        "id": "D",
+        "text": "Only a blob container, because stored access policies are a Blob Storage feature"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The question is about Azure Storage stored access policies for shared access signatures, not Azure Policy, lifecycle management policies, or Azure RBAC role assignments.",
+    "sections": {
+      "correctAnswer": "**B. A blob container, a file share, a queue, or a table**. Microsoft documents stored access policies on those four containing resources, and a policy can then control one or more service SAS tokens associated with that resource.",
+      "technical": "A stored access policy is a server-side object that adds control over service-level shared access signatures. The policy can define the start time, expiry time, and permissions that service SAS tokens inherit when the SAS references the policy's signed identifier.\n\nThe scope matters. The policy is placed on a containing storage resource, not on the whole storage account and not on an individual object. Microsoft lists the supported resources as blob containers, file shares, queues, and tables. A container policy can be associated with a SAS for the container itself or for blobs inside the container. A file share policy can be associated with a SAS for the share itself or for files in the share.\n\nThe evaluation order is simple for an exam scenario:\n\n1. The client presents a service SAS URI.\n2. Azure Storage validates the SAS signature and checks whether the SAS references a signed identifier.\n3. If it references a stored access policy, the service reads the policy on the relevant container, share, queue, or table.\n4. The request must fit the resource, permissions, start time, expiry time, and any other SAS constraints.\n\nThe exception is that account SAS and user delegation SAS do not use stored access policies. Another boundary is resource type: policies are attached to supported containing resources, not to resource groups, subscriptions, or individual table entities.",
+      "wrongOptions": {
+        "A": "A storage account contains the services, but Microsoft documents stored access policies on blob containers, file shares, queues, and tables, not at storage account, resource group, or subscription scope. Misconception: Any Azure access control feature is scoped like Azure RBAC. Could be correct when discussing Azure RBAC assignments or Azure Policy definitions, not stored access policies for SAS.",
+        "C": "A SAS can grant access to blobs or files, but the stored access policy itself is stored on the containing resource, such as the blob container or file share. Misconception: The policy must live on the exact object being read or written. Could be correct when discussing object metadata or an object-level SAS target, but not where a stored access policy is defined.",
+        "D": "Blob containers support stored access policies, but they are not the only supported resource. File shares, queues, and tables are also listed by Microsoft. Misconception: Because many examples use blobs, the feature must be blob-only. Could be correct if the question asked about the only supported resource in a blob-only application design."
+      },
+      "plainEnglish": "A stored access policy is like a reusable rule card kept by Azure Storage. Instead of putting all the dates and permissions directly into every SAS link, you can put those values in the rule card and make many SAS links point to it. The card must be attached to a storage container-type object. For blobs, that object is a blob container. For Azure Files, it is a file share. For queues and tables, it is the queue or table. You do not attach this card to the whole Azure subscription or to one tiny item such as a single queue message.",
+      "analogy": "Imagine a library that gives temporary guest passes. The library does not tape a policy to each book. It keeps policy cards at service desks: one desk for documents, one for files, one for message slips, and one for tables of records.\n\n| Analogy | Azure reality |\n|---|---|\n| Guest pass | SAS token |\n| Policy card | Stored access policy |\n| Document desk | Blob container |\n| File desk | File share |\n| Message desk | Queue |\n| Record desk | Table |\n\n**Where the analogy breaks down:** Azure validates cryptographic signatures and exact service permissions. A paper guest pass does not model signed URI fields, Shared Key authorization, or propagation timing.",
+      "jargon": [
+        {
+          "term": "Shared access signature (SAS)",
+          "definition": "A token appended to an Azure Storage resource URI that delegates limited access for a defined time, permissions set, and optional constraints."
+        },
+        {
+          "term": "Service SAS",
+          "definition": "A SAS secured with the storage account key that delegates access to a resource in one Azure Storage service, such as Blob Storage, Queue Storage, Table Storage, or Azure Files."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A named server-side policy on a blob container, file share, queue, or table that can define start time, expiry time, and permissions for one or more service SAS tokens."
+        },
+        {
+          "term": "Signed identifier",
+          "definition": "The policy ID referenced by the `si` field in a service SAS URI. It links the SAS to a stored access policy on the storage resource."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "Authorization that uses a storage account key. Service SAS and account SAS tokens are signed with Shared Key material."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical container in Azure Blob Storage that holds blobs and can have stored access policies."
+        },
+        {
+          "term": "Azure Files",
+          "definition": "The Azure Storage file service that provides cloud file shares accessible by supported protocols and APIs."
+        },
+        {
+          "term": "Queue",
+          "definition": "An Azure Queue Storage object that stores messages for asynchronous processing."
+        },
+        {
+          "term": "Table",
+          "definition": "An Azure Table Storage object that stores NoSQL key-value entities."
+        },
+        {
+          "term": "Storage account",
+          "definition": "The top-level Azure resource that contains Azure Storage services and their data resources."
+        }
+      ],
+      "watchOut": "- Do not place stored access policies at storage account scope.\n- Do not confuse an Azure Policy definition with an Azure Storage stored access policy.\n- A container policy can affect SAS tokens for blobs in that container, even though the policy is not stored on each blob.\n- File shares, queues, and tables are in scope for this feature too.",
+      "productionTip": {
+        "official": "Microsoft documents stored access policies as an additional server-side control for service-level SAS tokens and lists blob containers, file shares, queues, and tables as the supported resources. The same documentation notes that a container or file share policy can govern SAS tokens for contained blobs or files.",
+        "recommendation": "Use stored access policies when you need a revocation or update handle for multiple service SAS tokens. Keep the policy names meaningful, document which clients use each policy, and keep the scope as narrow as the resource model allows."
+      },
+      "memoryTrick": "Remember **C S Q T**: Container, Share, Queue, Table. This is a simplification because a SAS can target objects inside the container or share, but the policy is stored on the containing resource.",
+      "examTip": "Clue words are **stored access policy**, **server-side**, and **which resources**. Rule out subscription, resource group, account, and individual-object answers. A harder version may say a SAS targets a blob and ask where the policy is created; the answer is still the blob container."
+    },
+    "sources": [
+      {
+        "title": "Define a stored access policy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/define-stored-access-policy"
+      },
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      },
+      {
+        "title": "Create a stored access policy with .NET - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.3-02",
+    "objective": "D2.1.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a storage account that contains a blob container named `reports`. Ten partner applications must receive read-only SAS URLs to different blobs in the container. The security team wants one emergency action to revoke all partner SAS URLs if any partner system is compromised. You also need to stay within the documented stored access policy limit.\n\nWhich two design choices should you make? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create one stored access policy named `partner-read` on `reports` and make the partner service SAS tokens reference it"
+      },
+      {
+        "id": "B",
+        "text": "Create one stored access policy per partner application until there are ten policies on `reports`"
+      },
+      {
+        "id": "C",
+        "text": "Create an account SAS for each partner because account SAS tokens can share a stored access policy"
+      },
+      {
+        "id": "D",
+        "text": "Track that a container, share, queue, or table can have at most five stored access policies at one time"
+      },
+      {
+        "id": "E",
+        "text": "Use immutable storage policies so the partner SAS URLs can be revoked as a group"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. All partner access is to blobs in one container and can use the same read/list permission window. The requirement is SAS revocation, not Microsoft Entra authentication or network isolation.",
+    "sections": {
+      "correctAnswer": "**A. Create one stored access policy named `partner-read` on `reports` and make the partner service SAS tokens reference it** and **D. Track that a container, share, queue, or table can have at most five stored access policies at one time**. One shared policy gives a group revocation handle, and the documented limit prevents creating ten policies on one container.",
+      "technical": "A stored access policy is useful when many service SAS tokens should be managed together. The policy is stored on the container, and each service SAS references the policy by its signed identifier. If the policy is later deleted, renamed, expired, or made more restrictive, every associated SAS is affected.\n\nThe design must also respect the limit. Microsoft documents a maximum of five access policies on a container, table, queue, or share at a time. Trying to set more than five returns a 400 Bad Request response. Therefore, ten separate partner policies on one container is not a valid design.\n\nThe order of design decisions is:\n\n1. Decide whether the clients can share the same permissions and time window.\n2. If yes, create one policy for that group, such as `partner-read`.\n3. Generate service SAS tokens that reference that policy.\n4. Keep the number of policies on the container at five or fewer.\n5. Revoke the group by changing or removing the shared policy.\n\nThe exception is granularity. If partners need different permissions or expiries, you may need separate policies, separate containers, or shorter ad hoc SAS tokens. But within one container, the five-policy limit is a hard planning constraint.",
+      "wrongOptions": {
+        "B": "Ten stored access policies on one container exceeds the documented limit of five policies at a time. Misconception: Every client must have a separate policy for revocation. Could be correct when there are five or fewer groups that genuinely need different policy settings.",
+        "C": "Account SAS tokens cannot reference stored access policies. Stored access policies apply to service SAS tokens. Misconception: Any SAS type can use the same server-side policy mechanism. Could be correct when the requirement is account-level service operations that only an account SAS can delegate, but not when a stored access policy is required.",
+        "E": "Immutable storage protects blob data from modification or deletion; it is not the feature that groups SAS tokens for revocation. Misconception: Any feature with the word policy can manage access tokens. Could be correct when the requirement is WORM retention or legal hold for blob data, not SAS lifecycle control."
+      },
+      "plainEnglish": "If ten partner apps can all receive the same kind of read-only pass, do not create ten rule cards. Put one rule card on the container and issue ten passes that point to that card. If something goes wrong, change or remove the one card and all ten passes lose their shared backing rule. Azure only lets you keep five such cards on a container, share, queue, or table, so designing one card per client quickly fails when there are many clients.",
+      "analogy": "Think of a concert venue that gives ten vendors wristbands. Instead of printing a separate cancellation rule for each vendor, the venue marks every wristband with the same batch name, `partner-read`. If the batch is cancelled at the front desk, every wristband in that batch stops working.\n\n| Analogy | Azure reality |\n|---|---|\n| Wristband | Service SAS token |\n| Batch name | Stored access policy signed identifier |\n| Front desk cancellation | Delete, rename, or expire the policy |\n| Five batch slots | Five-policy limit per container/share/queue/table |\n\n**Where the analogy breaks down:** Azure does not literally recall tokens. Clients may keep old SAS URLs, but the service checks the referenced policy when requests arrive.",
+      "jargon": [
+        {
+          "term": "Shared access signature (SAS)",
+          "definition": "A token appended to an Azure Storage resource URI that delegates limited access for a defined time, permissions set, and optional constraints."
+        },
+        {
+          "term": "Service SAS",
+          "definition": "A SAS secured with the storage account key that delegates access to a resource in one Azure Storage service, such as Blob Storage, Queue Storage, Table Storage, or Azure Files."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A named server-side policy on a blob container, file share, queue, or table that can define start time, expiry time, and permissions for one or more service SAS tokens."
+        },
+        {
+          "term": "Signed identifier",
+          "definition": "The policy ID referenced by the `si` field in a service SAS URI. It links the SAS to a stored access policy on the storage resource."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "Authorization that uses a storage account key. Service SAS and account SAS tokens are signed with Shared Key material."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical container in Azure Blob Storage that holds blobs and can have stored access policies."
+        },
+        {
+          "term": "Partner application",
+          "definition": "An external or separate application that needs delegated access to storage data without receiving the storage account key."
+        },
+        {
+          "term": "400 Bad Request",
+          "definition": "An HTTP response indicating that the service rejected the request as invalid, such as trying to set more stored access policies than allowed."
+        },
+        {
+          "term": "Read-only",
+          "definition": "A permissions design that allows reading data and may include listing, but does not allow creating, writing, or deleting data."
+        },
+        {
+          "term": "Revocation",
+          "definition": "The act of making previously issued access unusable before its original expiry."
+        }
+      ],
+      "watchOut": "- The limit is five policies per containing resource, not five SAS tokens.\n- Many SAS tokens can reference one policy.\n- Group revocation trades individual control for simpler emergency response.\n- If clients need different permissions, group them by access pattern or separate the data into different containers.",
+      "productionTip": {
+        "official": "Microsoft documents that a maximum of five access policies can be set on a container, table, queue, or share at a time. The stored access policy is also documented as a way to group shared access signatures and to revoke signatures after they have been issued.",
+        "recommendation": "Group clients by identical permission and expiry requirements before creating policies. Reserve policy slots for meaningful groups, and use separate containers or short-lived SAS tokens when you need more than five independently revocable groups."
+      },
+      "memoryTrick": "Five policies, unlimited planning: the limit is on named policies, not on SAS URLs. This is a simplification because operational tracking still matters when many clients share one policy.",
+      "examTip": "Clue words are **ten partners**, **one emergency action**, and **documented limit**. Pick the design that groups SAS tokens under one policy and remembers the five-policy cap. A harder version may require separate revocation for seven partner groups; then you must redesign the container layout or use another access method."
+    },
+    "sources": [
+      {
+        "title": "Define a stored access policy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/define-stored-access-policy"
+      },
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.3-03",
+    "objective": "D2.1.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A developer at Contoso is choosing a SAS type for an application that uploads files to an Azure file share. The application must issue SAS URLs that can be revoked later by deleting a stored access policy on the share.\n\nWhich SAS type should the developer use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A user delegation SAS, because it is secured with Microsoft Entra credentials"
+      },
+      {
+        "id": "B",
+        "text": "A service SAS that references the stored access policy on the file share"
+      },
+      {
+        "id": "C",
+        "text": "An account SAS, because it can delegate access across Azure Files and Blob Storage"
+      },
+      {
+        "id": "D",
+        "text": "Any SAS type, as long as the SAS expiry time is shorter than seven days"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The application is allowed to use a service SAS signed with the storage account key. The requirement specifically includes revocation through a stored access policy.",
+    "sections": {
+      "correctAnswer": "**B. A service SAS that references the stored access policy on the file share**. Stored access policies are supported for service SAS only; account SAS and user delegation SAS must be ad hoc and cannot use a stored access policy.",
+      "technical": "Azure Storage supports user delegation SAS, service SAS, and account SAS. The important distinction here is not only how the SAS is signed, but whether it can be associated with a stored access policy.\n\nA service SAS is secured with the storage account key and delegates access to a resource in one storage service, including Azure Files. A stored access policy on a file share can be associated with a SAS that grants permissions to the share itself or to files in the share. When the service SAS references the policy's signed identifier, the SAS inherits the policy constraints.\n\nBy contrast, Microsoft states that a user delegation SAS or an account SAS must be an ad hoc SAS. Stored access policies are not supported for those SAS types. A user delegation SAS is often recommended for security when possible because it is secured with Microsoft Entra credentials, but that recommendation does not override the feature limitation in this question.\n\nThe access evaluation is:\n\n1. The service receives a request with a SAS URI.\n2. For a service SAS, it validates the Shared Key signature.\n3. If the URI includes a signed identifier, it locates the stored access policy on the share.\n4. It applies the policy's start time, expiry, and permissions.\n\nThe exception is when the requirement does not need policy-based revocation. Then a user delegation SAS may be preferred for supported workloads.",
+      "wrongOptions": {
+        "A": "A user delegation SAS is secured with Microsoft Entra credentials, but Microsoft states that stored access policies are not supported for user delegation SAS. Misconception: The most recommended SAS type always supports every SAS management feature. Could be correct when the requirement is to avoid Shared Key for a supported workload and policy-based revocation is not required.",
+        "C": "An account SAS can delegate broader account-level access, but stored access policies are not supported for account SAS. Misconception: A broader SAS type must be more configurable. Could be correct when the application needs service-level operations or access across multiple services and does not need a stored access policy.",
+        "D": "Expiry time alone does not make every SAS type compatible with a stored access policy. The documented support is specific to service SAS. Misconception: Any short-lived token is equivalent to a policy-bound token. Could be correct only as a general risk-reduction practice when no stored access policy is required."
+      },
+      "plainEnglish": "There are three main kinds of SAS links. Only one kind can point to a stored access policy: the service SAS. A user delegation SAS can be safer in many cases because it uses Microsoft Entra credentials, and an account SAS can cover broader account operations. But neither of those can use the server-side rule card. If the goal is to delete a policy later and have old links stop working, the app must issue service SAS links that reference the policy on the file share.",
+      "analogy": "Imagine three kinds of visitor passes. One is issued by an identity office, one by a service desk, and one by the building owner. Only the service desk pass has a blank for a rule-card number. If you need the pass to depend on a rule card, you must choose that pass type.\n\n| Analogy | Azure reality |\n|---|---|\n| Identity office pass | User delegation SAS |\n| Service desk pass | Service SAS |\n| Building owner pass | Account SAS |\n| Rule-card number | Stored access policy signed identifier |\n| File department | Azure file share |\n\n**Where the analogy breaks down:** The real system uses cryptographic signing, account keys, Microsoft Entra credentials, and service-specific authorization rules.",
+      "jargon": [
+        {
+          "term": "Shared access signature (SAS)",
+          "definition": "A token appended to an Azure Storage resource URI that delegates limited access for a defined time, permissions set, and optional constraints."
+        },
+        {
+          "term": "Service SAS",
+          "definition": "A SAS secured with the storage account key that delegates access to a resource in one Azure Storage service, such as Blob Storage, Queue Storage, Table Storage, or Azure Files."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A named server-side policy on a blob container, file share, queue, or table that can define start time, expiry time, and permissions for one or more service SAS tokens."
+        },
+        {
+          "term": "Signed identifier",
+          "definition": "The policy ID referenced by the `si` field in a service SAS URI. It links the SAS to a stored access policy on the storage resource."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "Authorization that uses a storage account key. Service SAS and account SAS tokens are signed with Shared Key material."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical container in Azure Blob Storage that holds blobs and can have stored access policies."
+        },
+        {
+          "term": "User delegation SAS",
+          "definition": "A SAS secured with Microsoft Entra credentials and a user delegation key. It is not supported with stored access policies."
+        },
+        {
+          "term": "Account SAS",
+          "definition": "A SAS secured with the storage account key that can delegate access to resources in one or more storage services and to certain service-level operations."
+        },
+        {
+          "term": "Ad hoc SAS",
+          "definition": "A SAS where the start time, expiry time, and permissions are specified directly in the SAS URI instead of inherited from a stored access policy."
+        },
+        {
+          "term": "Azure file share",
+          "definition": "An Azure Files share that contains files and directories and can have stored access policies for service SAS tokens."
+        }
+      ],
+      "watchOut": "- Do not assume user delegation SAS can reference a policy because it is often recommended for security.\n- Stored access policy support is the deciding feature in this question.\n- A service SAS is limited to one storage service; an account SAS is broader but cannot use the policy.\n- Protect SAS URLs as secrets regardless of type.",
+      "productionTip": {
+        "official": "Microsoft documents three SAS types and separately states that a service SAS with a stored access policy can inherit constraints from a policy on a blob container, table, queue, or file share. The same documentation states that account SAS and user delegation SAS must be ad hoc when used.",
+        "recommendation": "Prefer Microsoft Entra-based access where it satisfies the design. When policy-based revocation is the hard requirement, use a service SAS with a narrow stored access policy and compensate by limiting permissions, using HTTPS, and minimizing expiry."
+      },
+      "memoryTrick": "Policy-bound means **service SAS**. This is a simplification because a service SAS must still be scoped and signed correctly, and user delegation SAS may be better when a stored access policy is not needed.",
+      "examTip": "Clue words are **stored access policy on the share** and **revoked later by deleting the policy**. Rule out user delegation and account SAS even if they sound more modern or broader. A harder version may ask for the most secure SAS when no policy is needed; then user delegation SAS may become the answer."
+    },
+    "sources": [
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      },
+      {
+        "title": "Define a stored access policy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/define-stored-access-policy"
+      },
+      {
+        "title": "Create a stored access policy with .NET - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-stored-access-policy-define-dotnet"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.3-04",
+    "objective": "D2.1.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have issued 200 service SAS URLs for blobs in a container named `exports`. Each SAS URL references a stored access policy named `vendor-export`. A vendor reports that one URL was posted in a public ticketing system.\n\nYou need to invalidate all SAS URLs that reference `vendor-export` before their original expiry time.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Delete the leaked blob only; the stored access policy will automatically expire all related SAS URLs"
+      },
+      {
+        "id": "B",
+        "text": "Rotate the Microsoft Entra tenant signing keys used by user delegation SAS tokens"
+      },
+      {
+        "id": "C",
+        "text": "Create a new stored access policy named `vendor-export-2` with the same permissions"
+      },
+      {
+        "id": "D",
+        "text": "Delete or rename `vendor-export`, or change its expiry time to a value in the past"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The SAS URLs are service SAS tokens and all reference the same stored access policy. Revoking all associated URLs is acceptable even if some vendors still need access later through newly issued URLs.",
+    "sections": {
+      "correctAnswer": "**D. Delete or rename `vendor-export`, or change its expiry time to a value in the past**. Microsoft documents these as ways to revoke a stored access policy and break or expire the service SAS tokens associated with it.",
+      "technical": "A stored access policy is a revocation handle for service SAS tokens that reference it. The relationship is made through the signed identifier in the SAS URI. When Azure Storage evaluates a request that uses the SAS, the service looks up the policy and applies its current constraints.\n\nMicrosoft documents three direct revocation techniques:\n\n1. Delete the stored access policy.\n2. Rename it by changing the signed identifier.\n3. Change its expiry time to a value in the past.\n\nDeleting the policy removes the server-side rule that associated SAS tokens reference. Renaming changes the signed identifier, so old SAS URIs point to an identifier that no longer matches. Expiring the policy keeps the identifier but makes the policy invalid for future requests. These changes affect all shared access signatures associated with that policy.\n\nThe precedence is important. The SAS URL may still exist in an email, log, or ticket, but possession of the text is not enough. The request must pass the service's validation at request time. If the referenced policy is gone, renamed, or expired, the request fails. One exception is timing: policy changes can take up to 30 seconds to take effect, so do not promise instant worldwide behavior during that interval.",
+      "wrongOptions": {
+        "A": "Deleting one leaked blob might remove that object's data, but it does not revoke SAS URLs for other blobs that reference the same policy. Misconception: Removing the exposed object revokes the access mechanism. Could be correct when the only goal is to remove one published file and no other SAS URLs need revocation.",
+        "B": "The scenario uses service SAS tokens tied to a stored access policy, not user delegation SAS tokens. Microsoft Entra tenant signing keys are not the revocation control here. Misconception: All SAS tokens are backed by Microsoft Entra keys. Could be correct in a different investigation about Microsoft Entra-issued credentials, not a service SAS policy.",
+        "C": "Creating a new policy does not change old SAS URLs that still reference `vendor-export`. Misconception: A newer policy with similar settings supersedes the old one automatically. Could be correct after revocation, when you need to issue replacement SAS URLs that reference a new policy."
+      },
+      "plainEnglish": "The leaked URL is dangerous because anyone who has it can try to use it. But the URL points to a named policy. To stop all URLs that point to that name, change the policy in a way that makes the old links fail. Delete the policy, rename it so the old name no longer exists, or set its expiry in the past. Creating a new policy helps later when you issue new links, but it does not cancel the old policy by itself.",
+      "analogy": "Think of 200 printed coupons that all say they are valid only with rule card `vendor-export` at the service desk. If one coupon is leaked, the store can pull the rule card, rename the rule card, or mark the rule card expired. Every coupon that depends on that card stops working.\n\n| Analogy | Azure reality |\n|---|---|\n| Printed coupon | Service SAS URL |\n| Rule card name | Stored access policy signed identifier |\n| Pull the card | Delete the policy |\n| Rename the card | Change the signed identifier |\n| Mark expired | Set expiry in the past |\n\n**Where the analogy breaks down:** Azure Storage validates requests cryptographically and may take up to 30 seconds to apply a policy change.",
+      "jargon": [
+        {
+          "term": "Shared access signature (SAS)",
+          "definition": "A token appended to an Azure Storage resource URI that delegates limited access for a defined time, permissions set, and optional constraints."
+        },
+        {
+          "term": "Service SAS",
+          "definition": "A SAS secured with the storage account key that delegates access to a resource in one Azure Storage service, such as Blob Storage, Queue Storage, Table Storage, or Azure Files."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A named server-side policy on a blob container, file share, queue, or table that can define start time, expiry time, and permissions for one or more service SAS tokens."
+        },
+        {
+          "term": "Signed identifier",
+          "definition": "The policy ID referenced by the `si` field in a service SAS URI. It links the SAS to a stored access policy on the storage resource."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "Authorization that uses a storage account key. Service SAS and account SAS tokens are signed with Shared Key material."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical container in Azure Blob Storage that holds blobs and can have stored access policies."
+        },
+        {
+          "term": "Expiry time",
+          "definition": "The UTC time after which the SAS or stored access policy no longer grants access."
+        },
+        {
+          "term": "Rename",
+          "definition": "For stored access policy revocation, changing the signed identifier so existing SAS URLs no longer match a policy."
+        },
+        {
+          "term": "Leaked SAS",
+          "definition": "A SAS URL exposed to someone who should not have it. Anyone with the URL may be able to use it until it is revoked or expires."
+        },
+        {
+          "term": "Public ticketing system",
+          "definition": "A support or issue-tracking system where content may be visible outside the intended security boundary."
+        }
+      ],
+      "watchOut": "- A stored access policy change can revoke many SAS tokens at once.\n- Creating a replacement policy does not revoke tokens that reference the old policy.\n- Plan for up to 30 seconds of propagation after policy changes.\n- After revocation, issue replacement SAS URLs only to clients that still need access.",
+      "productionTip": {
+        "official": "Microsoft documents that deleting a policy, changing its signed identifier, or changing its expiry time to the past revokes signatures associated with the stored access policy. The documentation also states that deleting or modifying a stored access policy affects all associated shared access signatures.",
+        "recommendation": "During incident response, revoke the shared policy first, wait for propagation, then issue replacement SAS URLs under a new policy. Also search logs and ticket systems for exposed SAS URLs because SAS generation is not tracked by Azure Storage as a managed object."
+      },
+      "memoryTrick": "To break a policy-bound SAS, break its policy: **delete, rename, or expire**. This is a simplification because there may be a short propagation window and clients need replacement access planning.",
+      "examTip": "Clue words are **all SAS URLs reference the same policy** and **before original expiry**. Choose the answer that changes the existing policy, not one that creates a new policy or changes unrelated identity material. A harder version may ask for the lowest-disruption option; expiring or reducing permissions may preserve the policy name while still blocking access."
+    },
+    "sources": [
+      {
+        "title": "Define a stored access policy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/define-stored-access-policy"
+      },
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.3-05",
+    "objective": "D2.1.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You are troubleshooting an automation script that creates a stored access policy named `read-weekly` on a blob container. The policy includes read and list permissions and an expiry time. The script then generates a service SAS that references `read-weekly`, but it also specifies `--permissions rl` and `--expiry` on the SAS command. Requests using the SAS fail.\n\nWhat should you change?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep the permissions in both places, but set the SAS expiry later than the policy expiry"
+      },
+      {
+        "id": "B",
+        "text": "Change the service SAS to an account SAS so duplicate fields are allowed"
+      },
+      {
+        "id": "C",
+        "text": "Omit from the SAS URI any start time, expiry time, or permissions that are specified in the stored access policy"
+      },
+      {
+        "id": "D",
+        "text": "Move the read and list permissions to an immutable storage policy on the container"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The stored access policy is intended to be the source of the SAS permissions and expiry. The SAS is a service SAS for the container or blobs in the container.",
+    "sections": {
+      "correctAnswer": "**C. Omit from the SAS URI any start time, expiry time, or permissions that are specified in the stored access policy**. Microsoft documents that you cannot specify a parameter on both the SAS token and the stored access policy; duplicated policy fields make the SAS invalid.",
+      "technical": "A policy-bound service SAS can get its start time, expiry time, and permissions from the stored access policy. The same fields can also be supplied directly on an ad hoc SAS. The rule is that a field cannot be specified in both places at the same time.\n\nMicrosoft describes two valid patterns:\n\n| Pattern | Where start, expiry, and permissions are specified |\n|---|---|\n| Ad hoc-style service SAS | On the SAS URI, with none of those fields on the stored access policy |\n| Policy-bound service SAS | On the stored access policy, with those fields omitted from the SAS URI |\n\nYou may combine the approaches only by using non-overlapping fields. For example, if the stored access policy specifies permissions and expiry, the SAS must not also specify those same values. The Azure CLI documentation reflects this by warning not to use `--expiry`, `--start`, or `--permissions` when a referenced stored access policy specifies those values.\n\nThe evaluation fails before the storage operation is authorized because the SAS definition is inconsistent. Changing to an account SAS does not fix this because account SAS cannot reference a stored access policy. Immutability policies are unrelated to SAS permissions.",
+      "wrongOptions": {
+        "A": "Changing the relative expiry times does not solve the conflict. The problem is specifying the same field in both the SAS and the stored access policy. Misconception: Azure chooses the more restrictive duplicate value. Could be correct when comparing two separate controls that are both valid, but not for duplicated SAS policy fields.",
+        "B": "An account SAS cannot use a stored access policy, so switching SAS type removes the feature being used. Misconception: Account SAS is a superset that accepts all service SAS options. Could be correct when you need account-level operations and are willing to use an ad hoc SAS.",
+        "D": "Immutable storage policies protect data from modification or deletion; they do not define SAS read/list permissions or resolve SAS parameter conflicts. Misconception: All storage policies are interchangeable. Could be correct when the requirement is WORM protection rather than delegated access."
+      },
+      "plainEnglish": "Think of the stored access policy as the official form that says when access starts, when it ends, and what actions are allowed. The SAS link can either carry those details itself or point to the official form. It cannot write the same answers in both places. If both the form and the link say the expiry and permissions, Azure treats that as an error instead of guessing which one you meant.",
+      "analogy": "A traveler can either carry a ticket that lists the seat and travel date, or carry a ticket that says \"see booking record 123\". If both the ticket and booking record specify conflicting travel details, the gate agent refuses it rather than guessing.\n\n| Analogy | Azure reality |\n|---|---|\n| Ticket | SAS URI |\n| Booking record | Stored access policy |\n| Seat and travel date | Permissions and expiry |\n| Refusal at gate | Invalid SAS request |\n| Booking record number | Signed identifier |\n\n**Where the analogy breaks down:** Azure's rule applies even when duplicated values appear to match; the issue is specifying a field in both places, not only conflicting values.",
+      "jargon": [
+        {
+          "term": "Shared access signature (SAS)",
+          "definition": "A token appended to an Azure Storage resource URI that delegates limited access for a defined time, permissions set, and optional constraints."
+        },
+        {
+          "term": "Service SAS",
+          "definition": "A SAS secured with the storage account key that delegates access to a resource in one Azure Storage service, such as Blob Storage, Queue Storage, Table Storage, or Azure Files."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A named server-side policy on a blob container, file share, queue, or table that can define start time, expiry time, and permissions for one or more service SAS tokens."
+        },
+        {
+          "term": "Signed identifier",
+          "definition": "The policy ID referenced by the `si` field in a service SAS URI. It links the SAS to a stored access policy on the storage resource."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "Authorization that uses a storage account key. Service SAS and account SAS tokens are signed with Shared Key material."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical container in Azure Blob Storage that holds blobs and can have stored access policies."
+        },
+        {
+          "term": "`--permissions`",
+          "definition": "An Azure CLI parameter that specifies which operations a generated SAS permits, such as read or list."
+        },
+        {
+          "term": "`--expiry`",
+          "definition": "An Azure CLI parameter that specifies the UTC time at which a generated SAS becomes invalid."
+        },
+        {
+          "term": "`--start`",
+          "definition": "An Azure CLI parameter that specifies the UTC time at which a generated SAS becomes valid."
+        },
+        {
+          "term": "SAS URI",
+          "definition": "The resource URI plus SAS query string fields used by a client to access Azure Storage."
+        }
+      ],
+      "watchOut": "- Do not duplicate start time, expiry time, or permissions between the SAS and the policy.\n- Azure does not simply choose the stricter duplicate field.\n- Account SAS is not a workaround because it does not support stored access policies.\n- CLI warnings about `--policy-name` and expiry or permissions reflect the REST API rule.",
+      "productionTip": {
+        "official": "Microsoft documents that you can specify all policy parameters on the SAS URI and none on the stored access policy, or all on the stored access policy and none on the URI. The documentation explicitly says that you cannot specify a parameter on both the SAS token and the stored access policy.",
+        "recommendation": "Decide which fields the policy owns before generating SAS URLs. In automation, make `--policy-name` mutually exclusive with `--permissions`, `--start`, and `--expiry` whenever the stored policy defines those values, and add tests that parse generated SAS fields."
+      },
+      "memoryTrick": "One field, one home: put start, expiry, and permissions in the policy or in the SAS, not both. This is a simplification because other SAS constraints can still be supplied when they do not conflict.",
+      "examTip": "Clue words are **specified in both policy and SAS** and **requests fail**. Rule out answers that try to make one duplicate value later or broader. A harder version may give a SAS that duplicates only expiry but not permissions; the duplicated field is still the problem."
+    },
+    "sources": [
+      {
+        "title": "Define a stored access policy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/define-stored-access-policy"
+      },
+      {
+        "title": "Create a service SAS - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas"
+      },
+      {
+        "title": "az storage container",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/storage/container?view=azure-cli-latest"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.3-06",
+    "objective": "D2.1.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You update a stored access policy named `upload-window` on a queue at 09:00:00 UTC to allow add and process permissions. Immediately after the update, a test client receives 403 Forbidden responses when it uses a service SAS associated with the policy. At 09:00:20 UTC, another test also fails.\n\nWhat should you do before concluding that the policy configuration is wrong?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Convert the service SAS to an account SAS because queue policies do not support service SAS"
+      },
+      {
+        "id": "B",
+        "text": "Wait until at least 09:00:30 UTC and retry, because stored access policy changes can take up to 30 seconds to take effect"
+      },
+      {
+        "id": "C",
+        "text": "Delete the queue and recreate it because stored access policies are immutable after creation"
+      },
+      {
+        "id": "D",
+        "text": "Add a sixth stored access policy with the same permissions to force immediate propagation"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The service SAS is correctly formed for Queue Storage, and the stored access policy update was accepted by Azure Storage.",
+    "sections": {
+      "correctAnswer": "**B. Wait until at least 09:00:30 UTC and retry, because stored access policy changes can take up to 30 seconds to take effect**. Microsoft documents that creating or updating a policy might take up to 30 seconds to take effect and associated SAS requests can fail with 403 during that interval.",
+      "technical": "Stored access policy changes are not guaranteed to be usable at the exact instant the update call returns. Microsoft documents a propagation interval: when you create or update a stored access policy on a container, table, queue, or share, the change might take up to 30 seconds to take effect. During this interval, requests against a SAS associated with the policy might fail with 403 Forbidden until the policy becomes active.\n\nThe timeline in the question fits that documented behavior:\n\n| Time | Meaning |\n|---|---|\n| 09:00:00 | Policy update is made |\n| 09:00:20 | Still inside the possible 30-second propagation interval |\n| 09:00:30 or later | Reasonable time to retry before treating it as a configuration error |\n\nThe evaluation order is that Azure Storage validates the SAS and the referenced policy at request time. If the service replica handling the request has not yet applied the policy update, the request can fail even though the policy will soon be valid. The exception is that failures after the propagation window may still be real configuration problems, such as missing permissions, wrong signed identifier, or expired policy.",
+      "wrongOptions": {
+        "A": "Queue stored access policies support service SAS. Account SAS is not required and cannot reference a stored access policy. Misconception: A 403 during policy setup means the SAS type is unsupported. Could be correct when the operation truly requires account-level capabilities rather than a queue service SAS.",
+        "C": "Stored access policies can be modified by replacing the access control list; they are not immutable after creation. Misconception: Access policies are permanent once accepted. Could be correct only for data protected by a locked immutability policy, which is a different feature.",
+        "D": "A sixth stored access policy is invalid because the documented maximum is five, and adding another policy would not force propagation. Misconception: More policies can accelerate or replicate changes. Could be correct never for this purpose; additional policies are for distinct access groups within the five-policy limit."
+      },
+      "plainEnglish": "A policy change can have a short delay before every storage request sees it. A test at 20 seconds is still too early to prove that the setup is broken. Wait until the possible 30-second window has passed, then test again. If it still fails, then check the policy name, permissions, expiry, and the SAS itself. The first 30 seconds are a normal timing trap, not automatically a configuration mistake.",
+      "analogy": "Imagine updating a building's badge system. The security desk accepts the new rule at 09:00, but every door reader may need a few moments to receive it. A door that denies the badge at 09:00:20 does not prove the rule is wrong.\n\n| Analogy | Azure reality |\n|---|---|\n| Badge rule | Stored access policy update |\n| Door reader | Storage service request path |\n| Temporary denial | 403 Forbidden during propagation |\n| Thirty-second wait | Documented possible policy activation delay |\n\n**Where the analogy breaks down:** Azure does not have physical doors. It validates signed SAS query parameters and policy identifiers through distributed service infrastructure.",
+      "jargon": [
+        {
+          "term": "Shared access signature (SAS)",
+          "definition": "A token appended to an Azure Storage resource URI that delegates limited access for a defined time, permissions set, and optional constraints."
+        },
+        {
+          "term": "Service SAS",
+          "definition": "A SAS secured with the storage account key that delegates access to a resource in one Azure Storage service, such as Blob Storage, Queue Storage, Table Storage, or Azure Files."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A named server-side policy on a blob container, file share, queue, or table that can define start time, expiry time, and permissions for one or more service SAS tokens."
+        },
+        {
+          "term": "Signed identifier",
+          "definition": "The policy ID referenced by the `si` field in a service SAS URI. It links the SAS to a stored access policy on the storage resource."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "Authorization that uses a storage account key. Service SAS and account SAS tokens are signed with Shared Key material."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical container in Azure Blob Storage that holds blobs and can have stored access policies."
+        },
+        {
+          "term": "403 Forbidden",
+          "definition": "An HTTP response indicating that the request was understood but not authorized."
+        },
+        {
+          "term": "Propagation",
+          "definition": "The time needed for a configuration change to become effective across the service handling requests."
+        },
+        {
+          "term": "Queue Storage",
+          "definition": "An Azure Storage service for storing messages that applications can add, read, update, and process."
+        },
+        {
+          "term": "Process permission",
+          "definition": "A Queue Storage SAS permission that allows getting and deleting messages from a queue."
+        }
+      ],
+      "watchOut": "- A 403 inside the first 30 seconds after a policy change can be expected.\n- Retrying too quickly can create false troubleshooting signals.\n- The delay applies to create or update operations on containers, tables, queues, and shares.\n- After the window, verify the signed identifier, time range, permissions, and clock assumptions.",
+      "productionTip": {
+        "official": "Microsoft documents that when a stored access policy is created or updated on a container, table, queue, or share, the change might take up to 30 seconds to take effect. During this interval, requests using a SAS associated with the policy might fail with 403 Forbidden.",
+        "recommendation": "Build retry logic and deployment pauses into automation that creates a policy and immediately tests or distributes SAS URLs. For production rollouts, create or update policies before the client cutover time rather than at the exact moment access is needed."
+      },
+      "memoryTrick": "Policy changes are not instant; give them **half a minute**. This is a simplification because a failure after 30 seconds can still be a normal configuration or clock-skew problem to investigate.",
+      "examTip": "Clue words are **immediately after update**, **403**, and a timestamp still under 30 seconds. Choose the wait-and-retry answer. A harder version may include a failure after 45 seconds; then you should troubleshoot permissions, expiry, policy name, or SAS construction."
+    },
+    "sources": [
+      {
+        "title": "Define a stored access policy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/define-stored-access-policy"
+      },
+      {
+        "title": "Create a service SAS - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.3-07",
+    "objective": "D2.1.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a blob container named `archive`. A junior administrator says: \"I configured an immutability policy on `archive`, so we can use that policy to revoke partner SAS tokens later.\"\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The administrator is correct because immutability policies and stored access policies are the same feature"
+      },
+      {
+        "id": "B",
+        "text": "The administrator is correct only if the SAS tokens are account SAS tokens"
+      },
+      {
+        "id": "C",
+        "text": "The administrator is correct only if the retention interval is less than seven days"
+      },
+      {
+        "id": "D",
+        "text": "The administrator is incorrect because immutability policies protect blob data from modification or deletion, while stored access policies control service SAS constraints"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The container contains blob data. The question compares Azure Blob Storage immutability policies with Azure Storage stored access policies for SAS.",
+    "sections": {
+      "correctAnswer": "**D. The administrator is incorrect because immutability policies protect blob data from modification or deletion, while stored access policies control service SAS constraints**. The two features both use the word policy, but they solve different problems and are configured for different outcomes.",
+      "technical": "Azure Blob Storage immutability policies are part of immutable storage. They place blob data in a WORM, or Write Once, Read Many, state. Microsoft documents two immutability policy types: time-based retention policies and legal holds. While those policies are in effect, protected objects can be created and read, but cannot be modified or deleted according to the retention or hold rules.\n\nStored access policies are different. They are defined on blob containers, file shares, queues, or tables and provide server-side control over service SAS tokens. A stored access policy can define the start time, expiry time, and permissions for a SAS that references it. It can also be changed or removed to revoke associated service SAS tokens.\n\nThe order of reasoning is:\n\n1. Identify the goal. Prevent data changes or manage SAS access?\n2. If the goal is WORM retention or legal hold, use immutable storage policies.\n3. If the goal is grouping and revoking service SAS tokens, use stored access policies.\n4. Do not expect one feature to perform the other's job.\n\nAn important exception is that a service SAS permission can include operations related to setting immutability policy in some blob scenarios, but that does not make the immutability policy itself a SAS revocation mechanism.",
+      "wrongOptions": {
+        "A": "They are separate features. Immutability policies are for WORM data protection; stored access policies are for service SAS constraints. Misconception: Same word means same Azure feature. Could be correct only as a loose everyday phrase, not as a technical Azure answer.",
+        "B": "Account SAS tokens do not support stored access policies, and immutability policies still do not revoke them. Misconception: Account SAS has special compatibility with every policy feature. Could be correct when discussing broad account-level delegation, but not policy-based revocation.",
+        "C": "The retention interval length does not convert an immutability policy into a stored access policy. Misconception: A short retention period acts like token expiry. Could be correct when choosing an immutable storage retention period for data protection, not for SAS lifecycle management."
+      },
+      "plainEnglish": "Two different Azure features use the word policy. An immutability policy is about protecting stored blob data so it cannot be changed or deleted for a period or while a legal hold exists. A stored access policy is about SAS links: when they start, when they expire, and what they allow. If you need to revoke partner SAS links, use a stored access policy. If you need to preserve records so nobody can alter them, use immutable storage.",
+      "analogy": "A museum has two controls. One locks display cases so artifacts cannot be altered, and another controls visitor passes. Locking the display case does not cancel visitor passes; it only protects the artifacts from being changed.\n\n| Analogy | Azure reality |\n|---|---|\n| Locked display case | Immutability policy |\n| Artifact cannot be changed | Blob data cannot be modified or deleted |\n| Visitor pass rule | Stored access policy |\n| Cancelling passes | Revoking service SAS tokens |\n| Museum archive room | Blob container |\n\n**Where the analogy breaks down:** Azure policies involve exact API permissions, retention states, legal holds, and SAS signatures. A physical display case does not model token authorization.",
+      "jargon": [
+        {
+          "term": "Shared access signature (SAS)",
+          "definition": "A token appended to an Azure Storage resource URI that delegates limited access for a defined time, permissions set, and optional constraints."
+        },
+        {
+          "term": "Service SAS",
+          "definition": "A SAS secured with the storage account key that delegates access to a resource in one Azure Storage service, such as Blob Storage, Queue Storage, Table Storage, or Azure Files."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A named server-side policy on a blob container, file share, queue, or table that can define start time, expiry time, and permissions for one or more service SAS tokens."
+        },
+        {
+          "term": "Signed identifier",
+          "definition": "The policy ID referenced by the `si` field in a service SAS URI. It links the SAS to a stored access policy on the storage resource."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "Authorization that uses a storage account key. Service SAS and account SAS tokens are signed with Shared Key material."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical container in Azure Blob Storage that holds blobs and can have stored access policies."
+        },
+        {
+          "term": "Immutability policy",
+          "definition": "An Azure Blob Storage data protection policy that stores data in a WORM state using time-based retention or legal hold."
+        },
+        {
+          "term": "WORM",
+          "definition": "Write Once, Read Many; a state where data can be read but not modified or deleted while protection applies."
+        },
+        {
+          "term": "Time-based retention policy",
+          "definition": "An immutability policy that protects blob data from modification or deletion for a specified interval."
+        },
+        {
+          "term": "Legal hold",
+          "definition": "An immutability policy that protects blob data until the hold is explicitly cleared."
+        }
+      ],
+      "watchOut": "- Do not treat every Azure feature named policy as interchangeable.\n- Immutability policies protect data; stored access policies manage service SAS constraints.\n- Stored access policies can be deleted or expired for revocation; locked immutability policies have their own restrictions.\n- For exams, identify the target: token access or retained data.",
+      "productionTip": {
+        "official": "Microsoft documents immutable storage for Blob Storage as WORM support with time-based retention policies and legal hold policies that protect data from modification and deletion. Microsoft separately documents stored access policies as server-side controls for service SAS start time, expiry time, permissions, and revocation.",
+        "recommendation": "Use immutable storage for regulatory retention or tamper resistance, and use stored access policies for SAS lifecycle control. Keep the names in runbooks explicit, such as `container immutability policy` versus `stored access policy`, to avoid operational mistakes."
+      },
+      "memoryTrick": "Immutable means **data stays put**; stored access means **SAS access is steered**. This is a simplification because SAS permissions can interact with data operations, but the features are not substitutes.",
+      "examTip": "Clue words are **immutability** and **revoke SAS tokens**. The exam is testing two similarly named features. A harder version may mention the SAS permission to set immutability policy; that permission still does not make immutability policies a way to revoke SAS tokens."
+    },
+    "sources": [
+      {
+        "title": "Immutable Storage for Blob Data Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-storage-overview"
+      },
+      {
+        "title": "Define a stored access policy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/define-stored-access-policy"
+      },
+      {
+        "title": "Create a service SAS - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.3-08",
+    "objective": "D2.1.3",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You manage a storage account named `stmedia` that contains a blob container named `clips`. You need to create a stored access policy named `clip-read` with read and list permissions, then generate SAS tokens that reference the policy. A teammate may use either Azure CLI or Azure Storage Explorer.\n\nWhich two approaches are valid? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use `az storage container policy create` for `clips`, then use `az storage container generate-sas --policy-name clip-read` for the container"
+      },
+      {
+        "id": "B",
+        "text": "Use `az storage account generate-sas --policy-name clip-read` because stored access policies are account-level settings"
+      },
+      {
+        "id": "C",
+        "text": "In Storage Explorer, open the blob container's `Manage Access Policies` action to add the policy, then use `Get Shared Access Signature` for the container"
+      },
+      {
+        "id": "D",
+        "text": "Use `az storage container immutability-policy create` and then generate a user delegation SAS with the same policy name"
+      },
+      {
+        "id": "E",
+        "text": "Create six policies on `clips` so that one policy is available for each future permission set"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The SAS should be a service SAS for a blob container. The operator has permissions and storage credentials needed to create the policy and generate the SAS.",
+    "sections": {
+      "correctAnswer": "**A. Use `az storage container policy create` for `clips`, then use `az storage container generate-sas --policy-name clip-read` for the container** and **C. In Storage Explorer, open the blob container's `Manage Access Policies` action to add the policy, then use `Get Shared Access Signature` for the container**. Both approaches use documented tooling that creates a stored access policy on the container and generates a service SAS that can reference it.",
+      "technical": "Azure CLI and Azure Storage Explorer both expose workflows for this objective. In Azure CLI, container stored access policies are managed with the `az storage container policy` command group. The `create` command requires the container name and policy name, and can take optional `--permissions`, `--start`, and `--expiry` values. SAS generation for a container is done with `az storage container generate-sas`, which includes a `--policy-name` option described as the name of a stored access policy within the container's ACL.\n\nA minimal pattern is:\n\n```azurecli\naz storage container policy create --account-name stmedia --container-name clips --name clip-read --permissions rl --expiry 2026-10-13T00:00:00Z\naz storage container generate-sas --account-name stmedia --name clips --policy-name clip-read --https-only -o tsv\n```\n\nIn Storage Explorer, Microsoft documents **Manage Access Policies** on a blob container for adding, editing, and removing access policies. It also documents **Get Shared Access Signature** for a blob container, where the dialog lets you specify the policy and SAS settings.\n\nThe limits and exceptions still apply: the policy is container-level, not account-level; only service SAS can use stored access policies; and a container can have at most five stored access policies.",
+      "wrongOptions": {
+        "B": "Stored access policies are not account-level settings, and account SAS tokens cannot reference stored access policies. Misconception: A storage account command must be the right tool for any storage-wide security setting. Could be correct when generating an ad hoc account SAS for account-level operations that do not need a stored access policy.",
+        "D": "An immutability policy is a data retention feature, and user delegation SAS tokens do not support stored access policies. Misconception: Any named policy can be reused across SAS types and storage features. Could be correct when separately configuring WORM protection or generating a user delegation SAS without a stored access policy.",
+        "E": "Six policies exceed the documented maximum of five stored access policies on a container, share, queue, or table. Misconception: Pre-creating many policies is harmless capacity planning. Could be correct only if there were five or fewer policies and each represented a real separate access group."
+      },
+      "plainEnglish": "There are two practical tool paths. With Azure CLI, create the policy on the container, then generate a container SAS that names that policy. With Storage Explorer, right-click the blob container, manage its access policies, and then get a shared access signature for the container using the desired policy. Do not use account-level SAS commands for this, do not use immutability policies, and do not create more than five stored access policies on one container.",
+      "analogy": "Think of a shipping office. You can use a command-line terminal or a desktop app to create a rule card for the `clips` bin. After the card exists, either tool can print access labels that refer to that card.\n\n| Analogy | Azure reality |\n|---|---|\n| Shipping bin | Blob container `clips` |\n| Rule card | Stored access policy `clip-read` |\n| Terminal workflow | Azure CLI commands |\n| Desktop workflow | Storage Explorer actions |\n| Access label | Service SAS token |\n\n**Where the analogy breaks down:** The real SAS is a signed query string, and Storage Explorer-generated SAS behavior depends on the supported SAS type and selected resource.",
+      "jargon": [
+        {
+          "term": "Shared access signature (SAS)",
+          "definition": "A token appended to an Azure Storage resource URI that delegates limited access for a defined time, permissions set, and optional constraints."
+        },
+        {
+          "term": "Service SAS",
+          "definition": "A SAS secured with the storage account key that delegates access to a resource in one Azure Storage service, such as Blob Storage, Queue Storage, Table Storage, or Azure Files."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A named server-side policy on a blob container, file share, queue, or table that can define start time, expiry time, and permissions for one or more service SAS tokens."
+        },
+        {
+          "term": "Signed identifier",
+          "definition": "The policy ID referenced by the `si` field in a service SAS URI. It links the SAS to a stored access policy on the storage resource."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "Authorization that uses a storage account key. Service SAS and account SAS tokens are signed with Shared Key material."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical container in Azure Blob Storage that holds blobs and can have stored access policies."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's cross-platform command-line tool for managing Azure resources and services."
+        },
+        {
+          "term": "`az storage container policy create`",
+          "definition": "An Azure CLI command that creates a stored access policy on a blob container."
+        },
+        {
+          "term": "`az storage container generate-sas`",
+          "definition": "An Azure CLI command that generates a SAS token for a blob container."
+        },
+        {
+          "term": "`--policy-name`",
+          "definition": "An Azure CLI parameter that specifies the stored access policy name within the container ACL to associate with the generated SAS."
+        },
+        {
+          "term": "Azure Storage Explorer",
+          "definition": "A standalone Microsoft app for working with Azure Storage data and containers on Windows, macOS, and Linux."
+        }
+      ],
+      "watchOut": "- For a blob container policy, use container policy tooling, not account SAS tooling.\n- `--policy-name` ties the generated container service SAS to the stored access policy.\n- Storage Explorer can manage blob container access policies and generate shared access signatures.\n- Stay under the five-policy limit on a container.",
+      "productionTip": {
+        "official": "Microsoft documents `az storage container policy create` as creating a stored access policy on the containing object and documents `az storage container generate-sas` with a `--policy-name` parameter. Storage Explorer documentation shows **Manage Access Policies** for a blob container and **Get Shared Access Signature** for generating a SAS.",
+        "recommendation": "Standardize one automation path for repeatable production issuance, usually CLI or SDK, and reserve Storage Explorer for controlled administrative tasks. Store policy names, expiry decisions, and SAS issuance procedures in a runbook so operators do not mix account SAS, user delegation SAS, and service SAS workflows."
+      },
+      "memoryTrick": "Create policy, then generate SAS **with the policy name**. This is a simplification because credentials, expiry fields, and duplicate-parameter rules still need to be handled correctly.",
+      "examTip": "Clue words are **Azure CLI**, **Storage Explorer**, **stored access policy**, and **reference the policy**. Pick the container policy plus container SAS workflow, or the Storage Explorer access-policy workflow. A harder version may include `--as-user`; that points to user delegation SAS, which cannot use stored access policies."
+    },
+    "sources": [
+      {
+        "title": "az storage container policy",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/storage/container/policy?view=azure-cli-latest"
+      },
+      {
+        "title": "az storage container",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/storage/container?view=azure-cli-latest"
+      },
+      {
+        "title": "Manage Azure Blob Storage resources with Storage Explorer",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-explorer-blobs"
+      },
+      {
+        "title": "Quickstart - Create a blob with Azure Storage Explorer",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/quickstart-storage-explorer"
+      },
+      {
+        "title": "Define a stored access policy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/define-stored-access-policy"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]
+
+

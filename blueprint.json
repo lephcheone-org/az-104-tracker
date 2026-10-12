@@ -1,0 +1,553 @@
+{
+ "exam": "AZ-104",
+ "title": "Microsoft Certified: Azure Administrator Associate",
+ "skillsAsOf": "2026-04-17",
+ "researchedOn": "2026-10-06",
+ "domains": [
+  {
+   "id": "D1",
+   "name": "Identities & governance",
+   "fullName": "Manage Azure identities and governance",
+   "weight": "20-25%",
+   "examQuota": 12,
+   "groups": [
+    {
+     "id": "D1.1",
+     "name": "Manage Microsoft Entra users and groups",
+     "objectives": [
+      {
+       "id": "D1.1.1",
+       "name": "Create users and groups",
+       "target": 11
+      },
+      {
+       "id": "D1.1.2",
+       "name": "Manage user and group properties",
+       "target": 11
+      },
+      {
+       "id": "D1.1.3",
+       "name": "Manage licenses in Microsoft Entra ID",
+       "target": 11
+      },
+      {
+       "id": "D1.1.4",
+       "name": "Manage external users",
+       "target": 11
+      },
+      {
+       "id": "D1.1.5",
+       "name": "Configure self-service password reset (SSPR)",
+       "target": 11
+      }
+     ]
+    },
+    {
+     "id": "D1.2",
+     "name": "Manage access to Azure resources",
+     "objectives": [
+      {
+       "id": "D1.2.1",
+       "name": "Manage built-in Azure roles",
+       "target": 11
+      },
+      {
+       "id": "D1.2.2",
+       "name": "Assign roles at different scopes",
+       "target": 11
+      },
+      {
+       "id": "D1.2.3",
+       "name": "Interpret access assignments",
+       "target": 11
+      }
+     ]
+    },
+    {
+     "id": "D1.3",
+     "name": "Manage Azure subscriptions and governance",
+     "objectives": [
+      {
+       "id": "D1.3.1",
+       "name": "Implement and manage Azure Policy",
+       "target": 11
+      },
+      {
+       "id": "D1.3.2",
+       "name": "Configure resource locks",
+       "target": 11
+      },
+      {
+       "id": "D1.3.3",
+       "name": "Apply and manage tags on resources",
+       "target": 11
+      },
+      {
+       "id": "D1.3.4",
+       "name": "Manage resource groups",
+       "target": 11
+      },
+      {
+       "id": "D1.3.5",
+       "name": "Manage subscriptions",
+       "target": 11
+      },
+      {
+       "id": "D1.3.6",
+       "name": "Manage costs by using alerts, budgets, and Azure Advisor recommendations",
+       "target": 11
+      },
+      {
+       "id": "D1.3.7",
+       "name": "Configure management groups",
+       "target": 11
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "D2",
+   "name": "Storage",
+   "fullName": "Implement and manage storage",
+   "weight": "15-20%",
+   "examQuota": 10,
+   "groups": [
+    {
+     "id": "D2.1",
+     "name": "Configure access to storage",
+     "objectives": [
+      {
+       "id": "D2.1.1",
+       "name": "Configure Azure Storage firewalls and virtual networks",
+       "target": 8
+      },
+      {
+       "id": "D2.1.2",
+       "name": "Create and use shared access signature (SAS) tokens",
+       "target": 8
+      },
+      {
+       "id": "D2.1.3",
+       "name": "Configure stored access policies",
+       "target": 8
+      },
+      {
+       "id": "D2.1.4",
+       "name": "Manage access keys",
+       "target": 8
+      },
+      {
+       "id": "D2.1.5",
+       "name": "Configure identity-based access for Azure Files",
+       "target": 8
+      }
+     ]
+    },
+    {
+     "id": "D2.2",
+     "name": "Configure and manage storage accounts",
+     "objectives": [
+      {
+       "id": "D2.2.1",
+       "name": "Create and configure storage accounts",
+       "target": 8
+      },
+      {
+       "id": "D2.2.2",
+       "name": "Configure Azure Storage redundancy",
+       "target": 8
+      },
+      {
+       "id": "D2.2.3",
+       "name": "Configure object replication",
+       "target": 8
+      },
+      {
+       "id": "D2.2.4",
+       "name": "Configure storage account encryption",
+       "target": 8
+      },
+      {
+       "id": "D2.2.5",
+       "name": "Manage data by using Azure Storage Explorer and AzCopy",
+       "target": 8
+      }
+     ]
+    },
+    {
+     "id": "D2.3",
+     "name": "Configure Azure Files and Azure Blob Storage",
+     "objectives": [
+      {
+       "id": "D2.3.1",
+       "name": "Create and configure a file share in Azure Files",
+       "target": 8
+      },
+      {
+       "id": "D2.3.2",
+       "name": "Create and configure a container in Azure Blob Storage",
+       "target": 8
+      },
+      {
+       "id": "D2.3.3",
+       "name": "Configure storage tiers",
+       "target": 8
+      },
+      {
+       "id": "D2.3.4",
+       "name": "Configure soft delete for blobs and containers",
+       "target": 8
+      },
+      {
+       "id": "D2.3.5",
+       "name": "Configure snapshots and soft delete for Azure Files",
+       "target": 8
+      },
+      {
+       "id": "D2.3.6",
+       "name": "Configure blob lifecycle management",
+       "target": 8
+      },
+      {
+       "id": "D2.3.7",
+       "name": "Configure blob versioning",
+       "target": 8
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "D3",
+   "name": "Compute",
+   "fullName": "Deploy and manage Azure compute resources",
+   "weight": "20-25%",
+   "examQuota": 12,
+   "groups": [
+    {
+     "id": "D3.1",
+     "name": "Automate deployment of resources by using ARM templates or Bicep files",
+     "objectives": [
+      {
+       "id": "D3.1.1",
+       "name": "Interpret an Azure Resource Manager template or a Bicep file",
+       "target": 7
+      },
+      {
+       "id": "D3.1.2",
+       "name": "Modify an existing Azure Resource Manager template",
+       "target": 7
+      },
+      {
+       "id": "D3.1.3",
+       "name": "Modify an existing Bicep file",
+       "target": 7
+      },
+      {
+       "id": "D3.1.4",
+       "name": "Deploy resources by using an Azure Resource Manager template or a Bicep file",
+       "target": 7
+      },
+      {
+       "id": "D3.1.5",
+       "name": "Export a deployment as an Azure Resource Manager template or convert an Azure Resource Manager template to a Bicep file",
+       "target": 7
+      }
+     ]
+    },
+    {
+     "id": "D3.2",
+     "name": "Create and configure virtual machines",
+     "objectives": [
+      {
+       "id": "D3.2.1",
+       "name": "Create a virtual machine",
+       "target": 7
+      },
+      {
+       "id": "D3.2.2",
+       "name": "Configure encryption at host for Azure virtual machines",
+       "target": 7
+      },
+      {
+       "id": "D3.2.3",
+       "name": "Move a virtual machine to another resource group, subscription, or region",
+       "target": 7
+      },
+      {
+       "id": "D3.2.4",
+       "name": "Manage virtual machine sizes",
+       "target": 7
+      },
+      {
+       "id": "D3.2.5",
+       "name": "Manage virtual machine disks",
+       "target": 7
+      },
+      {
+       "id": "D3.2.6",
+       "name": "Deploy virtual machines to availability zones and availability sets",
+       "target": 7
+      },
+      {
+       "id": "D3.2.7",
+       "name": "Deploy and configure an Azure Virtual Machine Scale Sets",
+       "target": 7
+      }
+     ]
+    },
+    {
+     "id": "D3.3",
+     "name": "Provision and manage containers in the Azure portal",
+     "objectives": [
+      {
+       "id": "D3.3.1",
+       "name": "Create and manage an Azure Container Registry",
+       "target": 7
+      },
+      {
+       "id": "D3.3.2",
+       "name": "Provision a container by using Azure Container Instances",
+       "target": 7
+      },
+      {
+       "id": "D3.3.3",
+       "name": "Provision a container by using Azure Container Apps",
+       "target": 7
+      },
+      {
+       "id": "D3.3.4",
+       "name": "Manage sizing and scaling for containers, including Azure Container Instances and Azure Container Apps",
+       "target": 7
+      }
+     ]
+    },
+    {
+     "id": "D3.4",
+     "name": "Create and configure Azure App Service",
+     "objectives": [
+      {
+       "id": "D3.4.1",
+       "name": "Provision an App Service plan",
+       "target": 7
+      },
+      {
+       "id": "D3.4.2",
+       "name": "Configure scaling for an App Service plan",
+       "target": 7
+      },
+      {
+       "id": "D3.4.3",
+       "name": "Create an App Service",
+       "target": 7
+      },
+      {
+       "id": "D3.4.4",
+       "name": "Configure certificates and Transport Layer Security (TLS) for an App Service",
+       "target": 7
+      },
+      {
+       "id": "D3.4.5",
+       "name": "Map an existing custom DNS name to an App Service",
+       "target": 7
+      },
+      {
+       "id": "D3.4.6",
+       "name": "Configure backup for an App Service",
+       "target": 7
+      },
+      {
+       "id": "D3.4.7",
+       "name": "Configure networking settings for an App Service",
+       "target": 7
+      },
+      {
+       "id": "D3.4.8",
+       "name": "Configure deployment slots for an App Service",
+       "target": 7
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "D4",
+   "name": "Networking",
+   "fullName": "Implement and manage virtual networking",
+   "weight": "15-20%",
+   "examQuota": 9,
+   "groups": [
+    {
+     "id": "D4.1",
+     "name": "Configure and manage virtual networks in Azure",
+     "objectives": [
+      {
+       "id": "D4.1.1",
+       "name": "Create and configure virtual networks and subnets",
+       "target": 10
+      },
+      {
+       "id": "D4.1.2",
+       "name": "Create and configure virtual network peering",
+       "target": 10
+      },
+      {
+       "id": "D4.1.3",
+       "name": "Configure public IP addresses",
+       "target": 10
+      },
+      {
+       "id": "D4.1.4",
+       "name": "Configure user-defined routes",
+       "target": 10
+      },
+      {
+       "id": "D4.1.5",
+       "name": "Troubleshoot network connectivity",
+       "target": 10
+      }
+     ]
+    },
+    {
+     "id": "D4.2",
+     "name": "Configure secure access to virtual networks",
+     "objectives": [
+      {
+       "id": "D4.2.1",
+       "name": "Create and configure network security groups (NSGs) and application security groups",
+       "target": 10
+      },
+      {
+       "id": "D4.2.2",
+       "name": "Evaluate effective security rules in NSGs",
+       "target": 10
+      },
+      {
+       "id": "D4.2.3",
+       "name": "Implement Azure Bastion",
+       "target": 10
+      },
+      {
+       "id": "D4.2.4",
+       "name": "Configure service endpoints for Azure platform as a service (PaaS)",
+       "target": 10
+      },
+      {
+       "id": "D4.2.5",
+       "name": "Configure private endpoints for Azure PaaS",
+       "target": 10
+      }
+     ]
+    },
+    {
+     "id": "D4.3",
+     "name": "Configure name resolution and load balancing",
+     "objectives": [
+      {
+       "id": "D4.3.1",
+       "name": "Configure Azure DNS",
+       "target": 10
+      },
+      {
+       "id": "D4.3.2",
+       "name": "Configure an internal or public load balancer",
+       "target": 10
+      },
+      {
+       "id": "D4.3.3",
+       "name": "Troubleshoot load balancing",
+       "target": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "D5",
+   "name": "Monitor & maintain",
+   "fullName": "Monitor and maintain Azure resources",
+   "weight": "10-15%",
+   "examQuota": 7,
+   "groups": [
+    {
+     "id": "D5.1",
+     "name": "Monitor resources in Azure",
+     "objectives": [
+      {
+       "id": "D5.1.1",
+       "name": "Interpret metrics in Azure Monitor",
+       "target": 8
+      },
+      {
+       "id": "D5.1.2",
+       "name": "Configure log settings in Azure Monitor",
+       "target": 8
+      },
+      {
+       "id": "D5.1.3",
+       "name": "Query and analyze logs in Azure Monitor",
+       "target": 8
+      },
+      {
+       "id": "D5.1.4",
+       "name": "Set up alert rules, action groups, and alert processing rules in Azure Monitor",
+       "target": 8
+      },
+      {
+       "id": "D5.1.5",
+       "name": "Configure and interpret monitoring of virtual machines, storage accounts, and networks by using Azure Monitor Insights",
+       "target": 8
+      },
+      {
+       "id": "D5.1.6",
+       "name": "Use Azure Network Watcher and Connection monitor",
+       "target": 8
+      }
+     ]
+    },
+    {
+     "id": "D5.2",
+     "name": "Implement backup and recovery",
+     "objectives": [
+      {
+       "id": "D5.2.1",
+       "name": "Create a Recovery Services vault",
+       "target": 8
+      },
+      {
+       "id": "D5.2.2",
+       "name": "Create an Azure Backup vault",
+       "target": 8
+      },
+      {
+       "id": "D5.2.3",
+       "name": "Create and configure a backup policy",
+       "target": 8
+      },
+      {
+       "id": "D5.2.4",
+       "name": "Perform backup and restore operations by using Azure Backup",
+       "target": 8
+      },
+      {
+       "id": "D5.2.5",
+       "name": "Configure Azure Site Recovery for Azure resources",
+       "target": 8
+      },
+      {
+       "id": "D5.2.6",
+       "name": "Perform a failover to a secondary region by using Site Recovery",
+       "target": 8
+      },
+      {
+       "id": "D5.2.7",
+       "name": "Configure and interpret reports and alerts for backups",
+       "target": 8
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

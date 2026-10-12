@@ -1,0 +1,392 @@
+[
+  {
+    "id": "D4.3.3-01",
+    "objective": "D4.3.3",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You have an Azure subscription that contains a Standard public load balancer named `lb-web`. The backend pool contains two Windows virtual machines. The load-balancing rule forwards TCP 443, and the health probe is configured as TCP on port 8443. Users report that the public site is unavailable. In Azure Monitor, the Health Probe Status metric for both backend IP addresses is 0 percent. On each VM, the web service on TCP 443 is running, but no process is listening on TCP 8443. A network security group associated with the subnet contains a high-priority deny rule for source `VirtualNetwork` and destination port 8443.\n\nWhich two changes can make the backend instances eligible to receive new load-balanced flows? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Allow health probe traffic from the `AzureLoadBalancer` service tag, or from IP address `168.63.129.16`, to the configured probe port"
+      },
+      {
+        "id": "B",
+        "text": "Change the load-balancing rule to use UDP 443 so established TCP flows can continue when probes are down"
+      },
+      {
+        "id": "C",
+        "text": "Configure a listener or health endpoint on TCP 8443, or change the probe to a port where the application listens"
+      },
+      {
+        "id": "D",
+        "text": "Add public IP addresses directly to each backend VM so probes bypass the load balancer"
+      },
+      {
+        "id": "E",
+        "text": "Create an outbound rule because health probes are evaluated only after outbound SNAT is configured"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The load balancer is Standard SKU, the backend VMs are running, and the intended design is to keep using the existing load balancer rather than publish each VM separately.",
+    "sections": {
+      "correctAnswer": "**A. Allow health probe traffic from the `AzureLoadBalancer` service tag, or from IP address `168.63.129.16`, to the configured probe port** and **C. Configure a listener or health endpoint on TCP 8443, or change the probe to a port where the application listens**. Azure Load Balancer can send new flows only to endpoints that pass the configured probe.",
+      "technical": "A load-balancing rule depends on a health probe to decide which backend pool instances can receive new inbound flows. In this scenario, the public listener on TCP 443 is not enough by itself because the probe is configured to test TCP 8443. Microsoft documents that the probe port is the destination port used when the load balancer checks the virtual machine, and you must ensure that the VM is listening on that port. If a TCP listener does not respond before the next probe interval, or if the instance sends a reset, the TCP probe fails.\n\nThe probe source also matters. IPv4 Azure Load Balancer probes originate from `168.63.129.16`, and the `AzureLoadBalancer` service tag identifies that source in network security group rules. The default NSG rules normally allow this traffic, but a higher-priority deny rule or a guest firewall can still block the actual probe. Troubleshoot in this order:\n\n1. Confirm the backend VM is running and not deallocated.\n2. Confirm an application or health service is listening on the exact probe port and protocol.\n3. Check the VM firewall and any NSG on the subnet or NIC for rules that block `168.63.129.16` or the `AzureLoadBalancer` service tag.\n4. Review Health Probe Status per backend IP after the change.\n\nThe service port and probe port do not have to match, but the configured probe port must represent the health of the service. When all backend endpoints are unhealthy, the Standard load balancer does not send new flows to that backend pool. Existing TCP flows may continue in some probe-down cases, but that behavior does not restore new client access.",
+      "wrongOptions": {
+        "B": "Changing the rule to UDP would not make a TCP HTTPS application healthy, and it would not address the missing listener or blocked probe path. Misconception: probe-down behavior for existing flows can substitute for a healthy backend. Could be correct when: the application is genuinely UDP and the entire listener design uses UDP.",
+        "D": "A public IP on each VM changes the exposure model and does not repair the load balancer health decision. Misconception: direct reachability to a VM automatically fixes backend pool probe state. Could be correct when: the requirement is to administer or publish each VM separately, not to restore this load-balanced frontend.",
+        "E": "Outbound rules control SNAT-based outbound connectivity from backend instances; they are not a prerequisite for inbound health probes. Misconception: every load balancer problem starts with outbound SNAT. Could be correct when: backend VMs cannot establish outbound internet flows through a Standard public load balancer."
+      },
+      "plainEnglish": "The load balancer is like a receptionist that sends visitors only to rooms that answer a readiness check. The website is on room 443, but the readiness check is knocking on room 8443. Nobody is answering there, and the hallway guard is blocking the special Azure checker from reaching that room. To fix the problem, let the checker reach the room and make sure something useful answers on the number being checked. You can start a small health service on 8443 or change the probe to a port that already gives a correct health signal.",
+      "analogy": "Imagine a restaurant with two kitchens behind one front counter. Before sending customers to a kitchen, the host calls a dedicated kitchen phone. The menu phone works, but the health-check phone has no handset attached and building security blocks the host's call.\n\n| Analogy | Azure reality |\n|---|---|\n| Front counter | Load balancer frontend |\n| Kitchen | Backend VM |\n| Health-check phone | Probe port and protocol |\n| Building security desk | NSG or guest firewall |\n| Trusted caller ID | `AzureLoadBalancer` tag or `168.63.129.16` |\n\n**Where the analogy breaks down:** Azure probes are packets, not calls. HTTP probes evaluate status codes, TCP probes test connection establishment, and the load balancer uses distributed infrastructure rather than a single host.",
+      "jargon": [
+        {
+          "term": "Standard Load Balancer",
+          "definition": "The current Azure Load Balancer SKU used for production layer 4 TCP and UDP load balancing."
+        },
+        {
+          "term": "Backend pool",
+          "definition": "The group of virtual machine IP configurations or instances that can receive traffic from a load balancer."
+        },
+        {
+          "term": "Health probe",
+          "definition": "A periodic test Azure Load Balancer sends to backend instances to decide whether each instance can receive new flows."
+        },
+        {
+          "term": "Network security group (NSG)",
+          "definition": "A set of security rules that allow or deny traffic to a subnet or network interface."
+        },
+        {
+          "term": "AzureLoadBalancer service tag",
+          "definition": "An NSG tag that represents the Azure Load Balancer health probe source."
+        },
+        {
+          "term": "168.63.129.16",
+          "definition": "A Microsoft-owned virtual public IP address used for several Azure platform functions, including IPv4 load balancer health probes."
+        },
+        {
+          "term": "TCP listener",
+          "definition": "A process or service that accepts TCP connections on a particular port."
+        },
+        {
+          "term": "Frontend",
+          "definition": "The load balancer IP address and port that clients connect to."
+        }
+      ],
+      "watchOut": "- Do not assume the application port and probe port are the same; read the probe configuration.\n- A higher-priority deny rule can override the default NSG rule that allows load balancer probes.\n- A VM can be running and still fail a probe if the guest firewall blocks the probe port.\n- Health Probe Status at 0 percent means Azure's configured health signal is down, not necessarily that the whole operating system is off.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure Load Balancer health probes require the backend VM to listen on the probe port and that IPv4 probes originate from `168.63.129.16`, represented by the `AzureLoadBalancer` service tag in NSGs. Troubleshooting guidance lists blocked probe ports and missing listeners as common causes.",
+        "recommendation": "Use a dedicated health endpoint only when it genuinely tests the application dependency chain you care about. Keep the NSG allow rule narrow to the probe port and `AzureLoadBalancer` tag, and verify the guest firewall separately because NSG success does not prove the process is accepting connections."
+      },
+      "memoryTrick": "For probe failures, remember **reach and respond**: Azure must reach the probe port, and the VM must respond on that port. This shortcut fails if a health page ignores a failed dependency.",
+      "examTip": "Clue words are **Health Probe Status is 0**, **probe on 8443**, **no process is listening**, and **NSG deny rule**. Choose fixes that affect the configured probe path. Rule out answers that change unrelated outbound behavior or bypass the load balancer entirely. A harder version may use HTTP probes, where a reachable endpoint still fails if it returns a status other than HTTP 200."
+    },
+    "sources": [
+      {
+        "title": "Azure Load Balancer health probes",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+      },
+      {
+        "title": "Troubleshoot Azure Load Balancer health probe status",
+        "url": "https://learn.microsoft.com/en-us/troubleshoot/azure/load-balancer/load-balancer-troubleshoot-health-probe-status"
+      },
+      {
+        "title": "Azure IP Address 168.63.129.16 Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/what-is-ip-address-168-63-129-16"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.3.3-02",
+    "objective": "D4.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You deploy a Standard public load balancer named `lb-api` for an API running on virtual machines. The load balancer has a frontend public IP address, a backend pool, a health probe, and a load-balancing rule for TCP 443. No network security group is associated with the backend subnet or the backend NICs. The API team says that the configuration looks complete because the load balancer rule exists, but internet clients cannot connect.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Associate an NSG with the backend subnet or NICs and add explicit inbound allow rules for the permitted client traffic and required load balancer probe traffic"
+      },
+      {
+        "id": "B",
+        "text": "Downgrade the resource to a Basic load balancer because Basic load balancers are open to the internet by default"
+      },
+      {
+        "id": "C",
+        "text": "Remove the health probe because Standard public load balancers forward traffic without probes when the backend pool has two or more VMs"
+      },
+      {
+        "id": "D",
+        "text": "Enable default outbound access on the virtual network so the same public IP can accept inbound connections"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The workload must remain on Standard Load Balancer, clients are allowed to reach the API over TCP 443, and the backend VMs are otherwise configured correctly.",
+    "sections": {
+      "correctAnswer": "**A. Associate an NSG with the backend subnet or NICs and add explicit inbound allow rules for the permitted client traffic and required load balancer probe traffic**. Standard load balancers and Standard public IP addresses follow a secure-by-default model, so a load-balancing rule still needs network access controls that explicitly permit the traffic path.",
+      "technical": "Standard Load Balancer is part of the virtual network security model rather than a stand-alone exception to it. Microsoft documents that Standard load balancers and public IP addresses are closed to inbound connections by default, that NSGs must explicitly permit allowed traffic, and that traffic is blocked if no NSG exists on the subnet or NIC. This is a common exam trap because the portal can show a valid load-balancing rule even though network policy still prevents the backend from accepting packets.\n\nThe evaluation sequence for an inbound client flow is layered:\n\n1. The client sends traffic to the public frontend IP and port.\n2. The load-balancing rule maps that frontend tuple to the backend pool and backend port.\n3. The health probe determines which backend endpoints are eligible for new flows.\n4. NSG rules on the subnet or NIC must allow the inbound traffic to the backend.\n5. The guest operating system firewall and application listener must accept the connection.\n\nA secure configuration normally includes at least two intentional allows: one for client traffic such as TCP 443 from approved sources, and one for health probe traffic from the `AzureLoadBalancer` service tag to the probe port. If clients come only from partner address ranges, the client allow should name those ranges rather than the whole Internet. Basic Load Balancer was retired on September 30, 2025, so a downgrade answer is not a valid modern fix.",
+      "wrongOptions": {
+        "B": "Basic Load Balancer was retired and is not the right answer for a current AZ-104 scenario. Misconception: an older open-by-default resource is an acceptable workaround for Standard SKU security. Could be correct when: you are reading legacy documentation about an existing historical deployment before migration, not when deploying now.",
+        "C": "A load-balancing rule needs a health probe to determine endpoint status, and removing health checks would not satisfy Standard SKU inbound security requirements. Misconception: multiple backend VMs automatically make a probe unnecessary. Could be correct when: discussing an inbound NAT rule, because inbound NAT rules do not need a health probe.",
+        "D": "Default outbound access affects outbound internet connectivity for VMs, not whether public inbound traffic through a Standard load balancer is allowed. Misconception: outbound reachability and inbound publishing use the same setting. Could be correct when: a VM needs temporary outbound internet access, although explicit outbound methods are recommended."
+      },
+      "plainEnglish": "Creating the load balancer is like putting a public doorbell on a building. Standard Azure networking still keeps the inside doors locked unless you install a rule that says who may enter and which door they may use. The API team created the public doorbell and the routing map, but they did not create the security permission that allows visitors to reach the servers. Add an NSG and rules that allow only the intended client traffic and the Azure health checker.",
+      "analogy": "A bank branch can publish its street address and still keep the lobby locked after hours. A guard list decides who can enter, and a maintenance inspector needs a separate permission to check emergency systems. Without the guard list, the sign outside does not grant entry.\n\n| Analogy | Azure reality |\n|---|---|\n| Street address | Public frontend IP address |\n| Routing map to counters | Load-balancing rule |\n| Guard list | NSG rules |\n| Maintenance inspector | Load balancer health probe |\n| Locked lobby by default | Standard SKU secure-by-default inbound behavior |\n\n**Where the analogy breaks down:** A real guard might make exceptions manually. Azure evaluates deterministic rule priorities, service tags, ports, protocols, and source prefixes for every network flow.",
+      "jargon": [
+        {
+          "term": "Public load balancer",
+          "definition": "An Azure Load Balancer with a public frontend IP address for internet-facing traffic."
+        },
+        {
+          "term": "Standard public IP address",
+          "definition": "A current Azure public IP SKU that follows secure-by-default inbound behavior with Standard Load Balancer."
+        },
+        {
+          "term": "Network security group (NSG)",
+          "definition": "A resource containing ordered allow and deny security rules for subnet or NIC traffic."
+        },
+        {
+          "term": "Backend subnet",
+          "definition": "The virtual network subnet that contains the network interfaces of the backend virtual machines."
+        },
+        {
+          "term": "Inbound rule",
+          "definition": "A network rule that controls traffic entering a subnet or network interface."
+        },
+        {
+          "term": "Frontend IP",
+          "definition": "The address on the load balancer that clients use."
+        },
+        {
+          "term": "Backend pool",
+          "definition": "The collection of backend targets selected by the load balancer rule."
+        },
+        {
+          "term": "Default outbound access",
+          "definition": "An implicit outbound connectivity method that Microsoft does not recommend for production workloads."
+        }
+      ],
+      "watchOut": "- A load-balancing rule is not a firewall rule.\n- For Standard Load Balancer, plan NSG placement as part of the deployment.\n- Allow the probe source as well as the client source, especially when the probe port differs from the service port.\n- Basic Load Balancer retirement makes downgrade-style answers unsafe for current exam questions.",
+      "productionTip": {
+        "official": "Microsoft documents Standard Load Balancer as built on a Zero Trust network security model: Standard load balancers and public IP addresses are closed to inbound connections by default, NSGs must explicitly permit traffic, and traffic is blocked if no NSG exists on the subnet or NIC.",
+        "recommendation": "Create subnet-level baseline NSGs for each workload tier and use NIC-level rules only for exceptions. Keep client source ranges scoped to known networks where possible, leave a clear probe allow using `AzureLoadBalancer`, and test from outside Azure after deployment."
+      },
+      "memoryTrick": "Standard means **state the permission**. This is a simplification because the rule still has to match source, destination, protocol, port, and priority.",
+      "examTip": "Clue words are **Standard public load balancer**, **no NSG**, and **clients cannot connect**. Pick the answer that adds explicit allowed inbound access. A more difficult item may include healthy probes but failed client traffic; then separate the probe allow from the client allow instead of assuming one rule covers both."
+    },
+    "sources": [
+      {
+        "title": "What is Azure Load Balancer?",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+      },
+      {
+        "title": "Azure service tags overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview"
+      },
+      {
+        "title": "Azure Load Balancer health probes",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.3.3-03",
+    "objective": "D4.3.3",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You support a payroll application that runs on 80 virtual machines behind a Standard public load balancer. The application makes many short-lived HTTPS calls to the same external tax service. During payroll close, some outbound calls fail for several minutes and then recover without any inbound availability alert. You suspect SNAT port exhaustion on the load balancer.\n\nWhich two actions should you take first to confirm the suspected cause? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Review the SNAT Connection Count metric with the Connection State dimension and investigate failed outbound SNAT flows"
+      },
+      {
+        "id": "B",
+        "text": "Compare Used SNAT Ports with Allocated SNAT Ports per backend instance, filtering or splitting by backend IP and protocol where useful"
+      },
+      {
+        "id": "C",
+        "text": "Increase the health probe interval so the backend pool has more time to release outbound ports"
+      },
+      {
+        "id": "D",
+        "text": "Change Data Path Availability aggregation from Average to Count because Count identifies depleted SNAT ports"
+      },
+      {
+        "id": "E",
+        "text": "Delete the load-balancing rule because inbound rules reserve all available outbound ephemeral ports"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The application already has a Standard public load balancer frontend used for outbound SNAT, and you are first asked to confirm the suspected cause before making a design change.",
+    "sections": {
+      "correctAnswer": "**A. Review the SNAT Connection Count metric with the Connection State dimension and investigate failed outbound SNAT flows** and **B. Compare Used SNAT Ports with Allocated SNAT Ports per backend instance, filtering or splitting by backend IP and protocol where useful**. These metrics directly expose failed outbound SNAT flows and whether backend instances are consuming their available SNAT port allocation.",
+      "technical": "Azure Load Balancer can provide outbound internet connectivity by translating a backend VM's private source address to a public frontend address. This source network address translation uses SNAT ports. A TCP connection from one backend instance to a specific destination IP and destination port needs a distinct translated source tuple while the connection is active. When a backend instance uses all of its given SNAT ports, new outbound connections to that destination can fail until ports are released.\n\nThe key troubleshooting evidence is in load balancer metrics, not in inbound availability metrics. Microsoft documents SNAT Connection Count as the number of outbound flows masqueraded to the public frontend and states that successful and failed outbound SNAT flow counters are reported. A failed connections volume greater than zero indicates SNAT port exhaustion and should be investigated. Used SNAT Ports and Allocated SNAT Ports show how many SNAT ports are consumed and assigned per backend instance.\n\nThe diagnostic order is:\n\n1. Confirm that failures are outbound and destination-specific rather than inbound client failures.\n2. Chart SNAT Connection Count using Sum and group by Connection State to see successful versus failed flows.\n3. Chart Used SNAT Ports and Allocated SNAT Ports with Average for per-instance behavior, or Sum when you need total usage across the load balancer.\n4. If the metrics prove exhaustion, reduce connection churn, add capacity, or move outbound to a more scalable design such as NAT Gateway.\n\nThe scenario asks what to check first, so the metric pair is stronger than immediately changing architecture without evidence.",
+      "wrongOptions": {
+        "C": "Health probe interval controls how often backend health is checked; it does not allocate more ephemeral outbound SNAT ports. Misconception: any timer on the load balancer can slow down port consumption. Could be correct when: you are tuning how quickly backend endpoints are marked healthy or unhealthy.",
+        "D": "Data Path Availability is an inbound data-plane availability metric and Count is not recommended for that health metric. It does not reveal depleted outbound SNAT ports. Misconception: any low-level load balancer metric can diagnose all traffic directions. Could be correct when: you are counting records for a metric where Count is meaningful.",
+        "E": "Deleting the inbound rule would break the published service and does not prove the cause of intermittent outbound failures. Misconception: inbound load balancing rules consume all outbound SNAT capacity. Could be correct when: you intentionally remove an obsolete frontend rule as part of a controlled redesign."
+      },
+      "plainEnglish": "Each outbound call needs a temporary return label so replies get back to the right VM connection. If many VMs make lots of new calls to the same tax service, a VM can run out of those labels. When that happens, new calls fail until labels are freed. The load balancer has counters that show failed translated outbound connections and counters that compare labels in use with labels assigned. Check those counters before changing unrelated health settings.",
+      "analogy": "Think of a call center where every outgoing call needs a numbered callback ticket. Payroll close causes thousands of brief calls to the same agency. If one desk runs out of callback tickets, new calls from that desk cannot be placed even though the lobby is open and inbound customers are fine.\n\n| Analogy | Azure reality |\n|---|---|\n| Callback ticket | SNAT port |\n| Desk | Backend VM |\n| Agency number | External destination IP and port |\n| Tickets assigned to a desk | Allocated SNAT Ports |\n| Tickets currently in use | Used SNAT Ports |\n| Failed dialing attempts | Failed SNAT Connection Count |\n\n**Where the analogy breaks down:** SNAT reuse rules differ for TCP and UDP, and a port can be reused for different destination tuples. A paper ticket does not model idle timeout, port-restricted cone NAT, or frontend IP allocation.",
+      "jargon": [
+        {
+          "term": "SNAT",
+          "definition": "Source network address translation, which changes a private source address and port to a public source address and port for outbound traffic."
+        },
+        {
+          "term": "SNAT port",
+          "definition": "An ephemeral port on the translated public frontend address used to distinguish outbound flows."
+        },
+        {
+          "term": "Outbound flow",
+          "definition": "A network connection initiated by a backend instance toward an external destination."
+        },
+        {
+          "term": "Connection State dimension",
+          "definition": "A metric dimension that lets successful and failed SNAT connection counts be shown separately."
+        },
+        {
+          "term": "Used SNAT Ports",
+          "definition": "A Load Balancer metric reporting how many SNAT ports are being consumed by backend instances."
+        },
+        {
+          "term": "Allocated SNAT Ports",
+          "definition": "A Load Balancer metric reporting how many SNAT ports are assigned to backend instances."
+        },
+        {
+          "term": "Backend IP",
+          "definition": "The private IP address of a backend instance in the load balancer pool."
+        },
+        {
+          "term": "NAT Gateway",
+          "definition": "An Azure service designed for scalable outbound-only internet connectivity from a subnet."
+        }
+      ],
+      "watchOut": "- SNAT exhaustion can affect outbound calls while inbound load-balanced service metrics remain normal.\n- A load balancer can have unused SNAT ports overall while one backend instance has exhausted its given allocation.\n- Many short-lived connections to the same destination increase pressure if the application does not reuse connections.\n- For production egress, NAT Gateway is usually the cleaner scaling option than implicit load-balancer outbound behavior.",
+      "productionTip": {
+        "official": "Microsoft documents that SNAT exhaustion occurs when a backend instance runs out of given SNAT ports and that new outbound connections fail when port exhaustion occurs. Load Balancer Diagnostics recommends checking SNAT Connection Count for failed flows and comparing Used SNAT Ports with Allocated SNAT Ports.",
+        "recommendation": "After the metric review, reduce connection churn with HTTP connection reuse and place high-volume subnets behind NAT Gateway where appropriate. If outbound rules remain on the load balancer, allocate ports deliberately and document the assumed maximum backend count."
+      },
+      "memoryTrick": "For suspected SNAT exhaustion, look for **failed flows and full port buckets**. This is a simplification because DNS problems, remote throttling, and application timeouts can look similar until the SNAT metrics are checked.",
+      "examTip": "Clue words are **outbound calls**, **same external service**, **short-lived HTTPS**, and **recover without inbound alert**. Pick SNAT-specific metrics, not health probes or Data Path Availability. A harder question may ask for mitigation rather than confirmation; then NAT Gateway, explicit outbound rules, and connection reuse become likely answers."
+    },
+    "sources": [
+      {
+        "title": "Source Network Address Translation (SNAT) for outbound connections - Azure Load Balancer",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections"
+      },
+      {
+        "title": "Load Balancer Diagnostics - Azure Load Balancer",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.3.3-04",
+    "objective": "D4.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You investigate an intermittent outage for a Standard internal load balancer named `lb-orders`. During the outage, the Data Path Availability metric for the frontend IP is near 100 percent, but the Health Probe Status metric for all backend endpoints drops to 0 percent. Azure Load Balancer Insights shows the backend pool resources in red while the frontend remains present in the dependency view.\n\nWhat is the most likely conclusion?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The regional load balancer data path is available, but the configured backend health signal is failing, so troubleshoot the application listener, probe protocol or port, NSG, and guest firewall"
+      },
+      {
+        "id": "B",
+        "text": "The Azure load balancer infrastructure is unavailable, so open a platform outage ticket before checking any backend configuration"
+      },
+      {
+        "id": "C",
+        "text": "The load balancer is healthy enough to ignore the Health Probe Status metric because Data Path Availability takes precedence over probes"
+      },
+      {
+        "id": "D",
+        "text": "The problem must be outbound SNAT exhaustion because Health Probe Status is the metric that counts failed outbound flows"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The load balancer is Standard SKU, has load-balancing rules on the frontend, and the displayed metrics are for the same time window as the reported outage.",
+    "sections": {
+      "correctAnswer": "**A. The regional load balancer data path is available, but the configured backend health signal is failing, so troubleshoot the application listener, probe protocol or port, NSG, and guest firewall**. Data Path Availability and Health Probe Status answer different questions, and the combination points away from an Azure data-plane outage and toward backend health or configuration.",
+      "technical": "Load Balancer Diagnostics separates frontend data-path availability from backend health-probe status. Data Path Availability validates the path from within the region to the load balancer frontend and to the network that supports the VMs. Microsoft warns not to confuse this metric with Health Probe Status. A value near 100 percent suggests that the load balancer data path being measured is available.\n\nHealth Probe Status describes how Azure Load Balancer sees the health of the application deployment according to your configured probe. Health probes originate from Azure infrastructure and are visible within the VM guest operating system. If the probe is configured for the wrong port, if an HTTP probe receives a non-200 response, if the guest firewall blocks the probe, or if an NSG prevents probe traffic, the backend endpoint can be marked unhealthy even when the frontend path itself is fine.\n\nThe interpretation sequence is:\n\n1. Confirm the metrics are scoped to the correct frontend, backend pool, and time range.\n2. If Data Path Availability is degraded too, consider an infrastructure path problem or no healthy VMs remaining.\n3. If Data Path Availability is high while Health Probe Status is 0, focus on backend readiness and probe reachability.\n4. Use Load Balancer Insights to visualize which backend resources are down, then use packet capture, flow logs, application logs, or port tests to locate the failure.\n\nInsights does not replace metrics; it organizes them into topology and preconfigured dashboards.",
+      "wrongOptions": {
+        "B": "A platform outage is less likely when Data Path Availability stays near 100 percent for the frontend. Misconception: any load balancer outage symptom must first be an Azure infrastructure problem. Could be correct when: Data Path Availability also drops or Azure Resource Health indicates a platform issue.",
+        "C": "Health Probe Status controls which backend endpoints receive new load-balanced flows, so it cannot be ignored just because the frontend path is available. Misconception: one green metric overrides a red metric. Could be correct when: the question asks only whether the Azure data path exists, not whether the application can accept traffic.",
+        "D": "Health Probe Status is an inbound backend health metric, not the counter for failed outbound SNAT flows. Misconception: all load balancer failures are counted by a single health metric. Could be correct when: SNAT Connection Count shows failed outbound flows or Used SNAT Ports approaches Allocated SNAT Ports."
+      },
+      "plainEnglish": "The front door to the service is reachable, but every worker behind the door is failing the readiness check. That means you should not start by blaming the road to the building. You should check whether the workers are answering the readiness question, whether the question is being asked on the right phone number, and whether a firewall is blocking the call. Load Balancer Insights helps you see which backend items look unhealthy, but the meaning still comes from the two metrics.",
+      "analogy": "A delivery company checks two things. First, can a truck reach the warehouse driveway? Second, do the loading docks answer the radio and say they are open? The driveway can be clear while every dock radio is silent. Deliveries still stop because no dock is marked ready.\n\n| Analogy | Azure reality |\n|---|---|\n| Warehouse driveway | Load balancer data path |\n| Dock radio check | Health probe |\n| Silent dock radios | Health Probe Status at 0 percent |\n| Map with red docks | Load Balancer Insights dependency view |\n| Dock equipment problem | Listener, firewall, NSG, or app issue |\n\n**Where the analogy breaks down:** Azure's Data Path Availability uses an infrastructure probing service and Health Probe Status uses your configured probe behavior. A delivery map cannot express metric aggregation, dimensions, or distributed packet paths.",
+      "jargon": [
+        {
+          "term": "Data Path Availability",
+          "definition": "A Standard Load Balancer metric that validates the measured frontend data path through Azure infrastructure."
+        },
+        {
+          "term": "Health Probe Status",
+          "definition": "A metric showing how the load balancer views backend endpoint health based on the configured probe."
+        },
+        {
+          "term": "Internal load balancer",
+          "definition": "A load balancer with a private frontend IP used inside a virtual network or connected private network."
+        },
+        {
+          "term": "Azure Load Balancer Insights",
+          "definition": "A monitoring experience with topology and preconfigured dashboards for load balancers."
+        },
+        {
+          "term": "Dependency view",
+          "definition": "A visual topology that shows related load balancer frontends, backend pools, and resources."
+        },
+        {
+          "term": "Guest firewall",
+          "definition": "Firewall software running inside the VM operating system."
+        },
+        {
+          "term": "Probe protocol",
+          "definition": "The protocol, such as TCP, HTTP, or HTTPS, used for the health check."
+        },
+        {
+          "term": "Aggregation",
+          "definition": "The statistic, such as Average or Sum, used to summarize metric values over a time grain."
+        }
+      ],
+      "watchOut": "- Data Path Availability near 100 percent does not prove the application is healthy.\n- Health Probe Status near 0 percent should send you to backend probes, listeners, NSGs, and VM firewalls.\n- Use Average for these health metrics; Count is not recommended for Data Path Availability or Health Probe Status.\n- Load Balancer Insights topology can lag after configuration changes because it uses Azure Resource Graph for topology.",
+      "productionTip": {
+        "official": "Microsoft documents Data Path Availability and Health Probe Status as separate Standard Load Balancer metrics and recommends using them together for diagnostics. Load Balancer Insights provides functional dependency visualization and dashboards with Frontend and Backend Availability views.",
+        "recommendation": "Build an alert pair instead of a single alert: one for frontend data path degradation and one for backend probe health. During incidents, annotate charts with deployment times and inspect probe response logs on the VMs so a bad release is not mistaken for a regional network problem."
+      },
+      "memoryTrick": "Use **path versus patient**: Data Path Availability checks the network path; Health Probe Status checks the patient behind it. The phrase is a simplification because the path metric still depends on valid frontend rules and healthy deployment context.",
+      "examTip": "Clue words are **Data Path Availability near 100 percent** and **Health Probe Status 0 percent**. The tested distinction is Azure data plane versus configured application health. A harder version may show both metrics low; then you must consider no healthy backends, wrong scoping, or a broader data path problem instead of only the app listener."
+    },
+    "sources": [
+      {
+        "title": "Load Balancer Diagnostics - Azure Load Balancer",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-diagnostics"
+      },
+      {
+        "title": "Insights for Azure Load Balancer",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-insights"
+      },
+      {
+        "title": "Azure Load Balancer health probes",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

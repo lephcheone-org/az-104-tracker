@@ -1,0 +1,420 @@
+[
+  {
+    "id": "D5.1.5-01",
+    "objective": "D5.1.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure virtual machine named `vm-api-01`. In the Azure portal, the VM **Monitor** page shows host CPU, disk, and network metrics, but several guest performance charts have no data. You need to collect operating system performance data for the applications and processes running inside the VM and reuse the collection configuration for future VMs.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Only create an activity log alert rule for `vm-api-01` because Azure Monitor already collects guest performance counters by default"
+      },
+      {
+        "id": "B",
+        "text": "Install Azure Monitor Agent and associate the VM with a data collection rule that sends the chosen guest performance data to the appropriate workspace"
+      },
+      {
+        "id": "C",
+        "text": "Enable Storage insights for the VM's managed disks so the guest operating system counters appear on the VM Monitor page"
+      },
+      {
+        "id": "D",
+        "text": "Configure Network Insights topology because topology automatically installs the guest monitoring agent on every connected virtual machine"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The VM operating system is supported by Azure Monitor Agent. The administrator has permission to create data collection rules and associate them with the VM. The goal is guest performance monitoring, not only host metrics.",
+    "sections": {
+      "correctAnswer": "**B. Install Azure Monitor Agent and associate the VM with a data collection rule that sends the chosen guest performance data to the appropriate workspace**. Azure collects host metrics by default, but guest metrics and logs require enhanced monitoring through Azure Monitor Agent and DCR-based collection.",
+      "technical": "Azure Monitor separates VM host signals from guest operating system signals. Host metrics provide visibility into the Azure resource from outside the guest, including overall CPU, network traffic, and disk I/O. Microsoft documents that host metrics, including availability, are collected by default. Those metrics explain whether the Azure VM resource is under load, but they do not fully describe processes, applications, Windows events, Syslog, or other data inside the operating system.\n\nEnhanced monitoring installs Azure Monitor Agent on the VM and starts collecting guest data according to configuration. At scale, Microsoft describes three steps: install the Azure Monitor Agent, create data collection rules, and associate the DCRs with VMs. The DCR defines what data is collected and where it is sent. A single agent can use multiple DCRs, and one DCR can be reused across multiple machines when the same collection pattern is needed.\n\nThe workspace destination depends on the monitoring option. Current VM monitoring documentation describes OpenTelemetry metrics as the recommended metrics path for new deployments, using an Azure Monitor workspace. Logs-based metrics and guest logs use a Log Analytics workspace. The exam point is not to memorize every JSON field; it is to know that the agent alone is not the full answer. The association with a DCR activates the collection instructions for the machine.\n\nActivity logs are collected automatically, but they record management operations such as starting or changing a VM, not detailed guest performance. Storage insights and Network insights are separate resource insights experiences and do not replace VM guest monitoring configuration.",
+      "wrongOptions": {
+        "A": "The Activity log records Azure resource operations, and host metrics are already visible, but guest performance counters are not automatically collected just because the VM exists. Misconception: Anything shown under Monitor means the guest operating system is fully monitored. Could be correct when the requirement is to alert on a management operation such as VM deletion or restart.",
+        "C": "Storage insights is for Azure Storage accounts, showing storage service performance, capacity, availability, transactions, and latency. It does not collect process or operating system counters from a virtual machine. Misconception: Managed disk or storage monitoring is the same as guest monitoring. Could be correct when diagnosing a storage account's latency or availability from the Storage insights workbook.",
+        "D": "Network Insights topology visualizes network resources and relationships, but it does not automatically install Azure Monitor Agent or configure guest performance collection for VMs. Misconception: A topology view is an onboarding mechanism. Could be correct when the goal is to inspect virtual network relationships, resource health, connectivity tests, or Network Watcher diagnostics."
+      },
+      "plainEnglish": "Azure can see some things about a VM from the outside, the same way a building manager can see how much electricity a room uses. But to know what is happening inside the room, such as which machines are running hot or which programs are failing, you need an agent inside the VM. The data collection rule is the instruction sheet for that agent. It tells the agent what to collect and where to send it. Without the agent and the instruction sheet association, the guest charts can remain blank even though basic host charts still work.",
+      "analogy": "A delivery company tracks a truck in two ways. GPS on the outside shows location and speed, but a mechanic's sensor inside the engine shows oil pressure and component behavior. The mechanic also needs a checklist telling which readings to record.\n\n| Analogy | Azure reality |\n|---|---|\n| Truck GPS | Host metrics collected by Azure |\n| Engine sensor | Azure Monitor Agent inside the VM |\n| Mechanic checklist | Data collection rule |\n| Maintenance notebook | Azure Monitor or Log Analytics workspace |\n| Reusing the checklist for a fleet | Associating one DCR with multiple VMs |\n\n**Where the analogy breaks down:** Azure agents send structured telemetry to cloud services with workspace destinations and RBAC-controlled configuration. A mechanic can improvise readings, but Azure Monitor collects only the streams described by the associated DCRs.",
+      "jargon": [
+        {
+          "term": "Host metrics",
+          "definition": "Metrics collected by Azure from the VM resource outside the guest operating system, such as overall CPU, network, disk, and availability signals."
+        },
+        {
+          "term": "Guest metrics",
+          "definition": "Performance data from inside the VM operating system, applications, components, or processes."
+        },
+        {
+          "term": "Azure Monitor Agent",
+          "definition": "The current Microsoft agent for collecting monitoring data from virtual machines, scale sets, and Arc-enabled servers."
+        },
+        {
+          "term": "Data collection rule (DCR)",
+          "definition": "A configuration object that tells Azure Monitor Agent what data to collect and where to send it."
+        },
+        {
+          "term": "DCR association",
+          "definition": "The link between a data collection rule and a monitored machine, which causes the agent to download and apply the rule."
+        },
+        {
+          "term": "Azure Monitor workspace",
+          "definition": "A workspace used for Azure Monitor metrics scenarios, including OpenTelemetry metrics for VM monitoring."
+        },
+        {
+          "term": "Log Analytics workspace",
+          "definition": "A workspace used to store and query Azure Monitor Logs with Kusto Query Language."
+        },
+        {
+          "term": "Enhanced monitoring",
+          "definition": "The VM monitoring configuration that installs Azure Monitor Agent and collects guest-level performance data."
+        },
+        {
+          "term": "Activity log",
+          "definition": "The subscription-level log of Azure resource management events, not a store of all guest operating system counters."
+        }
+      ],
+      "watchOut": "- Host metrics can be present even when guest charts are empty.\n- Installing the agent is necessary but not sufficient; collection depends on DCRs and DCR associations.\n- Choose the workspace type that matches the metrics or logs experience you enable.\n- Reusing DCRs reduces configuration drift across a fleet.",
+      "productionTip": {
+        "official": "Microsoft documents that host VM metrics are collected by default and that guest metrics and logs require enhanced monitoring. For at-scale VM monitoring, Microsoft describes installing Azure Monitor Agent, creating DCRs, and associating DCRs with the VMs.",
+        "recommendation": "For production, define a small set of DCRs by workload class instead of creating one-off rules for every VM. Review data volume before adding verbose logs, and assign only the permissions needed to create DCRs and associations in the relevant resource groups."
+      },
+      "memoryTrick": "For VM guest monitoring, remember **Agent plus rule plus association**. This is a simplification because destination workspaces, managed identities, and alert choices still matter after data starts flowing.",
+      "examTip": "Clue words are **guest**, **applications and processes**, **reuse collection configuration**, and **charts have no data**. Those point to Azure Monitor Agent and DCRs. If the question only asks for automatically collected CPU from the Azure resource, host metrics may be enough; if it asks for inside-the-OS detail, choose the agent-based path."
+    },
+    "sources": [
+      {
+        "title": "Monitor virtual machines in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/vm/monitor-vm"
+      },
+      {
+        "title": "Enable VM monitoring in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/vm/vm-enable-monitoring"
+      },
+      {
+        "title": "Enable enhanced monitoring for an Azure virtual machine",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/vm/tutorial-enable-monitoring"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.1.5-02",
+    "objective": "D5.1.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You support a subscription with 80 storage accounts. The operations manager wants a quick Azure portal view that can identify accounts with availability, request-volume, and latency hotspots. The team also wants to drill into a single account to compare service availability, end-to-end latency, server latency, transactions, failures, and capacity by storage service.\n\nWhich two statements about Azure Monitor Storage insights are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Storage insights can be opened from Azure Monitor to view transaction, latency, capacity, and availability details across multiple storage accounts"
+      },
+      {
+        "id": "B",
+        "text": "Storage insights requires installing Azure Monitor Agent on every storage account before the availability workbook can show data"
+      },
+      {
+        "id": "C",
+        "text": "Storage insights shows only capacity, so latency and transaction troubleshooting must always use VM insights"
+      },
+      {
+        "id": "D",
+        "text": "Storage insights can be opened from a storage account and provides detailed workbooks for Availability, Performance, Failures, and Capacity"
+      },
+      {
+        "id": "E",
+        "text": "Storage insights replaces the need for storage metrics because storage metrics are not collected unless you enable a DCR"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The storage accounts are Azure Storage accounts supported by Storage insights. The question is about the built-in Storage insights workbooks and Azure Storage metrics, not application-level tracing inside a VM.",
+    "sections": {
+      "correctAnswer": "**A. Storage insights can be opened from Azure Monitor to view transaction, latency, capacity, and availability details across multiple storage accounts** and **D. Storage insights can be opened from a storage account and provides detailed workbooks for Availability, Performance, Failures, and Capacity**. Microsoft documents both the at-scale Azure Monitor view and the per-account insights view.",
+      "technical": "Azure Monitor Storage insights is a workbook-based monitoring experience for Azure Storage accounts. It provides a unified view of storage service performance, capacity, and availability. Microsoft documents two entry points: open Storage Accounts under the Insights section of Azure Monitor to compare storage accounts across subscriptions, or open Insights from a specific storage account's Monitoring section to inspect that account.\n\nThe overview experience includes utilization, availability, and latency signals. From Azure Monitor, it can show transaction, latency, and capacity details from multiple storage accounts in the subscription and help identify performance, capacity problems, and failures. The storage account view shows service health, performance charts, and tiles for service availability, transaction count, end-to-end latency, and server latency.\n\nThe drill-down workbooks are important for interpretation. Availability shows storage service health state and trends. Performance includes end-to-end latency and server latency. Failures focuses on response types such as successful requests, client-side errors, client throttling, and other error categories. Capacity shows total storage used and usage by storage data service. These views help separate a server-side storage issue from client behavior or capacity growth.\n\nA key setup point is that Storage insights does not require an agent. Microsoft states that the feature does not require you to enable or configure anything and that storage metrics from storage accounts are collected by default. You may still configure other Azure Monitor features, custom workbooks, alerts, or diagnostics, but those are not prerequisites for the basic Storage insights experience.",
+      "wrongOptions": {
+        "B": "A storage account is a platform service, not a machine where Azure Monitor Agent is installed, and Microsoft says Storage insights does not require enabling or configuring anything for the built-in metrics view. Misconception: Every Azure Monitor insight requires an agent. Could be correct for guest monitoring of virtual machines, where Azure Monitor Agent and DCRs are required.",
+        "C": "Storage insights includes availability, performance, failures, and capacity information; it is not capacity-only. VM insights is for virtual machines, not storage account transaction and service-latency workbooks. Misconception: Storage monitoring only means bytes used. Could be correct when the only question is how much blob, file, table, or queue capacity is consumed.",
+        "E": "Storage insights is built on Azure Storage metrics collected by default; it does not replace them because they are absent. DCRs are central to agent collection for VMs, but the Storage insights overview does not require a DCR. Misconception: DCR-based collection is universal across Azure Monitor resources. Could be correct when collecting guest logs from a VM or custom agent data."
+      },
+      "plainEnglish": "Storage insights is the storage account dashboard area in Azure Monitor. From one place, you can compare many accounts and look for the account with poor availability, high latency, many transactions, or rising capacity. From a single storage account, you can open focused pages for availability, performance, failures, and capacity. You do not install a VM-style agent on a storage account. Azure already collects the basic storage metrics used by this experience, although you may add more monitoring or alerts for your own operations.",
+      "analogy": "A supermarket chain has a regional dashboard and a store dashboard. The regional dashboard shows which store has long checkout lines or low stock. The store dashboard breaks the problem into checkout speed, customer errors, warehouse stock, and service availability.\n\n| Analogy | Azure reality |\n|---|---|\n| Regional dashboard | Storage insights from Azure Monitor across accounts |\n| Store dashboard | Storage insights from one storage account |\n| Checkout speed | Latency metrics |\n| Number of shoppers | Transaction metrics |\n| Empty shelves | Capacity workbook information |\n| Customer or register errors | Failure workbook and response types |\n\n**Where the analogy breaks down:** Azure Storage metrics are service telemetry with defined dimensions and time ranges. A store manager can ask staff for extra context, but Storage insights displays the metrics and workbook queries available to Azure Monitor.",
+      "jargon": [
+        {
+          "term": "Storage insights",
+          "definition": "An Azure Monitor workbook experience that visualizes Azure Storage account performance, capacity, availability, and failures."
+        },
+        {
+          "term": "Availability",
+          "definition": "A metric or workbook area indicating the health or success of storage service requests over the selected time range."
+        },
+        {
+          "term": "Transactions",
+          "definition": "Requests made to Azure Storage services, such as blob, file, queue, or table operations."
+        },
+        {
+          "term": "End-to-end latency",
+          "definition": "A storage latency measure that includes the full time for a request as observed by the service path."
+        },
+        {
+          "term": "Server latency",
+          "definition": "The time Azure Storage spends processing a request, excluding some client-side and network portions."
+        },
+        {
+          "term": "Failures workbook",
+          "definition": "A Storage insights view focused on response types and errors such as client-side errors or throttling."
+        },
+        {
+          "term": "Capacity workbook",
+          "definition": "A Storage insights view that shows total storage used and usage by storage data service."
+        },
+        {
+          "term": "Azure Monitor Agent",
+          "definition": "An agent for collecting data from machines; it is not installed on Azure Storage accounts for Storage insights."
+        },
+        {
+          "term": "Workbook",
+          "definition": "An Azure Monitor interactive report that combines text, metrics, queries, and visualizations."
+        }
+      ],
+      "watchOut": "- Storage insights can be reached from Azure Monitor for at-scale review or from one storage account for focused review.\n- Do not confuse end-to-end latency with server latency; comparing them can help separate service processing from external factors.\n- Storage insights uses default storage metrics; it is not an agent onboarding workflow.\n- The built-in workbook can be customized and saved separately if the team needs different thresholds or charts.",
+      "productionTip": {
+        "official": "Microsoft documents Storage insights as providing a unified view of Azure Storage performance, capacity, and availability, including at-scale views from Azure Monitor and detailed workbooks from an individual storage account. The documentation states that the feature does not require enabling or configuring anything because storage metrics are collected by default.",
+        "recommendation": "Use the built-in workbook first for triage, then create alert rules on the specific storage metrics that represent customer impact. Pin useful workbook sections to dashboards, but keep separate runbooks for client throttling, server latency, and capacity growth because those symptoms require different owners."
+      },
+      "memoryTrick": "Storage insights answers **available, busy, slow, failing, or full**. This is a simplification because application symptoms still may require logs, client telemetry, or network investigation outside the storage workbook.",
+      "examTip": "Look for **storage accounts**, **availability**, **latency**, **transactions**, **failures**, and **capacity**. Those words point to Storage insights, not VM insights. If an option says to install an agent on a storage account or create a DCR for the default workbook, rule it out."
+    },
+    "sources": [
+      {
+        "title": "Monitor Azure Storage services with Azure Monitor Storage insights",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-insights-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.1.5-03",
+    "objective": "D5.1.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You are investigating network health for a hub-and-spoke environment. You want a visual representation of virtual networks and connected resources across subscriptions, regions, and resource groups. You also want to view resource health and metrics for deployed network resources without first configuring agents on the resources.\n\nWhich Azure Monitor experience should you use first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Azure Monitor Storage insights"
+      },
+      {
+        "id": "B",
+        "text": "VM insights Map with a new Dependency Agent deployment"
+      },
+      {
+        "id": "C",
+        "text": "Azure Monitor Network Insights topology and Network health views"
+      },
+      {
+        "id": "D",
+        "text": "A log search alert rule scoped to a Log Analytics workspace"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The goal is built-in visualization of Azure network resources and their health or metrics. The environment contains supported Azure networking resources, and the question does not require packet capture or a custom KQL investigation as the first step.",
+    "sections": {
+      "correctAnswer": "**C. Azure Monitor Network Insights topology and Network health views**. Network Insights provides topology, health, and metrics for deployed network resources without requiring configuration, and it can show relationships across subscriptions, regions, and resource groups.",
+      "technical": "Azure Monitor Network Insights is the built-in experience for broad network resource visualization and triage. Microsoft documents that it provides a comprehensive and visual representation through topology, health, and metrics for deployed network resources without requiring any configuration. The topology component visualizes Azure virtual networks and connected resources and supports exploration across multiple subscriptions, regions, and resource groups.\n\nThe Network health tab complements topology by showing an inventory of networking resource types together with resource health, metrics, and alerts. You can filter by subscription, resource group, and type. For onboarded network resources, Network Insights provides resource-specific topology views and built-in metrics workbooks. The experience also links to Network Watcher diagnostic tools such as packet capture, VPN troubleshoot, connection troubleshoot, next hop, and IP flow verify.\n\nThe scope and dependencies differ by tab. The topology and health views are intended to be visible without an agent onboarding process. The Connectivity tab depends on Connection monitor tests that have been configured. The Traffic tab shows network security groups and whether NSG flow logs and Traffic analytics are configured. Therefore, Network Insights is the right first stop for visual topology and resource health, while deeper traffic or connectivity data may require those specific features to be enabled.\n\nStorage insights monitors storage accounts. VM insights Map is focused on process and dependency mapping for machines and is deprecated with a retirement date. A log search alert rule is for scheduled alert evaluation, not interactive network topology exploration.",
+      "wrongOptions": {
+        "A": "Storage insights is for Azure Storage accounts and does not provide topology of virtual networks or network resource health across hub-and-spoke environments. Misconception: Any Azure Monitor Insights page can visualize any resource type. Could be correct when the problem is storage account availability, latency, transactions, failures, or capacity.",
+        "B": "VM insights Map shows machine process dependencies, not the general Azure network topology experience, and Microsoft documents that the Dependency Agent and Map experience are deprecated. Misconception: A dependency map is the same as a network resource topology map. Could be correct only for existing supported machines where you need process-to-process dependency information and accept the retirement guidance.",
+        "D": "A log search alert rule runs a query on a schedule and fires alerts when conditions are met. It is not the first interactive topology and health view for network resources. Misconception: KQL should be used before built-in resource views. Could be correct when you already have relevant logs and need a custom alert or correlation query."
+      },
+      "plainEnglish": "Use Network Insights when you want to look at the network itself. It gives you a map-like view of virtual networks and related resources and a health view for network resource types. It is different from a VM dependency map, which looks at processes and connections from inside machines, and it is different from Storage insights, which is about storage accounts. Some deeper tabs, such as connectivity tests or traffic analytics, need their own setup, but the broad network topology and health starting point is Network Insights.",
+      "analogy": "A campus has a site map and several specialized dashboards. The site map shows buildings, roads, and connections. A warehouse dashboard tracks inventory, and a server-room dashboard tracks applications inside one building.\n\n| Analogy | Azure reality |\n|---|---|\n| Campus site map | Network Insights topology |\n| Building condition board | Network health and metrics |\n| Warehouse inventory dashboard | Storage insights |\n| Application map inside one server room | VM insights Map |\n| Traffic counter installed on a road | Connection monitor or flow-log-based traffic features |\n\n**Where the analogy breaks down:** Azure resource topology is derived from Azure resource relationships and supported resource types. It is not a packet-by-packet capture of every network flow unless additional Network Watcher features are configured.",
+      "jargon": [
+        {
+          "term": "Network Insights",
+          "definition": "An Azure Monitor and Network Watcher experience for topology, health, metrics, connectivity, traffic, and diagnostics of Azure network resources."
+        },
+        {
+          "term": "Topology",
+          "definition": "A visual representation of network resources and their relationships."
+        },
+        {
+          "term": "Network health",
+          "definition": "The Network Insights area that summarizes resource health, metrics, alerts, and inventory for networking resources."
+        },
+        {
+          "term": "Hub-and-spoke",
+          "definition": "A network design with a central hub virtual network connected to multiple spoke virtual networks."
+        },
+        {
+          "term": "Network Watcher",
+          "definition": "Azure's set of tools for monitoring, diagnosing, and troubleshooting network resources."
+        },
+        {
+          "term": "Connection monitor",
+          "definition": "A Network Watcher capability for monitoring connectivity tests between sources and destinations."
+        },
+        {
+          "term": "NSG flow logs",
+          "definition": "Flow logging for network security groups, used to record information about network traffic flows."
+        },
+        {
+          "term": "Traffic analytics",
+          "definition": "A feature that analyzes flow logs to provide insight into network traffic patterns."
+        },
+        {
+          "term": "Log search alert",
+          "definition": "An Azure Monitor alert rule that evaluates a scheduled log query rather than showing an interactive topology view."
+        }
+      ],
+      "watchOut": "- Network Insights topology and health are the starting point for Azure network resource visualization.\n- Connectivity views depend on configured Connection monitor tests.\n- Traffic views depend on NSG flow logs and Traffic analytics configuration status.\n- Do not use deprecated VM insights Map as the default answer for Azure network resource topology.",
+      "productionTip": {
+        "official": "Microsoft documents Network Insights as providing topology, health, and metrics for deployed network resources without requiring configuration. The same documentation describes separate Connectivity, Traffic, and Diagnostic Toolkit areas that integrate with Connection monitor, flow logs, Traffic analytics, and Network Watcher tools.",
+        "recommendation": "Use Network Insights for first-look triage, then move to a specific diagnostic tool based on the symptom. For production change reviews, capture topology screenshots or workbook links before and after major network deployments so operators can spot unintended relationship changes quickly."
+      },
+      "memoryTrick": "For networks, start with **Topology, Health, then Tests**. This is a simplification because urgent packet-level or route troubleshooting may jump directly to Network Watcher diagnostics.",
+      "examTip": "Clue words are **virtual networks**, **connected resources**, **topology**, **network health**, and **without configuration**. Choose Network Insights. If the question says **process dependencies on VMs**, think VM insights Map; if it says **storage latency**, think Storage insights; if it says **scheduled KQL condition**, think log search alert."
+    },
+    "sources": [
+      {
+        "title": "Network Insights",
+        "url": "https://learn.microsoft.com/en-us/azure/network-watcher/network-insights-overview"
+      },
+      {
+        "title": "View app dependencies with VM insights",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/vm/vminsights-maps"
+      },
+      {
+        "title": "Monitor Azure Storage services with Azure Monitor Storage insights",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-insights-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.1.5-04",
+    "objective": "D5.1.5",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Contoso is modernizing monitoring for three scenarios.\\n\\n1. New Azure VMs must show guest performance data in the VM monitoring experience.\\n2. A storage operations dashboard must show availability, latency, transactions, failures, and capacity for storage accounts.\\n3. A network operations dashboard must start with Azure network topology and health, but later include configured connectivity tests and traffic analysis.\\n\\nWhich two implementation choices are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Deploy the deprecated Dependency Agent to all new VMs because it is the recommended way to enable guest performance charts"
+      },
+      {
+        "id": "B",
+        "text": "Use Azure Monitor Agent with data collection rules for VM guest data, and avoid starting new VM insights Map or Dependency Agent deployments"
+      },
+      {
+        "id": "C",
+        "text": "Create DCR associations for each storage account because Storage insights cannot show default availability or latency until a DCR is associated"
+      },
+      {
+        "id": "D",
+        "text": "Use Storage insights for the storage dashboard, and use Network Insights for topology and health while enabling Connection monitor or flow-log analytics when those deeper views are required"
+      },
+      {
+        "id": "E",
+        "text": "Use only a single Log Analytics workspace workbook because Network Insights and Storage insights are both retired"
+      }
+    ],
+    "correct": [
+      "B",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The organization is building new monitoring rather than maintaining an existing legacy dependency map. Storage accounts and networking resources are supported by the built-in insights experiences. Cost and region-specific workspace decisions are outside the question.",
+    "sections": {
+      "correctAnswer": "**B. Use Azure Monitor Agent with data collection rules for VM guest data, and avoid starting new VM insights Map or Dependency Agent deployments** and **D. Use Storage insights for the storage dashboard, and use Network Insights for topology and health while enabling Connection monitor or flow-log analytics when those deeper views are required**. These choices align each insights experience with the resource type and current setup requirements.",
+      "technical": "The three scenarios use different Azure Monitor capabilities. For virtual machines, host metrics are automatic, but guest performance data requires enhanced monitoring. Microsoft documents Azure Monitor Agent plus data collection rules and associations as the at-scale model for VM monitoring. The older Dependency Agent and VM insights Map experience are not the recommended path for new deployments; Microsoft documents that the Dependency Agent and Map experience are deprecated, retire on 30 June 2028, and should not be enabled for new deployments. For process dependency data on existing machines, the documentation provides retirement guidance, but the exam-safe new deployment answer is Azure Monitor Agent and DCRs for guest monitoring.\n\nFor storage accounts, Storage insights is the purpose-built workbook experience. It shows performance, capacity, and availability, including transactions, end-to-end latency, server latency, failures, and capacity drill-downs. Microsoft states that storage metrics are collected by default and that Storage insights does not require enabling or configuring anything for the built-in experience. DCR associations belong to agent data collection and are not the prerequisite for storage account availability charts.\n\nFor networks, Network Insights provides topology, resource health, and metrics without requiring initial configuration. Its extended tabs have more specific dependencies. The Connectivity tab visualizes Connection monitor tests. The Traffic tab lists network security groups and shows flow log and Traffic Analytics configuration status; meaningful traffic analysis depends on those features being configured. That means the right design is to start with Network Insights for topology and health, then enable Connection monitor, flow logs, and Traffic analytics for the deeper use cases.\n\nThe broad pattern is to avoid a one-size-fits-all workbook or agent. Use each insights experience where Microsoft documents it: VM monitoring for machines, Storage insights for storage accounts, and Network Insights for networking resources.",
+      "wrongOptions": {
+        "A": "Microsoft documents the Dependency Agent and VM insights Map as deprecated and says not to enable this feature for new deployments. It also is not the general prerequisite for current VM guest performance charts. Misconception: Older VM insights Map requirements are still the default monitoring design. Could be correct only as a maintenance discussion for existing machines that still use the retired-on-a-future-date Map feature while a migration plan is executed.",
+        "C": "Storage insights does not require a DCR association to show its built-in availability or latency workbook data; Microsoft states storage metrics are collected by default. Misconception: Data collection rules are required for every Azure Monitor visualization. Could be correct for Azure Monitor Agent data from VMs, where DCRs define guest data collection.",
+        "E": "Network Insights and Storage insights are not documented as retired in the fetched Microsoft pages, and using only a custom workbook would ignore the built-in experiences. Misconception: Newer agent-based monitoring has replaced all resource-specific insight pages. Could be correct if an organization intentionally builds a custom executive dashboard after validating data sources, but not as the required implementation for these scenarios."
+      },
+      "plainEnglish": "Each resource family has its own monitoring door. For new VMs, put the current Azure Monitor Agent on the machine and give it data collection rules. Do not start a new rollout of the old dependency map feature. For storage accounts, use Storage insights because Azure already collects the basic storage metrics it displays. For networks, use Network Insights to see topology and resource health, then turn on special network features if you need continuous connectivity tests or traffic analytics. One generic workbook or one old agent does not fit all three jobs.",
+      "analogy": "Contoso is equipping a campus with different dashboards. Engines need internal sensors, warehouses need inventory and checkout dashboards, and roads need maps plus optional traffic counters.\n\n| Analogy | Azure reality |\n|---|---|\n| Internal engine sensors | Azure Monitor Agent with DCRs for VM guest data |\n| Retired old sensor kit | Dependency Agent and VM insights Map deprecation |\n| Warehouse service dashboard | Storage insights for accounts |\n| Road map | Network Insights topology and health |\n| Optional traffic counters and route tests | Flow logs, Traffic analytics, and Connection monitor |\n\n**Where the analogy breaks down:** Azure services have exact support matrices, workspace destinations, and retirement timelines. A facilities team can sometimes reuse hardware, but Azure Monitor features must match the documented resource type and current support guidance.",
+      "jargon": [
+        {
+          "term": "Azure Monitor Agent",
+          "definition": "The current agent used to collect monitoring data from virtual machines, virtual machine scale sets, and Arc-enabled servers."
+        },
+        {
+          "term": "Data collection rule",
+          "definition": "A rule that defines the data an Azure Monitor Agent collects and the destination for that data."
+        },
+        {
+          "term": "Dependency Agent",
+          "definition": "A legacy agent for VM insights dependency mapping that Microsoft documents as deprecated with retirement on 30 June 2028."
+        },
+        {
+          "term": "VM insights Map",
+          "definition": "A VM insights feature for process and dependency mapping that is deprecated and not recommended for new deployments."
+        },
+        {
+          "term": "Storage insights",
+          "definition": "The Azure Monitor workbook experience for Storage account availability, performance, failures, and capacity."
+        },
+        {
+          "term": "Network Insights",
+          "definition": "The Azure Monitor and Network Watcher experience for Azure network topology, health, metrics, connectivity, traffic, and diagnostics."
+        },
+        {
+          "term": "Connection monitor",
+          "definition": "A Network Watcher capability that provides configured reachability and latency tests between sources and destinations."
+        },
+        {
+          "term": "Flow logs",
+          "definition": "Network flow logging data, such as NSG flow logs, used for traffic investigation and Traffic analytics."
+        },
+        {
+          "term": "Traffic analytics",
+          "definition": "A feature that analyzes flow logs to produce traffic visibility and trends."
+        },
+        {
+          "term": "Guest performance data",
+          "definition": "Performance signals from inside a VM's operating system rather than host-level Azure resource metrics."
+        }
+      ],
+      "watchOut": "- Current VM guest monitoring relies on Azure Monitor Agent and DCRs, not a new Dependency Agent rollout.\n- Storage insights built-in views use storage metrics collected by default.\n- Network topology and health are built into Network Insights, but connectivity tests and traffic analytics have their own enablement steps.\n- Do not assume the word Insights means the same prerequisites for VMs, storage accounts, and network resources.",
+      "productionTip": {
+        "official": "Microsoft documents VM monitoring at scale as installing Azure Monitor Agent, creating DCRs, and associating DCRs with machines. Microsoft also documents Storage insights as requiring no enablement for default storage metrics, Network Insights as showing topology, health, and metrics without configuration, and VM insights Map plus Dependency Agent as deprecated with a stated retirement date.",
+        "recommendation": "Create a monitoring standards page that lists each resource family and its onboarding pattern. For new VMs, standardize DCRs; for storage, standardize workbook review and metric alerts; for networks, standardize Network Insights review plus explicit decisions about Connection monitor and flow-log retention."
+      },
+      "memoryTrick": "**VMs need agents, storage has service metrics, networks have maps.** This is a simplified exam rule; custom logs, private endpoints, flow analytics, and application telemetry can add more pieces in real production designs.",
+      "examTip": "This question tests **what each insight needs enabled**. VM guest data needs Azure Monitor Agent and DCRs. Storage insights does not need an agent or DCR for its built-in metrics workbook. Network Insights starts with topology and health without configuration, but connectivity and traffic tabs depend on Connection monitor and flow-log or Traffic analytics setup. A harder version may mention existing Dependency Agent machines; then focus on retirement guidance rather than new deployment."
+    },
+    "sources": [
+      {
+        "title": "Monitor virtual machines in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/vm/monitor-vm"
+      },
+      {
+        "title": "Enable VM monitoring in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/vm/vm-enable-monitoring"
+      },
+      {
+        "title": "View app dependencies with VM insights",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/vm/vminsights-maps"
+      },
+      {
+        "title": "Dependency Agent in Azure Monitor VM insights",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/vm/vminsights-dependency-agent"
+      },
+      {
+        "title": "Monitor Azure Storage services with Azure Monitor Storage insights",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-insights-overview"
+      },
+      {
+        "title": "Network Insights",
+        "url": "https://learn.microsoft.com/en-us/azure/network-watcher/network-insights-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

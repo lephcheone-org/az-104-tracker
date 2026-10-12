@@ -1,0 +1,424 @@
+[
+  {
+    "id": "D5.2.2-01",
+    "objective": "D5.2.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains the resources shown in the following table.\n\n| Resource | Protection requirement |\n|---|---|\n| `vm-payroll-01` | Back up the entire Azure VM |\n| `share-hr` | Back up an Azure file share |\n| `disk-ledger-01` | Back up one managed disk without protecting the whole VM |\n| `stlegal` | Back up block blobs |\n| `pgflex-prod` | Back up Azure Database for PostgreSQL data for long-term retention |\n| `aks-orders` | Back up AKS cluster resources and persistent volumes |\n\nYou need to create the correct Azure Backup vault resources. Which choice matches the documented vault types for these workloads?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create one Recovery Services vault for all six resources because it is the general Azure Backup vault."
+      },
+      {
+        "id": "B",
+        "text": "Use a Recovery Services vault for the VM and Azure file share; use a Backup vault for the managed disk, blobs, PostgreSQL server, and AKS workload."
+      },
+      {
+        "id": "C",
+        "text": "Use a Backup vault for every listed resource because Backup vault is the newer vault type."
+      },
+      {
+        "id": "D",
+        "text": "Use a Recovery Services vault for VM, Azure Files, and Azure Disks; use a Backup vault only for PostgreSQL and blobs."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The Azure VM and Azure file share use Azure Backup native workload backup. The managed disk requirement is Azure Disk Backup for an individual managed disk, not VM-level backup. AKS backup is considered as the current Backup vault Kubernetes Services workload; Microsoft FAQ labels Kubernetes services as preview.",
+    "sections": {
+      "correctAnswer": "**B. Use a Recovery Services vault for the VM and Azure file share; use a Backup vault for the managed disk, blobs, PostgreSQL server, and AKS workload.** Microsoft separates Azure Backup workloads by vault family, so choosing the vault is a datasource decision, not simply a preference for the newest resource type.",
+      "technical": "Azure Backup has two vault resource families that both participate in backup and restore, but they do not protect the same datasources. A Recovery Services vault is the established vault for Azure Virtual Machine backup, SQL in Azure VMs, SAP HANA in Azure VMs, Azure Files, Azure Backup Server, the Azure Backup agent, and DPM. A Backup vault is used for newer Azure data protection workloads, including Azure Disks, Azure Blobs, Azure Database for PostgreSQL server, and Kubernetes services. The Backup vault overview also describes it as the storage entity for newer workloads such as Azure Blob and Azure Database for PostgreSQL.\n\nThe order to evaluate this exam scenario is:\n\n1. Identify the datasource type, not the resource group or subscription.\n2. Match Azure VM and Azure Files to a Recovery Services vault.\n3. Match individual managed disks, Blob Storage backup, PostgreSQL backup, and AKS backup to a Backup vault.\n4. Create vaults in regions and subscriptions that meet each workload's support matrix, then create policies inside the vault that owns the workload.\n\nA common exception is terminology around disks. If you back up the whole VM, the VM backup is a Recovery Services vault workload. If you protect a standalone managed disk with Azure Disk Backup, that is a Backup vault workload and only snapshots are used for operational backup. AKS is another exam trap: the AKS how-to uses a Backup vault and a backup extension, not a Recovery Services vault.",
+      "wrongOptions": {
+        "A": "A Recovery Services vault cannot be selected for all these workload types. It is correct for VM and Azure Files backup, but Microsoft lists Azure Disks, Azure Blobs, PostgreSQL server, and Kubernetes services under Backup vault. Misconception: one vault type can manage every Azure Backup datasource. Could be correct when the inventory contained only Recovery Services vault workloads such as Azure VMs, SQL in Azure VMs, SAP HANA in Azure VMs, Azure Files, MARS, MABS, or DPM.",
+        "C": "A Backup vault is not the replacement vault for every existing workload. Azure VM backup and Azure Files backup remain Recovery Services vault workloads in the Microsoft FAQ and support matrix. Misconception: newer Azure resource equals universal upgrade path. Could be correct for a smaller requirement that contained only newer Backup vault datasources such as Azure Disk Backup and blob backup.",
+        "D": "Azure Disk Backup for a standalone managed disk belongs to Backup vault, not Recovery Services vault. Misconception: because full VM recovery points include disks, every disk backup must use the VM backup vault type. Could be correct if the requirement were to back up `disk-ledger-01` only as part of full Azure VM protection rather than as an individual disk datasource."
+      },
+      "plainEnglish": "Think of Azure Backup as having two front desks. The older front desk, Recovery Services vault, handles several classic backup jobs such as complete Azure virtual machines and Azure file shares. The newer front desk, Backup vault, handles newer datasource-specific jobs such as an individual managed disk, blob storage backup, PostgreSQL backups, and AKS backup. The front desk you choose depends on the thing being protected. A disk inside a VM does not automatically mean Recovery Services vault; the question says to back up one managed disk without protecting the whole VM, so that line uses Azure Disk Backup and therefore Backup vault.",
+      "analogy": "A campus has two service counters. The legacy counter issues passes for staff laptops and shared filing cabinets. The newer counter issues passes for specialist equipment, record stores, database exports, and container labs. You do not choose a counter because it looks newer; you choose it because the service is listed there.\n\n| Analogy | Azure reality |\n|---|---|\n| Legacy service counter | Recovery Services vault |\n| Staff laptop pass | Azure VM backup |\n| Shared filing cabinet pass | Azure Files backup |\n| Specialist equipment counter | Backup vault |\n| Record store or lab service | Azure Blobs, PostgreSQL, Disk Backup, or AKS backup |\n\n**Where the analogy breaks down:** Azure vault selection also depends on regional support, subscription or tenant rules, managed identities, storage redundancy, and the exact backup solution, not only on the name of the resource.",
+      "jargon": [
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure Backup vault type used for workloads such as Azure VMs, Azure Files, SQL in Azure VMs, SAP HANA in Azure VMs, MARS, MABS, and DPM."
+        },
+        {
+          "term": "Backup vault",
+          "definition": "An Azure data protection vault type used for newer supported workloads such as Azure Disks, Azure Blobs, Azure Database for PostgreSQL server, and Kubernetes services."
+        },
+        {
+          "term": "Datasource",
+          "definition": "The protected item type Azure Backup is configured to protect, such as an Azure VM, an Azure file share, a managed disk, a storage account with blobs, a PostgreSQL server, or an AKS cluster."
+        },
+        {
+          "term": "Azure VM backup",
+          "definition": "VM-level backup that captures the virtual machine configuration and disks and stores recovery points in a Recovery Services vault."
+        },
+        {
+          "term": "Azure Disk Backup",
+          "definition": "A Backup vault solution that protects individual managed disks with crash-consistent incremental snapshots rather than backing up an entire VM."
+        },
+        {
+          "term": "Azure Blobs backup",
+          "definition": "Azure Backup protection for block blobs, using operational backup, vaulted backup, or both through Backup vault management."
+        },
+        {
+          "term": "Azure Database for PostgreSQL",
+          "definition": "A managed PostgreSQL database service that can use Azure Backup for long-term vaulted backup in addition to the service's native backup capability."
+        },
+        {
+          "term": "AKS",
+          "definition": "Azure Kubernetes Service, Microsoft's managed Kubernetes service for running containerized workloads."
+        },
+        {
+          "term": "Kubernetes Services",
+          "definition": "The datasource type used by Azure Backup policy configuration for AKS backup; the Microsoft FAQ lists it under Backup vault and marks it as preview."
+        }
+      ],
+      "watchOut": "- Do not answer only from the word vault; read the datasource row.\n- Azure VM backup and Azure Disk Backup are different exam choices.\n- Azure Files is listed with Recovery Services vault, while Azure Blobs is listed with Backup vault.\n- AKS backup uses Backup vault plus a backup extension; it is not configured as an Azure VM backup.\n- PostgreSQL single-server retirement affects new single-server backup configuration, so avoid designing new single-server backups.",
+      "productionTip": {
+        "official": "Microsoft documents both Recovery Services vault and Backup vault as supported, with different supported datasources. The Backup vault overview also states that Backup vaults use managed identities for RBAC access to resources such as Azure Disks or PostgreSQL servers.",
+        "recommendation": "Create vaults around operational ownership, region, criticality, and datasource support. Keep naming explicit, such as `rsv-vm-files-prod-eus` and `bv-dp-prod-eus`, so operators do not try to attach a workload to an incompatible vault during an incident."
+      },
+      "memoryTrick": "For AZ-104, remember **VMs and Files recover through Recovery Services; Disks, Blobs, Postgres, and Kubernetes go to Backup vault**. This is a shortcut for the listed workloads only, so always confirm unusual or preview datasources against the support matrix.",
+      "examTip": "The clue is the mixed table of datasources. Microsoft often tests the distinction by placing Azure Files next to Azure Blobs or full VM backup next to standalone disk backup. Rule out answers that treat Backup vault as a universal successor or Recovery Services vault as the one old vault for everything. A harder version may include SQL in Azure VM or SAP HANA in Azure VM; those still point to Recovery Services vault, not Backup vault."
+    },
+    "sources": [
+      {
+        "title": "Answers to common questions - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-backup-faq"
+      },
+      {
+        "title": "Overview of the Backup vaults - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+      },
+      {
+        "title": "Overview of Azure Disk Backup - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/disk-backup-overview"
+      },
+      {
+        "title": "Overview of Azure Blobs backup - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/blob-backup-overview"
+      },
+      {
+        "title": "Back up Azure Kubernetes Service by using Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/azure-kubernetes-service-cluster-backup"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.2-02",
+    "objective": "D5.2.2",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a Backup vault named `bv-prod` and a managed disk named `disk-api-01`. You plan to configure Azure Disk Backup. You select a dedicated resource group named `rg-disk-snapshots` to store the snapshots created by Azure Backup. Validation fails with **Role assignment not done**.\n\nWhich two role assignments should you add for the Backup vault's managed identity? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign **Disk Backup Reader** to the Backup vault managed identity on `disk-api-01`."
+      },
+      {
+        "id": "B",
+        "text": "Assign **Virtual Machine Contributor** to the Backup vault managed identity on the VM that might attach the disk."
+      },
+      {
+        "id": "C",
+        "text": "Assign **Storage Account Backup Contributor** to the Backup vault managed identity on `rg-disk-snapshots`."
+      },
+      {
+        "id": "D",
+        "text": "Assign **Disk Snapshot Contributor** to the Backup vault managed identity on `rg-disk-snapshots`."
+      },
+      {
+        "id": "E",
+        "text": "Assign **Backup Contributor** to the user running the validation, with no role on the disk or snapshot resource group."
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The task is Azure Disk Backup for an individual managed disk by using a Backup vault. The snapshot resource group is in the same subscription as the disk and is the resource group selected during disk backup configuration.",
+    "sections": {
+      "correctAnswer": "**A. Assign Disk Backup Reader to the Backup vault managed identity on `disk-api-01`** and **D. Assign Disk Snapshot Contributor to the Backup vault managed identity on `rg-disk-snapshots`**. Azure Disk Backup validates the vault identity's access to the source disk and to the resource group where Azure Backup will create and manage incremental snapshots.",
+      "technical": "Azure Disk Backup uses a Backup vault, and the Backup vault accesses other Azure resources through its managed identity. The permission path is different from a human administrator merely having rights in the portal. The service identity needs least-privilege Azure RBAC permissions on the protected disk and on the snapshot resource group. Microsoft documents two key role assignments for managed disk backup: **Disk Backup Reader** on the source disk and **Disk Snapshot Contributor** on the resource group where backups are created and managed.\n\nThe validation order is practical:\n\n1. The portal or Resiliency workflow identifies the source managed disk.\n2. Azure Backup checks whether the Backup vault managed identity can read the disk metadata needed for backup.\n3. Azure Backup checks whether that identity can create, retain, tag, and delete snapshots in the selected snapshot resource group.\n4. If those assignments are missing or have not propagated, readiness shows a role assignment problem.\n\nThe snapshot resource group should normally be dedicated and not the source disk resource group. The role can be assigned at resource, resource group, or subscription scope, but the exam phrase **least privilege** points to the disk resource for Disk Backup Reader and the snapshot resource group for Disk Snapshot Contributor. The user's role matters for being able to grant permissions, but it does not substitute for the vault identity's required roles.",
+      "wrongOptions": {
+        "B": "Virtual Machine Contributor on a VM is not the documented permission for individual Azure Disk Backup. The protected item is the managed disk, and Azure Backup needs disk read permission plus snapshot management permission. Misconception: every disk backup operation must be authorized through the VM that attaches the disk. Could be correct for a different administrative action that modifies the VM, such as attaching a restored disk to a VM.",
+        "C": "Storage Account Backup Contributor is the documented role for blob backup on storage accounts, not for the snapshot resource group used by Azure Disk Backup. Misconception: any Backup vault permission issue uses the same backup contributor role. Could be correct when configuring Azure Blob operational or vaulted backup for a storage account.",
+        "E": "Giving a human user Backup Contributor does not grant the Backup vault managed identity access to the source disk or snapshot resource group. Misconception: the interactive operator's permissions are inherited by the service after configuration. Could be correct only for allowing a person to manage backup operations in a vault, assuming the service identity already has datasource permissions."
+      },
+      "plainEnglish": "The Backup vault is like a service account doing the work. It needs permission to look at the disk and permission to create snapshots in the snapshot storage resource group. Giving yourself a broader backup role may let you open the wizard, but it does not give the vault identity the rights it needs. For Azure Disk Backup, the important pair is read the disk and manage snapshots: Disk Backup Reader on the disk, Disk Snapshot Contributor on the snapshot resource group.",
+      "analogy": "Imagine a photographer hired to document a museum artifact. The photographer needs two badges: one badge to enter the room and inspect the artifact, and another badge to use the studio where photos are stored. A manager's badge does not automatically appear on the photographer's lanyard.\n\n| Analogy | Azure reality |\n|---|---|\n| Photographer | Backup vault managed identity |\n| Artifact room | Source managed disk |\n| Inspect-artifact badge | Disk Backup Reader |\n| Photo studio | Snapshot resource group |\n| Studio badge | Disk Snapshot Contributor |\n\n**Where the analogy breaks down:** Azure RBAC assignments are evaluated by resource provider operations and may take time to propagate; there is no physical badge handoff.",
+      "jargon": [
+        {
+          "term": "Backup vault managed identity",
+          "definition": "The system-assigned or user-assigned identity that a Backup vault uses to access protected resources and related storage locations."
+        },
+        {
+          "term": "Azure Disk Backup",
+          "definition": "An Azure Backup solution for individual managed disks that creates incremental disk snapshots according to a Backup vault policy."
+        },
+        {
+          "term": "Managed disk",
+          "definition": "An Azure-managed block storage disk resource that can be attached to Azure virtual machines or used in other supported scenarios."
+        },
+        {
+          "term": "Snapshot resource group",
+          "definition": "The resource group selected to store and manage incremental snapshots created by Azure Disk Backup."
+        },
+        {
+          "term": "Disk Backup Reader",
+          "definition": "The built-in Azure role Microsoft documents for granting a Backup vault managed identity read access to a source disk for Azure Disk Backup."
+        },
+        {
+          "term": "Disk Snapshot Contributor",
+          "definition": "The built-in Azure role used by Azure Disk Backup so the vault managed identity can create and manage disk snapshots in the selected resource group."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for assigning permissions to identities at management scopes such as resources, resource groups, and subscriptions."
+        },
+        {
+          "term": "Role assignment propagation",
+          "definition": "The delay between creating an Azure role assignment and the assignment being consistently recognized by Azure services."
+        }
+      ],
+      "watchOut": "- The role is granted to the Backup vault identity, not only to the operator.\n- Disk Backup Reader belongs on the source disk, while Disk Snapshot Contributor belongs where snapshots are stored.\n- Storage Account Backup Contributor is a blob backup role and is the wrong role family here.\n- Azure Disk Backup protects one managed disk per backup instance; it is not the same as full VM backup.\n- If validation fails immediately after adding roles, wait for RBAC propagation and retry before redesigning the policy.",
+      "productionTip": {
+        "official": "Microsoft's Azure Disk Backup configuration article states that the Backup vault uses managed identity and requires Disk Backup Reader on the source disk and Disk Snapshot Contributor on the resource group where snapshots are created and managed.",
+        "recommendation": "Use a dedicated snapshot resource group per environment or application boundary, then assign Disk Snapshot Contributor only there. Avoid assigning broad subscription roles unless you are automating many disks and have documented why wider scope is needed."
+      },
+      "memoryTrick": "Disk backup needs **read the disk, contribute snapshots**. That phrase is a simplification because restore permissions can involve target resource groups, but it captures the validation pair for configuring protection.",
+      "examTip": "Look for **Role assignment not done**, **managed identity**, and **snapshot resource group**. The correct answer usually names roles on the actual protected resource and storage location, not a generic backup role on the human administrator. A harder item may swap in blob backup; then Storage Account Backup Contributor becomes relevant."
+    },
+    "sources": [
+      {
+        "title": "Overview of Azure Disk Backup - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/disk-backup-overview"
+      },
+      {
+        "title": "Back up Azure Managed Disks - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-managed-disks"
+      },
+      {
+        "title": "Overview of the Backup vaults - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.2-03",
+    "objective": "D5.2.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Woodgrove Bank has a storage account named `stcontracts` that stores block blobs for signed customer documents. The compliance team has two goals:\n\n- Recover from accidental blob deletion or corruption during the next 90 days by restoring the source storage account to a selected point in time.\n- Keep an offsite copy of blob backups for several years so that recovery is still possible if the storage account is maliciously deleted.\n\nYou need to choose the Azure Backup configuration that satisfies both goals with the least number of backup policies. What should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Configure operational backup only, because it automatically stores blob backup data in the Backup vault."
+      },
+      {
+        "id": "B",
+        "text": "Configure vaulted backup only, because it also enables point-in-time restore in the source account for 90 days."
+      },
+      {
+        "id": "C",
+        "text": "Create one blob backup policy in a Backup vault that enables both operational backup and vaulted backup for the storage account."
+      },
+      {
+        "id": "D",
+        "text": "Create a Recovery Services vault policy for the storage account and set daily, monthly, and yearly retention."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The blobs are block blobs in an Azure Storage account. The requirement needs both local operational recovery to the source account and offsite vaulted retention managed by Azure Backup.",
+    "sections": {
+      "correctAnswer": "**C. Create one blob backup policy in a Backup vault that enables both operational backup and vaulted backup for the storage account.** Operational backup handles local point-in-time style recovery in the source account, while vaulted backup copies backup data to the Backup vault according to a scheduled policy for offsite retention.",
+      "technical": "Azure Blob backup has two protection tiers with different failure assumptions. **Operational backup** is a managed local data protection solution. It uses blob platform capabilities such as point-in-time restore, soft delete, versioning, change feed, and a delete lock. The data remains in the source storage account; it is not copied to vault storage. Operational backup is continuous and does not require a backup schedule, and Microsoft describes restores for operational backup as going to the source storage account.\n\n**Vaulted backup** is a managed offsite backup solution. It uses object replication to copy data to Azure Backup-managed storage behind the Backup vault. A backup job creates recovery points according to schedule and frequency in the policy, and retention is configured in that policy. Microsoft documents vaulted blob backup as protection against accidental or malicious deletion of blobs or the storage account, with retention up to 10 years and restores currently to a different storage account.\n\nFor this scenario the correct sequence is:\n\n1. Create or use a Backup vault that supports Azure Blobs.\n2. Assign the Backup vault's managed identity the Storage Account Backup Contributor role on `stcontracts`.\n3. Create a blob backup policy with both operational and vaulted backup selected.\n4. Set operational retention to cover 90 days and set vaulted retention rules for the compliance period.\n\nThe exam trap is that the word **backup** appears in both tiers, but only the vaulted tier creates an offsite copy in the Backup vault.",
+      "wrongOptions": {
+        "A": "Operational backup stores data locally in the protected storage account and does not maintain an additional copy in the vault. That fails the malicious storage-account deletion goal. Misconception: any Azure Backup configuration always copies data into vault storage. Could be correct when the only requirement is short-term restore to the source account and the risk of storage account compromise is handled elsewhere.",
+        "B": "Vaulted backup provides scheduled offsite recovery points, but it is not described as the local continuous point-in-time restore mechanism for the source account. Microsoft says current vaulted blob restore is to a different storage account. Misconception: offsite backup automatically includes every operational restore behavior. Could be correct when the requirement only asks for offsite backup and restore to a separate account.",
+        "D": "Blob backup uses a Backup vault, not a Recovery Services vault. Recovery Services vault policies protect workloads such as Azure VMs and Azure Files, not Azure Blob Storage backup. Misconception: long retention always means Recovery Services vault. Could be correct for VM backup retention, not for Azure Blobs backup."
+      },
+      "plainEnglish": "The bank wants two safety nets. The first safety net is close to the data and helps undo recent blob mistakes quickly. That is operational backup. The second safety net keeps a separate protected copy away from the original storage account, so a damaged or deleted account is not the only place the recovery data exists. That is vaulted backup. Azure Backup lets a blob policy use both tiers together, so one policy can cover both the local 90-day restore goal and the longer offsite retention goal.",
+      "analogy": "A law office keeps a working copy in a locked cabinet and also sends archived copies to a records warehouse. The cabinet copy is convenient for yesterday's mistake. The warehouse copy is useful if the whole office is damaged.\n\n| Analogy | Azure reality |\n|---|---|\n| Locked office cabinet | Operational backup in the source storage account |\n| Records warehouse | Vaulted backup in Backup vault-managed storage |\n| Quick undo of a misfiled document | Point-in-time restore of block blobs |\n| Surviving office destruction | Offsite copy for storage-account deletion scenarios |\n| One records plan | One blob backup policy with both tiers |\n\n**Where the analogy breaks down:** Azure Blob operational backup depends on platform features and exact retention limits, while vaulted backup uses object replication and policy-generated recovery points rather than boxes of paper.",
+      "jargon": [
+        {
+          "term": "Operational backup",
+          "definition": "Azure Blob backup tier that keeps recoverable blob states locally in the source storage account by using blob service capabilities such as point-in-time restore, soft delete, versioning, and change feed."
+        },
+        {
+          "term": "Vaulted backup",
+          "definition": "Azure Blob backup tier that copies backup data to Backup vault-managed storage based on policy schedule and retention."
+        },
+        {
+          "term": "Backup vault",
+          "definition": "The Azure vault type used to manage backup policies and recovery points for newer workloads, including Azure Blobs."
+        },
+        {
+          "term": "Block blob",
+          "definition": "A blob type optimized for storing text and binary data in Azure Blob Storage and supported by Azure Blob backup scenarios."
+        },
+        {
+          "term": "Point-in-time restore",
+          "definition": "A Blob Storage capability that can restore blob data to an earlier state within a configured retention window."
+        },
+        {
+          "term": "Object replication",
+          "definition": "A Blob Storage capability used by vaulted blob backup to asynchronously copy blob data between source and destination storage accounts."
+        },
+        {
+          "term": "Delete lock",
+          "definition": "A management lock that operational backup applies to help prevent accidental deletion of the protected storage account."
+        },
+        {
+          "term": "Storage Account Backup Contributor",
+          "definition": "The role Microsoft documents for granting a Backup vault the minimum permissions needed on storage accounts protected by blob backup."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A backup point from which data can be restored, created according to the backup tier and policy behavior."
+        }
+      ],
+      "watchOut": "- Operational backup is local; it does not add a second copy in the Backup vault.\n- Vaulted blob backup is scheduled and policy-retained; operational backup is continuous and scheduleless.\n- Current vaulted blob restore targets a different storage account, while operational restore is to the source account.\n- A new blob policy now has vaulted backup selected by default and cannot create an operational-only new policy according to the current overview.\n- Container deletion has special limitations for operational backup, so do not imply every container operation can be undone.",
+      "productionTip": {
+        "official": "Microsoft documents that operational backup data is stored locally in the source storage account, while vaulted backup copies data to Backup vault-managed storage and can retain data for up to 10 years. The configuration article states that a policy can select operational backups, vaulted backups, or both.",
+        "recommendation": "Use both tiers for high-value blob workloads where fast local recovery and ransomware-resilient retention are both required. Test the restore path to a different storage account before declaring vaulted blob backup ready for an incident runbook."
+      },
+      "memoryTrick": "For blobs, **operational is on-account; vaulted is off-account**. This memory aid is not a full design rule because restore targets, limits, and retention settings still matter.",
+      "examTip": "Clue words are **point in time**, **source storage account**, **malicious deletion**, and **offsite**. One tier alone cannot satisfy both sentences. A harder version may ask which role to assign before configuration; for blobs, look for Storage Account Backup Contributor, not Disk Snapshot Contributor."
+    },
+    "sources": [
+      {
+        "title": "Overview of Azure Blobs backup - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/blob-backup-overview"
+      },
+      {
+        "title": "Configure and manage backup for Azure Blobs using Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/blob-backup-configure-manage"
+      },
+      {
+        "title": "Overview of the Backup vaults - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-vault-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.2-04",
+    "objective": "D5.2.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "A platform team plans to create a Backup vault named `bv-containers-data` in Australia East. The vault will protect an Azure Database for PostgreSQL database and an AKS cluster in the same region. The database credentials are stored in Azure Key Vault. The AKS cluster uses CSI-based persistent volumes.\n\nWhich two statements describe required or documented design facts for this plan? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use a Recovery Services vault because PostgreSQL and AKS are both application workloads rather than storage datasources."
+      },
+      {
+        "id": "B",
+        "text": "For PostgreSQL backup, grant the Backup vault managed identity Reader access on the PostgreSQL server and Key Vault Secrets User access on the key vault that stores the secret."
+      },
+      {
+        "id": "C",
+        "text": "For AKS backup, install the Backup extension and enable Trusted Access so the Backup vault can communicate with the cluster."
+      },
+      {
+        "id": "D",
+        "text": "For AKS backup, skip the blob container because persistent volume snapshots are the only data that Azure Backup stores."
+      },
+      {
+        "id": "E",
+        "text": "Use Azure Disk Backup directly for every AKS persistent volume because Microsoft recommends standalone Disk Backup over AKS Backup for persistent volumes attached to a cluster."
+      }
+    ],
+    "correct": [
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The PostgreSQL workload uses the current Key Vault-based authentication model documented by Azure Backup. The AKS cluster uses supported CSI-based persistent volumes and is in the same region as the Backup vault.",
+    "sections": {
+      "correctAnswer": "**B. For PostgreSQL backup, grant the Backup vault managed identity Reader access on the PostgreSQL server and Key Vault Secrets User access on the key vault that stores the secret** and **C. For AKS backup, install the Backup extension and enable Trusted Access so the Backup vault can communicate with the cluster.** Both statements match Microsoft documentation for these Backup vault workloads.",
+      "technical": "PostgreSQL backup and AKS backup are both associated with Backup vault, but they use different preparation steps. For Azure Database for PostgreSQL backup, Azure Backup does not assume permissions on the source server. Microsoft documents that the Backup vault managed identity needs **Reader** access on the Azure Database for PostgreSQL server and **Key Vault Secrets User** access on the Key Vault so it can get and list the secret containing database credentials. Network line-of-sight and database user privileges are also required, but the role pair in option B is the central RBAC requirement tested here.\n\nFor AKS backup, the Backup vault communicates with the AKS cluster through the Backup extension. The extension is installed in the cluster and uses a blob container as the default storage location for cluster resource backups. Microsoft also documents Trusted Access: the Backup vault is assigned the predefined role `Microsoft.DataProtection/backupVaults/backup-operator` in the AKS cluster so it can perform specific backup operations. AKS backup supports cluster resources and persistent volumes; current docs describe support for Azure Disk and Azure SMB Files based persistent volumes enabled by CSI drivers, with specific limits and vault tier behavior.\n\nThe evaluation order is therefore:\n\n1. Choose Backup vault because both datasource types belong to the newer data protection vault family.\n2. Prepare PostgreSQL identity and secret access.\n3. Prepare AKS extension, storage location, and Trusted Access.\n4. Build datasource-specific backup policies and instances.",
+      "wrongOptions": {
+        "A": "Microsoft lists Azure Database for PostgreSQL server and Kubernetes services under Backup vault, not Recovery Services vault. Misconception: application-oriented workloads always use Recovery Services vault. Could be correct for SQL Server in Azure VM or SAP HANA in Azure VM, which are application workloads protected through Recovery Services vault.",
+        "D": "AKS backup uses a blob container for backup storage of cluster resources, and persistent volume snapshots are stored in documented locations depending on the volume type. Misconception: persistent volumes are the only AKS backup content. Could be correct only for a narrow custom snapshot solution outside Azure Backup, not for the documented AKS Backup extension workflow.",
+        "E": "Microsoft's Azure Disk Backup overview specifically notes that if the target disk is attached as a Persistent Volume to an AKS cluster, choose Azure Backup for AKS over standalone Disk Backup. Misconception: any Azure Disk-based volume should always be protected by the individual disk backup solution. Could be correct for a managed disk that is not part of an AKS persistent-volume application boundary."
+      },
+      "plainEnglish": "The PostgreSQL backup needs permission to read the server and permission to read the secret in Key Vault, because Azure Backup must connect to the database by using credentials. The AKS backup needs an installed helper inside the cluster and a trust relationship that lets the vault talk to the cluster. Both are Backup vault jobs, but they do not prepare the same way. Treating them as one generic application backup would miss the identity and extension requirements.",
+      "analogy": "A university archive protects a research database and a robotics lab. For the database, the archivist needs permission to enter the database room and unlock the credential safe. For the robotics lab, the archivist needs a lab assistant installed inside the lab and a written access agreement with lab security.\n\n| Analogy | Azure reality |\n|---|---|\n| Archivist organization | Backup vault |\n| Database room access | Reader on PostgreSQL server |\n| Credential safe access | Key Vault Secrets User on Key Vault |\n| Lab assistant | AKS Backup extension |\n| Written access agreement | Trusted Access between Backup vault and AKS |\n\n**Where the analogy breaks down:** Azure uses managed identities, Kubernetes permissions, resource providers, CSI snapshots, and blob containers; those controls are more precise than physical keys.",
+      "jargon": [
+        {
+          "term": "Azure Database for PostgreSQL backup",
+          "definition": "Azure Backup workload that can provide scheduled and on-demand database-level backups for Azure Database for PostgreSQL, storing backup data through the Backup vault service."
+        },
+        {
+          "term": "Key Vault Secrets User",
+          "definition": "An Azure role that allows an identity to read secrets from a Key Vault when the vault uses Azure RBAC authorization."
+        },
+        {
+          "term": "Reader",
+          "definition": "An Azure role that allows viewing resource metadata without making changes."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An Azure-created identity that a service such as Backup vault can use for Azure RBAC access without storing credentials in code."
+        },
+        {
+          "term": "AKS Backup extension",
+          "definition": "An extension installed in an AKS cluster to enable Azure Backup backup and restore operations for cluster resources and supported persistent volumes."
+        },
+        {
+          "term": "Trusted Access",
+          "definition": "An AKS feature that lets allowed Azure resources, such as a Backup vault, access an AKS cluster through predefined roles without relying on public kubeconfig patterns."
+        },
+        {
+          "term": "CSI",
+          "definition": "Container Storage Interface, the Kubernetes storage plugin model used by AKS backup for persistent volume snapshot support."
+        },
+        {
+          "term": "Persistent volume",
+          "definition": "A Kubernetes storage resource used by applications to keep data beyond the lifetime of an individual pod."
+        },
+        {
+          "term": "Backup vault",
+          "definition": "Azure vault type for newer Azure Backup datasources including PostgreSQL, Azure Blobs, Azure Disks, and Kubernetes services."
+        }
+      ],
+      "watchOut": "- PostgreSQL backup needs both Azure resource permissions and database-level privileges; this question only asks for two documented design facts.\n- AKS backup does not use Recovery Services vault.\n- The blob container for AKS backup is not optional because cluster resource backups use it.\n- Standalone Azure Disk Backup is not the recommended answer for disks used as AKS persistent volumes.\n- Kubernetes services are listed by Microsoft under Backup vault and marked preview in the FAQ, so designs should check the current support matrix before production rollout.",
+      "productionTip": {
+        "official": "Microsoft documents explicit permissions for PostgreSQL backup: Reader on the PostgreSQL server and Key Vault Secrets User on the Key Vault for the Backup vault managed identity. Microsoft also documents that AKS backup requires the Backup extension and uses Trusted Access for the Backup vault to communicate with the cluster.",
+        "recommendation": "Separate the rollout checklists for PostgreSQL and AKS even when they share one Backup vault. Database teams should own credential and database-user readiness, while platform teams should own AKS extension health, storage account access, and Trusted Access validation."
+      },
+      "memoryTrick": "PostgreSQL needs **server plus secret**; AKS needs **extension plus trust**. This is a compact exam clue, not a complete prerequisite list.",
+      "examTip": "When a question mixes PostgreSQL and AKS, do not search for one universal role. PostgreSQL is about server, Key Vault, and database privileges; AKS is about extension, trusted access, blob container, namespaces, and persistent volumes. A harder version may ask about Azure Files-backed AKS volumes; then remember the documentation's special Azure Files limits and role behavior."
+    },
+    "sources": [
+      {
+        "title": "Overview of Azure Database for PostgreSQL Backup - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-database-postgresql-overview"
+      },
+      {
+        "title": "Azure Kubernetes Service (AKS) backup using Azure Backup prerequisites",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/azure-kubernetes-service-cluster-backup-concept"
+      },
+      {
+        "title": "Back up Azure Kubernetes Service by using Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/azure-kubernetes-service-cluster-backup"
+      },
+      {
+        "title": "Answers to common questions - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-backup-faq"
+      },
+      {
+        "title": "Overview of Azure Disk Backup - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/disk-backup-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

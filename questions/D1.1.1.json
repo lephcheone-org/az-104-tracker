@@ -1,0 +1,1069 @@
+[
+  {
+    "id": "D1.1.1-01",
+    "objective": "D1.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a Microsoft Entra tenant named `contoso.com`. The tenant synchronizes employee accounts from on-premises Active Directory. A contractor named Ari will not have an on-premises account and must sign in directly to Microsoft Entra ID with `ari@contoso.com`. You need to create the account with the least privileged administrative role. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create Ari in on-premises Active Directory and wait for synchronization."
+      },
+      {
+        "id": "B",
+        "text": "Create a new internal member user in Microsoft Entra ID while signed in as User Administrator."
+      },
+      {
+        "id": "C",
+        "text": "Invite Ari as an external guest user."
+      },
+      {
+        "id": "D",
+        "text": "Create a Microsoft 365 group named `ari@contoso.com`."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Ari needs a cloud-only workforce account, not a B2B collaboration account. The `contoso.com` domain is verified.",
+    "sections": {
+      "correctAnswer": "**B. Create a new internal member user in Microsoft Entra ID while signed in as User Administrator**. The user article lists User Administrator as the least privileged role for creating a new user, and the scenario calls for a tenant-created internal member rather than a synced or external guest account.",
+      "technical": "Microsoft Entra workforce tenants can contain internal members, internal guests, external members, and external guests. Internal members have credentials in the tenant and are commonly used for organization-managed accounts. The create-user flow in the Microsoft Entra admin center requires at least User Administrator. Synced employee accounts come from the on-premises directory through Microsoft Entra Connect Sync, so they should normally be created and maintained at that source. Ari explicitly has no on-premises account and must sign in directly with a tenant UPN, so cloud creation is the correct source of authority.",
+      "wrongOptions": {
+        "A": "This creates a synced identity path that the scenario says Ari does not have or need. Misconception: all tenants with synchronization must create every account on-premises. Could be correct when: the person is an employee whose identity must be mastered in on-premises Active Directory.",
+        "C": "This creates an external collaboration user with guest-style behavior, not the requested tenant-managed member account. Misconception: contractor always means guest. Could be correct when: the person should authenticate with an outside identity and collaborate as B2B.",
+        "D": "A group is not a sign-in account and cannot replace a user principal name. Misconception: an email-like group name can function as a user account. Could be correct when: a collaboration workspace is needed after the user exists."
+      },
+      "plainEnglish": "Ari needs a company-managed online identity. Because Ari is not in the on-premises employee directory, the administrator should create the account directly in Microsoft Entra ID. Because the account is a user account, not a guest invitation or group, the right role is the one documented for user creation.",
+      "analogy": "Ari is like a contractor who needs an online-only building badge because there is no paper HR file in the headquarters badge office.\n\n| Analogy | Azure reality |\n|---|---|\n| Headquarters badge office | On-premises Active Directory |\n| Nightly badge feed | Microsoft Entra Connect Sync |\n| Online-only contractor badge | Cloud-only internal member user |\n| Badge clerk allowed to create people | User Administrator |\n| Visitor pass from another company | External guest invitation |\n\n**Where the analogy breaks down:** A building badge does not capture UPN domains, password creation, account-enabled state, or the fact that synchronized identities can be overwritten by their on-premises source.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity and access service, formerly named Azure Active Directory."
+        },
+        {
+          "term": "Tenant",
+          "definition": "A dedicated Microsoft Entra ID instance that contains users, groups, applications, and settings."
+        },
+        {
+          "term": "User",
+          "definition": "A directory identity that can sign in or be assigned access, depending on its type and settings."
+        },
+        {
+          "term": "Group",
+          "definition": "A directory object used to collect users, devices, service principals, or other supported objects for access or collaboration."
+        },
+        {
+          "term": "User Administrator",
+          "definition": "A Microsoft Entra built-in role documented as sufficient to create new users."
+        },
+        {
+          "term": "UPN",
+          "definition": "User principal name, the sign-in name formatted like `ari@contoso.com`."
+        },
+        {
+          "term": "Cloud-only user",
+          "definition": "A user mastered directly in Microsoft Entra ID rather than synchronized from on-premises."
+        },
+        {
+          "term": "B2B guest",
+          "definition": "An invited external collaboration user who authenticates with an external identity."
+        }
+      ],
+      "watchOut": "- Do not choose guest invitation only because the person is a contractor.\n- Synchronized users and cloud-only users have different sources of authority.\n- Global Administrator is broader than needed for creating a user.\n- Account enabled can be cleared if the user must not sign in immediately.",
+      "productionTip": {
+        "official": "The create-user documentation states that creating a new user requires at least User Administrator and describes the portal path and user properties used during creation.",
+        "recommendation": "Recommendation: document whether each non-employee should be a member or guest before creation. Use cloud-only members only when the organization owns the identity lifecycle, and review group and role assignments separately."
+      },
+      "memoryTrick": "Source first, type second, role third. Decide where the account is mastered, what kind of user it is, and who has just enough rights.",
+      "examTip": "Clue words are **no on-premises account**, **sign in directly**, and **least privileged role**. These eliminate synchronization, guest invitation, and Global Administrator. A harder version may add an external member or internal guest and ask which user type matches the authentication source."
+    },
+    "sources": [
+      {
+        "title": "How to create, invite, and delete users in Microsoft Entra ID",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-to-create-delete-users"
+      },
+      {
+        "title": "Microsoft Entra Connect Sync service features and configuration",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-syncservice-features"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.1-02",
+    "objective": "D1.1.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You need to onboard 120 seasonal employees and 40 partner consultants. Seasonal employees must receive internal member accounts with initial passwords. Partner consultants must receive invitations at their external email addresses. Which two bulk operations should you use? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use **Bulk create** with the user CSV template for the seasonal employees."
+      },
+      {
+        "id": "B",
+        "text": "Use **Bulk create** with the user CSV template for the partner consultants."
+      },
+      {
+        "id": "C",
+        "text": "Use **Bulk invite** with the B2B CSV template for the seasonal employees."
+      },
+      {
+        "id": "D",
+        "text": "Use **Bulk invite** with the B2B CSV template for the partner consultants."
+      },
+      {
+        "id": "E",
+        "text": "Use `az ad group create` for both sets of people."
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Seasonal employees need member users; partner consultants need B2B guest invitations. Current downloaded CSV templates are used.",
+    "sections": {
+      "correctAnswer": "**A. Use Bulk create with the user CSV template for the seasonal employees and D. Use Bulk invite with the B2B CSV template for the partner consultants**. Bulk create imports internal member users with initial passwords. Bulk invite sends B2B collaboration invitations to external users.",
+      "technical": "Bulk create users uses a CSV template with required columns for display name, user principal name, and initial password. Microsoft Learn states that it creates internal member accounts and no invitation emails are sent, so credentials must be communicated separately. Bulk invite B2B users is a different flow that uploads an invitation CSV, validates it, and sends invitations to external email addresses with a redirection URL. The two flows create different onboarding experiences and should be selected by identity type, not by batch size.\n\nFor the employee batch, the required CSV values are enough to create sign-in-capable member users, but optional columns can still be used when the downloaded template supports them. For the consultant batch, the invitation record must include an invitee email address and redirection URL. If a row fails validation, the job should not be treated as complete until the bulk operation results show whether that specific row succeeded or failed.",
+      "wrongOptions": {
+        "B": "Partner consultants would become tenant-managed member accounts instead of invited external users. Misconception: any CSV import is the same as guest onboarding. Could be correct when: partners must receive internal Contoso-managed credentials.",
+        "C": "Seasonal employees need internal accounts with passwords, not external invitations. Misconception: every onboarding email should be an invitation. Could be correct when: seasonal staff should authenticate with external identities.",
+        "E": "The command creates groups, not users or invitations. Misconception: groups are the first object for all onboarding. Could be correct when: the user accounts already exist and only access groups are needed."
+      },
+      "plainEnglish": "There are two rosters. Employees need company accounts with starting passwords, so use the bulk user creation spreadsheet. Consultants should keep using outside identities and accept an invitation, so use the bulk invitation spreadsheet.\n\nA spreadsheet upload is not magic; it follows the purpose of the template. The employee template makes accounts. The guest template sends invitations. If the wrong template is used, the people might appear in the directory but with the wrong identity ownership and sign-in experience.",
+      "analogy": "The onboarding team has two desks at orientation: one prints employee badges, and the other emails visitor invitations to partner companies.\n\n| Analogy | Azure reality |\n|---|---|\n| Employee badge spreadsheet | Bulk create user CSV |\n| Starter PIN on the badge | Initial password |\n| Visitor invitation spreadsheet | Bulk invite B2B CSV |\n| Address to send the visitor after check-in | Invitation redirection URL |\n| Failed row on the desk report | Bulk operation result failure |\n\n**Where the analogy breaks down:** Microsoft Entra also enforces exact CSV headers, password policy, guest invitation settings, and tenant permissions; an orientation desk does not validate directory object properties.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity and access service, formerly named Azure Active Directory."
+        },
+        {
+          "term": "Tenant",
+          "definition": "A dedicated Microsoft Entra ID instance that contains users, groups, applications, and settings."
+        },
+        {
+          "term": "User",
+          "definition": "A directory identity that can sign in or be assigned access, depending on its type and settings."
+        },
+        {
+          "term": "Group",
+          "definition": "A directory object used to collect users, devices, service principals, or other supported objects for access or collaboration."
+        },
+        {
+          "term": "Bulk create",
+          "definition": "A Microsoft Entra operation that creates multiple internal users from a CSV file."
+        },
+        {
+          "term": "Bulk invite",
+          "definition": "A B2B operation that invites multiple external users from a CSV file."
+        },
+        {
+          "term": "CSV",
+          "definition": "Comma-separated values, a spreadsheet-like text format."
+        },
+        {
+          "term": "Initial password",
+          "definition": "The starting password specified for a newly created member account."
+        },
+        {
+          "term": "Redirection URL",
+          "definition": "The URL an invited guest is sent to after accepting an invitation."
+        }
+      ],
+      "watchOut": "- Preserve downloaded CSV headers exactly.\n- Bulk create does not send invitation emails.\n- Bulk invite requires external email addresses and a redirection URL.\n- Review bulk operation results because individual rows can fail.",
+      "productionTip": {
+        "official": "Microsoft Learn documents separate bulk create and bulk invite flows, including required CSV columns and validation results.",
+        "recommendation": "Recommendation: keep separate onboarding files for employees and guests, and never use member accounts for partners unless a documented identity ownership decision requires it."
+      },
+      "memoryTrick": "Create gives credentials; invite sends invitations. The words in the question usually reveal the correct bulk operation.",
+      "examTip": "Clue words are **initial passwords** and **external email addresses**. Select one operation for member creation and one for guest invitation. A harder version may show CSV headers and ask which rows or columns cause validation failures."
+    },
+    "sources": [
+      {
+        "title": "Bulk create users in the Azure portal",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/users-bulk-add"
+      },
+      {
+        "title": "Bulk invite B2B users",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/tutorial-bulk-invite"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.1-03",
+    "objective": "D1.1.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Fabrikam needs `App-Approvers` to grant access to an internal Azure application and `Project-Marketing` to provide a shared collaboration workspace. Which group types should you create?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create both as Microsoft 365 groups."
+      },
+      {
+        "id": "B",
+        "text": "Create `App-Approvers` as a Security group and `Project-Marketing` as a Microsoft 365 group."
+      },
+      {
+        "id": "C",
+        "text": "Create both as role-assignable groups."
+      },
+      {
+        "id": "D",
+        "text": "Create `App-Approvers` as a Microsoft 365 group and `Project-Marketing` as a Security group."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The app accepts Microsoft Entra group assignment. No Microsoft Entra administrator role assignment is required.",
+    "sections": {
+      "correctAnswer": "**B. Create `App-Approvers` as a Security group and `Project-Marketing` as a Microsoft 365 group**. Security groups are for access to shared resources, while Microsoft 365 groups provide collaboration capabilities.",
+      "technical": "Microsoft Learn describes two group types managed in the Microsoft Entra admin center. Security groups are used to manage access to shared resources and can include users, devices, service principals, and supported nested security groups. Microsoft 365 groups provide collaboration opportunities and their members can only include users. `App-Approvers` is an access-control group, so Security is the correct type. `Project-Marketing` is a collaboration workspace, so Microsoft 365 is the correct type. Group type matters because it can't be changed after creation in the basic management flow.\n\nThe scope of the decision is the group object at creation time. `App-Approvers` may later be assigned to an enterprise application, an Azure resource role, or another access control surface that accepts security groups. `Project-Marketing` instead represents the collaboration container itself. Owners and members can be added after creation, but the original type selection controls which downstream Microsoft 365 behaviors are available.",
+      "wrongOptions": {
+        "A": "The collaboration group fits, but the access-control-only group is better as a Security group. Misconception: Microsoft 365 groups replace security groups for all modern scenarios. Could be correct when: both groups primarily need collaboration resources.",
+        "C": "Role-assignable groups are only for assigning Microsoft Entra roles and have extra restrictions. Misconception: role-assignable means generally better for all groups. Could be correct when: a group must receive a Microsoft Entra administrator role.",
+        "D": "This reverses the usual purpose of the two group types. Misconception: department or project wording decides group type. Could be correct when: the app specifically required Microsoft 365 group assignment and the project only needed access control."
+      },
+      "plainEnglish": "A security group is like an access list. A Microsoft 365 group is like a team workspace. Pick the access list for the app and the workspace group for marketing collaboration.\n\nIf you created the wrong type, you do not simply flip a switch later in the basic group properties. Plan the type before creation: access-control groups should stay separate from collaboration workspaces unless the target service explicitly supports the same object for both jobs.",
+      "analogy": "Fabrikam is choosing between a locked-door access list and a project clubhouse roster.\n\n| Analogy | Azure reality |\n|---|---|\n| Locked-door access list | Security group |\n| Internal app door | Azure application access assignment |\n| Project clubhouse roster | Microsoft 365 group |\n| Shared clubhouse tools | Microsoft 365 collaboration resources |\n| Rebuilding the wrong list | Deleting and recreating a group to change type |\n\n**Where the analogy breaks down:** A clubhouse roster cannot show all Microsoft 365 service behaviors, and an access list does not model every application-specific assignment rule.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity and access service, formerly named Azure Active Directory."
+        },
+        {
+          "term": "Tenant",
+          "definition": "A dedicated Microsoft Entra ID instance that contains users, groups, applications, and settings."
+        },
+        {
+          "term": "User",
+          "definition": "A directory identity that can sign in or be assigned access, depending on its type and settings."
+        },
+        {
+          "term": "Group",
+          "definition": "A directory object used to collect users, devices, service principals, or other supported objects for access or collaboration."
+        },
+        {
+          "term": "Security group",
+          "definition": "A group type used to manage access to shared resources."
+        },
+        {
+          "term": "Microsoft 365 group",
+          "definition": "A group type that provides collaboration resources and user membership."
+        },
+        {
+          "term": "Group type",
+          "definition": "The category selected when a group is created, such as Security or Microsoft 365."
+        },
+        {
+          "term": "Collaboration workspace",
+          "definition": "Shared Microsoft 365 resources such as conversations, files, or plans used by a team."
+        }
+      ],
+      "watchOut": "- Choose group type by purpose, not by name.\n- Microsoft 365 group members can only include users.\n- Security groups are the usual choice for resource access.\n- Basic group type cannot be changed after creation; recreate if the type is wrong.\n- If the group later needs devices or service principals as members, Microsoft 365 group is the wrong type.",
+      "productionTip": {
+        "official": "Microsoft Learn states that Security groups manage access to shared resources and Microsoft 365 groups provide collaboration opportunities.",
+        "recommendation": "Recommendation: include purpose in group naming and description. Use Security groups for access-only control and Microsoft 365 groups only when the group should provide collaboration services."
+      },
+      "memoryTrick": "Security secures; Microsoft 365 collaborates. It is a shortcut, but it matches the common exam distinction.",
+      "examTip": "Clue words are **grant access** and **collaboration workspace**. Match each phrase to the group type. A harder version may include device membership or service principals, which pushes the answer toward Security groups."
+    },
+    "sources": [
+      {
+        "title": "Learn About Groups, Group Membership, and Access",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/concept-learn-about-groups"
+      },
+      {
+        "title": "How to manage groups",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-to-manage-groups"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.1-04",
+    "objective": "D1.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Litware needs a group that automatically contains only devices whose attributes match a rule. The group must not contain users, and administrators must not manually add or remove members. Which membership type and group type should you choose?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Microsoft 365 group with Dynamic user membership"
+      },
+      {
+        "id": "B",
+        "text": "Security group with Assigned membership"
+      },
+      {
+        "id": "C",
+        "text": "Security group with Dynamic device membership"
+      },
+      {
+        "id": "D",
+        "text": "Microsoft 365 group with Assigned membership"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Dynamic membership licensing and supported device attributes are available. The group will not be role-assignable.",
+    "sections": {
+      "correctAnswer": "**C. Security group with Dynamic device membership**. Security groups can contain devices, and dynamic device membership automatically adds and removes devices based on device attributes.",
+      "technical": "Microsoft Entra membership types include Assigned, Dynamic user, and Dynamic device. Assigned membership is manually maintained. Dynamic user membership evaluates user attributes. Dynamic device membership evaluates device attributes. Microsoft Learn states that security groups can include either devices or users, while Microsoft 365 groups can include only users. It also states that dynamic membership groups cannot mix users and devices and that you can't manually add or remove a member of a dynamic membership group. Device rules can reference only device attributes, not the attributes of the device owner.\n\nThe precedence in this scenario is object type before automation. A dynamic user group can be automatic, but it would still evaluate the wrong object class. A security group with assigned membership can hold device objects in some scenarios, but it would not satisfy the requirement that membership be rule-driven. Only the combination of Security group and Dynamic device membership satisfies both constraints at once.\n\nFor exam scope, do not solve this by creating separate user and device groups unless the requirement asks for both. The single requested group must contain devices only, so user-based membership types remain wrong even if their rules look easier to build in the portal.",
+      "wrongOptions": {
+        "A": "Microsoft 365 groups can include only users and Dynamic user evaluates users, not devices. Misconception: dynamic membership alone determines object type. Could be correct when: you need an automatically populated user collaboration group.",
+        "B": "Assigned membership is manual and fails the automatic membership requirement. Misconception: security group means automatic membership. Could be correct when: you need a fixed administrator-controlled list.",
+        "D": "This is user-oriented and manually maintained, so it fails both main requirements. Misconception: Microsoft 365 groups are the default group type. Could be correct when: users need a manually managed collaboration workspace."
+      },
+      "plainEnglish": "The group is for devices, not people, and membership must update by itself. A Security group can be used with devices, and Dynamic device is the membership type that uses a rule to decide which devices belong.\n\nThe key distinction is who or what is evaluated. A dynamic user group reads user fields such as department; a dynamic device group reads device fields. The answer must match the object type before the rule can make sense.",
+      "analogy": "Litware is building an automatic parking list for company devices rather than a hand-written staff roster.\n\n| Analogy | Azure reality |\n|---|---|\n| Vehicle record | Device object |\n| Make, tag, or registration value | Device attribute used by a rule |\n| Automatic parking eligibility test | Dynamic device membership rule |\n| Parking access list | Security group |\n| Hand-written exception | Manual member add, which dynamic groups do not allow |\n\n**Where the analogy breaks down:** Device membership processing is asynchronous and depends on supported directory attributes; a parking attendant could make human exceptions, but dynamic group membership cannot.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity and access service, formerly named Azure Active Directory."
+        },
+        {
+          "term": "Tenant",
+          "definition": "A dedicated Microsoft Entra ID instance that contains users, groups, applications, and settings."
+        },
+        {
+          "term": "User",
+          "definition": "A directory identity that can sign in or be assigned access, depending on its type and settings."
+        },
+        {
+          "term": "Group",
+          "definition": "A directory object used to collect users, devices, service principals, or other supported objects for access or collaboration."
+        },
+        {
+          "term": "Assigned membership",
+          "definition": "A membership type where members are explicitly added or removed."
+        },
+        {
+          "term": "Dynamic user",
+          "definition": "Automatic membership based on user attributes."
+        },
+        {
+          "term": "Dynamic device",
+          "definition": "Automatic membership based on device attributes."
+        },
+        {
+          "term": "Device attribute",
+          "definition": "A property of a device object used in a dynamic device rule."
+        }
+      ],
+      "watchOut": "- Dynamic groups are for either users or devices, not both.\n- You cannot manually add exceptions to a dynamic group.\n- Microsoft 365 groups can include only users.\n- Device rules cannot use the device owner's user attributes.\n- The rule builder and processing status are separate from the group type decision.",
+      "productionTip": {
+        "official": "Microsoft Learn documents that security groups can include devices or users, Microsoft 365 groups can include only users, and dynamic groups automatically add or remove members based on rules.",
+        "recommendation": "Recommendation: audit the device attributes used in the rule before using the group for access or policy targeting, and avoid attributes that are stale or inconsistently populated."
+      },
+      "memoryTrick": "Devices need Security plus Dynamic device. If users appear in the answer, it is probably wrong for a device-only group.",
+      "examTip": "Clue words are **devices**, **automatically**, and **must not manually add**. These eliminate Microsoft 365 groups and Assigned membership. A harder version may try to base device membership on the owner's department, which is not supported."
+    },
+    "sources": [
+      {
+        "title": "Learn About Groups, Group Membership, and Access",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/concept-learn-about-groups"
+      },
+      {
+        "title": "Manage rules for dynamic membership groups in Microsoft Entra ID",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-dynamic-membership"
+      },
+      {
+        "title": "Create or edit a dynamic membership group and get processing status",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-create-rule"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.1-05",
+    "objective": "D1.1.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You plan to create a dynamic group named `SalesUsers` for enabled users in the Sales department. The group will be used for access control. Which two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "A valid simple rule can use syntax such as `user.department -eq \"Sales\"`."
+      },
+      {
+        "id": "B",
+        "text": "You can manually add a user if the user does not match the rule."
+      },
+      {
+        "id": "C",
+        "text": "The rule can mix user and device properties in one dynamic group."
+      },
+      {
+        "id": "D",
+        "text": "Dynamic membership does not require any Microsoft Entra license."
+      },
+      {
+        "id": "E",
+        "text": "Microsoft Entra ID P1 or Intune for Education licensing is required for users that are members of dynamic membership groups."
+      }
+    ],
+    "correct": [
+      "A",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The target is a dynamic user group. Licensing refers only to documented dynamic membership licensing.",
+    "sections": {
+      "correctAnswer": "**A. A valid simple rule can use syntax such as `user.department -eq \"Sales\"` and E. Microsoft Entra ID P1 or Intune for Education licensing is required**. Microsoft Learn documents the simple rule form and the dynamic membership licensing requirement.",
+      "technical": "Dynamic membership rules use expressions that evaluate true or false. A simple expression uses `<Property> <Operator> <Value>`, and the documented example includes `user.department -eq \"Sales\"`. More conditions, such as `user.accountEnabled -eq true`, can be combined with supported syntax. Dynamic membership groups are recalculated when relevant attributes change. Microsoft Learn states that you can't manually add or remove members from a dynamic membership group, that one dynamic group cannot mix users and devices, and that the feature requires Microsoft Entra ID P1 or Intune for Education licenses for each unique user who is a member of one or more dynamic membership groups.\n\nRule construction and licensing are separate gates. A syntactically valid rule can still be a poor production choice if the attribute is not populated consistently or can be modified by people who should not influence access. Conversely, having enough licenses does not make an invalid rule process successfully. For this question, `user.department -eq \"Sales\"` demonstrates syntax, while the P1 or Intune for Education statement covers entitlement to use the feature.",
+      "wrongOptions": {
+        "B": "Dynamic groups do not allow manual membership exceptions. Misconception: dynamic groups are normal groups with automatic suggestions. Could be correct when: the group uses Assigned membership.",
+        "C": "A dynamic group can be for users or devices, not both. Misconception: any directory property can be combined in one rule. Could be correct when: separate user and device groups are created.",
+        "D": "There is a documented licensing requirement for users in dynamic membership groups. Misconception: all group features are free. Could be correct when: you use a basic assigned group with no dynamic membership."
+      },
+      "plainEnglish": "A dynamic group is an automatic list. You write a rule like 'department equals Sales' and Microsoft Entra updates membership. You cannot just add one person who fails the rule; you change the attribute or use another group design.\n\nBecause this group controls access, the department value becomes security-sensitive. If the wrong people can edit that value, they could influence who enters the group. That is why the rule and the attribute's write permissions both matter.",
+      "analogy": "The Sales group is like a school lab roster generated from the student database instead of a teacher's notebook.\n\n| Analogy | Azure reality |\n|---|---|\n| Student department field | `user.department` attribute |\n| 'Equals Sales' roster rule | `user.department -eq \"Sales\"` |\n| Active enrollment status | `user.accountEnabled` condition |\n| Lab access fee for covered students | P1 or Intune for Education licensing requirement |\n| Teacher scribbling a name in the margin | Unsupported manual add to a dynamic group |\n\n**Where the analogy breaks down:** Dynamic membership has exact syntax, supported operators, and license counting rules; a school roster does not model directory attribute write permissions or rule processing status.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity and access service, formerly named Azure Active Directory."
+        },
+        {
+          "term": "Tenant",
+          "definition": "A dedicated Microsoft Entra ID instance that contains users, groups, applications, and settings."
+        },
+        {
+          "term": "User",
+          "definition": "A directory identity that can sign in or be assigned access, depending on its type and settings."
+        },
+        {
+          "term": "Group",
+          "definition": "A directory object used to collect users, devices, service principals, or other supported objects for access or collaboration."
+        },
+        {
+          "term": "Membership rule",
+          "definition": "The expression that decides whether an object belongs in a dynamic group."
+        },
+        {
+          "term": "`user.department`",
+          "definition": "A user property supported in dynamic membership rules."
+        },
+        {
+          "term": "`-eq`",
+          "definition": "The equals operator in dynamic membership rule syntax."
+        },
+        {
+          "term": "Microsoft Entra ID P1",
+          "definition": "A premium identity license required for dynamic membership users."
+        },
+        {
+          "term": "Unique user",
+          "definition": "A distinct user counted once for dynamic membership licensing."
+        }
+      ],
+      "watchOut": "- Attribute names and rule syntax must be exact.\n- Dynamic groups cannot have manual exceptions.\n- Do not base sensitive access on attributes that untrusted users can change.\n- Role-assignable groups must be assigned, not dynamic.\n- The organization needs enough qualifying licenses for unique users, not a separate license assignment on each dynamic group object.",
+      "productionTip": {
+        "official": "Microsoft Learn documents dynamic rule syntax, supported properties and operators, and the P1 or Intune for Education licensing requirement.",
+        "recommendation": "Recommendation: for access-control groups, review who can write every attribute used in the rule and prefer clear equality rules over broad matching operators."
+      },
+      "memoryTrick": "Dynamic means directory math, not manual membership. License users and trust only protected attributes.",
+      "examTip": "Clue words are **dynamic**, **Sales department**, and **access control**. Look for valid syntax and licensing, then eliminate manual or mixed-object answers. A harder version may ask about rule-builder limits or the security risk of writable attributes."
+    },
+    "sources": [
+      {
+        "title": "Manage rules for dynamic membership groups in Microsoft Entra ID",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-dynamic-membership"
+      },
+      {
+        "title": "Create or edit a dynamic membership group and get processing status",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-create-rule"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.1-06",
+    "objective": "D1.1.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Woodgrove Bank wants to assign the Helpdesk Administrator Microsoft Entra role to a group instead of to individual users. The group does not exist yet, and automatic membership must not add unintended administrators. What should you create?",
+    "options": [
+      {
+        "id": "A",
+        "text": "An existing Security group converted to role-assignable with Dynamic user membership"
+      },
+      {
+        "id": "B",
+        "text": "A Microsoft 365 group with Dynamic user membership and no owners"
+      },
+      {
+        "id": "C",
+        "text": "A new role-assignable group with `Microsoft Entra roles can be assigned to the group` set to **Yes** and Assigned membership"
+      },
+      {
+        "id": "D",
+        "text": "A distribution list created in Exchange admin center"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The target role is a Microsoft Entra administrator role. The creator has Microsoft Entra ID P1 and Privileged Role Administrator.",
+    "sections": {
+      "correctAnswer": "**C. A new role-assignable group with Microsoft Entra roles can be assigned to the group set to Yes and Assigned membership**. Role-assignable groups must be created with the special setting enabled, and their membership type must be Assigned.",
+      "technical": "Microsoft Entra roles can be assigned to groups only when the group is role-assignable. The `isAssignableToRole` property is set to true at creation time; in the admin center this is **Microsoft Entra roles can be assigned to the group**. Microsoft Learn states that the property is immutable, can only be set for new groups, and cannot be applied to an existing group. To prevent privilege escalation, role-assignable groups require Assigned membership and cannot be dynamic. Creation requires at least Privileged Role Administrator and Microsoft Entra ID P1. Group nesting is not supported for role-assignable groups.\n\nThe protection model is intentionally stricter than normal group-based app access. If ordinary group administrators could change a dynamic rule on a role-holding group, they could indirectly grant themselves administrator privileges. Requiring an assigned member list and Privileged Role Administrator at creation keeps the privilege boundary around the group itself, not around a mutable attribute rule.",
+      "wrongOptions": {
+        "A": "An existing group cannot be converted, and role-assignable groups cannot be dynamic. Misconception: role assignability is editable on any security group. Could be correct when: the group is an ordinary access group not used for Microsoft Entra roles.",
+        "B": "Dynamic membership is not supported for role-assignable groups and no owners is operationally poor. Misconception: Microsoft 365 dynamic groups can receive admin roles safely. Could be correct when: the group is only for collaboration.",
+        "D": "Distribution lists are mail objects and are not role-assignable Microsoft Entra groups. Misconception: any mail-enabled group can receive directory roles. Could be correct when: the requirement is email distribution only."
+      },
+      "plainEnglish": "Anyone added to this group becomes an administrator, so Microsoft requires a protected group created for that purpose. The group must be created new, the role-assignable switch must be turned on at creation, and members must be explicitly assigned.\n\nThis is stricter than an ordinary access group because membership creates administrator power. A dynamic rule might accidentally include someone; assigned membership forces explicit approval.",
+      "analogy": "A role-assignable group is like a vault keyholder register that must be created as a vault register before anyone can use it.\n\n| Analogy | Azure reality |\n|---|---|\n| Vault keyholder register | Role-assignable group |\n| Stamp applied when the register is created | `isAssignableToRole` set at creation |\n| Hand-approved keyholder names | Assigned membership |\n| Automatic staff feed | Dynamic membership, not allowed here |\n| Vault security officer | Privileged Role Administrator |\n\n**Where the analogy breaks down:** Microsoft Entra also has Graph permissions, PIM eligibility, soft delete, and sensitive attribute protections; a paper vault book does not have immutable object properties.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity and access service, formerly named Azure Active Directory."
+        },
+        {
+          "term": "Tenant",
+          "definition": "A dedicated Microsoft Entra ID instance that contains users, groups, applications, and settings."
+        },
+        {
+          "term": "User",
+          "definition": "A directory identity that can sign in or be assigned access, depending on its type and settings."
+        },
+        {
+          "term": "Group",
+          "definition": "A directory object used to collect users, devices, service principals, or other supported objects for access or collaboration."
+        },
+        {
+          "term": "Role-assignable group",
+          "definition": "A group created with `isAssignableToRole` so Microsoft Entra roles can be assigned to it."
+        },
+        {
+          "term": "Helpdesk Administrator",
+          "definition": "A Microsoft Entra built-in administrative role."
+        },
+        {
+          "term": "Privileged Role Administrator",
+          "definition": "A role required to create role-assignable groups and manage role assignments."
+        },
+        {
+          "term": "Immutable",
+          "definition": "A property cannot be changed after creation."
+        },
+        {
+          "term": "Group nesting",
+          "definition": "Adding one group as a member of another; not supported for role-assignable groups."
+        }
+      ],
+      "watchOut": "- You cannot convert an existing group into a role-assignable group.\n- Membership must be Assigned, not dynamic.\n- Creation requires Privileged Role Administrator and P1.\n- Groups cannot be nested into role-assignable groups.\n- Do not confuse Microsoft Entra role assignment with Azure resource RBAC assignment; this question is about directory roles.",
+      "productionTip": {
+        "official": "Microsoft Learn documents `isAssignableToRole`, its immutability, the Assigned membership requirement, and the Privileged Role Administrator prerequisite.",
+        "recommendation": "Recommendation: keep role-assignable groups small, review membership frequently, use PIM where available, and avoid using these groups for ordinary app access."
+      },
+      "memoryTrick": "Role group equals new, protected, assigned. Existing, dynamic, or nested should trigger suspicion.",
+      "examTip": "Clue words are **Microsoft Entra role**, **group instead of individuals**, and **automatic membership must not add administrators**. A harder version may use `New-MgGroup -IsAssignableToRole:$true` or ask whether an existing group can be converted."
+    },
+    "sources": [
+      {
+        "title": "Use Microsoft Entra groups to manage role assignments",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/groups-concept"
+      },
+      {
+        "title": "Create a role-assignable group in Microsoft Entra ID",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/groups-create-eligible"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.1-07",
+    "objective": "D1.1.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Adatum assigns the SaaS app `App1` to the Security group `App-Access-All`. You add another Security group, `App-Access-West`, as a nested member of `App-Access-All`, but users in `App-Access-West` cannot access `App1`. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Convert `App-Access-All` to a Microsoft 365 group."
+      },
+      {
+        "id": "B",
+        "text": "Make `App-Access-West` a dynamic device group."
+      },
+      {
+        "id": "C",
+        "text": "Enable Microsoft Entra role assignability on `App-Access-West`."
+      },
+      {
+        "id": "D",
+        "text": "Assign `App1` access directly to `App-Access-West` or to the required users."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Both groups are cloud Security groups and the issue is application assignment through nesting.",
+    "sections": {
+      "correctAnswer": "**D. Assign `App1` access directly to `App-Access-West` or to the required users**. Microsoft Learn states that nested groups don't gain access to shared resources and applications assigned to the parent group.",
+      "technical": "Microsoft Entra supports adding a Security group to another Security group in some scenarios, but nesting is not universal inheritance. The manage-groups article says nested groups can be used for membership and Conditional Access scopes, but nested groups don't gain access to shared resources and applications assigned to the parent group. It also lists unsupported cases: adding security groups to Microsoft 365 groups, adding Microsoft 365 groups to security groups or other Microsoft 365 groups, assigning shared resources and apps for nested security groups, applying licenses to nested security groups, and adding groups as members of a role-assignable group. Therefore the app must be assigned directly where the app evaluates access.\n\nThe parent-child relationship can still appear in group membership views, so troubleshooting should not stop after confirming that the nesting exists. The next check is whether the target workload expands nested membership for that exact permission type. For the documented shared resource and application assignment case, the answer is no, which is why a direct assignment is required even though the nesting operation itself succeeded.",
+      "wrongOptions": {
+        "A": "Microsoft 365 groups do not fix nested security group app access, and several cross-type nesting scenarios are unsupported. Misconception: collaboration group conversion changes app inheritance. Could be correct when: the requirement is collaboration rather than app assignment.",
+        "B": "A dynamic device group targets devices and doesn't solve user app assignment through nesting. Misconception: dynamic membership expands parent permissions. Could be correct when: a device policy needs automatic device membership.",
+        "C": "Role assignability is for Microsoft Entra admin roles and cannot be enabled on an existing group. Misconception: role-assignable means better inheritance. Could be correct when: creating a new protected group for Microsoft Entra role assignment."
+      },
+      "plainEnglish": "Putting one group inside another does not always make every member inherit every app assignment. For this app assignment scenario, Microsoft says the child group does not receive access through the parent, so assign the app to the child group directly.\n\nNesting can still be useful for organization and for some supported scopes, but the app in this scenario is not granting access through the parent-to-child relationship. Give the app to the exact group whose users need it.",
+      "analogy": "Nested app groups are like putting a mailing-list name on a party invitation list when the door scanner only reads direct tickets.\n\n| Analogy | Azure reality |\n|---|---|\n| Party invitation list | Parent security group assigned to the app |\n| Regional mailing list | Nested child security group |\n| Door scanner | SaaS app assignment evaluation |\n| Direct ticket for the regional list | Direct assignment to `App-Access-West` |\n| Assuming the scanner expands mailing lists | Mistaken nested group inheritance for app access |\n\n**Where the analogy breaks down:** Some Microsoft Entra features can use transitive group membership, while application assignment and other workloads have their own documented support boundaries.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity and access service, formerly named Azure Active Directory."
+        },
+        {
+          "term": "Tenant",
+          "definition": "A dedicated Microsoft Entra ID instance that contains users, groups, applications, and settings."
+        },
+        {
+          "term": "User",
+          "definition": "A directory identity that can sign in or be assigned access, depending on its type and settings."
+        },
+        {
+          "term": "Group",
+          "definition": "A directory object used to collect users, devices, service principals, or other supported objects for access or collaboration."
+        },
+        {
+          "term": "Nested group",
+          "definition": "A group that is added as a member of another group."
+        },
+        {
+          "term": "Parent group",
+          "definition": "The group that contains another group."
+        },
+        {
+          "term": "Child group",
+          "definition": "The group placed inside a parent group."
+        },
+        {
+          "term": "SaaS application",
+          "definition": "A cloud application integrated with Microsoft Entra ID."
+        },
+        {
+          "term": "Application assignment",
+          "definition": "Granting users or groups access to an enterprise application."
+        }
+      ],
+      "watchOut": "- Nested groups do not gain app access assigned to the parent.\n- Security groups cannot be added to Microsoft 365 groups.\n- Licenses are not applied through nested security groups.\n- Groups cannot be added as members of role-assignable groups.\n- Seeing the child group listed under group memberships does not prove the application expands that membership.",
+      "productionTip": {
+        "official": "Microsoft Learn documents nested group limitations, including lack of access to shared resources and applications assigned to the parent group.",
+        "recommendation": "Recommendation: verify each workload's transitive group support before designing nested groups. For application access, use direct assignment to the access group that contains the intended users."
+      },
+      "memoryTrick": "Nested is not inherited for app access. Treat app assignments as direct unless service documentation says otherwise.",
+      "examTip": "Clue words are **nested member**, **SaaS app assigned to parent**, and **cannot access**. The tested point is service-specific support for transitive membership. A harder version may mix license assignment or role-assignable groups, which have their own nesting limits."
+    },
+    "sources": [
+      {
+        "title": "How to manage groups",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-to-manage-groups"
+      },
+      {
+        "title": "Learn About Groups, Group Membership, and Access",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/concept-learn-about-groups"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.1-08",
+    "objective": "D1.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Contoso sets **Users can create security groups in Azure portals, API or PowerShell** to **No** and **Users can create Microsoft 365 groups in Azure portals, API or PowerShell** to **No**. A help desk operator must still create basic groups and manage membership without receiving Global Administrator. Which role should you assign?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Directory Readers"
+      },
+      {
+        "id": "B",
+        "text": "Groups Administrator"
+      },
+      {
+        "id": "C",
+        "text": "Guest Inviter"
+      },
+      {
+        "id": "D",
+        "text": "Reports Reader"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The operator manages ordinary groups, not role-assignable groups.",
+    "sections": {
+      "correctAnswer": "**B. Groups Administrator**. Groups Administrator is documented for creating and managing groups, and self-service group creation settings do not remove role-based administrative group creation.",
+      "technical": "Microsoft Entra default permissions can allow member users to create groups, but tenant settings can restrict those default permissions. The self-service group management article states that setting group creation to No prevents users from creating groups. It also states that if you want to enable some users to create groups, you can assign those users a role that can create groups, such as Groups Administrator. The manage-groups article says at least Groups Administrator or User Administrator is required to create basic groups and manage members or owners. Groups Administrator is the group-focused least-privilege option from the answers.\n\nThe self-service setting is tenant-wide for ordinary users, so setting it to No is a coarse control. Administrator roles are the selective exception mechanism. Groups Administrator is narrower than giving the operator every tenant-level capability, while still covering creation plus member and owner maintenance for normal groups. Role-assignable group creation remains outside this ordinary delegation pattern.\n\nThe settings can take time to take effect, so production troubleshooting should distinguish propagation delay from missing role assignment. In the exam scenario, assume settings are effective and choose the role that deliberately restores creation rights to the operator.",
+      "wrongOptions": {
+        "A": "Directory Readers is read-only and cannot create or manage groups. Misconception: directory visibility equals management. Could be correct when: the operator only needs to inspect directory data.",
+        "C": "Guest Inviter invites external users but does not create and manage groups. Misconception: guest onboarding and group management are the same. Could be correct when: the task is only inviting B2B users.",
+        "D": "Reports Reader reads reports and cannot manage group membership. Misconception: report access implies write access. Could be correct when: the user needs to view usage or sign-in reports."
+      },
+      "plainEnglish": "Turning off self-service group creation stops ordinary users from making groups. Administrators with the right role can still create and manage groups. Groups Administrator is built for that job without giving full tenant control.\n\nThe settings remove the default ability from regular users. The role adds back an administrative ability for selected operators, which is different from leaving self-service open for everyone.",
+      "analogy": "Contoso has turned off self-service room booking, but facilities coordinators can still create rooms because their job role allows it.\n\n| Analogy | Azure reality |\n|---|---|\n| Self-service booking switch off | Users can create groups set to No |\n| Ordinary employee | Non-admin member user |\n| Facilities coordinator | Groups Administrator |\n| Room attendee list | Group membership |\n| Company-wide master key | Global Administrator |\n\n**Where the analogy breaks down:** Microsoft Entra role delegation can be tenant-wide or scoped, and service principals can be affected differently from human users; a room booking system is simpler.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity and access service, formerly named Azure Active Directory."
+        },
+        {
+          "term": "Tenant",
+          "definition": "A dedicated Microsoft Entra ID instance that contains users, groups, applications, and settings."
+        },
+        {
+          "term": "User",
+          "definition": "A directory identity that can sign in or be assigned access, depending on its type and settings."
+        },
+        {
+          "term": "Group",
+          "definition": "A directory object used to collect users, devices, service principals, or other supported objects for access or collaboration."
+        },
+        {
+          "term": "Groups Administrator",
+          "definition": "A Microsoft Entra role for creating and managing groups and membership."
+        },
+        {
+          "term": "Self-service group management",
+          "definition": "Settings that allow or block ordinary users from creating or managing groups."
+        },
+        {
+          "term": "Directory Readers",
+          "definition": "A role for reading basic directory information."
+        },
+        {
+          "term": "Guest Inviter",
+          "definition": "A role for inviting external guests."
+        },
+        {
+          "term": "Global Administrator",
+          "definition": "The broadest Microsoft Entra administrative role."
+        }
+      ],
+      "watchOut": "- Group creation settings affect ordinary users, not suitable administrators.\n- Groups Administrator is enough for ordinary group work.\n- Privileged Role Administrator is needed for role-assignable groups.\n- Avoid Global Administrator for routine delegation.\n- User Administrator can also create basic groups, but Groups Administrator is the group-focused option here.",
+      "productionTip": {
+        "official": "Microsoft Learn documents self-service group creation settings and the use of roles such as Groups Administrator to enable selected users to create groups.",
+        "recommendation": "Recommendation: delegate Groups Administrator through just-in-time access where possible, and use group owners for routine membership decisions after groups are created."
+      },
+      "memoryTrick": "Settings block self-service; roles grant administration. Use the role that matches the job.",
+      "examTip": "Clue words are **users can create groups set to No**, **help desk**, and **without Global Administrator**. Pick a group-management role. A harder version may include User Administrator and ask which role is narrower for group-only work."
+    },
+    "sources": [
+      {
+        "title": "Set up self-service group management",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-self-service-management"
+      },
+      {
+        "title": "How to manage groups",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-to-manage-groups"
+      },
+      {
+        "title": "Default user permissions",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/users-default-permissions"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.1-09",
+    "objective": "D1.1.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "A junior administrator accidentally deletes a cloud-only user named `NinaS` from Microsoft Entra ID. The deletion happened 12 days ago. You need to recover the user with organization information restored. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a new user with the same display name and UPN."
+      },
+      {
+        "id": "B",
+        "text": "Wait for Microsoft Entra Connect Sync to recreate the user."
+      },
+      {
+        "id": "C",
+        "text": "Restore `NinaS` from **Deleted users**."
+      },
+      {
+        "id": "D",
+        "text": "Permanently delete `NinaS` and then run Bulk create."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. `NinaS` is cloud-only, still within the restore window, and has not been permanently deleted.",
+    "sections": {
+      "correctAnswer": "**C. Restore `NinaS` from Deleted users**. Deleted users remain suspended for 30 days and can be restored with their properties during that window.",
+      "technical": "Microsoft Learn states that after you delete a user, the account remains in a suspended state for 30 days. During that window, the user account can be restored along with all its properties. After the 30-day window passes, permanent deletion starts automatically and cannot be stopped. A permanently deleted user cannot be restored by anyone, including Microsoft Support. For a cloud-only user deleted 12 days ago, the correct action is to use **Deleted users** and restore the user. Restoring preserves the original object and organization information; recreating creates a different object.\n\nThe restore operation should be chosen before any attempt to reuse the UPN on a new object. A restored user comes back from the deleted-object container with preserved directory properties. A recreated user might look similar in the portal but has a different object identity and would need memberships, assignments, and other relationships rebuilt if they were not otherwise recovered.\n\nFor a synced user, the administrator would also check whether the object still exists in the on-premises directory because Microsoft Entra ID is not the source of authority for that object. Nina is explicitly cloud-only, so the recovery path stays entirely in Microsoft Entra. The deletion age is still inside the documented 30-day suspended state, and the assumption says permanent deletion has not occurred.",
+      "wrongOptions": {
+        "A": "A new user with the same visible values is not the same directory object and won't restore preserved properties. Misconception: matching name equals same identity. Could be correct when: the old account is permanently gone and a replacement is required.",
+        "B": "The account is cloud-only, so sync will not recreate it from on-premises. Misconception: synchronization restores all deleted accounts. Could be correct when: a synced user still exists in the on-premises directory.",
+        "D": "Permanent deletion destroys the recovery option and Bulk create only makes a replacement. Misconception: delete and import is a restore method. Could be correct when: you intentionally need a brand-new account after removing a test object."
+      },
+      "plainEnglish": "Deleted users are like a recycle bin. Since the account was deleted only 12 days ago, restore the original account instead of making a look-alike account.\n\nThe 30-day timing is the important clue. Inside that window, recovery is still an undo action. After permanent deletion, the task changes from recovery to rebuilding, and rebuilding cannot guarantee the same hidden identity relationships.",
+      "analogy": "Nina's deleted account is like an employee file moved to a secure recovery drawer for a limited time.\n\n| Analogy | Azure reality |\n|---|---|\n| Recovery drawer | Deleted users |\n| Thirty-day hold label | User restore window |\n| Returning the same file | Restoring the user object |\n| New file with the same name | Recreating a user with same UPN or display name |\n| Shredding the file | Permanent deletion |\n\n**Where the analogy breaks down:** User restore can also affect licenses, object IDs, and synchronization behavior; a paper file does not authenticate or belong to groups.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity and access service, formerly named Azure Active Directory."
+        },
+        {
+          "term": "Tenant",
+          "definition": "A dedicated Microsoft Entra ID instance that contains users, groups, applications, and settings."
+        },
+        {
+          "term": "User",
+          "definition": "A directory identity that can sign in or be assigned access, depending on its type and settings."
+        },
+        {
+          "term": "Group",
+          "definition": "A directory object used to collect users, devices, service principals, or other supported objects for access or collaboration."
+        },
+        {
+          "term": "Deleted users",
+          "definition": "The Microsoft Entra page that lists recently deleted users available for restore."
+        },
+        {
+          "term": "Soft delete",
+          "definition": "Temporary retention of a deleted object for recovery."
+        },
+        {
+          "term": "Permanent deletion",
+          "definition": "Final deletion after which restore is impossible."
+        },
+        {
+          "term": "Cloud-only user",
+          "definition": "A user mastered in Microsoft Entra ID rather than on-premises."
+        }
+      ],
+      "watchOut": "- User restore window is 30 days.\n- Permanent deletion cannot be reversed.\n- Recreating a user is not restoration.\n- Restored licenses can create temporary license compliance concerns.",
+      "productionTip": {
+        "official": "Microsoft Learn documents the 30-day suspended state, restore behavior, and permanent deletion consequences for users.",
+        "recommendation": "Recommendation: monitor deletion audit events and restrict permanent deletion. After restoration, verify licenses, group membership, and sign-in settings."
+      },
+      "memoryTrick": "Deleted user equals 30-day recycle bin. Restore the original before rebuilding.",
+      "examTip": "Clue words are **12 days ago** and **organization information restored**. These point to Deleted users restore, not recreation. A harder version may ask what changes after 30 days or after permanent deletion."
+    },
+    "sources": [
+      {
+        "title": "Restore or permanently remove recently deleted user",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/users-restore"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.1-10",
+    "objective": "D1.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A Microsoft 365 group named `Research-Collab` is deleted. The group contains a SharePoint site and Planner plan. The deletion occurred 8 days ago. You need to restore the group and contents if possible. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Restore the group from **Deleted groups** in Microsoft Entra ID."
+      },
+      {
+        "id": "B",
+        "text": "Create a new Security group with the same name."
+      },
+      {
+        "id": "C",
+        "text": "Wait 30 days for automatic restoration."
+      },
+      {
+        "id": "D",
+        "text": "Use Bulk invite to recreate the group membership."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The Microsoft 365 group has not been permanently deleted and the administrator has permission to restore it.",
+    "sections": {
+      "correctAnswer": "**A. Restore the group from Deleted groups in Microsoft Entra ID**. Deleted Microsoft 365 groups are retained for 30 days and can be restored during that period.",
+      "technical": "Microsoft Learn states that when you delete a Microsoft 365 group or cloud security group in Microsoft Entra ID, the deleted group is retained but not visible for 30 days from the deletion date. The group and its contents can be restored during that window, and the 30-day period is not customizable. For groups with documents, SharePoint sites, or other persistent objects, full restoration of the group and contents can take up to 24 hours. Because `Research-Collab` is a Microsoft 365 group deleted 8 days ago, restoring from Deleted groups is the supported recovery action.\n\nThe phrase 'and its contents' matters because this is a Microsoft 365 group, not a simple access list. The restore process is intended to recover the group object and connected persistent resources. Administrators should expect a delay for workloads such as SharePoint and Planner, then verify the restored group through the relevant workloads instead of assuming the directory restore instantly means every content surface is ready.",
+      "wrongOptions": {
+        "B": "A new Security group would not restore the Microsoft 365 group object or connected SharePoint and Planner resources. Misconception: same display name restores content. Could be correct when: the original group is unrecoverable and only a new access group is needed.",
+        "C": "The group is retained for restore during 30 days; it does not automatically restore after waiting. Misconception: retention is a delayed undo timer. Could be correct when: you already started restore and are waiting for connected workloads to finish.",
+        "D": "Bulk invite creates guest invitations and does not recreate group contents. Misconception: membership recreation restores the group object. Could be correct when: external users need to be invited after a replacement group is created."
+      },
+      "plainEnglish": "A deleted Microsoft 365 group goes to a recovery area for 30 days. Since 8 days have passed, restore the original group so connected services can bring back the SharePoint site and Planner plan.\n\nThe connected content is why a new group is not enough. A new group named `Research-Collab` would be empty from the perspective of the old SharePoint and Planner resources. Restoring asks Microsoft 365 to reconnect the original collaboration container.",
+      "analogy": "The deleted research group is like a project room put into building storage with its whiteboards, plans, and file boxes still attached.\n\n| Analogy | Azure reality |\n|---|---|\n| Stored project room | Deleted Microsoft 365 group |\n| Thirty-day storage hold | Group restoration period |\n| Whiteboards and file boxes | SharePoint site and Planner plan |\n| Reopening the same room | Restore group |\n| New room with the same sign | New group with same display name |\n\n**Where the analogy breaks down:** Microsoft 365 workloads restore asynchronously, so SharePoint and Planner content can take time to reappear; a physical room usually reopens all at once.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity and access service, formerly named Azure Active Directory."
+        },
+        {
+          "term": "Tenant",
+          "definition": "A dedicated Microsoft Entra ID instance that contains users, groups, applications, and settings."
+        },
+        {
+          "term": "User",
+          "definition": "A directory identity that can sign in or be assigned access, depending on its type and settings."
+        },
+        {
+          "term": "Group",
+          "definition": "A directory object used to collect users, devices, service principals, or other supported objects for access or collaboration."
+        },
+        {
+          "term": "Microsoft 365 group",
+          "definition": "A collaboration group that can have connected SharePoint and Planner resources."
+        },
+        {
+          "term": "Deleted groups",
+          "definition": "The recovery location for deleted Microsoft 365 groups and cloud security groups."
+        },
+        {
+          "term": "SharePoint site",
+          "definition": "A Microsoft 365 content site often connected to a group."
+        },
+        {
+          "term": "Planner plan",
+          "definition": "A task planning resource that can be associated with a Microsoft 365 group."
+        }
+      ],
+      "watchOut": "- Microsoft 365 groups have a 30-day restore window.\n- Full connected content restoration can take up to 24 hours.\n- Distribution groups are not covered by this restore feature.\n- Creating a new group with the same name does not restore the old object.",
+      "productionTip": {
+        "official": "Microsoft Learn documents the 30-day retention for deleted Microsoft 365 groups and the possible 24-hour restoration time for connected content.",
+        "recommendation": "Recommendation: restore rather than recreate when connected workloads exist, then validate Exchange visibility, Planner, SharePoint, owners, and membership."
+      },
+      "memoryTrick": "Groups get a 30-day recovery window too, but restore the original object.",
+      "examTip": "Clue words are **Microsoft 365 group**, **SharePoint**, **Planner**, and **8 days ago**. These point to Deleted groups restore. A harder version may contrast distribution groups, cloud security groups, and content restoration timing."
+    },
+    "sources": [
+      {
+        "title": "Restore a deleted Microsoft 365 group or cloud security group",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-restore-deleted"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.1-11",
+    "objective": "D1.1.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You use automation to create Microsoft Entra objects. You need to create a cloud-only user named `Rene Magi` and a basic security group named `OpsReaders`. Which two command examples use documented command names and required parameters correctly? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "```azurecli\naz ad user create --display-name \"Rene Magi\" --password \"<password>\" --user-principal-name rene@contoso.com\n```"
+      },
+      {
+        "id": "B",
+        "text": "```azurecli\naz ad user create --name \"Rene Magi\" --upn rene@contoso.com --initial-password \"<password>\"\n```"
+      },
+      {
+        "id": "C",
+        "text": "```azurecli\naz ad group create --name OpsReaders --security-enabled true\n```"
+      },
+      {
+        "id": "D",
+        "text": "```powershell\n$PasswordProfile = @{ Password = '<password>' }\nNew-MgUser -DisplayName 'Rene Magi' -PasswordProfile $PasswordProfile -AccountEnabled -MailNickName 'ReneMagi' -UserPrincipalName 'rene@contoso.com'\n```"
+      },
+      {
+        "id": "E",
+        "text": "```powershell\nNew-MgGroup -DisplayName 'OpsReaders' -GroupType Security -Members Dynamic\n```"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Commands are evaluated for documented syntax, not whether the sample password satisfies a specific tenant policy. Authentication and permissions are already present.",
+    "sections": {
+      "correctAnswer": "**A. The `az ad user create` command with `--display-name`, `--password`, and `--user-principal-name`, and D. The `New-MgUser` command with a password profile and user properties**. The Azure CLI and Microsoft Graph PowerShell examples match documented command names and parameters for user creation.",
+      "technical": "The Azure CLI `az ad user create` command creates a user and documents required parameters `--display-name`, `--password`, and `--user-principal-name`. Microsoft Graph PowerShell uses `New-MgUser`; the documented example creates a password profile hash table and passes `-DisplayName`, `-PasswordProfile`, `-AccountEnabled`, `-MailNickName`, and `-UserPrincipalName`. For group creation, Azure CLI `az ad group create` requires `--display-name` and `--mail-nickname`, while Microsoft Graph PowerShell `New-MgGroup` for a basic security group uses parameters such as `-MailEnabled:$False`, `-MailNickName`, and `-SecurityEnabled`. Valid command syntax can still fail because of permissions, domain verification, or password policy.\n\nThe two correct answers both create users, not the group named in the scenario. That is acceptable because the question asks for two command examples that use documented names and required parameters correctly. The group examples are distractors: one uses Azure CLI switches not documented for group creation, and the other invents Graph PowerShell parameters instead of using `-MailEnabled`, `-MailNickName`, and `-SecurityEnabled`.",
+      "wrongOptions": {
+        "B": "Those Azure CLI switches are not the documented required parameters for `az ad user create`. Misconception: friendly aliases always exist. Could be correct when: a different tool defines those exact aliases.",
+        "C": "The documented Azure CLI group command requires `--display-name` and `--mail-nickname`, not the shown switches. Misconception: Graph properties map directly to CLI switches. Could be correct when: rewritten as `az ad group create --display-name OpsReaders --mail-nickname OpsReaders`.",
+        "E": "The shown `New-MgGroup` parameters are not the documented way to create a basic security group or dynamic group. Misconception: conceptual settings are always cmdlet parameter names. Could be correct when: rewritten with documented `New-MgGroup` parameters and, for dynamic groups, membership rule properties."
+      },
+      "plainEnglish": "Command-line tools require exact parameter names. The correct Azure CLI example uses the documented user switches. The correct Graph PowerShell example builds the password profile and supplies documented user properties.\n\nFor the group part of the prompt, notice why the tempting group examples are wrong: Azure CLI group creation wants display name and mail nickname, while Graph PowerShell security groups use mail-enabled and security-enabled properties.",
+      "analogy": "Automation commands are like supplier order forms: the right intent is not enough if the field names are wrong.\n\n| Analogy | Azure reality |\n|---|---|\n| Supplier form A | Azure CLI command syntax |\n| Supplier form B | Microsoft Graph PowerShell syntax |\n| Required order fields | Required command parameters |\n| Password box on the form | `--password` or `PasswordProfile` |\n| Rejected order | Command failure due to invalid parameter names |\n\n**Where the analogy breaks down:** Real automation also needs authentication, Graph permissions, verified domains, password policy compliance, and secure secret handling; a form analogy only covers syntax.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity and access service, formerly named Azure Active Directory."
+        },
+        {
+          "term": "Tenant",
+          "definition": "A dedicated Microsoft Entra ID instance that contains users, groups, applications, and settings."
+        },
+        {
+          "term": "User",
+          "definition": "A directory identity that can sign in or be assigned access, depending on its type and settings."
+        },
+        {
+          "term": "Group",
+          "definition": "A directory object used to collect users, devices, service principals, or other supported objects for access or collaboration."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's command-line tool that includes `az ad` commands."
+        },
+        {
+          "term": "`az ad user create`",
+          "definition": "Azure CLI command for creating a Microsoft Entra user."
+        },
+        {
+          "term": "`az ad group create`",
+          "definition": "Azure CLI command for creating a Microsoft Entra group."
+        },
+        {
+          "term": "Microsoft Graph PowerShell",
+          "definition": "PowerShell modules that call Microsoft Graph APIs."
+        },
+        {
+          "term": "`New-MgUser`",
+          "definition": "Microsoft Graph PowerShell cmdlet for creating a user."
+        },
+        {
+          "term": "`New-MgGroup`",
+          "definition": "Microsoft Graph PowerShell cmdlet for creating a group."
+        },
+        {
+          "term": "PasswordProfile",
+          "definition": "A Graph user property structure containing password settings."
+        }
+      ],
+      "watchOut": "- CLI and Graph PowerShell use different parameter names.\n- `az ad group create` needs display name and mail nickname.\n- Syntax can still fail because of permissions or tenant policy.\n- Do not hard-code passwords in production scripts.\n- The prompt includes a group name, but not every shown group command is syntactically valid.",
+      "productionTip": {
+        "official": "Microsoft Learn documents `az ad user create`, `az ad group create`, `New-MgUser`, and `New-MgGroup` syntax and examples.",
+        "recommendation": "Recommendation: wrap creation commands in tested functions, store passwords in a vault, and validate UPN domains and naming before making Graph or CLI calls."
+      },
+      "memoryTrick": "CLI uses dashed switches; Graph PowerShell uses PowerShell parameters and objects. Always verify exact help.",
+      "examTip": "Clue words are **documented command names and required parameters**. Choose syntax, not merely intent. A harder version may ask for the correct `az ad group create` or `New-MgGroup` command for `OpsReaders`."
+    },
+    "sources": [
+      {
+        "title": "az ad user",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/ad/user?view=azure-cli-latest"
+      },
+      {
+        "title": "az ad group",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/ad/group?view=azure-cli-latest"
+      },
+      {
+        "title": "New-MgUser",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.graph.users/new-mguser?view=graph-powershell-1.0"
+      },
+      {
+        "title": "New-MgGroup",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/microsoft.graph.groups/new-mggroup?view=graph-powershell-1.0"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

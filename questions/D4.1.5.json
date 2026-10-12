@@ -1,0 +1,395 @@
+[
+  {
+    "id": "D4.1.5-01",
+    "objective": "D4.1.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains a virtual machine named `vm-web-01`. The VM has one network interface in subnet `snet-web`. A network security group is associated with the subnet, and another network security group is associated with the network interface. Users report that HTTPS requests from `198.51.100.40` to `vm-web-01` fail. You need to identify whether the Azure security rules that apply to the VM allow or deny one TCP flow and, if denied, identify the exact rule responsible.\n\nWhat should you use first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Network Watcher packet capture with a TCP 443 filter on `vm-web-01`"
+      },
+      {
+        "id": "B",
+        "text": "Network Watcher IP flow verify for inbound TCP traffic to local port 443"
+      },
+      {
+        "id": "C",
+        "text": "Network Watcher next hop from `vm-web-01` to `198.51.100.40`"
+      },
+      {
+        "id": "D",
+        "text": "Effective routes on the network interface attached to `vm-web-01`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The VM and Network Watcher are in a supported subscription and region. The symptom is a possible Azure security-rule decision for a TCP flow, not a packet payload investigation or a route-table inventory.",
+    "sections": {
+      "correctAnswer": "**B. Network Watcher IP flow verify for inbound TCP traffic to local port 443**. IP flow verify is designed to test whether a packet to or from an Azure VM is allowed or denied by the security and admin rules applied to the VM network interface, and it returns the matching rule when it can.",
+      "technical": "IP flow verify is the most direct diagnostic for this symptom because the question gives one source address, one destination VM, one direction, one protocol, and one destination port. The tool evaluates the rules of all network security groups that apply to the VM's network interface, including NSGs associated with the subnet and NSGs associated with the network interface. Microsoft also documents that it considers Azure Virtual Network Manager admin rules applied to the virtual network. The output is intentionally narrow: access allowed or access denied, the rule name, and the network security group when a custom rule is responsible.\n\nFor this scenario, the diagnostic profile would be:\n\n| Field | Value to test |\n|---|---|\n| Direction | Inbound |\n| Protocol | TCP |\n| Remote IP address | `198.51.100.40` |\n| Remote port | Client ephemeral port or `*` depending on the interface |\n| Local IP address | The private IP of `vm-web-01` |\n| Local port | `443` |\n\nThe rule evaluation concept behind the tool is the five-tuple: source, source port, destination, destination port, and protocol. NSG rules themselves are processed by priority, with lower numbers having higher priority, and processing stops after the first matching rule. For inbound traffic, the subnet NSG is evaluated before a NIC NSG if both exist, so an inbound flow must survive both scopes. IP flow verify saves you from manually comparing those two scopes when the target is a VM.\n\nThe main exception is protocol coverage. The IP flow verify page says it tests TCP and UDP rules; for ICMP you should use NSG diagnostics. It also tests rules applied to a VM network interface, not a virtual machine scale set instance; NSG diagnostics is the documented alternative for scale set rules. Those exceptions do not change this HTTPS case because HTTPS is TCP traffic to a VM.",
+      "wrongOptions": {
+        "A": "Packet capture can record packets after you decide that packets need to be inspected, but it is not the quickest way to ask Azure which NSG or admin rule allows or blocks one modeled HTTPS flow. Misconception: Every connectivity problem should start with packet bytes. Could be correct when IP flow verify says the security path is allowed and you still need evidence of SYN packets, TLS handshakes, retransmissions, or application resets on the VM.",
+        "C": "Next hop answers a routing question: what next hop type, IP address, and route table ID Azure selected for a destination IP. It does not name the NSG rule that denied inbound TCP 443. Misconception: A failed connection always means the route is wrong. Could be correct when traffic leaves a VM toward an address and you need to know whether Azure sends it to the internet, a virtual appliance, a gateway, peering, or nowhere.",
+        "D": "Effective routes show the route set for a network interface, including default routes, custom routes, and propagated gateway routes. They do not decide whether an inbound security rule permits one five-tuple. Misconception: Routes and security rules are one combined table. Could be correct when the question asks why traffic is being sent to an unexpected next hop or whether a route learned from on-premises exists on the NIC."
+      },
+      "plainEnglish": "This problem is like asking a guard, `If a visitor from this address tries to enter this door on this port, will your rule book let them in?` IP flow verify asks exactly that question. You give it the direction, protocol, local address, remote address, and ports. Azure checks the security rule books that affect the VM and says whether the flow would be allowed or denied. If a custom rule made the decision, it points you to that rule so you can inspect or change it. A packet capture is more like filming the doorway. That is useful later, but it is slower if the first thing you need is the rule decision. A next-hop check is like asking which road a car would take after leaving the building, which is a different problem.",
+      "analogy": "Imagine an office tower with a lobby guard and a floor guard. A visitor wants to enter room 443. Before watching security-camera footage, the building manager asks both guards to check the visitor against their rule cards.\n\n| Analogy | Azure reality |\n|---|---|\n| Lobby guard | Subnet-level NSG evaluation for inbound traffic |\n| Floor guard | NIC-level NSG evaluation for inbound traffic |\n| Visitor details | Source IP, source port, destination IP, destination port, protocol |\n| Rule card that matches first | The effective allow or deny decision for the flow |\n| Manager's quick question | IP flow verify |\n\n**Where the analogy breaks down:** Azure evaluates formal security and admin rules, not human judgment. A real guard may use discretion, but NSG processing follows deterministic priority and matching rules, and IP flow verify does not inspect application payloads.",
+      "jargon": [
+        {
+          "term": "Azure Network Watcher",
+          "definition": "An Azure monitoring and diagnostics service for network connectivity, routing, packet capture, and security-rule troubleshooting."
+        },
+        {
+          "term": "IP flow verify",
+          "definition": "A Network Watcher capability that tests whether TCP or UDP traffic to or from a VM is allowed or denied by applicable security and admin rules."
+        },
+        {
+          "term": "Network security group (NSG)",
+          "definition": "An Azure resource containing inbound and outbound security rules that allow or deny traffic for supported resources in virtual networks."
+        },
+        {
+          "term": "Network interface (NIC)",
+          "definition": "The Azure resource that connects a virtual machine to a virtual network and has private IP configuration."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A range of IP addresses inside a virtual network; an NSG can be associated with a subnet."
+        },
+        {
+          "term": "TCP",
+          "definition": "Transmission Control Protocol, the transport protocol used by HTTPS and many connection-oriented applications."
+        },
+        {
+          "term": "HTTPS",
+          "definition": "HTTP over TLS, commonly using TCP port 443 for encrypted web traffic."
+        },
+        {
+          "term": "Five-tuple",
+          "definition": "The combination of source, source port, destination, destination port, and protocol used to describe a network flow."
+        },
+        {
+          "term": "Admin rules",
+          "definition": "Azure Virtual Network Manager security admin rules that can affect traffic before NSG rules are considered."
+        },
+        {
+          "term": "Effective routes",
+          "definition": "The routes currently applied to a network interface after Azure combines system, custom, and propagated routes."
+        }
+      ],
+      "watchOut": "- IP flow verify is a rule simulation, not a live packet trace.\n- The documented protocol scope for IP flow verify is TCP and UDP, so do not choose it for ICMP-only testing.\n- A VM with both subnet and NIC NSGs can be blocked at either scope for inbound traffic.\n- A default security rule can allow or deny traffic, but the portal may not link to a default rule the same way it links to custom rules.",
+      "productionTip": {
+        "official": "Microsoft documents that IP flow verify checks rules of all NSGs applied to a VM network interface, whether the NSG is associated with the subnet or the network interface, and also checks applicable Virtual Network Manager admin rules. The tool returns allowed or denied and identifies the security rule and NSG when appropriate.",
+        "recommendation": "Use IP flow verify early when a ticket contains an exact source, destination, protocol, and port. After you find the responsible rule, change the smallest-scoped rule that satisfies the business requirement and record why that source and port are allowed. If the modeled flow is allowed but users still fail, move to connection troubleshoot or packet capture rather than repeatedly editing NSGs."
+      },
+      "memoryTrick": "For a single TCP or UDP conversation, remember **Flow first, frames later**. That shortcut means test the allow/deny rule with IP flow verify before collecting packets, but it fails when the protocol is ICMP or when payload behavior is the main evidence.",
+      "examTip": "Clue words are **allowed or denied**, **exact rule**, **VM**, **TCP**, and **port 443**. Those point to IP flow verify. Eliminate next hop and effective routes because they diagnose path selection, not security-rule authorization. Eliminate packet capture when the question asks for the Azure rule responsible rather than proof of what packets arrived. A harder exam version may include a VM scale set or ICMP; then NSG diagnostics becomes a better match than IP flow verify."
+    },
+    "sources": [
+      {
+        "title": "IP Flow Verify Overview - Azure Network Watcher",
+        "url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+      },
+      {
+        "title": "Azure network security groups overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.5-02",
+    "objective": "D4.1.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a virtual machine named `vm-pay-01` with one network interface. A route table is associated with the VM's subnet. The virtual network is connected to an on-premises datacenter through a VPN gateway that propagates BGP routes. A developer says that traffic from `vm-pay-01` to `172.16.40.20` should go through the VPN gateway, but the connection reaches a firewall appliance instead.\n\nYou need to see the complete route set that Azure has applied to the network interface, including default routes, custom routes, and propagated routes.\n\nWhat should you review?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The effective routes for the network interface of `vm-pay-01`"
+      },
+      {
+        "id": "B",
+        "text": "IP flow verify for outbound TCP traffic from `vm-pay-01`"
+      },
+      {
+        "id": "C",
+        "text": "Packet capture filtered to remote IP address `172.16.40.20`"
+      },
+      {
+        "id": "D",
+        "text": "The default inbound NSG rules on the VM subnet"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The VM is running, because Microsoft documents that effective-route output for a NIC is returned only when the VM is in a running state. The routing question is about routes visible on the NIC, not packet contents or guest operating system routes.",
+    "sections": {
+      "correctAnswer": "**A. The effective routes for the network interface of `vm-pay-01`**. Effective routes show the combined routing result for a NIC: Azure default routes, user-defined custom routes, and routes propagated from an on-premises network through a VPN gateway using BGP.",
+      "technical": "Effective routes are the correct artifact when the question asks for the full route set applied to a network interface. Azure automatically creates default routes for each virtual network subnet. Administrators can override or add routes by creating a route table and associating it with a subnet. If the virtual network is connected to an on-premises network through an Azure VPN gateway and BGP is used, routes can also be propagated from on-premises. Microsoft describes effective routes for a network interface as the combination of those categories.\n\nThis matters because a single connection can be affected by several route sources at once. A route table might send `0.0.0.0/0` to a virtual appliance, while BGP might advertise a more specific `172.16.0.0/16` route through the VPN gateway. Viewing only the route table object could miss propagated routes. Looking only at the VPN gateway could miss a custom route associated with the subnet. Effective routes collect the applied view for the NIC.\n\n| Route source | Why it matters in this scenario |\n|---|---|\n| Default routes | Azure-created baseline connectivity inside virtual networks and to other destinations |\n| Custom route table | User-defined routes associated with the subnet can redirect traffic to an appliance |\n| BGP propagation | VPN gateway-learned on-premises prefixes can appear on the NIC |\n\nThe portal path can be reached from the VM's network interface by expanding Help and selecting Effective routes. Azure CLI can use `az network nic show-effective-route-table`, and Azure PowerShell can use `Get-AzEffectiveRouteTable`. The documented limitation to remember is that output is only returned if the VM is running. If a VM has multiple NICs, each NIC can have different effective routes because the NICs may be in different subnets.",
+      "wrongOptions": {
+        "B": "IP flow verify is aimed at security-rule decisions for a modeled TCP or UDP packet, not at listing every route source that applies to a NIC. Misconception: If a flow fails, a security-rule test must always come before route inspection. Could be correct when the question asks whether NSG or admin rules allow an outbound packet to a specific address and port.",
+        "C": "Packet capture might prove that packets leave the guest or show retries, but it will not enumerate Azure system, custom, and BGP-propagated routes applied to the NIC. Misconception: Observing traffic is the same as understanding the Azure route table. Could be correct after route review if you need to confirm whether the VM actually sends packets or whether a connection is reset by a remote system.",
+        "D": "Default inbound NSG rules govern inbound security filtering, not outbound route selection toward an on-premises prefix. Misconception: NSG defaults decide where traffic is forwarded. Could be correct in a different problem where unsolicited inbound traffic is unexpectedly allowed or denied."
+      },
+      "plainEnglish": "The VM chooses a road for each destination. Some roads are built into Azure, some are added by your route table, and some are learned from the on-premises network through the VPN gateway. The effective routes view is the map the VM's network card actually receives after Azure combines those sources. If the app expected a VPN road but Azure picked a firewall-appliance road, this is where you look first. A packet recording tells you what traffic was seen, and a security-rule test tells you whether traffic is blocked, but neither one gives you the complete map of routes applied to that network card.",
+      "analogy": "Picture a delivery driver who receives three sets of directions: city default roads, company detours, and routes radioed in from a partner depot. The driver uses the combined list, not one sheet by itself.\n\n| Analogy | Azure reality |\n|---|---|\n| City default roads | Azure default system routes |\n| Company detours | User-defined routes in a route table |\n| Partner depot updates | BGP-propagated routes through a VPN gateway |\n| Driver's final map | Effective routes on the NIC |\n| Wrong turn to the inspection station | Traffic sent to a network virtual appliance |\n\n**Where the analogy breaks down:** Azure route selection is prefix-based and deterministic. A human driver may ignore a map, but Azure forwarding follows the route entries that are effective for the network interface.",
+      "jargon": [
+        {
+          "term": "Effective routes",
+          "definition": "The route entries currently applied to a network interface after Azure combines default, custom, and propagated route sources."
+        },
+        {
+          "term": "User-defined route (UDR)",
+          "definition": "A custom route created by an administrator in an Azure route table."
+        },
+        {
+          "term": "Route table",
+          "definition": "An Azure resource that contains custom routes and is associated with subnets to influence traffic leaving those subnets."
+        },
+        {
+          "term": "BGP",
+          "definition": "Border Gateway Protocol, a routing protocol that can advertise on-premises prefixes to Azure through a VPN or ExpressRoute gateway."
+        },
+        {
+          "term": "VPN gateway",
+          "definition": "An Azure virtual network gateway used to connect an Azure virtual network to another network over encrypted VPN tunnels."
+        },
+        {
+          "term": "Network virtual appliance",
+          "definition": "A virtual appliance such as a firewall that can be used as a next hop for inspected or filtered traffic."
+        },
+        {
+          "term": "Network interface",
+          "definition": "The Azure resource that connects a VM to a subnet and receives the effective route table."
+        },
+        {
+          "term": "Prefix",
+          "definition": "An IP address range, such as `172.16.0.0/16`, used in routing decisions."
+        }
+      ],
+      "watchOut": "- Effective routes are viewed per network interface, not only per virtual network.\n- A VM must be running for the documented effective-route commands to return output.\n- Different NICs on the same VM can show different routes if the NICs are in different subnets.\n- A route table object alone does not show every propagated route that may be effective on the NIC.",
+      "productionTip": {
+        "official": "Microsoft documents that effective routes for a network interface combine Azure default routes, custom routes, and routes propagated from an on-premises network through an Azure VPN gateway using BGP. The same documentation notes that effective-route output is returned only if the VM is running and that each NIC can have unique routes.",
+        "recommendation": "When a routing ticket mentions a specific destination prefix, export or capture the effective routes for the exact NIC before changing route tables. Compare the selected prefix to the intended architecture, then update the narrowest route table association or propagated route policy that explains the observed path. Avoid editing a broad default route until you have checked whether a more specific route is already present."
+      },
+      "memoryTrick": "Use **effective** when you need the route table as the NIC actually sees it. That phrase is a shortcut; it does not prove the destination service is listening or that a firewall beyond the next hop allows the session.",
+      "examTip": "Clue words are **complete route set**, **default routes**, **custom routes**, and **propagated routes**. Those words are almost a definition of effective routes. If the question instead asks for only the next hop type and route table ID for one destination IP, choose next hop. If it asks for the NSG rule that allowed or denied a port, choose IP flow verify."
+    },
+    "sources": [
+      {
+        "title": "Diagnose an Azure virtual machine routing problem",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-routing-problem"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.5-03",
+    "objective": "D4.1.5",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You support an application on a VM named `vm-api-01`. The VM calls `https://orders.contoso.example` every minute. Failures are intermittent. During an outage, engineers need a single Network Watcher workflow that tests reachability from the Azure source, reports whether the target is reachable, shows hop-by-hop path information, and can surface issues such as DNS failures, blocked ports, user-defined routes, guest firewall rules, and NSG blocks.\n\nWhich two statements describe the best diagnostic choice? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Run connection troubleshoot from `vm-api-01` to the FQDN or URI and review the returned status, latency, probes, hops, and issues"
+      },
+      {
+        "id": "B",
+        "text": "Use next hop only, because it detects DNS resolution failures and guest firewall rules for the destination"
+      },
+      {
+        "id": "C",
+        "text": "Use connection troubleshoot because it can test destinations such as VMs, FQDNs, URIs, or IP addresses from supported Azure sources"
+      },
+      {
+        "id": "D",
+        "text": "Use effective routes only, because it reports whether the remote HTTPS server is listening on the destination port"
+      },
+      {
+        "id": "E",
+        "text": "Start packet capture first, because connection troubleshoot cannot identify NSG or user-defined-route problems"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The source is a supported Connection troubleshoot source. The agentless Connection troubleshoot experience is preview as documented by Microsoft; the question asks for the diagnostic capability, not for adopting a preview feature as a production standard.",
+    "sections": {
+      "correctAnswer": "**A. Run connection troubleshoot from `vm-api-01` to the FQDN or URI and review the returned status, latency, probes, hops, and issues** and **C. Use connection troubleshoot because it can test destinations such as VMs, FQDNs, URIs, or IP addresses from supported Azure sources**. Connection troubleshoot is the Network Watcher tool that performs broad reachability checks and returns actionable path and issue details for this kind of endpoint test.",
+      "technical": "Connection troubleshoot fits the requirement because it is broader than a single rule lookup or a route lookup. Microsoft describes it as a Network Watcher feature that reduces the time needed to diagnose connectivity problems by performing major connection checks. It can test TCP or ICMP connections from supported Azure sources, including virtual machines, virtual machine scale sets, Azure Bastion instances, and supported Application Gateway v2 instances. It can test destinations including VMs, FQDNs, URIs, and IP addresses.\n\nFor this scenario, the FQDN or URI matters. A next-hop lookup requires a destination IP address, while the application fails when it calls a name. Connection troubleshoot can include DNS resolution failures among the issue types it detects, which makes it more suitable for `orders.contoso.example`. Its results can include `Reachable` or `Unreachable`, average, minimum, and maximum latency when reachable, probes sent and failed, hops from source to destination, issue details, next-hop analysis, and security-rule analysis.\n\nThe documented issue categories are exam-important because they cross several layers:\n\n| Issue type | Why it matters here |\n|---|---|\n| `DnsResolution` | The FQDN may not resolve during the outage |\n| `NetworkSecurityRule` | An NSG may block outbound or inbound traffic |\n| `UserDefinedRoute` | A custom route may send traffic to the wrong device |\n| `GuestFirewall` | The OS firewall can block even when Azure NSGs allow |\n| Server not listening | The remote endpoint may not accept the target port |\n\nThe preview caveat is also precise: the agentless experience for Connection troubleshoot is documented as preview, while earlier operation required the Network Watcher agent extension on the source VM. For an exam question, do not convert that preview note into a new rule that the tool cannot be used; read the wording and choose the tool whose supported result set matches the symptom.",
+      "wrongOptions": {
+        "B": "Next hop gives next hop type, next hop IP address, and route table ID for a destination IP. It does not diagnose DNS resolution or guest firewall rules. Misconception: Seeing the forwarding path is the same as testing the whole connection. Could be correct when the outage is already narrowed to route selection for one known destination IP.",
+        "D": "Effective routes list routes applied to a NIC; they do not test whether a remote HTTPS server is listening. Misconception: If routes look correct, the application endpoint must be reachable. Could be correct when the task is to inventory all default, custom, and BGP-propagated routes on a network interface.",
+        "E": "Connection troubleshoot can detect NSG rules that block traffic and misconfigured or missing routes, so saying it cannot identify those problems contradicts the documented feature. Misconception: Only packet evidence is useful for intermittent problems. Could be correct when the goal is to capture the exact packets during an intermittent failure after reachability checks have narrowed the path."
+      },
+      "plainEnglish": "The application is not just asking, `Which rule blocks this port?` or `Which road would this address use?` It is asking, `Can this Azure machine reach this named web endpoint right now, and if not, where does the journey break?` Connection troubleshoot is built for that wider question. It sends checks from the source, follows the path, and reports results such as reachable or unreachable, delays, failed probes, and likely causes. That is why it is better than a route-only view or a raw packet recording as the first broad workflow for intermittent FQDN failures.",
+      "analogy": "Think of a courier company investigating missed deliveries. Instead of only checking the first road out of the depot or filming the truck, the dispatcher asks for a trip report: whether the delivery address could be found, which stops the truck reached, where delays occurred, and which gate or road blocked progress.\n\n| Analogy | Azure reality |\n|---|---|\n| Delivery address written as a name | FQDN or URI destination |\n| Trip report | Connection troubleshoot result |\n| Road-by-road journey | Hops from source to destination |\n| Closed gate | NSG, UDR, port, or guest firewall issue |\n| Delivery time readings | Latency measurements |\n\n**Where the analogy breaks down:** Connection troubleshoot uses Azure diagnostics and probes, not a human route sheet, and a reachable result does not inspect every byte of an application protocol exchange.",
+      "jargon": [
+        {
+          "term": "Connection troubleshoot",
+          "definition": "A Network Watcher feature that checks connectivity from supported Azure sources to destinations such as VMs, FQDNs, URIs, or IP addresses."
+        },
+        {
+          "term": "FQDN",
+          "definition": "Fully qualified domain name, a complete DNS name such as `orders.contoso.example`."
+        },
+        {
+          "term": "URI",
+          "definition": "Uniform Resource Identifier, a string such as an HTTPS URL that identifies a resource."
+        },
+        {
+          "term": "Probe",
+          "definition": "A test attempt sent by the diagnostic to measure reachability or failure."
+        },
+        {
+          "term": "Latency",
+          "definition": "The measured delay between source and destination during a connectivity test."
+        },
+        {
+          "term": "Guest firewall",
+          "definition": "Firewall software inside the VM operating system, separate from Azure NSGs."
+        },
+        {
+          "term": "User-defined route",
+          "definition": "A custom Azure route that can change the next hop for traffic from a subnet."
+        },
+        {
+          "term": "DNS resolution",
+          "definition": "The process of translating a name into an IP address."
+        },
+        {
+          "term": "Application Gateway v2",
+          "definition": "A supported Azure layer 7 load-balancing resource that can be a Connection troubleshoot source except for private deployments noted in the documentation."
+        },
+        {
+          "term": "Preview",
+          "definition": "A Microsoft feature stage where functionality may change before general availability."
+        }
+      ],
+      "watchOut": "- Connection troubleshoot is a broad connectivity workflow; it is not the same as packet capture.\n- A next-hop result can appear reasonable even while DNS or the guest firewall breaks the real application call.\n- The agentless Connection troubleshoot experience is documented as preview, so be careful when a question asks for GA-only operational design.\n- Use the destination type that matches the symptom; an FQDN problem should not be reduced too early to one guessed IP address.",
+      "productionTip": {
+        "official": "Microsoft documents that Connection troubleshoot can test connectivity to VMs, FQDNs, URIs, and IP addresses from supported Azure resources, and that results can include reachable or unreachable status, latency, probe counts, hop details, next-hop analysis, and security-rule analysis. It also lists detectable issues such as DNS failures, NSG blocks, user-defined-route problems, guest firewall rules, and ports not listening.",
+        "recommendation": "For intermittent application outages, save Connection troubleshoot output with timestamps and the exact destination used by the app. If the tool identifies DNS or route instability, focus on that layer before changing NSG rules. If the tool reports reachability while users still fail, pair the timestamp with application logs and a narrowly filtered packet capture."
+      },
+      "memoryTrick": "Connection troubleshoot is the **trip report**, not just the map or the camera. The shortcut helps for reachability questions, but it does not replace packet capture when you need payload-level or handshake evidence.",
+      "examTip": "The clue cluster is **FQDN or URI**, **reachable or unreachable**, **latency**, **hops**, and several possible root causes. That cluster points to Connection troubleshoot. If an option says next hop detects DNS or guest firewall issues, reject it. If an option says effective routes prove that a server is listening, reject it because routes do not test application sockets."
+    },
+    "sources": [
+      {
+        "title": "Connection Troubleshoot Overview - Azure Network Watcher",
+        "url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.5-04",
+    "objective": "D4.1.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a VM named `vm-collector-01` that sends telemetry to `10.12.8.20` on TCP port 6514. IP flow verify reports that the outbound TCP flow is allowed. Next hop reports `VirtualNetworkPeering`, which matches the design. Connection troubleshoot shows the destination as reachable, but the telemetry vendor says some sessions are still malformed and asks for a packet-level sample from the Azure VM during the failure window.\n\nYou need to collect only relevant traffic and save evidence for later analysis.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Network Watcher packet capture on `vm-collector-01` with a TCP filter for remote IP `10.12.8.20` and remote port `6514`"
+      },
+      {
+        "id": "B",
+        "text": "Effective routes on `vm-collector-01` downloaded as a CSV file"
+      },
+      {
+        "id": "C",
+        "text": "IP flow verify repeated every minute with local port `6514`"
+      },
+      {
+        "id": "D",
+        "text": "Next hop from `10.12.8.20` back to the private IP of `vm-collector-01`"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. Standard packet capture is sufficient; continuous packet capture is preview and is not required by the scenario. The Network Watcher agent VM extension can be installed on the VM if it is not already present.",
+    "sections": {
+      "correctAnswer": "**A. Network Watcher packet capture on `vm-collector-01` with a TCP filter for remote IP `10.12.8.20` and remote port `6514`**. Packet capture is the Network Watcher feature for collecting packet data to and from a VM, and filters can limit capture to a protocol, local or remote IP address, and local or remote port.",
+      "technical": "The earlier tools have already ruled out the common Azure control-plane causes. IP flow verify says security rules permit the modeled outbound TCP flow. Next hop says the route leaves through virtual network peering, which matches the design. Connection troubleshoot says the destination is reachable. The remaining request is not, `Will Azure allow or route this?` It is, `Show me packet-level evidence from the VM during the failure.` Network Watcher packet capture is built for that task.\n\nMicrosoft documents packet capture as a way to create sessions that track traffic to and from a VM or virtual machine scale set. It can be started remotely through Network Watcher, which avoids logging on to the VM to run a sniffer manually. Captured data can be saved on the local disk or in Azure Storage blob. The feature supports filters based on five-tuple information: protocol, local IP address, remote IP address, local port, and remote port.\n\nA targeted configuration for this question would use:\n\n| Capture setting | Scenario value |\n|---|---|\n| Target | `vm-collector-01` |\n| Protocol | TCP |\n| Remote IP address | `10.12.8.20` |\n| Remote port | `6514` |\n| Storage choice | Local disk or storage account, based on retention and access needs |\n\nThe operational prerequisite is important. Standard packet capture requires the Network Watcher agent VM extension named `AzureNetworkWatcherExtension`. Also avoid over-collecting. Packet capture can generate large files, so filters and time limits matter. Microsoft documents a standard packet capture time-limit setting whose default is 18,000 seconds, and maximum bytes per packet can reduce data volume if only headers are needed. Continuous packet capture exists but is documented as preview; an AZ-104 answer should prefer standard GA behavior unless the question explicitly asks for the preview capability.",
+      "wrongOptions": {
+        "B": "Effective routes would repeat the route inventory, but the scenario already says the next hop matches the design and asks for packet-level evidence. Misconception: A route export can satisfy a vendor's packet sample request. Could be correct when a network engineer asks for proof of all route sources on the NIC rather than packets exchanged with an endpoint.",
+        "C": "Repeating IP flow verify would keep proving a modeled security-rule decision, not capturing malformed sessions. Also the local port on the sending client is usually an ephemeral source port, while TCP 6514 is the remote destination port in this scenario. Misconception: A flow-verification result is a live trace. Could be correct when a rule is changing and you need to check whether a new security decision is now allowed or denied.",
+        "D": "Next hop from the destination back to the VM is not a packet capture and may not even be available from the Azure source context described. Misconception: Symmetric route checks reveal packet contents. Could be correct when investigating asymmetric routing between two Azure VMs and you can test from each source separately."
+      },
+      "plainEnglish": "At this point, Azure's road signs and gate rules look correct. The vendor is not asking whether the road exists; the vendor wants to see the actual vehicles going by. Packet capture records network packets from the VM during the problem. By filtering for TCP traffic to `10.12.8.20` on port `6514`, you avoid filling the capture with unrelated traffic. Later, an engineer can inspect the saved file to see handshakes, resets, retransmissions, or malformed data patterns that a route table or NSG rule cannot show.",
+      "analogy": "A factory conveyor has already passed its safety inspection and the route through the warehouse is correct, but damaged boxes still arrive. The supervisor now installs a camera pointed only at the conveyor segment carrying boxes to one customer.\n\n| Analogy | Azure reality |\n|---|---|\n| Safety inspection passed | IP flow verify allows the flow |\n| Correct warehouse route | Next hop matches the design |\n| Camera on one conveyor lane | Packet capture with five-tuple filters |\n| Damaged boxes | Malformed or failed network sessions |\n| Saved footage | Capture file on disk or in blob storage |\n\n**Where the analogy breaks down:** A packet capture records headers and payload bytes according to capture settings; it does not automatically interpret every application protocol or prove the remote system's internal behavior.",
+      "jargon": [
+        {
+          "term": "Packet capture",
+          "definition": "A Network Watcher feature that records packet data to and from a VM or virtual machine scale set for later analysis."
+        },
+        {
+          "term": "AzureNetworkWatcherExtension",
+          "definition": "The Network Watcher agent VM extension required for standard packet capture on a VM."
+        },
+        {
+          "term": "Remote IP address",
+          "definition": "In packet capture filters, the endpoint address on the other side of the traffic from the local VM."
+        },
+        {
+          "term": "Remote port",
+          "definition": "In this scenario, TCP port `6514` on the telemetry destination."
+        },
+        {
+          "term": "TCP 6514",
+          "definition": "A TCP port commonly used by syslog over TLS deployments; the question uses it as the telemetry service port."
+        },
+        {
+          "term": "Virtual network peering",
+          "definition": "Azure connectivity between virtual networks that can allow private traffic over the Microsoft backbone."
+        },
+        {
+          "term": "Blob storage",
+          "definition": "Azure object storage that can store capture files for later retrieval."
+        },
+        {
+          "term": "Five-tuple filter",
+          "definition": "A filter based on protocol, local IP, remote IP, local port, and remote port."
+        },
+        {
+          "term": "Malformed session",
+          "definition": "A connection whose packet exchange or application data does not match the expected protocol behavior."
+        }
+      ],
+      "watchOut": "- Packet capture requires the Network Watcher agent VM extension for standard captures.\n- Use filters; an unfiltered capture on a busy VM can be large and noisy.\n- Continuous packet capture is documented as preview, so do not select it unless the question deliberately asks for preview behavior.\n- Save captures where responders can access them without exposing unrelated traffic longer than necessary.",
+      "productionTip": {
+        "official": "Microsoft documents that Network Watcher packet capture tracks traffic to and from a VM or scale set, can be triggered through the portal, PowerShell, Azure CLI, or REST API, and can save data locally or in an Azure storage blob. It also documents filters based on protocol, local IP, remote IP, local port, and remote port, plus the requirement for the Network Watcher agent VM extension.",
+        "recommendation": "Before starting a production capture, agree on a short time window, a narrow five-tuple filter, and a storage location with restricted access. Capture only what is needed to answer the incident question, because packet files may contain sensitive payloads or metadata. Pair the capture with timestamps from IP flow verify or connection troubleshoot so analysts know which control-plane checks already passed."
+      },
+      "memoryTrick": "When the question asks for **bytes on the wire**, choose packet capture. That phrase is a simplification because encrypted payloads may still be unreadable, but the packet timing, flags, endpoints, and sizes remain useful.",
+      "examTip": "The clue phrase is **packet-level sample** after security, routing, and reachability checks already look good. That makes packet capture the final diagnostic, not the first NSG or route tool. A harder version may ask where captures can be stored or which prerequisite is needed; remember local disk or storage blob, and the Network Watcher agent VM extension."
+    },
+    "sources": [
+      {
+        "title": "Packet Capture Overview - Azure Network Watcher",
+        "url": "https://learn.microsoft.com/en-us/azure/network-watcher/packet-capture-overview"
+      },
+      {
+        "title": "IP Flow Verify Overview - Azure Network Watcher",
+        "url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview"
+      },
+      {
+        "title": "Next Hop Overview - Azure Network Watcher",
+        "url": "https://learn.microsoft.com/en-us/azure/network-watcher/next-hop-overview"
+      },
+      {
+        "title": "Connection Troubleshoot Overview - Azure Network Watcher",
+        "url": "https://learn.microsoft.com/en-us/azure/network-watcher/connection-troubleshoot-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

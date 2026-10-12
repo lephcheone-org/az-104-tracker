@@ -1,0 +1,708 @@
+[
+  {
+    "id": "D3.4.2-01",
+    "objective": "D3.4.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains an App Service plan named `asp-retail-prod`. The plan is in the Basic tier and runs a single web app named `storefront`. During image processing, the app reaches the memory limit of the current worker size even when only one request is running. The development team also wants to add deployment slots next quarter. You need to improve the capacity and unlock the plan features without changing application code.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Scale out `asp-retail-prod` by increasing the instance count to three workers."
+      },
+      {
+        "id": "B",
+        "text": "Scale up `asp-retail-prod` by changing the App Service plan pricing tier and size."
+      },
+      {
+        "id": "C",
+        "text": "Enable Azure Monitor autoscale rules that add workers when `HttpQueueLength` increases."
+      },
+      {
+        "id": "D",
+        "text": "Move the app settings to an Azure Storage account and keep the current plan size."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The workload is hosted by Azure App Service Web Apps in a single App Service plan. The question asks about App Service plan scaling, not redesigning the application or scaling a database.",
+    "sections": {
+      "correctAnswer": "**B. Scale up `asp-retail-prod` by changing the App Service plan pricing tier and size.** Scale up is the App Service workflow for getting more CPU, memory, disk capacity, and plan features such as staging slots or autoscaling. Adding more instances helps concurrent load, but it does not make one worker larger.",
+      "technical": "Azure App Service has two separate scaling ideas. **Scale up** changes the App Service plan's pricing tier or worker size. Microsoft describes scale up as getting more CPU, memory, disk space, or extra features, and you perform it by changing the tier of the App Service plan that contains the app. **Scale out** changes the number of virtual machine instances that run the app.\n\nFor this scenario, the limiting symptom is a single memory-heavy operation. One worker cannot hold the image workload comfortably, so three identical Basic workers would still give each request the same per-worker limit. If the app can process many independent requests at once, scale out can distribute those requests; it does not increase memory available to a single process. The future requirement for deployment slots also points to tier capabilities, because pricing tiers determine which App Service features are available.\n\nApp Service plan scope is important. Apps in the same plan share the plan's compute resources, and by default every app runs on all configured workers. When you scale a plan up or down, the change affects all apps in that plan. Microsoft notes that scale settings take only seconds to apply and do not require code changes or redeployment. Related services, such as Azure SQL Database or Storage, are not automatically scaled by changing the App Service plan; you must size those separately.\n\nOrder of reasoning for the exam: first decide whether the problem is vertical capacity or horizontal count. Second, check whether the requested feature is tied to a higher tier. Third, remember that autoscale rules operate on instance count, not worker size. In this case both the capacity symptom and feature request lead to scale up.",
+      "wrongOptions": {
+        "A": "Increasing to three Basic workers is a scale-out action. It can help when many requests can be spread across workers, but each worker remains the same size and the app still lacks higher-tier features. Misconception: more instances always solve resource pressure. Could be correct when the existing worker size is adequate and the only issue is concurrent traffic.",
+        "C": "Azure Monitor autoscale adds or removes instances according to rules and schedules. It does not change the pricing tier, and the App Service walkthrough requires Standard tier or higher for autoscale. Misconception: autoscale means every possible kind of scaling. Could be correct when a supported plan must react to fluctuating HTTP queue length or CPU load.",
+        "D": "Moving configuration values to Storage does not add CPU, memory, disk quota, or App Service features to the plan. Misconception: externalizing settings reduces the compute limits of image processing. Could be correct when the problem is secret management or shared configuration, not plan capacity."
+      },
+      "plainEnglish": "Imagine the app runs on a rented machine. Scaling out rents more machines of the same kind. Scaling up rents a stronger machine and may include extra services from the landlord. If one photo-editing job needs more memory than a small machine has, renting three small machines does not make that one job fit. You need a bigger machine type. If the team also needs features that only come with higher plans, the answer is even more clearly to change the plan tier rather than only increasing the machine count.",
+      "analogy": "A bakery has one small oven that cannot fit a tall cake. Buying two more identical ovens helps bake more normal cakes at the same time, but the tall cake still does not fit. Replacing the oven with a larger professional model solves the tall-cake problem and might add features like programmable racks.\n\n| Analogy | Azure reality |\n|---|---|\n| Small oven | Current Basic worker size |\n| More identical ovens | Scale out to more instances |\n| Larger professional oven | Scale up to a higher tier or size |\n| Extra oven features | App Service plan capabilities |\n\n**Where the analogy breaks down:** App Service workers are managed virtual machines, not kitchen equipment. A plan change can also affect billing, regional availability, and every app sharing the plan.",
+      "jargon": [
+        {
+          "term": "App Service plan",
+          "definition": "The Azure resource that defines the region, operating system, pricing tier, VM size, and number of workers used by one or more App Service apps."
+        },
+        {
+          "term": "Scale up",
+          "definition": "A vertical scaling action that changes the plan tier or size to provide more CPU, memory, storage, or platform features."
+        },
+        {
+          "term": "Scale out",
+          "definition": "A horizontal scaling action that changes how many worker instances run the app."
+        },
+        {
+          "term": "Pricing tier",
+          "definition": "The App Service plan category, such as Basic, Standard, Premium, PremiumV3, PremiumV4, or IsolatedV2, that controls cost and features."
+        },
+        {
+          "term": "Worker",
+          "definition": "A VM instance assigned to an App Service plan to run apps in that plan."
+        },
+        {
+          "term": "Deployment slot",
+          "definition": "A separate hosting environment for an App Service app that can be used for staging and swapping deployments."
+        },
+        {
+          "term": "Azure Monitor autoscale",
+          "definition": "A rule and schedule based feature that changes instance count for supported resources, including App Service plans."
+        },
+        {
+          "term": "HttpQueueLength",
+          "definition": "An App Service plan metric that reports queued HTTP requests waiting to be handled."
+        }
+      ],
+      "watchOut": "- Scale up changes plan capability; scale out changes instance count.\n- App Service plan scaling can affect every app that shares the plan.\n- Autoscale is horizontal; it does not resize a worker.\n- If a database is the bottleneck, scaling the App Service plan might not fix the end-to-end workload.",
+      "productionTip": {
+        "official": "Microsoft documents that scale-up settings apply quickly to all apps in an App Service plan and do not require code changes. The same App Service plan documentation says apps in the same plan share the same underlying VM instances unless specific placement features are configured.",
+        "recommendation": "Before scaling up, confirm that the memory or feature limit is truly in the web tier by reviewing App Service metrics and logs. As a practitioner choice, isolate noisy or resource-intensive apps into a separate plan so one team's scale-up decision does not unexpectedly change cost or capacity for unrelated apps."
+      },
+      "memoryTrick": "**Up makes the box bigger; out makes more boxes.** This shortcut is safe for App Service plan questions, but it does not decide whether the real bottleneck is in a database or another dependency.",
+      "examTip": "Clue words here are **more memory**, **more CPU**, **features**, and **pricing tier**. Those words indicate scale up. If the prompt instead says traffic spikes, many concurrent users, or keep the same tier while adding workers, then scale out or autoscale becomes more likely. A harder item may include both a small memory problem and a queue problem; solve the stated requirement first, then pick the action that targets that exact layer."
+    },
+    "sources": [
+      {
+        "title": "Scale Up Features and Capacities - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+      },
+      {
+        "title": "Azure App Service Plans",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+      },
+      {
+        "title": "Azure subscription and service limits, quotas, and constraints",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.2-02",
+    "objective": "D3.4.2",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have an App Service plan named `asp-api-prod` in the Premium v3 tier. The plan hosts two stateless web apps. The operations team does not want to design metric thresholds or schedules, but it wants App Service to add capacity when HTTP traffic increases. You also need to keep one app from growing beyond a downstream database limit.\n\nWhich two statements describe the appropriate scaling option? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use automatic scaling, because it is a scale-out option that handles scaling decisions from incoming HTTP traffic without user-defined metric rules."
+      },
+      {
+        "id": "B",
+        "text": "Use Azure Monitor autoscale, because it is the only App Service feature that supports per-app maximum scale limits."
+      },
+      {
+        "id": "C",
+        "text": "Configure the App Service plan `Maximum burst`, and set each app's maximum scale limit where the app needs a cap."
+      },
+      {
+        "id": "D",
+        "text": "Use manual scale-out, because Premium v3 plans cannot add instances automatically."
+      },
+      {
+        "id": "E",
+        "text": "Enable automatic scaling and Azure Monitor autoscale together so that traffic and CPU rules both control the same plan."
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The apps are App Service web apps, not Azure Functions apps. The plan uses a Premium v3 tier that supports automatic scaling. The downstream database limit is a design constraint, not a database autoscale configuration task.",
+    "sections": {
+      "correctAnswer": "**A. Use automatic scaling, because it is a scale-out option that handles scaling decisions from incoming HTTP traffic without user-defined metric rules** and **C. Configure the App Service plan `Maximum burst`, and set each app's maximum scale limit where the app needs a cap.** Automatic scaling is designed for HTTP traffic based App Service scale-out, and the documented settings include plan-level Maximum burst plus per-app limits.",
+      "technical": "App Service has three scale-out options in this area: manual scale, Azure Monitor autoscale, and automatic scaling. Manual scale uses a fixed instance count. Azure Monitor autoscale uses rules based on metrics, custom metrics, or schedules and applies to the entire App Service plan. Automatic scaling is a separate App Service option that scales based on incoming HTTP traffic without you creating CPU, memory, queue, or recurrence rules. Microsoft lists automatic scaling as available for Premium v2, Premium v3, and Premium v4 plans.\n\nAutomatic scaling has its own vocabulary. At the plan level, **Maximum burst** is the highest number of instances the plan can increase to because of incoming HTTP requests; for Premium v2, v3, and v4 plans, Microsoft documents that the value can be up to 30 instances. At the app level, **Always ready instances** sets the minimum number of app instances, and **Maximum scale limit** can cap an individual app between 1 and the plan's maximum burst. Prewarmed instances provide a warmed buffer during HTTP scaling and activation events, with a documented default of 1.\n\nThe scope is different from Azure Monitor autoscale. Automatic scaling is configured for the plan but lets the web apps within that plan scale differently, which is why it fits the database-protection requirement. Azure Monitor autoscale is still the correct tool for CPU, memory, queue, custom metric, or time-based policies; it applies to the plan rather than independently to each app. Microsoft states that only one scaling method should be active for an App Service plan.\n\nA design exception matters: automatic scaling is not supported for deployment slot traffic, and an App Service plan that mixes App Service web apps with Azure Functions apps disables automatic scaling. Those exceptions are outside this scenario because the prompt says two stateless web apps in a Premium v3 plan.",
+      "wrongOptions": {
+        "B": "Azure Monitor autoscale applies rules to the whole App Service plan; it is not the option with automatic scaling's per-app maximum scale limit. Misconception: any autoscale feature must include every scale control. Could be correct when the requirement is CPU, memory, queue, custom metric, or schedule-based scaling for the entire plan.",
+        "D": "Premium v3 is one of the tiers listed for automatic scaling, so manual scale-out is not required merely because the plan is Premium v3. Misconception: automatic growth is only for lower-cost plans or separate services. Could be correct when the organization wants a fixed instance count and no platform decisions.",
+        "E": "The App Service automatic scaling documentation says only one scaling method should be active for an App Service plan. Running Azure Monitor autoscale and automatic scaling together would create conflicting controllers. Misconception: combining two scaling engines always improves responsiveness. Could be correct never for the same App Service plan; choose one controller for the requirement."
+      },
+      "plainEnglish": "The team wants Azure App Service to watch web traffic and add web-server capacity without the team writing threshold rules. That is exactly the job of automatic scaling. Think of it as App Service saying, \"HTTP traffic is rising, so I will add warmed workers within the boundaries you set.\" The boundaries still matter. The plan has a highest burst size, and each app can have a maximum so that a popular app does not swamp a slower database. If the team wanted rules like \"CPU over 70 percent for 10 minutes\" or \"scale at 8 AM,\" then Azure Monitor autoscale would be the better feature.",
+      "analogy": "A restaurant has a host who watches the line at the door and calls in more servers when guests arrive quickly. The owner also says the dessert station can serve only a certain number of tables, so the host must not assign unlimited tables to the dessert-heavy menu.\n\n| Analogy | Azure reality |\n|---|---|\n| Host watching arriving guests | Automatic scaling observing HTTP traffic |\n| Maximum staff on call | Plan Maximum burst |\n| Dessert station capacity | Downstream database limit |\n| Limit for one menu | Per-app maximum scale limit |\n| Servers already in uniform | Prewarmed or always-ready instances |\n\n**Where the analogy breaks down:** Automatic scaling is a platform algorithm, not a human decision, and Azure billing includes active and prewarmed instances according to the documented behavior.",
+      "jargon": [
+        {
+          "term": "Automatic scaling",
+          "definition": "An App Service scale-out option that lets the platform add instances based on incoming HTTP traffic without user-created metric or schedule rules."
+        },
+        {
+          "term": "Azure Monitor autoscale",
+          "definition": "A service that changes resource instance count based on metric rules, schedules, custom metrics, limits, and notifications."
+        },
+        {
+          "term": "Premium v3",
+          "definition": "A dedicated App Service pricing tier that supports automatic scaling and higher scale-out counts than Standard."
+        },
+        {
+          "term": "Maximum burst",
+          "definition": "The plan-level maximum number of instances that automatic scaling can grow to for HTTP demand."
+        },
+        {
+          "term": "Always ready instances",
+          "definition": "The app-level minimum instance count kept ready for automatic scaling; Microsoft requires at least one."
+        },
+        {
+          "term": "Maximum scale limit",
+          "definition": "An automatic scaling cap for a single web app so that the app cannot grow beyond a chosen number of instances."
+        },
+        {
+          "term": "Prewarmed instance",
+          "definition": "A warmed buffer instance used by automatic scaling to reduce delays during HTTP scale and activation events."
+        },
+        {
+          "term": "Deployment slot traffic",
+          "definition": "Requests routed to a non-production App Service slot; automatic scaling documentation excludes slot traffic support."
+        }
+      ],
+      "watchOut": "- Automatic scaling is traffic based, not CPU-threshold based.\n- Azure Monitor autoscale affects the entire App Service plan.\n- Maximum burst is set at the plan level; maximum scale limit is set for an app.\n- Do not run two scale controllers against the same plan.\n- Verify that the plan contains web apps only when using automatic scaling.",
+      "productionTip": {
+        "official": "Microsoft documents automatic scaling as available in Premium v2 through Premium v4 and states that it supports Always ready instances, prewarmed instances, Maximum burst, and per-app maximum limits. The same page distinguishes it from Azure Monitor autoscale, which uses metrics and schedules and applies to the entire plan.",
+        "recommendation": "Use automatic scaling for stateless HTTP workloads when the team cannot confidently maintain thresholds. As a recommendation, set the app cap from downstream capacity tests, then monitor the database and the App Service `AutomaticScalingInstanceCount` metric during controlled load tests before relying on the cap in production."
+      },
+      "memoryTrick": "**Automatic follows HTTP; autoscale follows rules.** The phrase is a shortcut, because automatic scaling still has configured boundaries and Azure Monitor autoscale can also react to HTTP-related metrics.",
+      "examTip": "Clue words include **no metric thresholds**, **HTTP traffic**, **Premium v3**, and **one app needs a cap**. Those point to automatic scaling rather than Azure Monitor autoscale. A tougher version may mention business hours or CPU Percentage; those clues usually switch the answer back to Azure Monitor autoscale profiles and rules."
+    },
+    "sources": [
+      {
+        "title": "How to Enable Automatic Scaling - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+      },
+      {
+        "title": "Autoscale in Azure Monitor - Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-overview"
+      },
+      {
+        "title": "Get started with autoscale in Azure - Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.2-03",
+    "objective": "D3.4.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an App Service plan named `asp-claims` in the Standard tier. Usage is predictable: business traffic runs Monday through Friday from 07:00 to 19:00, and the plan can use one instance overnight. During business hours, the plan must keep at least three instances available and may scale to eight when CPU rises. You need to configure Azure Monitor autoscale with the least administrative effort.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "One default profile only, with minimum 1, maximum 8, and default 1."
+      },
+      {
+        "id": "B",
+        "text": "A fixed-date profile for every weekday for the next year."
+      },
+      {
+        "id": "C",
+        "text": "A recurring profile for Monday through Friday business hours with minimum 3, maximum 8, and a lower default profile for other times."
+      },
+      {
+        "id": "D",
+        "text": "Automatic scaling with a per-app maximum of eight instances and no schedule."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. `asp-claims` contains App Service web apps and is eligible for Azure Monitor autoscale because it is Standard tier or higher. The stated hours are in the chosen time zone for the autoscale profile.",
+    "sections": {
+      "correctAnswer": "**C. A recurring profile for Monday through Friday business hours with minimum 3, maximum 8, and a lower default profile for other times.** Azure Monitor autoscale profiles are designed for time-based capacity differences, and recurrence profiles repeat on selected days without creating one event per date.",
+      "technical": "An Azure Monitor autoscale setting contains profiles, rules, capacity limits, schedules, and notifications. Microsoft maps the portal term **scale condition** to a JSON or CLI **profile**. Each profile has capacity values: minimum, maximum, and default. Rules inside the profile can change the count within those boundaries. A Standard App Service plan meets the documented prerequisite for App Service autoscale.\n\nProfiles are selected in a defined order. Autoscale checks fixed-date profiles first, then recurring profiles, and then the default profile. Only the first suitable profile is used for that run. The default profile is used when no date-based or time-based profile applies, and Microsoft documents that a setting can have only one default profile. Recurring profiles are appropriate for a time range that repeats on days of the week. Fixed-date profiles are intended for one-off events with a start and end date.\n\nFor the claims app, create a weekday recurring profile that starts at 07:00 and covers the business window. Give that profile a minimum of 3, maximum of 8, and a default that reflects the capacity to use if metrics cannot be read and the current count is below default. Add scale-out and scale-in rules inside that profile, such as CPU Percentage greater than a chosen threshold to increase count and a lower CPU threshold to decrease count. Outside the recurring window, the default profile can keep minimum 1 and a lower maximum if the workload only needs one overnight instance.\n\nThe order of actions is plan-level: Azure Monitor autoscale targets the App Service plan, so all apps in that plan share the resulting instance count. If one app needs a different business-hour pattern, put it in another plan or consider the separate App Service automatic scaling feature only when HTTP traffic based per-app behavior is the requirement.",
+      "wrongOptions": {
+        "A": "A single default profile with minimum 1 cannot require at least three instances during business hours. Misconception: rules alone can express every time-based capacity requirement. Could be correct when capacity limits are the same all day and only metrics determine count.",
+        "B": "Fixed-date profiles are for a specific event date and time, not an every-week weekday pattern. Creating many fixed-date profiles would be fragile and unnecessary. Misconception: any schedule must be entered as calendar dates. Could be correct for a one-time sale or launch window with known start and end dates.",
+        "D": "Automatic scaling does not support schedule-based scaling and is different from Azure Monitor autoscale. Misconception: automatic scaling is a newer replacement for every autoscale scenario. Could be correct when traffic-based per-app scaling is wanted and no time or metric rule is needed."
+      },
+      "plainEnglish": "The company has a weekly rhythm. More people use the app during weekday office hours, and fewer people use it at night. Instead of manually changing the number of servers twice a day, you create a repeating weekday rule. During that window, the plan is allowed to run between three and eight workers. Outside that window, the normal default settings take over and can keep the plan smaller. A fixed-date rule would be like writing one calendar entry for every single weekday, which is not the efficient way to describe a repeating work schedule.",
+      "analogy": "A commuter train service uses a weekday timetable. It sends more carriages during the morning and evening business period, then returns to a smaller late-night service. The train company does not print a special one-day timetable for every ordinary Tuesday.\n\n| Analogy | Azure reality |\n|---|---|\n| Weekday timetable | Recurring autoscale profile |\n| Special event timetable | Fixed-date profile |\n| Late-night service | Default profile |\n| Minimum carriages | Minimum instance count |\n| Extra carriages when crowded | Metric-based scale-out rule |\n\n**Where the analogy breaks down:** Azure Monitor evaluates digital metrics every autoscale run, while a train timetable is usually fixed unless staff intervene.",
+      "jargon": [
+        {
+          "term": "Azure Monitor autoscale",
+          "definition": "A feature that scales supported Azure resources horizontally according to rules, schedules, and capacity limits."
+        },
+        {
+          "term": "Profile",
+          "definition": "A collection of capacity limits, rules, and an optional schedule in an autoscale setting."
+        },
+        {
+          "term": "Default profile",
+          "definition": "The fallback autoscale profile used when no fixed-date or recurrence profile applies."
+        },
+        {
+          "term": "Recurring profile",
+          "definition": "A profile that repeats for selected days of the week and time ranges."
+        },
+        {
+          "term": "Fixed-date profile",
+          "definition": "A profile intended for a particular start and end date, such as a single planned event."
+        },
+        {
+          "term": "Minimum instance count",
+          "definition": "The lowest capacity autoscale will allow while that profile is active."
+        },
+        {
+          "term": "Maximum instance count",
+          "definition": "The highest capacity autoscale can set while that profile is active."
+        },
+        {
+          "term": "Default instance count",
+          "definition": "The capacity used when metrics cannot be read and the current count is below that default value."
+        },
+        {
+          "term": "CPU Percentage",
+          "definition": "An App Service plan metric named `CpuPercentage` that reports average CPU used across plan instances."
+        }
+      ],
+      "watchOut": "- A default profile is not a business-hours profile.\n- Autoscale chooses fixed-date, then recurring, then default.\n- Capacity limits constrain what metric rules can do.\n- Azure Monitor autoscale is plan-scoped for App Service.\n- Use a fixed-date profile for a single campaign, not for an ordinary weekly schedule.",
+      "productionTip": {
+        "official": "Microsoft documents up to 20 profiles per autoscale setting and up to 10 rules per profile. The settings documentation also states that each run executes one selected profile and that fixed-date profiles are evaluated before recurring profiles, which are evaluated before the default profile.",
+        "recommendation": "Name profiles with business meaning, such as `Weekday 0700-1900`, and record the time zone. As a practical safeguard, set the business-hour minimum from observed cold-start and latency tests rather than guessing, because a too-low minimum can create slow starts even if scale-out eventually catches up."
+      },
+      "memoryTrick": "**Default for normal, recurrence for routine, fixed date for festivals.** This rule of thumb helps choose a profile type, but the exact min, max, and default values still need workload measurements.",
+      "examTip": "Look for words like **Monday through Friday**, **business hours**, and **least administrative effort**. Those words usually mean a recurrence profile, not a pile of fixed-date profiles. A harder exam version may overlap a fixed date with a recurring day; remember that fixed-date wins first, then recurring, then default."
+    },
+    "sources": [
+      {
+        "title": "Get started with autoscale in Azure - Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+      },
+      {
+        "title": "Understand autoscale settings in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-understanding-settings"
+      },
+      {
+        "title": "Autoscale with multiple profiles - Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-multiprofile"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.2-04",
+    "objective": "D3.4.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You configure Azure Monitor autoscale for an App Service plan named `asp-portal`. The active profile has these rules:\n\n| Rule | Metric | Direction | Threshold | Action | Cooldown |\n|---|---|---|---|---|---|\n| 1 | `CpuPercentage` average | Increase | Greater than 60% | Add 2 instances | 5 minutes |\n| 2 | `CpuPercentage` average | Decrease | Less than 58% | Remove 2 instances | 5 minutes |\n\nAfter scale-out events, the run history often shows that scale-in was skipped or reduced to avoid flapping. You need to reduce the chance of opposing scale events while keeping autoscale enabled.\n\nWhat should you change?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Raise the scale-in threshold to 61% so scale-in happens sooner."
+      },
+      {
+        "id": "B",
+        "text": "Remove the scale-in rule because autoscale requires only scale-out rules."
+      },
+      {
+        "id": "C",
+        "text": "Use identical thresholds for scale-out and scale-in so the rules are symmetrical."
+      },
+      {
+        "id": "D",
+        "text": "Create a wider gap by lowering the scale-in threshold, and consider smaller scale changes or longer cooldowns after testing."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The App Service plan supports Azure Monitor autoscale. The metric samples are valid and the issue described is the documented autoscale flapping behavior, not a missing metric or permission problem.",
+    "sections": {
+      "correctAnswer": "**D. Create a wider gap by lowering the scale-in threshold, and consider smaller scale changes or longer cooldowns after testing.** Microsoft documents that small margins between thresholds and scaling by multiple instances can cause flapping, and autoscale may skip or reduce scale-in to avoid it.",
+      "technical": "Flapping is a loop of opposing scale events: one action creates conditions that immediately trigger the opposite action. Azure Monitor autoscale protects availability by checking pending scale-in actions for possible flapping. Microsoft states that autoscale can defer a scale-in action, reevaluate on the next run, or scale by fewer instances than the rule specified. The same flapping page notes that this check does not occur for scale-out events because the service prioritizes adequate resources.\n\nThe thresholds in the question are too close. Scaling out at CPU greater than 60 percent and scaling in at CPU less than 58 percent leaves only a two-point margin. Suppose the plan has two busy instances at 61 percent and autoscale adds two more. The average CPU per instance can drop under 58 percent simply because the same work is spread across more workers. A scale-in would then remove the workers and could push CPU above 60 percent again. That pattern is exactly what autoscale tries to avoid.\n\nA safer design uses separation between the scale-out and scale-in thresholds, such as scale out above a higher sustained CPU level and scale in only after CPU remains well below that point. The exact values are workload-specific, but the principle is official: keep adequate margins between thresholds. Scaling by fewer instances also reduces abrupt metric changes. Cooldown gives metrics time to stabilize after the addition or removal of instances; the settings documentation explains that cooldown is evaluated per candidate rule after a scale operation.\n\nEvaluation order matters. Autoscale selects the applicable profile, evaluates scale-out rules first, and if at least one scale-out rule triggers, it scales to the highest calculated capacity. Only when scale-out rules are not triggered does it evaluate scale-in rules, and scale-in requires all scale-in rules to trigger. Even with this conservative order, poorly chosen thresholds can still create a scale-in action that would immediately require scale-out.",
+      "wrongOptions": {
+        "A": "Raising the scale-in threshold makes scale-in more aggressive and narrows or reverses the safe band between actions. Misconception: faster scale-in is always better for cost. Could be correct only if testing showed instances remain overprovisioned and no opposite scale-out would follow.",
+        "B": "Autoscale can run with only scale-out rules, but then the plan may stay larger than necessary until someone changes it. The problem is not that scale-in exists; the problem is a risky scale-in design. Misconception: avoiding flapping means deleting all decreases. Could be correct for a short emergency period where capacity must never decrease automatically.",
+        "C": "Identical or near-identical thresholds are a classic cause of flapping, because a small metric movement can switch directions. Misconception: symmetric-looking rules are operationally balanced. Could be correct in a manual alerting policy where no automated capacity change follows, not in autoscale control loops."
+      },
+      "plainEnglish": "Autoscale is trying not to bounce the plan up and down. If you add servers when CPU is a little above 60 percent and remove servers when CPU is just below 58 percent, the act of adding servers can immediately make CPU look low enough to remove them. Then removing them can make CPU high again. The fix is to leave a bigger safety zone. Add capacity only when pressure is clearly high, and remove it only when pressure has clearly stayed low. Smaller steps and a longer waiting period can also make the system less jumpy.",
+      "analogy": "A thermostat that turns cooling on at 24 degrees and off at 23.9 degrees would click constantly as air moves around the room. A better thermostat waits for a meaningful difference before switching direction.\n\n| Analogy | Azure reality |\n|---|---|\n| Cooling starts too close to stop point | Scale-out threshold close to scale-in threshold |\n| Constant clicking | Flapping between scale events |\n| Wider temperature band | Wider metric threshold gap |\n| Wait before switching | Cooldown after a scale action |\n| Smaller fan adjustment | Scaling by fewer instances |\n\n**Where the analogy breaks down:** Autoscale evaluates multiple rules, capacity limits, and instance calculations, while a simple thermostat usually controls one device with one sensor.",
+      "jargon": [
+        {
+          "term": "Flapping",
+          "definition": "An autoscale loop where a scale action creates conditions that trigger the opposite action."
+        },
+        {
+          "term": "Scale out",
+          "definition": "Increasing the number of instances running the app or plan."
+        },
+        {
+          "term": "Scale in",
+          "definition": "Decreasing the number of instances running the app or plan."
+        },
+        {
+          "term": "CpuPercentage",
+          "definition": "The REST metric name for App Service plan CPU Percentage, measuring average CPU across plan instances."
+        },
+        {
+          "term": "Threshold",
+          "definition": "The metric value that must be crossed before an autoscale rule can trigger."
+        },
+        {
+          "term": "Cooldown",
+          "definition": "The period after a scale operation during which a rule is not eligible to trigger another scale action."
+        },
+        {
+          "term": "Run history",
+          "definition": "The portal view that records autoscale evaluations and scale events, including flapping-related messages."
+        },
+        {
+          "term": "Profile",
+          "definition": "The active collection of capacity limits and rules used by autoscale for the current time."
+        },
+        {
+          "term": "Scale action",
+          "definition": "The increase or decrease operation, including direction, type, value, and cooldown, attached to an autoscale rule."
+        }
+      ],
+      "watchOut": "- Autoscale may skip scale-in to protect availability when flapping is predicted.\n- Scale-out is not deferred by the same flapping check.\n- A tiny gap between thresholds can be worse than no scale-in rule during variable traffic.\n- Scaling by several instances can change averages abruptly.\n- Review run history and Activity Log records before assuming autoscale failed.",
+      "productionTip": {
+        "official": "Microsoft documents that autoscale evaluates pending scale-in actions for flapping and may skip the action or scale by fewer instances. The documentation also identifies small threshold margins, scaling by more than one instance, and using different metrics for in and out as common flapping causes.",
+        "recommendation": "Tune autoscale with production-like load tests. As an operational recommendation, start with conservative scale-in thresholds, use scale-in windows long enough to prove demand has dropped, and alert on repeated flapping records so engineers can revisit rules before cost or latency becomes a recurring issue."
+      },
+      "memoryTrick": "**Out high, in low, leave room to slow.** It is a simplification because real settings also include time windows, aggregations, capacity limits, and cooldowns.",
+      "examTip": "The giveaway is the scale-in being **skipped or reduced to avoid flapping**. Do not choose a more aggressive scale-in threshold. The tested distinction is that autoscale can add capacity for availability but becomes cautious when removing capacity would immediately cause pressure again. A harder item may use request count or queue length instead of CPU; the same gap principle applies."
+    },
+    "sources": [
+      {
+        "title": "Autoscale flapping - Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-flapping"
+      },
+      {
+        "title": "Understand autoscale settings in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-understanding-settings"
+      },
+      {
+        "title": "Get started with autoscale in Azure - Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-get-started"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.2-05",
+    "objective": "D3.4.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an App Service plan named `asp-events` in the Standard tier. The plan hosts one web app for an annual registration event. Load testing shows that the app needs 18 simultaneous App Service plan instances during the event. You want to configure Azure Monitor autoscale with a maximum of 18 instances and avoid moving to an App Service Environment.\n\nWhat should you do first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Scale up the App Service plan to a Premium v2, Premium v3, Premium v4, or other tier that supports at least 18 dedicated instances."
+      },
+      {
+        "id": "B",
+        "text": "Keep the Standard tier and set the autoscale maximum instance count to 18."
+      },
+      {
+        "id": "C",
+        "text": "Move the app to the Basic tier because Basic supports more instances than Standard."
+      },
+      {
+        "id": "D",
+        "text": "Set the autoscale default instance count to 18 while leaving the maximum at 10."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The event app can run on dedicated App Service plan instances and does not require the isolation features of an App Service Environment. Regional SKU availability and quota are assumed to be satisfied after the tier change.",
+    "sections": {
+      "correctAnswer": "**A. Scale up the App Service plan to a Premium v2, Premium v3, Premium v4, or other tier that supports at least 18 dedicated instances.** Microsoft lists Standard App Service scale-out at 10 dedicated instances, while Premium v2, v3, and v4 can scale out to 30 dedicated instances.",
+      "technical": "Autoscale cannot exceed the scale-out limits of the App Service plan tier. Microsoft lists App Service maximum instances by tier: Basic supports 3 dedicated instances, Standard supports 10 dedicated instances, Premium v1 supports 20 dedicated instances, Premium v2, Premium v3, and Premium v4 support 30 dedicated instances, and Isolated supports 100 dedicated instances. The scale-up article also summarizes Basic, Standard, and Premium scale-out maximums as 3, 10, and 30 instances respectively, with App Service Environment in the Isolated tier increasing the count to 100.\n\nThe requirement is 18 simultaneous plan instances. Standard cannot satisfy that because its documented maximum is 10. Basic is lower at 3, so downgrading would make the problem worse. A Premium v1 plan could meet 18 according to the limits table, and Premium v2, v3, or v4 provide up to 30. The option names Premium v2 through v4 because they match the current Premium generations and avoid App Service Environment. After the plan is in a tier with a high enough limit, configure Azure Monitor autoscale with minimum, maximum, default, and rules for the event window.\n\nDo not confuse **default instance count** with **maximum instance count**. In an autoscale profile, maximum is the upper boundary that autoscale cannot exceed. Default is used when metric data cannot be read and the current capacity is below default; it does not override the profile's maximum. Setting default to 18 while maximum remains 10 is internally inconsistent and cannot authorize 18 instances.\n\nThe correct order is: verify tier limit, scale up if the tier ceiling is too low, then set autoscale capacity limits and rules. Also verify SKU availability in the region and any subscription quota constraints before the event, because a valid exam answer assumes the tier supports the target count but production still needs a dry run.",
+      "wrongOptions": {
+        "B": "Standard is documented at a maximum scale-out count of 10 dedicated instances, so an autoscale maximum of 18 would exceed the plan tier's capacity. Misconception: autoscale settings can override service limits. Could be correct if the target maximum were 10 or less.",
+        "C": "Basic supports fewer dedicated instances than Standard, not more; Microsoft lists Basic at 3 and Standard at 10. Misconception: a simpler tier might allow more raw workers because it has fewer features. Could be correct only for cost reduction when the app needs no more than three instances.",
+        "D": "The maximum limit still caps autoscale, and default is not a hidden way to exceed the maximum. Misconception: default means desired steady-state count regardless of limits. Could be correct when the maximum is also at least 18 and you want a fallback count if metrics are unavailable."
+      },
+      "plainEnglish": "The plan has a ceiling set by its subscription tier. Standard plans can use up to 10 dedicated workers, but the event needs 18. You cannot type 18 into autoscale and expect Azure to ignore the plan limit. First choose a tier that can legally run at least 18 workers. After that, autoscale can be configured to grow up to 18 during the event and shrink when the event ends. The App Service Environment option is not needed for 18 because Premium tiers can reach that number.",
+      "analogy": "A venue license says the Standard hall can hold only 10 service desks. The event requires 18 desks. The event planner must rent a larger hall before writing a staffing plan for 18 desks.\n\n| Analogy | Azure reality |\n|---|---|\n| Standard hall license | Standard tier scale-out maximum |\n| Eighteen service desks | Required App Service plan instances |\n| Larger hall | Premium tier or another tier with a higher ceiling |\n| Staffing schedule | Autoscale profile and rules |\n| Fire code limit | Documented service limit |\n\n**Where the analogy breaks down:** Azure capacity also depends on regional SKU availability, quota, and billing state, while a hall example hides cloud deployment details.",
+      "jargon": [
+        {
+          "term": "Standard tier",
+          "definition": "A dedicated App Service pricing tier that supports features such as autoscale but is limited to 10 scale-out instances."
+        },
+        {
+          "term": "Premium v2",
+          "definition": "A Premium generation of App Service plan that the limits table groups with v2, v3, and v4 for a 30-instance scale-out maximum."
+        },
+        {
+          "term": "Premium v3",
+          "definition": "A Premium App Service tier commonly used for production workloads and supported by autoscale and automatic scaling features."
+        },
+        {
+          "term": "Premium v4",
+          "definition": "A newer Premium App Service tier with faster processors and NVMe local storage in supported regions."
+        },
+        {
+          "term": "Isolated tier",
+          "definition": "An App Service Environment tier that uses dedicated Azure virtual networks and supports higher scale-out counts."
+        },
+        {
+          "term": "Maximum instance count",
+          "definition": "The autoscale profile capacity value that caps how far autoscale can increase the resource."
+        },
+        {
+          "term": "Default instance count",
+          "definition": "The profile capacity used as a fallback when metrics are unavailable and current capacity is below that default."
+        },
+        {
+          "term": "Dedicated instance",
+          "definition": "A worker VM assigned to the App Service plan, shared by apps in that plan but not by other customers."
+        },
+        {
+          "term": "Service limit",
+          "definition": "A documented Azure maximum or quota that configuration settings cannot exceed."
+        }
+      ],
+      "watchOut": "- Standard maxes out below the 18-instance requirement.\n- Basic has a lower scale-out maximum than Standard.\n- Default capacity does not bypass maximum capacity.\n- Premium v1, v2, v3, and v4 limits are not identical for every generation; use the current limits table.\n- Region availability and subscription quota should be tested before the event.",
+      "productionTip": {
+        "official": "Microsoft's App Service limits table lists scale-out maximums by tier, including Basic at 3, Standard at 10, Premium v1 at 20, Premium v2 through v4 at 30, and Isolated at 100. Azure Monitor autoscale settings then operate within the profile's configured minimum and maximum values.",
+        "recommendation": "For a known registration event, schedule a load test in the same region and tier weeks before launch. As practical advice, set the maximum above the measured need only if downstream systems can handle it, because more web workers can increase database, cache, and outbound dependency pressure."
+      },
+      "memoryTrick": "**Autoscale can drive only as far as the tier's road allows.** The saying is simplified because subscriptions and regions can add extra capacity checks, but tier maximums are the first exam filter.",
+      "examTip": "The numbers are the clue: **18 instances** is greater than Standard's documented 10 but less than Premium v2/v3/v4's 30. If an option suggests typing a value above the tier limit, reject it. A harder question may ask for 80 instances; then an Isolated/App Service Environment answer becomes more plausible."
+    },
+    "sources": [
+      {
+        "title": "Azure subscription and service limits, quotas, and constraints",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits"
+      },
+      {
+        "title": "Scale Up Features and Capacities - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-up"
+      },
+      {
+        "title": "Understand autoscale settings in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-understanding-settings"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.2-06",
+    "objective": "D3.4.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You have a Premium v3 App Service plan named `asp-shared` with 10 configured workers. The plan hosts three web apps and one staging slot. By default, each app can run on all workers, but you want a low-priority app to use at most two workers while a reporting app can use up to five. You do not want this configuration by itself to change plan capacity or reduce billing.\n\nWhich two actions should you perform? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable the App Service plan `perSiteScaling` property."
+      },
+      {
+        "id": "B",
+        "text": "Create Azure Monitor autoscale rules for each app because per-app scaling is metric-based."
+      },
+      {
+        "id": "C",
+        "text": "Move the plan to the Free or Shared tier because per-app scaling is available only on shared compute."
+      },
+      {
+        "id": "D",
+        "text": "Set each app or slot `numberOfWorkers` value to the desired worker limit."
+      },
+      {
+        "id": "E",
+        "text": "Reduce the plan `sku.capacity` to two so that the low-priority app limit is enforced without changing app configuration."
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The plan remains in Premium v3, and the goal is high-density placement control inside one plan. The question is about per-app scaling, not App Service automatic scaling based on HTTP traffic.",
+    "sections": {
+      "correctAnswer": "**A. Enable the App Service plan `perSiteScaling` property** and **D. Set each app or slot `numberOfWorkers` value to the desired worker limit.** Microsoft documents per-app scaling as a plan-level flag plus an app or deployment slot worker limit, and it does not by itself reduce the dedicated plan capacity or billing.",
+      "technical": "Per-app scaling is a high-density hosting feature for App Service plans. By default, the plan-level `perSiteScaling` property is `false`, and every app and deployment slot uses all available plan instances. When `perSiteScaling` is `true`, each app and deployment slot can have a `siteConfig.numberOfWorkers` limit. Microsoft gives the example of a plan with configured capacity 10 while one app has a configured limit of five workers.\n\nThree values must be kept separate. The plan's configured capacity is `sku.capacity`; in the scenario it is 10. The app or slot's desired worker limit is `siteConfig.numberOfWorkers`; this is where values such as two and five belong. The observed active app instances are runtime placement at a point in time and cannot exceed available plan workers. Plan scale-in can reduce active placement below an app's configured limit because fewer workers exist.\n\nPer-app scaling is not Azure Monitor autoscale. It is fixed, metric-independent placement within the plan's available workers. It does not respond to demand, does not create new plan capacity, and does not lower billing by itself. Microsoft states that a per-app limit does not reduce the dedicated capacity configured for the App Service plan or its billing. To change plan capacity based on demand, use App Service automatic scaling or Azure Monitor autoscale depending on the scenario.\n\nTier support is also specific. Microsoft documents per-app scaling as available for Standard, Premium, Premium V2, Premium V3, and Isolated pricing tiers. Free and Shared are not the right direction. Each deployment slot has its own limit, so configuring the production app does not automatically configure staging.",
+      "wrongOptions": {
+        "B": "Per-app scaling is metric-independent placement; Azure Monitor autoscale changes plan capacity according to rules and schedules. Misconception: any feature with scaling in the name must be driven by metrics. Could be correct when the requirement is to add or remove plan workers based on CPU, memory, queue length, or schedule.",
+        "C": "Per-app scaling is documented for Standard, Premium, Premium V2, Premium V3, and Isolated tiers, not Free or Shared. Misconception: high-density placement means shared-compute pricing tiers. Could be correct when testing a small nonproduction app that does not need per-app scaling or dedicated workers.",
+        "E": "Reducing plan capacity to two would reduce available workers for all apps and would not express a five-worker cap for the reporting app. Misconception: plan capacity and app worker limit are the same setting. Could be correct if the whole plan should have only two workers and every app can share that smaller capacity."
+      },
+      "plainEnglish": "The plan owns the pool of 10 workers. Per-app scaling lets you put a fence around how many workers a specific app or slot may use from that pool. First you turn on the plan feature. Then you set the worker limit on each app or slot that needs a cap. This does not shrink the pool; it only controls how apps are placed inside the pool. If the pool still has 10 workers, billing is still based on the plan capacity, even if one app is allowed to use only two of them.",
+      "analogy": "A coworking office rents 10 desks for the company. By default, any team can sit at any desk. The office manager can add team-specific booking limits, such as two desks for interns and five for analysts, while the company still pays for all 10 desks.\n\n| Analogy | Azure reality |\n|---|---|\n| Ten rented desks | Plan `sku.capacity` of 10 workers |\n| Turn on booking controls | Enable `perSiteScaling` |\n| Team desk allowance | App or slot `numberOfWorkers` |\n| Empty paid desks | Capacity still billed at the plan level |\n| Separate meeting room booking | Deployment slot limit configured separately |\n\n**Where the analogy breaks down:** Azure placement is best effort across workers, and runtime observations can change after plan scale-in or platform operations.",
+      "jargon": [
+        {
+          "term": "Per-app scaling",
+          "definition": "An App Service feature that lets apps and slots use only a configured subset of available plan workers."
+        },
+        {
+          "term": "`perSiteScaling`",
+          "definition": "The App Service plan property that enables per-app scaling when set to true."
+        },
+        {
+          "term": "`siteConfig.numberOfWorkers`",
+          "definition": "The app or slot configuration value that sets that resource's desired worker limit."
+        },
+        {
+          "term": "`sku.capacity`",
+          "definition": "The App Service plan's configured worker count at the plan level."
+        },
+        {
+          "term": "Deployment slot",
+          "definition": "A separate deployment environment for an app that can have its own per-app scaling limit."
+        },
+        {
+          "term": "Premium v3",
+          "definition": "A supported App Service pricing tier for per-app scaling and dedicated compute."
+        },
+        {
+          "term": "Observed active app instances",
+          "definition": "The actual point-in-time number of workers where an app is running, bounded by available plan capacity."
+        },
+        {
+          "term": "High-density hosting",
+          "definition": "A hosting pattern that places multiple apps in one plan while limiting selected apps to reduce resource contention."
+        },
+        {
+          "term": "Metric-independent",
+          "definition": "Not triggered by CPU, memory, or queue measurements; the placement limit is a configured cap."
+        }
+      ],
+      "watchOut": "- Per-app limits do not lower App Service plan billing by themselves.\n- The plan capacity and the app worker limit are different settings.\n- Each deployment slot needs its own limit if you want a slot constrained.\n- Free and Shared tiers are not the per-app scaling target.\n- Use autoscale or automatic scaling when the plan must change size based on demand.",
+      "productionTip": {
+        "official": "Microsoft documents that enabling `perSiteScaling` lets each app or deployment slot have its own `numberOfWorkers` limit, and that a per-app limit does not reduce dedicated plan capacity or billing by itself. The same documentation says per-app scaling is fixed, metric-independent placement within available plan workers.",
+        "recommendation": "Use per-app scaling to protect important apps from low-priority neighbors, but review CPU, memory, and latency per app after changing limits. My practical recommendation is to document both plan capacity and each app cap in the same runbook, because operators often confuse the two similarly named worker settings in CLI commands."
+      },
+      "memoryTrick": "**Plan buys workers; app caps borrow workers.** The phrase is a simplification because observed active placement may be lower than the cap when the plan has fewer available workers.",
+      "examTip": "The clues are **at most two workers**, **up to five**, and **do not change plan capacity or billing**. That is per-app scaling, not automatic scaling and not Azure Monitor autoscale. A harder version may include a staging slot; remember that a slot has its own worker limit and does not inherit the production app's cap."
+    },
+    "sources": [
+      {
+        "title": "Per-app scaling for high-density hosting - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/manage-scale-per-app"
+      },
+      {
+        "title": "Azure App Service Plans",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+      },
+      {
+        "title": "How to Enable Automatic Scaling - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.2-07",
+    "objective": "D3.4.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an App Service plan named `asp-support` in the Standard tier. You configure Azure Monitor autoscale to add instances when web requests start queueing and to notify the operations team whenever a scale action occurs. The team asks which metric and notification configuration are appropriate for the plan-level autoscale setting.\n\nWhich configuration should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use `AutomaticScalingInstanceCount` and configure deployment slot traffic to trigger the notification."
+      },
+      {
+        "id": "B",
+        "text": "Use the App Service plan `HttpQueueLength` metric and configure autoscale notifications to send email or call a webhook."
+      },
+      {
+        "id": "C",
+        "text": "Use `CpuTime` from the web app resource and send notifications by adding a storage queue output binding."
+      },
+      {
+        "id": "D",
+        "text": "Use `FileSystemUsage` and send notifications only to retired subscription Co-Administrators."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The team is using Azure Monitor autoscale for an App Service plan resource of type `Microsoft.Web/serverfarms`. The goal is notification on autoscale actions, not application-level alerting or Azure Functions bindings.",
+    "sections": {
+      "correctAnswer": "**B. Use the App Service plan `HttpQueueLength` metric and configure autoscale notifications to send email or call a webhook.** Microsoft lists `HttpQueueLength` as an App Service plan metric and documents email and webhook notifications for Azure Monitor autoscale events.",
+      "technical": "For App Service plan autoscale, the target resource is the plan, represented by the `Microsoft.Web/serverfarms` resource type. Microsoft lists server farm metrics such as `CpuPercentage`, `MemoryPercentage`, `DiskQueueLength`, `HttpQueueLength`, `BytesReceived`, and `BytesSent`. The `HttpQueueLength` metric is described as the average number of HTTP requests that had to sit in the queue before being fulfilled, and a high or increasing value is a symptom of a plan under heavy load. That directly matches the requirement to add instances when requests start queueing.\n\nAzure Monitor autoscale rules use metric triggers and scale actions inside profiles. For a queue-based App Service plan rule, you would choose `HttpQueueLength`, a suitable aggregation and duration, an operator such as GreaterThan, a threshold from testing, and an Increase action. A paired scale-in rule should use a lower threshold or another safe signal so that the plan does not stay overprovisioned. The same setting can contain notifications. Microsoft documents that autoscale actions can send email and call webhooks; in the portal this is configured on the Notify tab. The JSON schema uses a `notifications` element with operation `Scale`, custom email addresses, and webhook service URIs.\n\nDo not use app-only metrics when the question asks for the common plan metric. `CpuTime` and `FileSystemUsage` are web app metrics under `Microsoft.Web/sites`; they can be useful for monitoring an app, but they do not answer the stated plan-level HTTP queue requirement. `AutomaticScalingInstanceCount` belongs to automatic scaling telemetry for apps where automatic scaling is enabled, not to an Azure Monitor autoscale rule for queue length.\n\nNotification support has changed over time. The autoscale notification documentation notes that classic Administrators and Co-Administrators are retired for autoscale notifications; use custom email addresses or webhooks instead of depending on old administrator notification paths.",
+      "wrongOptions": {
+        "C": "`CpuTime` is a web app metric, not the plan-level HTTP queue metric requested, and storage queue output bindings are an application integration concept rather than autoscale event notification configuration. Misconception: application code bindings are how Azure Monitor reports scale actions. Could be correct for an Azure Functions or application workflow that writes business messages to Storage Queue.",
+        "D": "`FileSystemUsage` is not a queueing metric, and retired classic Co-Administrator notification paths should not be used for current autoscale notifications. Misconception: any resource metric plus old administrator emails satisfies operations notification. Could be correct only for separate storage quota monitoring with a modern alerting path.",
+        "A": "`AutomaticScalingInstanceCount` tracks the number of instances for apps with App Service automatic scaling enabled, and automatic scaling does not support deployment slot traffic. Misconception: any instance-count metric can drive Azure Monitor autoscale queue behavior. Could be correct when monitoring automatic scaling after enabling that separate feature."
+      },
+      "plainEnglish": "If web requests are waiting in line, you want to measure the line. For an App Service plan, the metric that describes that line is `HttpQueueLength`. When the line gets too long, Azure Monitor autoscale can add workers. Separately, the autoscale setting can tell people or systems that it scaled by sending an email or calling a webhook URL. You do not need the application code to send that notification, and you should not rely on old classic administrator notification behavior.",
+      "analogy": "A support call center watches the number of callers waiting in the phone queue. When the queue grows, it brings more agents online and sends a message to the operations lead. It would not watch the amount of paperwork in the filing cabinet to decide whether callers are waiting.\n\n| Analogy | Azure reality |\n|---|---|\n| Callers waiting | HTTP requests queued |\n| Queue length board | `HttpQueueLength` metric |\n| More agents | More App Service plan instances |\n| Message to operations lead | Autoscale email notification |\n| Integration call to another system | Autoscale webhook |\n\n**Where the analogy breaks down:** Azure Monitor calculates sampled metrics and executes configured scale actions, while a call center supervisor can use judgment beyond the rule.",
+      "jargon": [
+        {
+          "term": "`HttpQueueLength`",
+          "definition": "The App Service plan metric for average HTTP requests that waited in the queue before being fulfilled."
+        },
+        {
+          "term": "`CpuPercentage`",
+          "definition": "The App Service plan metric for average CPU used across all instances of the plan."
+        },
+        {
+          "term": "`MemoryPercentage`",
+          "definition": "The App Service plan metric for average memory used across all plan instances."
+        },
+        {
+          "term": "`Microsoft.Web/serverfarms`",
+          "definition": "The Azure resource provider type for App Service plans, often called server farms in metrics and APIs."
+        },
+        {
+          "term": "Webhook",
+          "definition": "An HTTP callback URL that Azure Monitor autoscale can call when a scale event occurs."
+        },
+        {
+          "term": "Custom email",
+          "definition": "An email address explicitly configured to receive autoscale notifications."
+        },
+        {
+          "term": "Autoscale notification",
+          "definition": "An email or webhook action generated when autoscale performs a scale operation."
+        },
+        {
+          "term": "`AutomaticScalingInstanceCount`",
+          "definition": "An app metric used to track instances during App Service automatic scaling, separate from Azure Monitor autoscale rules."
+        },
+        {
+          "term": "Co-Administrator",
+          "definition": "An older Azure classic administrator role that Microsoft documents as retired for autoscale notification delivery."
+        }
+      ],
+      "watchOut": "- App Service plan metrics are under `Microsoft.Web/serverfarms`.\n- `HttpQueueLength` is specifically about HTTP requests waiting in the plan.\n- Webhooks and email are autoscale notification actions, not scale rules.\n- Classic administrator notification paths are retired; configure explicit recipients or webhooks.\n- Automatic scaling metrics are not the same as Azure Monitor autoscale rule metrics.",
+      "productionTip": {
+        "official": "Microsoft's server farm metrics reference lists `HttpQueueLength`, `CpuPercentage`, and `MemoryPercentage` with one-minute time grain support. Microsoft also documents autoscale notifications through custom email addresses and webhooks, including JSON fields for operation `Scale`, `customEmails`, and `webhooks`.",
+        "recommendation": "Choose the queue threshold from load tests rather than copying another plan's number. As a practitioner recommendation, send webhook notifications to an operations workflow that records old and new capacity, because the autoscale payload includes those values and they help explain cost changes after incidents."
+      },
+      "memoryTrick": "**Queues call for `HttpQueueLength`; people and tools hear by email or webhook.** It is a simplification because many other metrics can be valid for different scaling symptoms.",
+      "examTip": "The clue phrase is **web requests start queueing**. Match that to `HttpQueueLength`, not CPU time or file system usage. For notification questions, look for built-in autoscale email and webhook configuration. A harder version may ask for CPU or memory instead; then `CpuPercentage` or `MemoryPercentage` from the plan metrics table would be better."
+    },
+    "sources": [
+      {
+        "title": "Supported metrics - Microsoft.Web/serverfarms",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/supported-metrics/microsoft-web-serverfarms-metrics"
+      },
+      {
+        "title": "Autoscale in Azure Monitor - Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-overview"
+      },
+      {
+        "title": "Use autoscale to send email and webhook alert notifications",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-webhook-email"
+      },
+      {
+        "title": "How to Enable Automatic Scaling - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/manage-automatic-scaling"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

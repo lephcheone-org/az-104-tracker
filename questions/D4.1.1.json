@@ -1,0 +1,1022 @@
+[
+  {
+    "id": "D4.1.1-01",
+    "objective": "D4.1.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You are creating three subnets in a virtual network for a lab environment. The subnets use IPv4 prefixes `/24`, `/27`, and `/29`. A junior administrator counts every address in each range as usable and plans to place eight network interfaces in the `/29` subnet.\n\nWhich statement correctly describes Azure-reserved addresses and usable IPv4 addresses in these subnets?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Azure reserves five addresses in each subnet; a `/24` has 251 usable addresses, a `/27` has 27 usable addresses, and a `/29` has 3 usable addresses"
+      },
+      {
+        "id": "B",
+        "text": "Azure reserves only the network and broadcast addresses; a `/24` has 254 usable addresses, a `/27` has 30 usable addresses, and a `/29` has 6 usable addresses"
+      },
+      {
+        "id": "C",
+        "text": "Azure reserves five percent of each subnet; a `/24` has 243 usable addresses, a `/27` has 30 usable addresses, and a `/29` is unsupported"
+      },
+      {
+        "id": "D",
+        "text": "Azure reserves the first four addresses only; a `/24` has 252 usable addresses, a `/27` has 28 usable addresses, and a `/29` has 4 usable addresses"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The question is about IPv4 subnets in an Azure Resource Manager virtual network. It counts usable private addresses before considering addresses consumed by deployed resources or service-specific subnet minimums.",
+    "sections": {
+      "correctAnswer": "**A. Azure reserves five addresses in each subnet; a `/24` has 251 usable addresses, a `/27` has 27 usable addresses, and a `/29` has 3 usable addresses**. Microsoft documents that Azure reserves the first four and the last IPv4 address in every subnet, so usable capacity is total addresses minus five.",
+      "technical": "Azure subnet capacity starts with ordinary CIDR math and then applies Azure's fixed reservation rule. The total number of IPv4 addresses in a prefix is `2^(32-prefixLength)`. Azure reserves five addresses in each subnet: the network address, one address for the default gateway, two addresses to map Azure DNS IP addresses into the virtual network space, and the final address for protocol conformance as the broadcast address.\n\nFor the prefixes in this lab, the calculation is:\n\n| Prefix | Total IPv4 addresses | Azure-reserved addresses | Usable addresses |\n|---|---:|---:|---:|\n| `/24` | 256 | 5 | 251 |\n| `/27` | 32 | 5 | 27 |\n| `/29` | 8 | 5 | 3 |\n\nThe order matters when you design subnets. First decide whether Azure supports the subnet size. Microsoft states that `/29` is the smallest supported IPv4 subnet, so the lab can create it. Then subtract the five reserved addresses. Finally compare the remaining addresses with the number of NICs, private endpoints, or service instances you expect to deploy. A `/29` cannot host eight usable network interface addresses because only three workload addresses remain after Azure reservations.\n\nA service can still require a larger subnet than the platform minimum. A tiny VM subnet can exist as `/29`, but a managed networking service may demand `/27`, `/26`, or another documented size. That service rule is evaluated in addition to the five-address reservation rule, not instead of it.",
+      "wrongOptions": {
+        "B": "Azure reserves more than the traditional network and broadcast addresses. The default gateway and Azure DNS mapping addresses are also reserved inside the subnet. Misconception: Cloud subnets behave exactly like a simple on-premises VLAN where only two endpoints are unavailable. Could be correct when doing raw IPv4 arithmetic outside Azure before platform reservations are applied.",
+        "C": "The reservation is a fixed count of five addresses, not five percent, and `/29` is the documented smallest supported IPv4 subnet. Misconception: Azure reserves a proportional safety margin that changes with subnet size. Could be correct only in an internal planning policy that intentionally rejects very small subnets.",
+        "D": "The last address is also reserved, so subtracting only the first four produces one extra usable address that Azure will not assign to resources. Misconception: Because Azure Virtual Network does not support broadcast traffic, the last address must be free for workloads. Could be correct in a different platform that reserves only four addresses, but not in Azure."
+      },
+      "plainEnglish": "An IP subnet is like a row of numbered seats. Azure keeps some seats for itself before your workloads can sit down. In every IPv4 subnet, Azure takes the first address, the next three special service addresses, and the last address. It does this even in a very small subnet. A `/29` has only eight total addresses, so after Azure keeps five, only three remain. That is why the plan to place eight interfaces in the `/29` subnet fails before any virtual machine is deployed.",
+      "analogy": "Imagine renting office suites in a managed building. The building owner reserves fixed rooms in every suite for the lobby panel, security desk, utility closet, maintenance access, and emergency exit. A large suite still has many offices left, but the smallest suite has little usable space after those fixed rooms are removed.\n\n| Analogy | Azure reality |\n|---|---|\n| Office suite | Azure subnet |\n| Fixed rooms kept by the owner | Five Azure-reserved IP addresses |\n| Remaining offices | Usable addresses for resources |\n| Tiny eight-room suite | `/29` subnet with three usable addresses |\n\n**Where the analogy breaks down:** IP addresses are not physical rooms. Azure reserves exact positions in the address range, and individual services can impose additional subnet-size requirements.",
+      "jargon": [
+        {
+          "term": "Azure Virtual Network",
+          "definition": "A logically isolated network in Azure that hosts private address space and lets resources communicate with each other, connected networks, and selected Azure services."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A smaller address range inside a virtual network where Azure resources are placed for network connectivity."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as `10.1.0.0/24`, where the slash number identifies the prefix length."
+        },
+        {
+          "term": "Address space",
+          "definition": "The IP ranges assigned to a virtual network; subnet ranges must be within this space and must not overlap one another."
+        },
+        {
+          "term": "Network address",
+          "definition": "The first address in an IPv4 subnet range. Azure reserves it for protocol conformance."
+        },
+        {
+          "term": "Default gateway",
+          "definition": "The Azure-provided next hop used by resources in a subnet to reach destinations outside the local subnet."
+        },
+        {
+          "term": "Azure DNS mapping",
+          "definition": "Azure reserves two early subnet addresses to map Azure DNS IP addresses into the virtual network address space."
+        },
+        {
+          "term": "Broadcast address",
+          "definition": "The final address in an IPv4 subnet. Azure reserves it even though Azure Virtual Network does not support broadcast traffic."
+        },
+        {
+          "term": "`/29`",
+          "definition": "A CIDR prefix with eight total IPv4 addresses. In Azure, five are reserved and three are usable."
+        }
+      ],
+      "watchOut": "- Always subtract five IPv4 addresses from every Azure subnet before sizing workloads.\n- The first four addresses and the last address are unavailable.\n- A `/29` subnet is supported, but it is extremely small because only three addresses remain.\n- Managed services can require larger subnets than the general Azure minimum.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure reserves the first four addresses and the last address in every subnet. The subnet management documentation also states that `/29` is the smallest range you can specify and gives `/29` as eight total addresses with three usable addresses.",
+        "recommendation": "Avoid designing production subnets at the exact calculated minimum. Leave room for VM scale operations, private endpoints, service upgrades, and future products that may have their own subnet-size requirements."
+      },
+      "memoryTrick": "Remember **first four plus final one**. This shortcut is safe for Azure IPv4 subnet capacity, but it does not replace checking service-specific subnet minimums.",
+      "examTip": "Look for prefixes and the words **usable addresses**. First compute the total from CIDR, then subtract five for Azure. If the question says `/29`, do not call it unsupported; it is supported, but only three workload addresses remain. A harder version may mix this rule with a service subnet that requires `/27` or `/26`, where the service rule becomes the deciding constraint."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Network FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq"
+      },
+      {
+        "title": "Create, change, or delete an Azure virtual network - Azure Virtual Network",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+      },
+      {
+        "title": "Add, change, or delete a subnet",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.1-02",
+    "objective": "D4.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You are reviewing a proposed address plan for a new virtual network named `vnet-analytics`. The design includes an IPv4 subnet `10.40.0.0/2` for a future shared services range and an IPv6 subnet `fd00:40:40:1::/80` for a dual-stack workload.\n\nWhich change should you request?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Reject the `/2` IPv4 subnet because Azure IPv4 subnets cannot be larger than `/8`, but keep the `/80` IPv6 subnet"
+      },
+      {
+        "id": "B",
+        "text": "Keep the `/2` IPv4 subnet if the address range is valid, but change the IPv6 subnet to exactly `/64`"
+      },
+      {
+        "id": "C",
+        "text": "Change the IPv4 subnet to `/29` because `/29` is the largest supported subnet, and remove IPv6 because Azure virtual networks are IPv4-only"
+      },
+      {
+        "id": "D",
+        "text": "Keep both prefixes because Azure supports any IPv4 or IPv6 subnet length that is valid CIDR"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The scenario focuses on platform-supported prefix sizes only. It assumes the IPv4 range is otherwise valid, contained in the VNet address space, and nonoverlapping.",
+    "sections": {
+      "correctAnswer": "**B. Keep the `/2` IPv4 subnet if the address range is valid, but change the IPv6 subnet to exactly `/64`**. Microsoft documents `/2` as the largest supported IPv4 subnet and states that IPv6 subnets in Azure Virtual Network must be exactly `/64`.",
+      "technical": "Azure Virtual Network applies different size rules to IPv4 and IPv6 subnets. For IPv4, Microsoft lists `/29` as the smallest supported subnet and `/2` as the largest supported subnet when using CIDR definitions. That means a very broad IPv4 prefix is not automatically invalid because it has a small slash number, provided it is a valid Azure range, fits inside the virtual network address space, and does not overlap another subnet or connected network.\n\nIPv6 is stricter. The IPv6 documentation states that subnets for IPv6 must be exactly `/64` in size. Azure supports dual-stack virtual networks, so a virtual network and its subnets can support IPv4 and IPv6 together. Dual stack does not mean every IPv6 prefix length is accepted. A proposed `/80` IPv6 subnet is therefore the item that violates the documented subnet-size rule.\n\nThe review sequence for `vnet-analytics` is: identify the IP version, compare the prefix with Azure's supported rule for that version, then check containment, overlap, and any service-specific requirements. For IPv4, the supported interval is `/29` through `/2`. For IPv6, there is no similar interval for subnet sizes in this objective; use `/64`.\n\nThe exam trap is the direction of the slash number. A smaller slash number is a larger IPv4 range. `/2` is enormous, while `/29` is tiny. IPv6 avoids that design choice in Azure by requiring a standardized `/64` subnet.",
+      "wrongOptions": {
+        "A": "The IPv4 conclusion is wrong because Microsoft documents `/2` as the largest supported IPv4 subnet. The IPv6 conclusion is also wrong because `/80` is not the required `/64` size. Misconception: Azure's largest subnet must align with the familiar private `10.0.0.0/8` block. Could be correct only as an internal governance limit, not as an Azure platform rule.",
+        "C": "This reverses the IPv4 limit and incorrectly removes a supported feature. `/29` is the smallest supported IPv4 subnet, not the largest, and Azure supports dual-stack IPv4 plus IPv6 virtual networks. Misconception: A bigger slash number means a bigger subnet. Could be correct when intentionally creating the smallest possible IPv4 subnet and not needing IPv6.",
+        "D": "Azure does not accept arbitrary IPv6 subnet lengths. The IPv6 subnet must be exactly `/64`, even though `/80` is valid CIDR notation in general networking. Misconception: If a prefix is mathematically valid, Azure must deploy it. Could be correct in generic IP theory, but not for Azure Virtual Network."
+      },
+      "plainEnglish": "The slash number rules depend on the IP version. For IPv4 in Azure, `/29` is the smallest subnet and `/2` is the largest. So the huge IPv4 subnet is not invalid just because it looks unusual. IPv6 is different: Azure wants IPv6 subnets to be `/64`. The proposed `/80` IPv6 subnet is like using a component size the Azure network system does not support, even though the notation exists in the wider networking world.",
+      "analogy": "Think of Azure as a venue with two kinds of meeting rooms. For IPv4, you can choose many room sizes, from a tiny room to a stadium-sized hall. For IPv6, the venue standardizes every room to one exact size so future routing and compatibility work predictably.\n\n| Analogy | Azure reality |\n|---|---|\n| Many IPv4 room sizes | IPv4 subnets from `/29` through `/2` |\n| Standardized IPv6 room | IPv6 subnet exactly `/64` |\n| Proposed odd IPv6 room size | `/80` IPv6 subnet rejected |\n| Dual-purpose venue | Dual-stack virtual network |\n\n**Where the analogy breaks down:** IPv6 address capacity is vastly larger than a room analogy suggests, and Azure's `/64` requirement is about routing and platform compatibility rather than seating.",
+      "jargon": [
+        {
+          "term": "Azure Virtual Network",
+          "definition": "A logically isolated network in Azure that hosts private address space and lets resources communicate with each other, connected networks, and selected Azure services."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A smaller address range inside a virtual network where Azure resources are placed for network connectivity."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as `10.1.0.0/24`, where the slash number identifies the prefix length."
+        },
+        {
+          "term": "Address space",
+          "definition": "The IP ranges assigned to a virtual network; subnet ranges must be within this space and must not overlap one another."
+        },
+        {
+          "term": "IPv4",
+          "definition": "The 32-bit Internet Protocol address family represented by dotted decimal addresses such as `10.40.0.0`."
+        },
+        {
+          "term": "IPv6",
+          "definition": "The 128-bit Internet Protocol address family represented in hexadecimal groups such as `fd00:40:40:1::`."
+        },
+        {
+          "term": "Dual stack",
+          "definition": "A network configuration that supports both IPv4 and IPv6 addressing for resources and traffic paths."
+        },
+        {
+          "term": "`/2`",
+          "definition": "A very large IPv4 prefix. Microsoft documents it as the largest supported IPv4 subnet size in Azure Virtual Network."
+        },
+        {
+          "term": "`/64`",
+          "definition": "The required IPv6 subnet prefix length for Azure Virtual Network subnets."
+        }
+      ],
+      "watchOut": "- `/29` is the smallest IPv4 subnet; `/2` is the largest IPv4 subnet.\n- IPv6 subnets in Azure must be exactly `/64`.\n- Dual stack means IPv4 and IPv6 together, not IPv6-only.\n- A mathematically valid CIDR prefix can still be rejected by Azure platform rules.",
+      "productionTip": {
+        "official": "Microsoft's FAQ states that the smallest supported IPv4 subnet is `/29` and the largest is `/2`; it also says IPv6 subnets must be exactly `/64`. The IPv6 overview repeats the `/64` requirement for IPv6 subnets in Azure Virtual Network.",
+        "recommendation": "Use extremely large IPv4 ranges only after enterprise IPAM review, because they can block future peering or hybrid connectivity. Standardize deployment templates to generate `/64` IPv6 subnets."
+      },
+      "memoryTrick": "For Azure subnet size, remember **IPv4 ranges, IPv6 fixed**. IPv4 has a supported interval, while IPv6 subnets use one exact `/64` size.",
+      "examTip": "Clue words are **largest**, **smallest**, and **IPv6 subnet**. If you see `/80`, reject it for Azure IPv6. If you see `/2`, do not reject it just because it looks unusually broad; check overlap and governance separately. A tougher item may combine valid platform size with an overlapping address range, where overlap becomes the blocker."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Network FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq"
+      },
+      {
+        "title": "Overview of IPv6 for Azure Virtual Network",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/ipv6-overview"
+      },
+      {
+        "title": "Add, change, or delete a subnet",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.1-03",
+    "objective": "D4.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Contoso plans to create a virtual network named `vnet-app` with address space `10.20.0.0/16`. The company also has an on-premises network that uses `10.20.8.0/21` and an Azure virtual network named `vnet-hub` that uses `10.21.0.0/16`. The network team wants to peer `vnet-app` to `vnet-hub` and later connect `vnet-app` to the on-premises network by VPN.\n\nWhat should you do before creating the final address plan for `vnet-app`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep `10.20.0.0/16` because Azure blocks overlap only between subnets inside the same virtual network"
+      },
+      {
+        "id": "B",
+        "text": "Choose an address range for `vnet-app` that does not overlap the on-premises network or any virtual network it will connect to"
+      },
+      {
+        "id": "C",
+        "text": "Use public IP address space for `vnet-app` because public ranges can overlap with private on-premises networks"
+      },
+      {
+        "id": "D",
+        "text": "Create the peering first, because peering automatically translates overlapping address spaces"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The design uses normal virtual network peering and VPN connectivity without network address translation. The on-premises prefixes and hub virtual network prefixes are authoritative inputs to the address plan.",
+    "sections": {
+      "correctAnswer": "**B. Choose an address range for `vnet-app` that does not overlap the on-premises network or any virtual network it will connect to**. Microsoft states that connected virtual networks and on-premises networks must have nonoverlapping CIDR blocks; overlap prevents those networks from being connected.",
+      "technical": "A virtual network address space is not planned in isolation when the network will be connected to other networks. Azure allows you to define public or private ranges for a virtual network, but the ranges are reachable only inside that virtual network, interconnected virtual networks, and connected on-premises networks. Once you plan peering, VPN, or ExpressRoute connectivity, overlap becomes a routing problem.\n\nIn this scenario, `vnet-app` at `10.20.0.0/16` includes every address from `10.20.0.0` through `10.20.255.255`. The on-premises range `10.20.8.0/21` falls inside that larger block. Even though `vnet-hub` at `10.21.0.0/16` does not overlap `10.20.0.0/16`, the future VPN requirement makes the current application range invalid for the intended topology.\n\nThe planning order is: inventory connected ranges, exclude overlapping blocks, choose a VNet address space large enough for subnets, create nonoverlapping subnets inside it, and add peering or VPN only after the address plan is clean. Peering is not NAT. It does not rewrite duplicate addresses so routers can tell them apart. If duplicate prefixes exist, Azure cannot reliably decide which destination owns a packet.\n\nPublic address space does not solve overlap by itself. Microsoft recommends private or organization-owned public ranges and warns that overlapping ranges prevent connections.",
+      "wrongOptions": {
+        "A": "Azure also checks overlap with networks that you want to connect, not only overlap among subnets inside one VNet. Misconception: Address uniqueness matters only within a single virtual network boundary. Could be correct for a completely isolated lab VNet that will never be connected to peered or on-premises networks.",
+        "C": "Public address space is allowed in a virtual network, but using it does not remove the need for nonoverlap with connected networks and can create operational issues if the organization does not own the range. Misconception: Public-looking addresses are magically separate from private routing decisions. Could be correct only when the public range is owned by the organization and still does not overlap any connected address space.",
+        "D": "Virtual network peering forwards traffic across Microsoft backbone paths; it does not translate overlapping addresses. Misconception: Peering behaves like a NAT gateway between virtual networks. Could be correct when two nonoverlapping VNets need private connectivity and routing can remain direct."
+      },
+      "plainEnglish": "Every connected network needs its own address neighborhood. If Azure and the datacenter both use the same street names, a router cannot know whether `10.20.8.10` means the server in Azure or the server in the datacenter. The fix is not to create peering first or hope Azure translates it. Pick a different range for the new virtual network before you build connections.",
+      "analogy": "Imagine two warehouses that both label aisles and shelf numbers the same way. If a delivery slip says aisle H, shelf 14, the driver cannot know which warehouse location is meant once the warehouses are connected by one logistics system.\n\n| Analogy | Azure reality |\n|---|---|\n| Warehouse labels | IP address ranges |\n| Shared logistics route | VNet peering or VPN |\n| Duplicate aisle and shelf | Overlapping CIDR blocks |\n| Relabel before connecting | Choose nonoverlapping address space |\n\n**Where the analogy breaks down:** IP routing uses binary prefix matching rather than human labels, and some special architectures can use NAT deliberately. The AZ-104 subnet-planning answer assumes ordinary peering and VPN connectivity without NAT.",
+      "jargon": [
+        {
+          "term": "Azure Virtual Network",
+          "definition": "A logically isolated network in Azure that hosts private address space and lets resources communicate with each other, connected networks, and selected Azure services."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A smaller address range inside a virtual network where Azure resources are placed for network connectivity."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as `10.1.0.0/24`, where the slash number identifies the prefix length."
+        },
+        {
+          "term": "Address space",
+          "definition": "The IP ranges assigned to a virtual network; subnet ranges must be within this space and must not overlap one another."
+        },
+        {
+          "term": "Virtual network peering",
+          "definition": "A connectivity feature that links Azure virtual networks so resources can communicate privately using their private IP addresses."
+        },
+        {
+          "term": "On-premises network",
+          "definition": "A network in an organization's own datacenter, office, or colocation environment outside Azure."
+        },
+        {
+          "term": "VPN",
+          "definition": "A virtual private network connection that carries encrypted traffic between networks, commonly between Azure and an on-premises site."
+        },
+        {
+          "term": "Overlap",
+          "definition": "A condition where one IP prefix includes some or all addresses from another prefix, creating ambiguous routing for connected networks."
+        },
+        {
+          "term": "NAT",
+          "definition": "Network Address Translation, a technique that rewrites IP addresses. Standard VNet peering does not perform NAT for overlapping spaces."
+        }
+      ],
+      "watchOut": "- Subnets inside one virtual network cannot overlap each other.\n- VNets that will be peered or connected to on-premises networks also need nonoverlapping address spaces.\n- Public address ranges are not directly reachable from the internet just because they are used in a VNet.\n- Fix overlap before deployment; renumbering later is disruptive.",
+      "productionTip": {
+        "official": "Microsoft states that virtual networks can be linked to other virtual networks and on-premises networks as long as CIDR blocks don't overlap. The virtual network creation documentation warns that overlapping ranges prevent connection to other virtual networks or on-premises networks.",
+        "recommendation": "Maintain a central IP address management record for Azure, on-premises, partner, and future ranges. Require VNet requests to include intended peering and hybrid connectivity so reviewers catch overlap early."
+      },
+      "memoryTrick": "Connected networks need **unique neighborhoods**. This is a simplification because NAT can be introduced in special designs, but default VNet peering and VPN planning expects nonoverlapping prefixes.",
+      "examTip": "Clue words are **peer**, **VPN**, **ExpressRoute**, or **on-premises**. Those words move the question from local subnet math to connected-network address planning. A harder version may include one nonoverlapping hub and one overlapping branch; a single overlap is enough to reject the proposed VNet range."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Network FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq"
+      },
+      {
+        "title": "Create, change, or delete an Azure virtual network - Azure Virtual Network",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.1-04",
+    "objective": "D4.1.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You manage a virtual network named `vnet-prod` with address space `10.60.0.0/16`. It contains a subnet named `snet-api` with address range `10.60.4.0/24`, and several network interfaces are already deployed in `snet-api`. You need to revise the network design without deleting the virtual network.\n\nWhich two changes are supported under the documented conditions? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add a new nonoverlapping VNet address range, such as `10.61.0.0/16`, if it does not overlap connected networks"
+      },
+      {
+        "id": "B",
+        "text": "Shrink `snet-api` from `10.60.4.0/24` to `10.60.4.0/25` while network interfaces remain in the subnet"
+      },
+      {
+        "id": "C",
+        "text": "Decrease the VNet address space only if the remaining address space still includes the ranges of associated subnets"
+      },
+      {
+        "id": "D",
+        "text": "Remove `10.60.0.0/16` from the VNet address space while `snet-api` still exists in that range"
+      },
+      {
+        "id": "E",
+        "text": "Change the subnet address range even when resources exist, as long as all assigned private IP addresses fit in the new range"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The virtual network can be updated by an identity with Network Contributor-equivalent permissions. Any peering or on-premises connectivity is normal routed connectivity without overlapping address translation.",
+    "sections": {
+      "correctAnswer": "**A. Add a new nonoverlapping VNet address range, such as `10.61.0.0/16`, if it does not overlap connected networks** and **C. Decrease the VNet address space only if the remaining address space still includes the ranges of associated subnets**. Microsoft documents that VNet ranges can be added or changed, but subnet ranges must remain covered, nonoverlapping, and subject to resource constraints.",
+      "technical": "Azure separates virtual network address-space updates from subnet address-range updates. For the VNet, Microsoft states that you can add and remove address ranges, that each range must use CIDR notation, and that ranges cannot overlap existing VNet ranges. You can decrease a VNet address range as long as the new space still includes the ranges of associated subnets. You can also extend a VNet range, such as changing a `/16` to a `/8`, if the result does not overlap another range.\n\nSubnet resizing has a stricter condition. The subnet management documentation states that if no resources are deployed within a subnet, you can change its address range. If resources exist in the subnet, you must first move the resources to another subnet or delete them from the subnet. It does not say you may resize a populated subnet merely because current IP assignments would still fit.\n\nApply that to `vnet-prod`: adding `10.61.0.0/16` can be valid if it is nonoverlapping locally and with connected networks; decreasing the VNet range can be valid only if `10.60.4.0/24` and all other associated subnet ranges remain inside the resulting address space; shrinking `snet-api` while NICs remain deployed is blocked; and removing the VNet range that contains an existing subnet is blocked. This is why address-space planning is easier before deployment than after workloads exist.",
+      "wrongOptions": {
+        "B": "Microsoft documents that subnet address range changes require no resources in the subnet. Existing NICs in `snet-api` block the resize until moved or deleted. Misconception: Shrinking is allowed if used addresses remain inside the smaller prefix. Could be correct after the subnet is emptied and the new range is valid.",
+        "D": "You cannot remove a VNet address range while a subnet exists in that range. The subnet and any resources in it must be removed or moved first. Misconception: VNet address space can be edited independently of child subnets. Could be correct after deleting or relocating all subnets contained in the address range.",
+        "E": "Azure's documented condition is the presence of resources, not only whether current IPs would fit. Misconception: The platform checks only active address assignments during subnet resize. Could be correct in a non-Azure network controller that supports live prefix shrink with host validation, but not for this Azure operation."
+      },
+      "plainEnglish": "Think of the virtual network as the land parcel and subnets as fenced lots. You can buy more land next to the parcel if it does not collide with another owner's land. You can reduce the parcel only if all fenced lots still remain inside it. But if people and equipment are already inside a fenced lot, Azure does not let you redraw that lot's boundaries until those things are moved or removed.",
+      "analogy": "A city planner can expand a city boundary into unused land or trim an outer boundary if no neighborhood is cut off. Changing the boundary of a busy neighborhood is different; residents, utilities, and roads must be moved before the line can be redrawn.\n\n| Analogy | Azure reality |\n|---|---|\n| City boundary | VNet address space |\n| Neighborhood boundary | Subnet address range |\n| Residents and utilities | Resources such as NICs in the subnet |\n| Neighboring city conflict | Overlap with peered or on-premises networks |\n\n**Where the analogy breaks down:** Azure validates CIDR prefixes and resource references, not zoning maps. Some services add their own subnet locks or movement steps that are specific to the resource type.",
+      "jargon": [
+        {
+          "term": "Azure Virtual Network",
+          "definition": "A logically isolated network in Azure that hosts private address space and lets resources communicate with each other, connected networks, and selected Azure services."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A smaller address range inside a virtual network where Azure resources are placed for network connectivity."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as `10.1.0.0/24`, where the slash number identifies the prefix length."
+        },
+        {
+          "term": "Address space",
+          "definition": "The IP ranges assigned to a virtual network; subnet ranges must be within this space and must not overlap one another."
+        },
+        {
+          "term": "Network interface",
+          "definition": "An Azure resource that connects a virtual machine or similar resource to a subnet and receives private IP configuration."
+        },
+        {
+          "term": "Shrink",
+          "definition": "To make an address range smaller, such as changing from `/24` to `/25`."
+        },
+        {
+          "term": "Expand",
+          "definition": "To make an address range larger or to add another prefix to the virtual network address space."
+        },
+        {
+          "term": "Associated subnet",
+          "definition": "A subnet currently defined under a virtual network and tied to one of the VNet's address ranges."
+        },
+        {
+          "term": "Network Contributor",
+          "definition": "An Azure built-in role that includes permissions to create, update, and delete virtual network and subnet resources."
+        }
+      ],
+      "watchOut": "- Empty-subnet rules are stricter than simple IP-fit calculations.\n- Removing a VNet address range requires removing any subnets inside it first.\n- New VNet ranges must not overlap existing VNet ranges, peered VNet ranges, or connected on-premises ranges.\n- Service-specific resources can make move or delete steps more complex than for ordinary NICs.",
+      "productionTip": {
+        "official": "Microsoft documents adding and removing VNet address ranges, including the condition that decreased ranges must still include associated subnet ranges. For subnet changes, the documentation says that resources in the subnet must be moved or deleted before changing the subnet address range.",
+        "recommendation": "Treat production subnet prefixes as hard-to-change once deployed. Reserve spare address space in each VNet, create separate subnets for services with different lifecycles, and test address updates in nonproduction first."
+      },
+      "memoryTrick": "**VNet ranges can flex around subnets; subnet ranges cannot flex around live resources.** This phrase is simplified because overlap and connected-network checks still apply to the VNet operation.",
+      "examTip": "Clue words include **resources already deployed** and **change subnet address range**. That combination points to moving or deleting resources first. If the answer talks about adding a nonoverlapping address range to the VNet, it is usually allowed unless peering, on-premises overlap, or contained subnets block it."
+    },
+    "sources": [
+      {
+        "title": "Create, change, or delete an Azure virtual network - Azure Virtual Network",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+      },
+      {
+        "title": "Add, change, or delete a subnet",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+      },
+      {
+        "title": "Azure Virtual Network FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.1-05",
+    "objective": "D4.1.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are preparing subnets in a hub virtual network for VPN Gateway, Azure Bastion, and Azure Firewall. The template author proposes these subnet definitions.\n\n| Purpose | Proposed name | Proposed prefix |\n|---|---|---|\n| VPN gateway | `GatewaySubnet` | `/28` |\n| Bastion host | `AzureBastionSubnet` | `/27` |\n| Azure Firewall | `AzureFirewallSubnet` | `/27` |\n\nWhich three corrections should you make? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use the exact subnet name `GatewaySubnet` for the virtual network gateway subnet"
+      },
+      {
+        "id": "B",
+        "text": "For current non-Basic VPN Gateway SKUs, size `GatewaySubnet` as `/27` or larger"
+      },
+      {
+        "id": "C",
+        "text": "Rename the Bastion subnet to `BastionSubnet` so the resource provider can discover it"
+      },
+      {
+        "id": "D",
+        "text": "Size `AzureBastionSubnet` as `/26` or larger for Azure Bastion deployments created now"
+      },
+      {
+        "id": "E",
+        "text": "Size `AzureFirewallSubnet` as `/26` because Azure Firewall requires that subnet size"
+      },
+      {
+        "id": "F",
+        "text": "Place all three services in one `/24` subnet and use tags to identify the service owner"
+      }
+    ],
+    "correct": [
+      "B",
+      "D",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The VPN gateway is not the legacy Basic SKU exception. The Bastion deployment is created after November 2, 2021 and is not the Bastion Developer offering. Azure Firewall is deployed to a virtual network.",
+    "sections": {
+      "correctAnswer": "**B. For current non-Basic VPN Gateway SKUs, size `GatewaySubnet` as `/27` or larger**, **D. Size `AzureBastionSubnet` as `/26` or larger for Azure Bastion deployments created now**, and **E. Size `AzureFirewallSubnet` as `/26` because Azure Firewall requires that subnet size**. The proposed names for Bastion and Firewall are correct, but their prefixes are too small; the gateway name is already correct while its proposed `/28` is not appropriate for non-Basic gateway SKUs.",
+      "technical": "Some Azure networking services require specially named, dedicated subnets. These names are not cosmetic. The resource provider looks for the exact subnet name and deploys managed infrastructure into that subnet. The sizing rules are also service-specific, so the general `/29` Azure subnet minimum is not enough.\n\nFor VPN Gateway, the subnet must be named `GatewaySubnet`. Microsoft states that while `/29` is possible for the Basic SKU, all other VPN Gateway SKUs require a gateway subnet of `/27` or larger, such as `/27`, `/26`, or `/25`. A `/28` proposal is therefore too small under the assumptions.\n\nFor Azure Bastion, Microsoft states that deployments created on or after November 2, 2021 require a dedicated subnet named `AzureBastionSubnet` with size `/26` or larger. The proposed name is right, but `/27` is too small. For Azure Firewall, the deployment guidance identifies `AzureFirewallSubnet` as the firewall subnet and notes the `/26` size.\n\nThe evaluation order is: verify the exact required subnet name, verify the service-specific minimum size, and verify that unrelated resources are not placed in the dedicated subnet. Tags do not replace special subnet names or dedicated service requirements.",
+      "wrongOptions": {
+        "A": "The statement itself is true, but it is not a correction to the proposed template because the gateway subnet is already named `GatewaySubnet`. Misconception: Every true statement in a multiple-answer item must be selected. Could be correct if the proposed name were `Gateway` or any value other than the exact required name.",
+        "C": "Azure Bastion requires the exact subnet name `AzureBastionSubnet`, not `BastionSubnet`. Misconception: Service subnet names are friendly labels that can be shortened. Could be correct only as an internal display convention outside Azure, not as the actual subnet name.",
+        "F": "These managed services require their own specifically named subnets and should not be combined into a shared tagged subnet. Misconception: A large enough subnet plus tags can replace provider-specific subnet contracts. Could be correct for ordinary VM workload grouping, but not for these special service subnets."
+      },
+      "plainEnglish": "These three Azure services need reserved parking spaces with exact labels. The VPN gateway already has the right label, but the space is too small for the non-Basic gateway assumption. Bastion and Firewall also have the right labels in the proposal, but both need bigger spaces than `/27`. You cannot put all three in one shared subnet and use tags to tell Azure what each address is for.",
+      "analogy": "A transit center has reserved bays for a bus terminal, emergency vehicles, and a secure staff entrance. Each bay must have the official sign and enough clearance for the vehicle that uses it. A handwritten tag on one shared lot is not accepted by the operators.\n\n| Analogy | Azure reality |\n|---|---|\n| Bus terminal bay | `GatewaySubnet` |\n| Secure staff entrance bay | `AzureBastionSubnet` |\n| Emergency vehicle bay | `AzureFirewallSubnet` |\n| Clearance requirement | `/27` or `/26` subnet sizing rule |\n\n**Where the analogy breaks down:** Azure validates subnet names and CIDR prefixes through resource providers. The services create and manage hidden infrastructure, not physical vehicles.",
+      "jargon": [
+        {
+          "term": "Azure Virtual Network",
+          "definition": "A logically isolated network in Azure that hosts private address space and lets resources communicate with each other, connected networks, and selected Azure services."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A smaller address range inside a virtual network where Azure resources are placed for network connectivity."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as `10.1.0.0/24`, where the slash number identifies the prefix length."
+        },
+        {
+          "term": "Address space",
+          "definition": "The IP ranges assigned to a virtual network; subnet ranges must be within this space and must not overlap one another."
+        },
+        {
+          "term": "`GatewaySubnet`",
+          "definition": "The exact subnet name required for Azure virtual network gateway resources such as VPN Gateway or ExpressRoute gateway."
+        },
+        {
+          "term": "Azure Bastion",
+          "definition": "A managed service that provides RDP/SSH access to virtual machines without exposing those VMs directly to the internet."
+        },
+        {
+          "term": "`AzureBastionSubnet`",
+          "definition": "The required dedicated subnet name for Azure Bastion deployments except the Bastion Developer offering."
+        },
+        {
+          "term": "Azure Firewall",
+          "definition": "A managed cloud firewall service used to centrally inspect and control traffic for virtual network resources."
+        },
+        {
+          "term": "`AzureFirewallSubnet`",
+          "definition": "The required subnet name used when deploying Azure Firewall into a virtual network."
+        },
+        {
+          "term": "VPN Gateway SKU",
+          "definition": "A gateway size and capability option. Current non-Basic SKUs require larger gateway subnet capacity than the legacy Basic exception."
+        }
+      ],
+      "watchOut": "- Special subnet names must be exact.\n- General subnet minimums do not override service-specific minimums.\n- `GatewaySubnet` `/29` is only the Basic SKU exception; plan `/27` or larger for other VPN Gateway SKUs.\n- Bastion and Firewall commonly appear together in hub VNets, but they still need separate dedicated subnets.",
+      "productionTip": {
+        "official": "Microsoft documents `GatewaySubnet` for virtual network gateway VMs and says all VPN Gateway SKUs except Basic require `/27` or larger. Bastion documentation requires `AzureBastionSubnet` `/26` or larger for current deployments, and Azure Firewall deployment documentation identifies `AzureFirewallSubnet` as `/26`.",
+        "recommendation": "Reserve these special subnets early in hub VNet templates and give them room to grow. Use policy or infrastructure-as-code tests to block misspelled names and undersized prefixes before deployment reaches the resource provider."
+      },
+      "memoryTrick": "For the common hub trio remember **Gateway 27, Bastion 26, Firewall 26**. The phrase is simplified because the Basic VPN Gateway SKU has a `/29` exception.",
+      "examTip": "Clue words are the exact subnet names. Do not select a true statement as a correction if the template already has that part right. In this item, the corrections are the sizes: VPN gateway `/27` or larger, Bastion `/26` or larger, and Firewall `/26`."
+    },
+    "sources": [
+      {
+        "title": "Azure VPN Gateway configuration settings",
+        "url": "https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-about-vpn-gateway-settings"
+      },
+      {
+        "title": "About Azure Bastion configuration settings",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+      },
+      {
+        "title": "Deploy & configure Azure Firewall using the Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/firewall/tutorial-firewall-deploy-portal"
+      },
+      {
+        "title": "Azure Firewall FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/firewall/firewall-faq"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.1-06",
+    "objective": "D4.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A team creates a subnet named `snet-postgres` for an Azure PaaS service that must be injected into a virtual network. The service documentation says the subnet must be delegated to that service. Another team wants to place a private endpoint and unrelated virtual machines in the same subnet to save address space.\n\nWhat should you explain about subnet delegation?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Delegation converts the subnet into a public subnet that bypasses virtual network routing"
+      },
+      {
+        "id": "B",
+        "text": "Delegation is required only when the subnet name starts with `GatewaySubnet`"
+      },
+      {
+        "id": "C",
+        "text": "Delegation gives the Azure service permission to apply service-specific network rules, and delegated subnets cannot be used with private endpoints"
+      },
+      {
+        "id": "D",
+        "text": "Delegation creates a network security group that automatically blocks all unrelated resources"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The PaaS service supports virtual network injection through subnet delegation. The question is about general subnet delegation behavior, not a product-specific sharing exception.",
+    "sections": {
+      "correctAnswer": "**C. Delegation gives the Azure service permission to apply service-specific network rules, and delegated subnets cannot be used with private endpoints**. Microsoft describes delegation as designating a subnet for an Azure service and allowing that service to establish basic network configuration rules; it also states that a delegated subnet can't be used with a private endpoint.",
+      "technical": "Subnet delegation is a contract between the virtual network owner and an Azure service. The virtual network owner designates a subnet for a service that needs to inject instances into the customer's virtual network. In return, the service can establish preconditions or post-deployment conditions, including Network Intent Policies that help keep the injected service stable.\n\nThe exact impact depends on the delegated service. Microsoft documents that each service can define whether the subnet is shared with other Azure services or dedicated, whether NSGs or route tables are supported, the minimum number of IP addresses, whether private address space is required, whether custom DNS must include an Azure DNS entry, and whether delegation must be removed before deleting the subnet or virtual network.\n\nThere is an important general boundary: the subnet delegation overview states that a delegated subnet can't be used with a private endpoint and, as a consequence, private endpoint network policies shouldn't be configured in those subnets. That makes the second team's private endpoint request incompatible with the delegated subnet. Unrelated VMs depend on the service's deployment model; some services require a dedicated subnet, while others can share under defined conditions. The safe design is to follow the specific service documentation and use a separate subnet for private endpoints.\n\nDelegation is not a routing bypass and does not automatically create an NSG. It gives explicit permissions to the service provider resource type and may cause service-defined policies to be enforced during create or update operations.",
+      "wrongOptions": {
+        "A": "Delegation does not make a subnet public or bypass normal virtual network routing. It is about designating the subnet for a service and allowing service-specific network requirements. Misconception: Delegating control to an Azure service removes the subnet from the private VNet model. Could be correct never as stated; internet exposure is controlled by other features such as public IPs and load balancers.",
+        "B": "Delegation is used by many PaaS services and is not tied to the `GatewaySubnet` name. Gateway subnets are special for virtual network gateways, while delegation uses service identifiers. Misconception: All special subnet behavior comes from special subnet names. Could be correct only if the question were about the exact name required for VPN Gateway, not generic subnet delegation.",
+        "D": "Delegation can result in Network Intent Policies, but it does not mean Azure automatically creates an NSG that blocks everything else. Misconception: Network policy and network security group are the same object. Could be correct if a particular service documentation requires or creates specific policies, but not as a universal delegation rule."
+      },
+      "plainEnglish": "When you delegate a subnet, you are saying, 'This subnet is for this Azure service, and the service may enforce rules it needs to run safely.' It is not just a label. The service may require certain subnet sizes, DNS behavior, route behavior, or no other resource types. A private endpoint should not be placed in a delegated subnet, so saving address space by combining it with the PaaS delegated subnet is the wrong design.",
+      "analogy": "A building owner leases a specialized lab room to a medical lab operator. The operator can require special ventilation, access rules, and equipment clearances. The owner should not also use that room as a general storage closet or visitor reception desk.\n\n| Analogy | Azure reality |\n|---|---|\n| Specialized lab room | Delegated subnet |\n| Lab operator rules | Service-specific network requirements |\n| Lease designation | Subnet delegation to an Azure service |\n| Visitor reception desk | Private endpoint that belongs in another subnet |\n\n**Where the analogy breaks down:** Azure delegation is metadata and policy enforcement in a software-defined network, not a legal lease. Some services permit shared use under documented conditions.",
+      "jargon": [
+        {
+          "term": "Azure Virtual Network",
+          "definition": "A logically isolated network in Azure that hosts private address space and lets resources communicate with each other, connected networks, and selected Azure services."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A smaller address range inside a virtual network where Azure resources are placed for network connectivity."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as `10.1.0.0/24`, where the slash number identifies the prefix length."
+        },
+        {
+          "term": "Address space",
+          "definition": "The IP ranges assigned to a virtual network; subnet ranges must be within this space and must not overlap one another."
+        },
+        {
+          "term": "Subnet delegation",
+          "definition": "A subnet setting that designates the subnet for one or more Azure services and gives the service explicit permission to use service-specific network behavior."
+        },
+        {
+          "term": "PaaS",
+          "definition": "Platform as a Service, an Azure service model where Microsoft manages much of the platform while customers configure service settings and networking."
+        },
+        {
+          "term": "Network Intent Policy",
+          "definition": "A policy that an injected Azure service can apply to help protect the network configuration required for that service to function."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A private network interface in a subnet that connects privately to a supported Azure service through Azure Private Link."
+        },
+        {
+          "term": "Virtual network injection",
+          "definition": "A pattern where an Azure service deploys instances or network presence into a customer's subnet."
+        }
+      ],
+      "watchOut": "- Delegation behavior differs by Azure service; check that service's networking page.\n- A delegated subnet cannot be used with a private endpoint.\n- Some delegated services require private address space and a minimum number of IP addresses.\n- Delegation may need to be removed before deleting the subnet or virtual network.",
+      "productionTip": {
+        "official": "Microsoft documents that delegation lets an Azure service establish required network configuration rules for a subnet and that services can define support for sharing, NSGs, route tables, minimum IP addresses, private address space, DNS, and deletion conditions. The same overview says a delegated subnet can't be used with a private endpoint.",
+        "recommendation": "Create one subnet per delegated service purpose unless the service documentation clearly supports sharing. Put private endpoints in separate endpoint subnets, and include delegation requirements in code review."
+      },
+      "memoryTrick": "Delegation means **this subnet follows a service's house rules**. The simplification is that each service has its own house rules, so the delegation concept must be paired with service documentation.",
+      "examTip": "Clue words are **must be delegated**, **PaaS service**, and **private endpoint in the same subnet**. Select the answer that treats delegation as a service contract and rejects the private endpoint combination. A harder version may ask whether VMs can share the subnet; answer from the specific service's documentation."
+    },
+    "sources": [
+      {
+        "title": "Subnet Delegation in Azure Virtual Network",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/subnet-delegation-overview"
+      },
+      {
+        "title": "Add, change, or delete a subnet",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.1-07",
+    "objective": "D4.1.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You need to create a virtual network named `vnet-hr` for virtual machines in the Canada Central region. A teammate proposes using the same virtual network for VMs in Canada Central and East US, and attaching VMs from two subscriptions directly to that one VNet. The company also uses availability zones in Canada Central.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A virtual network can span multiple regions if both regions are in the same geography, but it is limited to one availability zone"
+      },
+      {
+        "id": "B",
+        "text": "A virtual network can be shared directly by resources in any subscription if the address space does not overlap"
+      },
+      {
+        "id": "C",
+        "text": "A virtual network must be created once per availability zone because subnets are zonal resources"
+      },
+      {
+        "id": "D",
+        "text": "A virtual network is limited to one region and one subscription, but its subnets span all availability zones in that region"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The question concerns the scope of a standard Azure Virtual Network resource. Cross-region connectivity can be added separately by peering or gateways, but that does not make one VNet span regions.",
+    "sections": {
+      "correctAnswer": "**D. A virtual network is limited to one region and one subscription, but its subnets span all availability zones in that region**. Microsoft documents that a VNet can be in only one Azure region, cannot be used in more than one subscription, and that VNets and subnets span all availability zones in a region.",
+      "technical": "Azure Virtual Network is a regional resource with subscription scope. During VNet creation, the portal asks for a subscription, resource group, name, and region. Microsoft states that you can't use the same virtual network in more than one Azure subscription, although you can connect a virtual network in one subscription to virtual networks in other subscriptions by using virtual network peering. It also states that a virtual network can be in only one Azure region, although you can connect a VNet in one region to a VNet in another region using virtual network peering.\n\nAvailability zones are handled differently. The overview states that virtual networks and subnets span all availability zones in a region. You do not create separate subnets for each zone just to host zonal VMs. A VM can be placed in zone 1, 2, or 3 in a supported region while using a subnet that is regional across the VNet.\n\nThe practical design order is: choose the subscription that owns the VNet, choose the single Azure region, create address space and subnets for workloads in that region, deploy zonal resources into the same regional VNet as appropriate, and use VNet peering, VPN, or ExpressRoute to connect other regions or subscriptions. The teammate's proposal confuses connection with scope. You can connect networks across regions or subscriptions, but you do not stretch one VNet resource across them.",
+      "wrongOptions": {
+        "A": "A VNet cannot span multiple regions, even within the same geography. It also is not limited to one availability zone because VNets and subnets span zones in a region. Misconception: Region pairs or geographies define a larger VNet boundary. Could be correct when describing a multi-region application connected by peering, not one VNet resource.",
+        "B": "A VNet belongs to one subscription. Resources that connect directly to it must be in the same subscription, although separate VNets in other subscriptions can be peered. Misconception: Nonoverlap is the only requirement for direct attachment. Could be correct for peering between VNets in different subscriptions when permissions and nonoverlap are satisfied.",
+        "C": "Subnets are regional constructs inside a VNet and span availability zones; they are not created separately per zone by requirement. Misconception: Every zonal resource needs a zonal network. Could be correct for certain zonal services or public IP choices, but not for the base VNet and subnet."
+      },
+      "plainEnglish": "A virtual network is like a regional campus owned by one account. You choose one Azure region for it, and it lives in one subscription. Inside that region, the network covers the availability zones, so zonal VMs can still use the same subnet. If you need East US as well, create another VNet there and connect it. If another subscription needs its own workloads, use its own VNet and connect the networks rather than attaching everything to one VNet.",
+      "analogy": "Think of a company office lease. One lease belongs to one legal entity and one city. The building may have several fire zones inside the city property, but the same lease does not automatically cover an office in another city or another legal entity's office.\n\n| Analogy | Azure reality |\n|---|---|\n| One city lease | VNet in one Azure region |\n| One legal entity | VNet in one subscription |\n| Fire zones within the building | Availability zones within the region |\n| Separate office connected by WAN | Another VNet connected by peering or gateway |\n\n**Where the analogy breaks down:** Azure subscriptions and regions are cloud control-plane boundaries, not legal leases. Network traffic can still connect across those boundaries through supported Azure connectivity features.",
+      "jargon": [
+        {
+          "term": "Azure Virtual Network",
+          "definition": "A logically isolated network in Azure that hosts private address space and lets resources communicate with each other, connected networks, and selected Azure services."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A smaller address range inside a virtual network where Azure resources are placed for network connectivity."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as `10.1.0.0/24`, where the slash number identifies the prefix length."
+        },
+        {
+          "term": "Address space",
+          "definition": "The IP ranges assigned to a virtual network; subnet ranges must be within this space and must not overlap one another."
+        },
+        {
+          "term": "Region",
+          "definition": "An Azure geographic area containing datacenters where resources are deployed, such as Canada Central or East US."
+        },
+        {
+          "term": "Subscription",
+          "definition": "An Azure billing and management boundary that owns resources and controls access through Azure RBAC."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate datacenter zone within a supported Azure region used to improve resilience for zonal resources."
+        },
+        {
+          "term": "Virtual network peering",
+          "definition": "A feature that connects separate Azure virtual networks, including across regions or subscriptions when configured correctly."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical container in a subscription used to manage Azure resources with common lifecycle, access, and policy settings."
+        }
+      ],
+      "watchOut": "- A VNet is regional, but its subnets span all zones in that region.\n- A VNet is in one subscription; cross-subscription designs use connectivity between separate VNets.\n- Moving a VNet between regions is not a normal edit of the existing VNet.\n- Do not confuse global VNet peering with one global VNet resource.",
+      "productionTip": {
+        "official": "Microsoft's virtual network creation documentation states that you can't use the same VNet in more than one subscription and that a VNet can be in only one Azure region. The VNet overview states that virtual networks and subnets span all availability zones in a region.",
+        "recommendation": "Design one VNet per region per ownership boundary unless a hub-and-spoke model calls for a shared hub. Name VNets with region and environment, and document peering instead of implying that one VNet stretches across regions."
+      },
+      "memoryTrick": "A VNet is **one subscription, one region, all zones**. This is simplified because you can connect many VNets together, but each VNet resource keeps that basic scope.",
+      "examTip": "Clue words are **region**, **subscription**, and **availability zones**. The exam often contrasts these scopes. Pick the answer that says regional and subscription-bound but zone-spanning. A harder version may include peering across regions; peering connects two VNets and does not change either VNet's region."
+    },
+    "sources": [
+      {
+        "title": "Create, change, or delete an Azure virtual network - Azure Virtual Network",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+      },
+      {
+        "title": "What is Azure Virtual Network?",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+      },
+      {
+        "title": "Azure Virtual Network FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.1-08",
+    "objective": "D4.1.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are defining IPv4 address space for a new virtual network. Security asks you to prefer private address space, but the template review must also reject ranges that Azure doesn't allow for VNet address space.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "RFC 1918 ranges such as `10.0.0.0/8`, `172.16.0.0/12`, and `192.168.0.0/16` are recommended private address spaces for VNets"
+      },
+      {
+        "id": "B",
+        "text": "Azure treats `100.64.0.0/10` as shared address space that can be deployed as private IP address space in Azure"
+      },
+      {
+        "id": "C",
+        "text": "`224.0.0.0/4`, `127.0.0.0/8`, `169.254.0.0/16`, `255.255.255.255/32`, and `168.63.129.16/32` are safe choices when they do not overlap other VNets"
+      },
+      {
+        "id": "D",
+        "text": "A public IPv4 range used as VNet address space becomes directly reachable from the internet by default"
+      },
+      {
+        "id": "E",
+        "text": "Azure requires all virtual network address space to come from RFC 1918 only"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The question is about address ranges configured as virtual network IPv4 address space, not public IP resources assigned to load balancers or virtual machines.",
+    "sections": {
+      "correctAnswer": "**A. RFC 1918 ranges such as `10.0.0.0/8`, `172.16.0.0/12`, and `192.168.0.0/16` are recommended private address spaces for VNets** and **B. Azure treats `100.64.0.0/10` as shared address space that can be deployed as private IP address space in Azure**. Microsoft recommends RFC 1918 ranges, documents RFC 6598 shared address space as treated like private IP space in Azure, and separately lists specific ranges that can't be added.",
+      "technical": "Azure VNet addressing has recommended ranges, allowed ranges, and explicitly blocked ranges. Microsoft recommends the RFC 1918 private ranges: `10.0.0.0/8`, `172.16.0.0/12`, and `192.168.0.0/16`. The FAQ also states that Azure treats the RFC 6598 shared address space `100.64.0.0/10` as private IP address space in Azure. Other address spaces might work but can have undesirable side effects, and public address ranges should be used only when the organization owns or deliberately controls them.\n\nAzure also lists ranges you can't add to a VNet address space:\n\n| Range | Reason shown in Microsoft documentation |\n|---|---|\n| `224.0.0.0/4` | Multicast |\n| `255.255.255.255/32` | Broadcast |\n| `127.0.0.0/8` | Loopback |\n| `169.254.0.0/16` | Link-local |\n| `168.63.129.16/32` | Internal DNS, DHCP, and Azure Load Balancer health probe |\n\nThe documentation for VNet creation says the address range can be public or private, and whichever you choose is reachable only from within the VNet, interconnected VNets, and connected on-premises networks. That means using a public-looking range as VNet space does not publish the VNet to the internet. For an exam question, first reject explicitly prohibited ranges, then prefer private or approved shared ranges, then check overlap with all connected networks.",
+      "wrongOptions": {
+        "C": "Those ranges are explicitly listed by Microsoft as ranges you can't add to a VNet. Nonoverlap does not make multicast, loopback, link-local, broadcast, or `168.63.129.16/32` valid. Misconception: Overlap is the only address validation rule. Could be correct only as a list of ranges to block in a validation policy.",
+        "D": "Microsoft states that public or private ranges defined in a VNet are reachable only from the VNet, interconnected VNets, and connected on-premises networks. They do not become internet-routable by default. Misconception: Public address syntax automatically creates public exposure. Could be correct for a public IP resource assigned to an internet-facing service, not VNet address space.",
+        "E": "Azure recommends RFC 1918 but also documents RFC 6598 shared space and says public address ranges can be defined. Misconception: Recommended private ranges are the only allowed ranges. Could be correct as an internal corporate policy, but not as the Azure platform requirement."
+      },
+      "plainEnglish": "For most Azure networks, choose familiar private ranges like 10-dot, 172.16 through 172.31, or 192.168. Azure also supports the shared 100.64 range as private-like address space. But some ranges are off-limits because they have special meanings, such as loopback, multicast, broadcast, link-local, or Azure's internal platform address. A public-looking range inside a VNet is not automatically exposed to the internet, but using public space you do not own is still a bad operational idea.",
+      "analogy": "Address planning is like choosing street names for a private campus. Some names are recommended because everyone understands they are internal campus roads. Some names are reserved for emergency systems and cannot be used for ordinary streets. A street name that matches a real public road does not magically open your gate to that public road, but it can confuse directions if you do not own it.\n\n| Analogy | Azure reality |\n|---|---|\n| Internal campus road names | RFC 1918 private ranges |\n| Shared service road category | RFC 6598 `100.64.0.0/10` |\n| Emergency-only labels | Blocked ranges such as loopback and multicast |\n| Public road name inside campus | Public address range used privately in a VNet |\n\n**Where the analogy breaks down:** IP prefixes are routed by binary masks and platform rules, not by signs or gates. Public IP ownership and internet BGP routing involve separate systems outside VNet address configuration.",
+      "jargon": [
+        {
+          "term": "Azure Virtual Network",
+          "definition": "A logically isolated network in Azure that hosts private address space and lets resources communicate with each other, connected networks, and selected Azure services."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A smaller address range inside a virtual network where Azure resources are placed for network connectivity."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as `10.1.0.0/24`, where the slash number identifies the prefix length."
+        },
+        {
+          "term": "Address space",
+          "definition": "The IP ranges assigned to a virtual network; subnet ranges must be within this space and must not overlap one another."
+        },
+        {
+          "term": "RFC 1918",
+          "definition": "The Internet standard that defines private IPv4 ranges: `10.0.0.0/8`, `172.16.0.0/12`, and `192.168.0.0/16`."
+        },
+        {
+          "term": "RFC 6598",
+          "definition": "The standard defining shared address space `100.64.0.0/10`, which Azure treats as private IP address space for VNet deployment."
+        },
+        {
+          "term": "Multicast",
+          "definition": "A networking method for sending traffic to a group address; Azure blocks `224.0.0.0/4` as VNet address space."
+        },
+        {
+          "term": "Loopback",
+          "definition": "Addresses such as `127.0.0.0/8` used by a host to refer to itself, not valid VNet space."
+        },
+        {
+          "term": "Link-local",
+          "definition": "Addresses such as `169.254.0.0/16` used for local-link communication and not valid as Azure VNet address space."
+        },
+        {
+          "term": "`168.63.129.16`",
+          "definition": "A special Azure platform IP used for internal DNS, DHCP, and Azure Load Balancer health probe functions."
+        }
+      ],
+      "watchOut": "- Recommended does not always mean required; RFC 1918 is recommended, not the only possible VNet space.\n- Azure explicitly blocks several special ranges regardless of overlap.\n- Public address space in a VNet is private to the VNet path, but using space you do not own can break access to the real public destination.\n- Check overlap after checking whether the range is allowed at all.",
+      "productionTip": {
+        "official": "Microsoft's FAQ recommends RFC 1918 address ranges, lists RFC 6598 shared space as treated like private address space in Azure, and lists multicast, broadcast, loopback, link-local, and `168.63.129.16/32` ranges that can't be added. The VNet creation documentation states that public or private ranges are reachable only from the VNet, interconnected VNets, and connected on-premises networks.",
+        "recommendation": "Write address validation into deployment pipelines. Permit only organization-approved private, shared, or owned public prefixes, block Azure's prohibited ranges explicitly, and require IPAM approval before any non-RFC1918 space is used."
+      },
+      "memoryTrick": "Use **private first, shared if planned, never special-purpose blocks**. This is a simplification because public owned ranges can be valid, but it is a safe exam and production starting point.",
+      "examTip": "Clue words are **recommended**, **can't add**, and specific prefixes. Pick the answer that separates recommended RFC 1918 and RFC 6598 support from the prohibited special ranges. A harder version may ask whether a public prefix is internet-exposed; the VNet address space itself is not a public IP assignment."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Network FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq"
+      },
+      {
+        "title": "Create, change, or delete an Azure virtual network - Azure Virtual Network",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.1-09",
+    "objective": "D4.1.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Your organization uses infrastructure as code to create new VNets and VM subnets. A module that uses an API version released after March 31, 2026 creates a new virtual network and does not set an explicit outbound connectivity method for VMs. A developer expects the VMs to receive default outbound internet access automatically, as older deployments did.\n\nWhat should you tell the developer?",
+    "options": [
+      {
+        "id": "A",
+        "text": "All existing VNets and new VNets lost default outbound access on March 31, 2026, so every VM in Azure is already private"
+      },
+      {
+        "id": "B",
+        "text": "Default outbound access is controlled at the resource group level and cannot be changed per subnet"
+      },
+      {
+        "id": "C",
+        "text": "New VNets created with those newer APIs default to private subnets, so VMs need an explicit outbound method such as NAT Gateway, a public IP, or load balancer outbound rules"
+      },
+      {
+        "id": "D",
+        "text": "A private subnet blocks all Azure Storage access in the same region unless every VM has a public IP address"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The module creates new virtual networks using an API version released after March 31, 2026. The VMs need access to public endpoints, and no explicit outbound method is otherwise configured.",
+    "sections": {
+      "correctAnswer": "**C. New VNets created with those newer APIs default to private subnets, so VMs need an explicit outbound method such as NAT Gateway, a public IP, or load balancer outbound rules**. Microsoft documents that for API versions released after March 31, 2026, subnets in new VNets have `defaultOutboundAccess` set to `false` by default; existing VNets are not automatically changed.",
+      "technical": "Default outbound access is the implicit behavior where Azure gives a VM an outbound public IP when the VM is deployed in a nonprivate subnet without an explicit outbound method. Microsoft warns that this behavior is implicit, the IP is Microsoft-owned, and the IP can change. The current guidance is to use explicit outbound connectivity for deterministic behavior.\n\nThe 2026 change affects new virtual networks created with API versions released after March 31, 2026. In those new VNets, subnets have `defaultOutboundAccess = false` by default, which makes them private by default and prevents generation of default outbound IPs for VMs. Azure portal already defaults to private subnets according to the documentation. Earlier API versions can retain the older default where the property is null and implicitly allows default outbound access.\n\nThe scope is important: existing VNets are not automatically modified; new VMs in existing nonprivate subnets can still receive default outbound IPs unless the subnet is explicitly changed to private; VMs in private subnets need an explicit outbound method to reach internet or public Microsoft endpoints; and examples of explicit methods include a NAT gateway on the subnet, a Standard public IP on the VM NIC, or Standard Load Balancer outbound rules. Existing VMs may need to be stopped and deallocated for a subnet private/nonprivate change to reflect on their network interfaces.",
+      "wrongOptions": {
+        "A": "Microsoft states that existing VNets are not changed by the default behavior update. The change is not a blanket shutdown of default outbound access for every VM in Azure. Misconception: A retirement announcement means immediate removal everywhere. Could be correct only if an organization separately changed all subnets to private and removed implicit outbound behavior.",
+        "B": "The documented setting is a subnet property named `defaultOutboundAccess`, not a resource-group-wide switch. You can configure private subnet behavior on subnets. Misconception: Network defaults are inherited only from Azure resource groups. Could be correct for some policy or tagging governance, but not for this platform behavior.",
+        "D": "Microsoft notes that virtual machines can still access Azure Storage accounts in the same region in a private subnet without an explicit outbound method, although NSGs are recommended to control egress. Misconception: Private subnet means every public or platform endpoint requires a per-VM public IP. Could be correct for some internet endpoints that require explicit outbound connectivity, but not as stated for all same-region Storage access."
+      },
+      "plainEnglish": "Older Azure subnets often gave VMs a quiet, automatic way to start outbound internet connections if you did not design one. Azure is moving away from that for new VNets. With newer APIs after March 31, 2026, new VNet subnets start private by default. If a VM needs to call public endpoints, you must design that path, commonly with NAT Gateway, a public IP, or load balancer outbound rules. Existing VNets are not all flipped off automatically.",
+      "analogy": "A new apartment building no longer gives every unit an unlisted shared exit to the street. If residents need deliveries or outbound travel, the architect must add an approved front door, loading dock, or managed exit. Older buildings may still have the old exit until renovated.\n\n| Analogy | Azure reality |\n|---|---|\n| Old shared exit | Default outbound access |\n| New building rule | New API default private subnets |\n| Approved front door | Explicit outbound method |\n| Renovating an old building | Manually changing an existing subnet to private |\n\n**Where the analogy breaks down:** Azure outbound connectivity is about SNAT and platform-assigned IP behavior, not physical exits. Some Azure platform endpoints have special routing behavior even when default outbound access is disabled.",
+      "jargon": [
+        {
+          "term": "Azure Virtual Network",
+          "definition": "A logically isolated network in Azure that hosts private address space and lets resources communicate with each other, connected networks, and selected Azure services."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A smaller address range inside a virtual network where Azure resources are placed for network connectivity."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as `10.1.0.0/24`, where the slash number identifies the prefix length."
+        },
+        {
+          "term": "Address space",
+          "definition": "The IP ranges assigned to a virtual network; subnet ranges must be within this space and must not overlap one another."
+        },
+        {
+          "term": "Default outbound access",
+          "definition": "Implicit Azure behavior that can provide VMs in nonprivate subnets with outbound public connectivity when no explicit outbound method is configured."
+        },
+        {
+          "term": "Private subnet",
+          "definition": "A subnet with default outbound access disabled, represented by `defaultOutboundAccess = false`, so VMs cannot rely on implicit outbound public IPs."
+        },
+        {
+          "term": "NAT Gateway",
+          "definition": "An Azure service associated with a subnet to provide scalable, explicit outbound SNAT using configured public IP addresses."
+        },
+        {
+          "term": "Standard Load Balancer outbound rules",
+          "definition": "Load balancer rules that explicitly define outbound connectivity for backend pool resources."
+        },
+        {
+          "term": "Stop and deallocate",
+          "definition": "An Azure VM state change that releases the compute host; needed for certain subnet default outbound access changes to reflect on VM network interfaces."
+        }
+      ],
+      "watchOut": "- The post-March 31, 2026 behavior applies to new VNets using newer APIs, not automatically to every existing VNet.\n- Portal-created subnets already default to private according to the current documentation.\n- Do not depend on Microsoft-owned default outbound IPs for production allowlists.\n- Changing private subnet state for existing VMs requires stop/deallocate to fully update NIC-level behavior.",
+      "productionTip": {
+        "official": "Microsoft documents that for API versions released after March 31, 2026, subnets in new VNets have `defaultOutboundAccess` set to `false` by default. The same page lists explicit outbound methods such as NAT Gateway, VM public IP addresses, and Standard Load Balancer outbound rules, and says existing VNets aren't changed automatically.",
+        "recommendation": "Treat outbound internet as an explicit design choice. Prefer NAT Gateway for most VM subnet egress patterns, document outbound IPs for partner allowlists, and use policy to deny modules that depend on implicit default outbound access."
+      },
+      "memoryTrick": "Newer VNets are **private unless you provide an exit**. This is simplified because older APIs and existing VNets can preserve earlier behavior, so always check the subnet property and deployment method.",
+      "examTip": "Clue words are **API after March 31, 2026**, **new virtual network**, and **no explicit outbound method**. Choose private-by-default plus explicit outbound connectivity. A harder version may say existing VNet; then do not assume Azure automatically removed default outbound access."
+    },
+    "sources": [
+      {
+        "title": "Default Outbound Access in Azure - Azure Virtual Network",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/default-outbound-access"
+      },
+      {
+        "title": "What is Azure Virtual Network?",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.1-10",
+    "objective": "D4.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You create a virtual network named `vnet-shared` for several application subnets. The default Azure-provided DNS name resolution works for same-VNet hostnames, but the workloads must also resolve on-premises domain names through domain controllers. You add the domain controller IP addresses as custom DNS servers in the virtual network settings. Existing Windows and Linux VMs keep using the old DNS settings immediately after the change.\n\nWhat should you do next?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Move every VM to a new subnet because DNS settings are applied only when a subnet is created"
+      },
+      {
+        "id": "B",
+        "text": "Add a custom DNS suffix to the virtual network because Azure requires one before custom DNS servers work"
+      },
+      {
+        "id": "C",
+        "text": "Create an IPv6 subnet because custom DNS servers are supported only in dual-stack VNets"
+      },
+      {
+        "id": "D",
+        "text": "Renew the DHCP lease or restart affected VMs so the new VNet-level DNS server list is picked up"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The custom DNS servers are reachable from the VNet and are configured to resolve the required zones or forward queries as needed. The question focuses on applying VNet-level DNS server changes to existing virtual machines.",
+    "sections": {
+      "correctAnswer": "**D. Renew the DHCP lease or restart affected VMs so the new VNet-level DNS server list is picked up**. Microsoft documents that DNS server settings can be specified at the virtual network level and that after changing the DNS server list, affected VMs need DHCP lease renewal for the new settings to take effect.",
+      "technical": "A virtual network can use Azure-provided DNS or custom DNS servers. Azure-provided name resolution requires no configuration and supports basic internal name resolution for virtual machines in the same Resource Manager virtual network. It is intentionally limited: DNS lookup is scoped to a virtual network, manual registration of records is not allowed, and the Azure-created DNS suffix cannot be modified. For hybrid name resolution, Microsoft lists customer-managed DNS servers and Azure DNS Private Resolver as options.\n\nAt the VNet settings level, you can specify IP addresses for DNS servers. The FAQ states that the VNet DNS server setting is applied as the default DNS server or servers for all VMs in the virtual network. You can change the DNS server list at any time, but changing the list does not instantly rewrite the resolver configuration inside every running guest. Microsoft says you need to perform a DHCP lease renewal on all affected VMs. For Windows, `ipconfig /renew` is the documented example; for other operating systems, use the appropriate DHCP renewal or restart process.\n\nThe evaluation order in this scenario is: confirm custom DNS servers are configured at the VNet level, confirm the servers are reachable from the workload subnets, renew DHCP leases or restart affected VMs so the guest OS receives the updated DNS server list, and test name resolution for Azure internal names, private zones, and on-premises domains. Custom DNS is not tied to subnet creation, custom VNet DNS suffixes, or IPv6 dual-stack deployment.",
+      "wrongOptions": {
+        "A": "DNS server settings are configured at the VNet level and can be changed after creation. Moving VMs to a new subnet is unnecessary for the documented DNS lease renewal requirement. Misconception: Network settings are baked into the subnet forever. Could be correct only if a separate subnet-specific design, such as routing or NSG isolation, were required.",
+        "B": "Azure does not let you specify a custom DNS suffix for virtual networks. Custom DNS servers can still be configured by IP address. Misconception: A DNS server change and a DNS suffix change are the same task. Could be correct in an on-premises DHCP scope where administrators control both DNS servers and suffix search lists.",
+        "C": "Custom DNS server configuration does not require IPv6 or dual-stack networking. IPv6 is an address-family feature with its own subnet-size rules. Misconception: Modern DNS customization depends on IPv6 enablement. Could be correct when the workload itself must communicate over IPv6, but not for using custom DNS servers."
+      },
+      "plainEnglish": "The VNet DNS setting is like changing the address of the company's phone directory service. Azure stores the new directory server addresses for the network, but running computers may keep using the old information until they ask DHCP for updated network settings. Renew the DHCP lease or restart the machines so they learn the new DNS server IP addresses. You do not need to rebuild subnets, invent a custom suffix, or enable IPv6 just for this DNS change.",
+      "analogy": "A school changes from the old receptionist phone list to a new central switchboard. The change is posted in the administration system, but classrooms that cached yesterday's instructions keep calling the old number until they receive an updated notice.\n\n| Analogy | Azure reality |\n|---|---|\n| Administration system | VNet DNS server setting |\n| Classrooms | Existing virtual machines |\n| Updated notice | DHCP lease renewal |\n| New switchboard | Custom DNS servers such as domain controllers |\n\n**Where the analogy breaks down:** DNS clients cache records and resolver settings in operating-system-specific ways. Azure also has Private DNS zones and Azure DNS Private Resolver options that are more capable than a simple phone-list analogy.",
+      "jargon": [
+        {
+          "term": "Azure Virtual Network",
+          "definition": "A logically isolated network in Azure that hosts private address space and lets resources communicate with each other, connected networks, and selected Azure services."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A smaller address range inside a virtual network where Azure resources are placed for network connectivity."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as `10.1.0.0/24`, where the slash number identifies the prefix length."
+        },
+        {
+          "term": "Address space",
+          "definition": "The IP ranges assigned to a virtual network; subnet ranges must be within this space and must not overlap one another."
+        },
+        {
+          "term": "Azure-provided DNS",
+          "definition": "Microsoft-managed DNS name resolution available to Azure VMs, including basic same-VNet hostname resolution without customer DNS servers."
+        },
+        {
+          "term": "Custom DNS server",
+          "definition": "A DNS resolver specified by IP address in VNet or VM settings, commonly a domain controller, DNS appliance, or resolver VM."
+        },
+        {
+          "term": "DHCP lease",
+          "definition": "The network configuration assignment a VM receives from Azure's DHCP service, including DNS server information."
+        },
+        {
+          "term": "Domain controller",
+          "definition": "A server for Active Directory Domain Services that commonly provides DNS for domain-joined Windows environments."
+        },
+        {
+          "term": "FQDN",
+          "definition": "Fully qualified domain name, the complete DNS name that identifies a host within a DNS namespace."
+        },
+        {
+          "term": "Dual stack",
+          "definition": "A network configuration that supports both IPv4 and IPv6; it is not required merely to use custom DNS servers."
+        }
+      ],
+      "watchOut": "- VNet-level custom DNS applies as the default for VMs, but running VMs need DHCP renewal after changes.\n- Azure-provided DNS suffixes cannot be customized.\n- Azure-provided DNS lookup is scoped to a VNet, so hybrid resolution usually needs custom DNS, Private Resolver, or forwarding.\n- Ensure custom DNS servers can still resolve Azure private zones or forward to Azure as your design requires.",
+      "productionTip": {
+        "official": "Microsoft states that you can specify DNS server IP addresses in VNet settings and that the setting is applied as the default DNS server list for VMs in the VNet. The FAQ says DNS server lists can be changed at any time, but affected VMs need DHCP lease renewal for new DNS settings to take effect.",
+        "recommendation": "Plan DNS changes as operational changes, not just control-plane edits. Update resolvers during a maintenance window, renew leases or restart workloads in batches, and validate both on-premises names and Azure private names before declaring the migration complete."
+      },
+      "memoryTrick": "Change VNet DNS, then **renew to receive**. The shortcut is intentionally narrow: it covers applying DNS server list changes, not designing the entire hybrid DNS forwarding architecture.",
+      "examTip": "Clue words are **custom DNS servers**, **VNet settings**, and **existing VMs keep using old settings**. Choose DHCP lease renewal or restart. A harder item may ask where to set DNS for all VMs; that is the VNet DNS server list unless a per-NIC or guest configuration deliberately overrides it."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Network FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq"
+      },
+      {
+        "title": "Create, change, or delete an Azure virtual network - Azure Virtual Network",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network"
+      },
+      {
+        "title": "Azure Virtual Network Name Resolution Guide",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-name-resolution-for-vms-and-role-instances"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

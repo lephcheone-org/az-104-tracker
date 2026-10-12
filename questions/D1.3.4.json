@@ -1,0 +1,947 @@
+[
+  {
+    "id": "D1.3.4-01",
+    "objective": "D1.3.4",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains a resource group named `rg-audit` in the Australia East region. You need to deploy a storage account in Southeast Asia and a virtual network in Australia Southeast. The compliance team asks whether the resource group region forces all resources in the group to use Australia East.\n\nWhat should you tell the team?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Move `rg-audit` to Southeast Asia before deploying any resources there"
+      },
+      {
+        "id": "B",
+        "text": "Create separate resource groups in each resource region because resources must match the resource group location"
+      },
+      {
+        "id": "C",
+        "text": "Keep `rg-audit` in Australia East; the resource group location stores Resource Manager metadata and resources can be in other regions"
+      },
+      {
+        "id": "D",
+        "text": "Create the resource group at tenant scope so resources in any Azure region can be added"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The resources are supported in their selected regions. The question is about Azure Resource Manager resource group behavior, not each service's data residency commitments.",
+    "sections": {
+      "correctAnswer": "**C. Keep `rg-audit` in Australia East; the resource group location stores Resource Manager metadata and resources can be in other regions**. The resource group location is where Resource Manager stores metadata and routes control-plane operations; it does not force every resource in the group into the same Azure region.",
+      "technical": "A resource group is a management container for related Azure resources. When you create a resource group, Azure asks for a location because Resource Manager stores metadata about the group and its resources in that location. Microsoft documents that resources inside a resource group can be located in different regions than the resource group. The correct order is: choose the resource group that matches the lifecycle or management boundary, choose each resource's own region according to service support and design, and treat the resource group region as a metadata and control-plane routing choice. This does not remove the need to evaluate each resource's own data residency and availability. A resource group's control-plane failover behavior does not make a regional resource's data plane available if that resource's region is unavailable.\n\nDo not confuse this with service replication or failover. The resource group location is used by the management layer, while the resource provider for each service still controls where the service instance and service data are placed. On the exam, if the question asks where the resource group metadata is stored, answer with the resource group location. If it asks where a storage account or virtual network is created, use that resource's own location setting.\n\nFor this item, ignore any answer that treats the resource group as a regional cage. The safe sequence is to identify the metadata location first, then read each resource's location separately. If an option claims every service must move because the group is in Australia East, it contradicts the documented separation between group metadata and resource placement.",
+      "wrongOptions": {
+        "A": "Moving the resource group is not required just because a resource will be in Southeast Asia. Misconception: The group region is inherited by all resources. Could be correct when a compliance rule specifically requires the group's management metadata in another region.",
+        "B": "One resource group can contain resources from multiple Azure regions. Misconception: Resource groups are regional deployment boundaries. Could be correct when an organization deliberately separates regional stacks because their lifecycles or operations differ.",
+        "D": "Resource groups are subscription-level containers, not tenant-scope containers for bypassing region choices. Misconception: A higher deployment scope makes a group regionless. Could be correct only for supported tenant-scope resources, not normal resource groups."
+      },
+      "plainEnglish": "A resource group is like a project folder. Azure asks where to keep the folder's paperwork, but the items described by the paperwork can be in different places. `rg-audit` can have its management metadata stored in Australia East while containing a storage account in Southeast Asia and a virtual network in Australia Southeast. The team should check each resource's location and data rules separately instead of assuming the resource group region controls everything.",
+      "analogy": "A company keeps a project binder in Sydney. The binder lists a warehouse in Singapore and a network room in Melbourne. The binder's location does not move the warehouse.\n\n| Analogy | Azure reality |\n|---|---|\n| Project binder | Resource group metadata |\n| Sydney office | Resource group location |\n| Warehouse in Singapore | Resource in another region |\n\n**Where the analogy breaks down:** Resource Manager is a distributed API with backup routing and provider calls; a paper binder cannot model control-plane and data-plane availability.",
+      "jargon": [
+        {
+          "term": "Resource group",
+          "definition": "A subscription-level Azure container for managing related resources."
+        },
+        {
+          "term": "Resource group location",
+          "definition": "The Azure region where Resource Manager stores metadata for the group."
+        },
+        {
+          "term": "Metadata",
+          "definition": "Management information about resources, not necessarily service data."
+        },
+        {
+          "term": "Control plane",
+          "definition": "The management path for create, update, and delete operations."
+        },
+        {
+          "term": "Data plane",
+          "definition": "The service-specific path used to access resource data."
+        },
+        {
+          "term": "Region",
+          "definition": "A geographic Azure location such as Australia East."
+        }
+      ],
+      "watchOut": "- The resource group region is not inherited by resources.\n- Service data residency is checked per resource type.\n- Control-plane availability and data-plane availability are different.\n- Group multi-region resources only when their lifecycle and ownership make sense.",
+      "productionTip": {
+        "official": "Microsoft documents that the resource group stores metadata and that resources in a resource group can be in different regions. The Resource Manager overview explains control-plane routing through the group location.",
+        "recommendation": "Choose the resource group location for management metadata and administrator proximity, then choose resource regions for application latency, resiliency, service availability, and compliance."
+      },
+      "memoryTrick": "The group region is the folder's address, not every item's address. This is a simplification because control-plane routing still matters.",
+      "examTip": "Clue words are **resource group region**, **metadata**, and **other regions**. Eliminate answers saying resources must match the group. A harder version may contrast Resource Manager control-plane failover with regional data-plane failure. A tougher question might include a regional outage. Remember that the group location affects Resource Manager control-plane handling, while the storage account or virtual network region affects the service itself. Choose answers that keep those two failure domains separate."
+    },
+    "sources": [
+      {
+        "title": "Use the Azure portal and Azure Resource Manager to Manage Resource Groups - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+      },
+      {
+        "title": "What is Azure Resource Manager?",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.4-02",
+    "objective": "D1.3.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have two resource groups named `rg-web` and `rg-shared`. A storage account named `stshared01` is currently in `rg-shared`. An administrator wants `stshared01` to appear as a member of both resource groups so that two teams can manage it from their own resource group views.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add `stshared01` to `rg-web` while leaving it in `rg-shared`"
+      },
+      {
+        "id": "B",
+        "text": "Move `stshared01` to `rg-web` if its lifecycle now belongs there"
+      },
+      {
+        "id": "C",
+        "text": "Create a child resource group under `rg-shared` and link it to `rg-web`"
+      },
+      {
+        "id": "D",
+        "text": "Assign the storage account to both groups by adding two resource group tags"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The storage account is assumed to support the intended move if a move is chosen. The question asks about resource group membership, not RBAC or tags.",
+    "sections": {
+      "correctAnswer": "**B. Move `stshared01` to `rg-web` if its lifecycle now belongs there**. A resource can exist in only one resource group at a time, so simultaneous membership in two groups is not supported.",
+      "technical": "Resource groups are containers, not many-to-many labels. Microsoft states that each resource can exist in only one resource group. You can add a resource, remove it, or move it to another resource group when the resource type supports moving, but its membership remains one group at a time. A move also changes the resource ID because the resource group segment is part of the ID. If both teams need access, assign appropriate RBAC at the correct scope; if both teams need cost or inventory views, use tags or reports. Those techniques do not make the storage account a member of two resource groups. Design membership based on lifecycle ownership: deploy, update, and delete together.\n\nThis distinction also affects operations after the move. Because the resource group name is part of the resource ID, a moved resource has a different management path even if its resource name is unchanged. Inventory tools that query by tag may still find it, but scripts using the old full ID will not. Use access control for shared administration and lifecycle grouping for placement.\n\nFor shared administration, the resource group is usually the wrong abstraction. A resource that remains technically shared can stay in a shared group while two teams receive role assignments. Moving the resource should mean its deployment, patching, and deletion ownership changed, not merely that another team wants a convenient portal list.",
+      "wrongOptions": {
+        "A": "Azure Resource Manager does not let one resource belong to two resource groups simultaneously. Misconception: Resource groups are multi-value categories. Could be correct only for granting both teams access by RBAC, not for membership.",
+        "C": "Resource groups are not nested under other resource groups. Misconception: Resource groups work like filesystem folders. Could be correct when using management groups above subscriptions for governance hierarchy.",
+        "D": "Tags help organize and report on resources but do not change resource group membership. Misconception: A tag can make a resource appear inside another group. Could be correct for cost categorization or filtering."
+      },
+      "plainEnglish": "A resource group is the resource's official home. A storage account cannot live in two homes at once. If the web team now owns the storage account lifecycle, move it to the web resource group. If both teams merely need to work with it, leave it where it belongs and give both teams the right access.",
+      "analogy": "A library book can sit on one shelf at a time. Two departments can find it in the catalog or borrow it, but the physical book is not on two shelves.\n\n| Analogy | Azure reality |\n|---|---|\n| Shelf | Resource group |\n| Book | Azure resource |\n| Moving the book | Move resource operation |\n| Catalog labels | Tags or inventory views |\n\n**Where the analogy breaks down:** Azure moves can change resource IDs, affect role assignments, and have provider-specific constraints.",
+      "jargon": [
+        {
+          "term": "Azure Resource Manager",
+          "definition": "The Azure management service for resources."
+        },
+        {
+          "term": "Resource group membership",
+          "definition": "The single group that contains a resource."
+        },
+        {
+          "term": "Move operation",
+          "definition": "A supported change of a resource's group or subscription."
+        },
+        {
+          "term": "Resource ID",
+          "definition": "The full Azure path identifying a resource."
+        },
+        {
+          "term": "RBAC",
+          "definition": "Azure role-based access control."
+        },
+        {
+          "term": "Tag",
+          "definition": "A name-value label used for organization and reporting."
+        }
+      ],
+      "watchOut": "- A resource can be in only one resource group.\n- Moving changes the resource ID.\n- Tags and access assignments are not extra group memberships.\n- Some resource types cannot be moved or have service-specific requirements.",
+      "productionTip": {
+        "official": "The Resource Manager overview states that each resource can exist in only one resource group and that resources can be moved between groups. The move guidance warns that resource IDs change.",
+        "recommendation": "Choose the group that owns the lifecycle. For shared services, prefer a shared resource group with deliberate RBAC rather than moving resources into every consuming app's group."
+      },
+      "memoryTrick": "One resource, one resource group home. Many teams can have keys, but there is one address.",
+      "examTip": "Watch for **member of both resource groups**. The exam is testing that resource groups are containers, not tags. A harder version may add move validation or scripts that depend on the old resource ID. If the exam gives one resource and two teams, decide whether it asks for ownership or access. Ownership points to one resource group. Access points to RBAC. Reporting points to tags or queries. Do not mix those concepts."
+    },
+    "sources": [
+      {
+        "title": "What is Azure Resource Manager?",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+      },
+      {
+        "title": "Move Azure resources to a new resource group or subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.4-03",
+    "objective": "D1.3.4",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a resource group named `rg-legacy-app`. The operations team wants the name changed to `rg-payroll-prod` without changing any resources. They also ask whether a new resource group can be created under `rg-legacy-app` to keep an archive area.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Rename `rg-legacy-app` in place, and then create the archive resource group below it"
+      },
+      {
+        "id": "B",
+        "text": "Rename is supported, but nested resource groups are not supported"
+      },
+      {
+        "id": "C",
+        "text": "Create a new resource group with the desired name and move supported resources; resource groups are not nested"
+      },
+      {
+        "id": "D",
+        "text": "Create a management group inside `rg-legacy-app` and move the archive resources into it"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Resources are movable only if their providers support the move operation. The question is about resource group structure and rename behavior.",
+    "sections": {
+      "correctAnswer": "**C. Create a new resource group with the desired name and move supported resources; resource groups are not nested**. Microsoft documents that a resource group cannot be renamed, so the replacement pattern is a new group plus supported resource moves.",
+      "technical": "Resource groups are flat containers at subscription scope. Azure's scope hierarchy is management group, subscription, resource group, and resource. A resource group contains resources, not other resource groups. The Azure Resource Manager FAQ states that you cannot rename a resource group; to use a different name, create a new resource group and move resources to it. The safe order is: decide whether the rename is operationally necessary, create the new group, validate move support and dependencies, move supported resources, update references to changed resource IDs, and delete the old empty group after verification. A management group is above subscriptions and is not an archive folder inside a resource group.\n\nA rename-by-move is really a migration of membership, not a rename operation. The new group has its own metadata location, access assignments, deployment history, locks, and other management settings. Plan to recreate or review those settings rather than assuming every management-plane setting from the old group follows automatically. The resource group hierarchy remains subscription to resource group to resource.\n\nThe absence of nesting also means a naming hierarchy must be encoded in the name or represented at higher scopes. For example, `rg-payroll-prod` and `rg-payroll-archive` can sit side by side in a subscription, while management groups organize subscriptions above them. A proposed child group under `rg-payroll-prod` is not a Resource Manager structure.",
+      "wrongOptions": {
+        "A": "Both parts are wrong: resource group rename is unsupported and resource groups cannot be nested. Misconception: Resource groups behave like local folders. Could be correct in a file system, not Azure Resource Manager.",
+        "B": "This gets nesting right but rename wrong. Misconception: The container name is just a display label. Could be correct for a different resource type that supports a mutable display name.",
+        "D": "Management groups are created above subscriptions, not inside resource groups, and resources are not moved into them. Misconception: Any Azure container can hold any other Azure container. Could be correct for organizing subscriptions under a management group."
+      },
+      "plainEnglish": "You cannot simply rename an Azure resource group. If the name is wrong, create a new group with the right name and move resources that Azure allows you to move. You also cannot put one resource group inside another like nested folders. If you need an archive area, create a separate resource group or use another supported organization method.",
+      "analogy": "A registered shipping crate has a fixed registration label. To use a new label, you register a new crate and move eligible items. You also cannot register a crate as being inside another crate in the inventory system.\n\n| Analogy | Azure reality |\n|---|---|\n| Registered crate | Resource group |\n| New label | New resource group name |\n| Moving items | Moving supported resources |\n| Crate inside crate | Unsupported nested group |\n\n**Where the analogy breaks down:** Azure resources may have dependencies, locks, and role assignments that affect moving.",
+      "jargon": [
+        {
+          "term": "Rename",
+          "definition": "Changing an existing resource group's name in place; unsupported for resource groups."
+        },
+        {
+          "term": "Nested resource group",
+          "definition": "A resource group inside another resource group; not supported."
+        },
+        {
+          "term": "Management group",
+          "definition": "A governance scope above subscriptions."
+        },
+        {
+          "term": "Subscription",
+          "definition": "A billing and management boundary containing resource groups."
+        },
+        {
+          "term": "Move support",
+          "definition": "Whether a provider allows a resource type to move."
+        },
+        {
+          "term": "Resource ID reference",
+          "definition": "A script or configuration that stores a full Azure resource path."
+        }
+      ],
+      "watchOut": "- Resource groups cannot be renamed in place.\n- Resource groups are not nested.\n- Moving to a new group changes resource IDs.\n- Management groups organize subscriptions, not individual resources.\n- Validate provider move support before planning a rename-by-move.",
+      "productionTip": {
+        "official": "The Azure Resource Manager FAQ states that resource groups cannot be renamed and that you need a new group and moved resources. The overview shows the scope hierarchy.",
+        "recommendation": "Avoid production rename-by-move for cosmetic reasons. If required, inventory dependencies and update automation that stores old IDs before deleting the old group."
+      },
+      "memoryTrick": "Resource groups are flat and fixed-name: new name means new group.",
+      "examTip": "Options with **rename resource group** or **nested resource group** are usually traps. A harder item may ask which scripts break because the moved resource ID includes the new resource group. When a scenario asks for a cleaner name, look for a create-and-move answer. If it asks for hierarchy, look above subscriptions to management groups, not below resource groups. Combining both traps is common in governance questions."
+    },
+    "sources": [
+      {
+        "title": "Azure Resource Manager frequently asked questions",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/frequently-asked-questions"
+      },
+      {
+        "title": "What is Azure Resource Manager?",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+      },
+      {
+        "title": "Move Azure resources to a new resource group or subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.4-04",
+    "objective": "D1.3.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a resource group named `rg-old` that contains a virtual machine named `vm1`. You plan to move `vm1` to a resource group named `rg-new` in the same subscription. An automation script stores the full resource ID of `vm1` and later resizes the VM by using that ID.\n\nWhat should you do as part of the move plan?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Update the script after the move because the resource ID will contain `rg-new`"
+      },
+      {
+        "id": "B",
+        "text": "Leave the script unchanged because moving within a subscription preserves the complete resource ID"
+      },
+      {
+        "id": "C",
+        "text": "Stop `vm1` for the whole move because existing resources stop running while resource groups are locked"
+      },
+      {
+        "id": "D",
+        "text": "Include only the VM extension resource ID in the move request because child resources move independently"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The VM and dependencies meet move requirements. No read-only lock exists on the source or target resource group.",
+    "sections": {
+      "correctAnswer": "**A. Update the script after the move because the resource ID will contain `rg-new`**. Moving a resource to another group changes the resource group segment of its resource ID.",
+      "technical": "A standard resource ID includes the subscription ID, resource group name, provider namespace, resource type, and resource name. When you move a resource to a new resource group, the resource group segment changes even if the subscription and resource name stay the same. Microsoft explicitly warns to update scripts and tools that use resource IDs. During the move, Azure locks the source and target resource groups for create, update, and delete operations, but existing resources remain operational. The lock can last up to four hours, though most moves finish faster. Only top-level parent resources should be specified in the move request; child resources, such as VM extensions, move automatically with the parent and cannot be moved independently.\n\nThe move lock is not a normal administrator-created lock object that remains afterward; it is temporary behavior while Resource Manager coordinates the move. That matters because operations teams might see management changes blocked even though the workload is still serving traffic. Communicate that difference before the change window so support staff do not mistake the temporary management freeze for an outage.\n\nThe acknowledgement step in the portal exists for this reason: administrators must accept that tools and scripts need updates. A script that calls resize by full ID is tightly coupled to the old group path. A script that first looks up the VM by name and current group could be easier to repair, but it still needs the new group value.",
+      "wrongOptions": {
+        "B": "The complete resource ID is not preserved because the group name is part of it. Misconception: Moving within a subscription is only a portal view change. Could be correct for references that do not store the resource ID.",
+        "C": "The move lock blocks management changes but existing resources continue to operate. Misconception: A management lock equals compute downtime. Could be correct only when a separate service-specific procedure requires stopping a workload.",
+        "D": "Child resources move with their parent and cannot be moved independently. Misconception: Every visible child resource must be moved separately. Could be correct for separate top-level dependent resources that must be moved together."
+      },
+      "plainEnglish": "The VM's Azure address includes the resource group name. After the VM moves from `rg-old` to `rg-new`, the saved address in the script is stale. The VM can keep running during the move, but administrators cannot change resources in the old or new group while Azure processes the move.",
+      "analogy": "A server is reassigned from Room A to Room B. It keeps running, but the maintenance form that says Room A must be updated.\n\n| Analogy | Azure reality |\n|---|---|\n| Room A | `rg-old` |\n| Room B | `rg-new` |\n| Directory address | Resource ID |\n| Paperwork freeze | Move lock |\n\n**Where the analogy breaks down:** Azure move validation and provider dependency rules are more detailed than a room reassignment.",
+      "jargon": [
+        {
+          "term": "Resource ID",
+          "definition": "The full Azure path identifying a resource."
+        },
+        {
+          "term": "Source resource group",
+          "definition": "The group containing the resource before the move."
+        },
+        {
+          "term": "Target resource group",
+          "definition": "The destination group after the move."
+        },
+        {
+          "term": "Child resource",
+          "definition": "A nested resource under a parent resource type."
+        },
+        {
+          "term": "Move lock",
+          "definition": "Temporary blocking of create, update, and delete operations during a move."
+        },
+        {
+          "term": "Top-level resource",
+          "definition": "The parent resource specified directly in a move request."
+        }
+      ],
+      "watchOut": "- Resource IDs change when group or subscription changes.\n- Existing resources remain operational during the move lock.\n- Source and target groups are locked for management changes.\n- Specify parent resources, not child resources, in the move request.",
+      "productionTip": {
+        "official": "The move guidance states that source and target groups are locked, existing resources remain operational, child resources move with parents, and moved resources get changed resource IDs.",
+        "recommendation": "Before moving, search automation, dashboards, alerts, and templates for full resource IDs, then schedule updates and validation as part of the change."
+      },
+      "memoryTrick": "Move the home, change the address. Keep this exam shortcut in mind, but verify service-specific exceptions in production.",
+      "examTip": "Clue words are **full resource ID** and **new resource group**. Choose the answer that updates references. A harder version may add cross-subscription requirements and dependent resources. If options mention downtime, child resources, or unchanged IDs, compare them to the documented move behavior. The most exam-relevant phrase is often not 'VM move' but 'script stores full resource ID'."
+    },
+    "sources": [
+      {
+        "title": "Move Azure resources to a new resource group or subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.4-05",
+    "objective": "D1.3.4",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You plan to move several resources from `rg-dev` in subscription `Sub1` to `rg-prod` in subscription `Sub2`. The two subscriptions are associated with the same Microsoft Entra tenant. You want to reduce the chance of a failed move before starting it.\n\nWhich two actions should you perform? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Confirm that the resource types support resource group and subscription move operations"
+      },
+      {
+        "id": "B",
+        "text": "Use `validateMoveResources` against the source resource group and target resource group"
+      },
+      {
+        "id": "C",
+        "text": "Move child resources separately before moving each parent resource"
+      },
+      {
+        "id": "D",
+        "text": "Ignore resource provider registration because it is copied automatically from the source subscription"
+      },
+      {
+        "id": "E",
+        "text": "Change the physical Azure region of each resource during the move"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. You have sufficient permissions at the source and target resource groups. The goal is a normal Resource Manager move, not a region migration.",
+    "sections": {
+      "correctAnswer": "**A. Confirm that the resource types support resource group and subscription move operations** and **B. Use `validateMoveResources` against the source resource group and target resource group**. The move-support tables and validation operation are documented preflight checks.",
+      "technical": "Resource moves are constrained by Azure Resource Manager and resource providers. The checklist before moving includes active subscriptions, same Microsoft Entra tenant for cross-subscription moves, provider registration in the destination subscription, quotas, permissions, and resource-type move support. The move-support page lists whether each resource type supports moves across resource groups and subscriptions. The `validateMoveResources` action models a move without performing it and returns an error if validation fails. In Azure CLI, this is invoked with `az resource invoke-action --action validateMoveResources` against the source resource group ID and a body that lists resources and target group. Child resources usually move with their parent and should not be specified independently. A resource group or subscription move also does not change the physical Azure region.\n\nValidation is a preflight, not a guarantee that nothing can change later. A resource might pass validation and then fail during the real move if a lock is added, a quota changes, a dependency is modified, or provider registration is altered before the move. Treat validation as one required control in the runbook, then freeze configuration and recheck important prerequisites immediately before the move.\n\nValidation should use the exact resource IDs planned for the real move. Validating a similar resource or only one resource from a dependency set does not prove the full batch will work. Cross-subscription moves are especially sensitive to dependencies because dependent resources may need to be consolidated into one group and moved together.\n\nFor the scenario described, avoid changing anything during validation. The value of the validation call is that it gives an error explanation before Resource Manager locks the source and target groups for the real move.",
+      "wrongOptions": {
+        "C": "Child resources generally move with their parent and cannot be moved independently. Misconception: Safer means moving every child first. Could be correct for separate top-level dependent resources that must be moved together.",
+        "D": "Destination provider registration is a documented checklist item. Misconception: Provider registration follows the resource automatically. Could be correct only if registration has already been verified.",
+        "E": "A Resource Manager move changes group or subscription, not region. Misconception: Moving subscriptions is the same as regional migration. Could be correct when using a separate regional migration service or redeployment plan."
+      },
+      "plainEnglish": "Before moving resources, check whether Azure supports moving those exact resource types. Then ask Azure to validate the proposed move before doing it. Do not try to move little child pieces separately, and do not treat this operation as a region move. It is a management-container move.",
+      "analogy": "Before relocating equipment between departments, you check the moving company's allowed-items list and request a dry-run inspection.\n\n| Analogy | Azure reality |\n|---|---|\n| Allowed-items list | Move-support table |\n| Dry-run inspection | `validateMoveResources` |\n| Attached handles | Child resources |\n| Different city | Region move |\n\n**Where the analogy breaks down:** Azure validation also depends on providers, quotas, locks, identities, and exact dependency graphs.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra tenant",
+          "definition": "The identity directory associated with the subscriptions."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "A namespace such as `Microsoft.Compute` that supplies Azure resource types."
+        },
+        {
+          "term": "Provider registration",
+          "definition": "Enabling a provider namespace in a subscription."
+        },
+        {
+          "term": "validateMoveResources",
+          "definition": "A Resource Manager action that tests a move."
+        },
+        {
+          "term": "Move-support table",
+          "definition": "Microsoft's list of resource types and move support."
+        },
+        {
+          "term": "Region migration",
+          "definition": "Moving workloads between Azure regions, separate from a group or subscription move."
+        }
+      ],
+      "watchOut": "- Cross-subscription moves require the same tenant.\n- Destination provider registration matters.\n- Check move support by resource type.\n- Validation reduces risk but does not replace a change plan.\n- Resource moves do not change physical region.",
+      "productionTip": {
+        "official": "Microsoft's move checklist and validation commands document the prerequisites and validation flow. The resource-type move-support article lists support by provider.",
+        "recommendation": "Create a runbook with resource IDs, dependencies, provider registrations, quota checks, validation output, and post-move update tasks before the change window."
+      },
+      "memoryTrick": "Before moving, check **can it move** and **does the move validate**.",
+      "examTip": "Words like **reduce chance of failed move** point to support checks and validation. A harder question may include unsupported resource providers or missing registration in the destination subscription. When the prompt says 'before starting it' or 'reduce risk,' favor non-destructive checks. When it says 'same tenant,' recognize that this prerequisite is already satisfied and look for the remaining provider and validation checks."
+    },
+    "sources": [
+      {
+        "title": "Move Azure resources to a new resource group or subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+      },
+      {
+        "title": "Azure resource types for move operations",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-support-resources"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.4-06",
+    "objective": "D1.3.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a resource group named `rg-retire` that contains a virtual network, a subnet, a virtual machine, a network interface, and a child diagnostic setting. The group also has a CanNotDelete lock. You plan to delete `rg-retire`.\n\nWhat must you do, and what deletion behavior should you expect?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Delete each resource manually first because deleting a resource group never deletes contained resources"
+      },
+      {
+        "id": "B",
+        "text": "Leave the lock in place because resource group delete permission supersedes all locks"
+      },
+      {
+        "id": "C",
+        "text": "Delete the virtual network first because Resource Manager always deletes network parents before child resources"
+      },
+      {
+        "id": "D",
+        "text": "Remove the lock first; Resource Manager then deletes child resources, resources that manage other resources, and then the remaining resources"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. You have the resource group delete action. No separate backup-retention or soft-delete recovery requirement is being tested.",
+    "sections": {
+      "correctAnswer": "**D. Remove the lock first; Resource Manager then deletes child resources, resources that manage other resources, and then the remaining resources**. Resource group deletion deletes the group's resources, but locks and dependencies can block the operation.",
+      "technical": "Deleting a resource group deletes all resources in it and is irreversible at the resource group level. Microsoft documents that you need the delete action for the `Microsoft.Resources/subscriptions/resourceGroups` resource; you do not need delete permission on each individual contained resource because the resource group delete action applies through the scope hierarchy. Before deletion, remove underlying resource locks and relevant backup data. A lock on resources or the group can cause deletion failure. Resource Manager determines deletion order by deleting child resources first, then resources that manage other resources as indicated by `managedBy`, and then the remaining resources. It issues DELETE operations, tracks synchronous and asynchronous status codes, and verifies deletion with GET calls where a 404 indicates success.\n\nThe permission rule can surprise administrators: the resource group delete action is enough to request deletion of the group and its contents, but management locks and provider dependencies can still block the outcome. This is why deletion planning has two separate checks: authorization to request the operation and technical readiness of the resources to be deleted in Resource Manager's order.\n\nThe `managedBy` ordering rule matters for managed resources, but it does not replace ordinary dependency handling. Resource Manager still waits for dependencies to complete and retries certain transient failures. If deletion fails, the next step is to inspect the failed resource and provider error instead of assuming the group delete action was insufficient.\n\nIf the exam mentions a lock and deletion in the same scenario, resolve the lock before reasoning about provider deletion order. Otherwise you may pick a technically true order that cannot start.",
+      "wrongOptions": {
+        "A": "Deleting a resource group does delete contained resources. Misconception: The group is only a visual folder. Could be correct when you need selective manual retention before deleting the empty group.",
+        "B": "Locks can block deletion even when you have delete permission. Misconception: RBAC permission always overrides management locks. Could be correct after the lock has been removed.",
+        "C": "Resource Manager deletes child resources first, not network parents first. Misconception: Parent resources are always deleted before children. Could be correct only after dependencies have already been detached in a manual cleanup."
+      },
+      "plainEnglish": "Deleting a resource group is like throwing away a whole project box. Azure tries to delete everything inside it. But a delete lock is like a legal hold sticker, so remove the lock first. Azure then cleans up dependent smaller pieces before broader remaining resources to avoid dependency conflicts.",
+      "analogy": "A facilities team closes an office suite. First they remove legal holds, then attached signs and fixtures, then systems that manage other systems, and finally the remaining items.\n\n| Analogy | Azure reality |\n|---|---|\n| Office suite | Resource group |\n| Legal hold | CanNotDelete lock |\n| Attached fixtures | Child resources |\n| Building control panel | `managedBy` resource |\n\n**Where the analogy breaks down:** Azure deletion uses provider APIs, retries, status codes, async operations, and cache checks.",
+      "jargon": [
+        {
+          "term": "CanNotDelete lock",
+          "definition": "A management lock that prevents deletion until removed."
+        },
+        {
+          "term": "Resource group delete action",
+          "definition": "The RBAC operation required to delete a resource group."
+        },
+        {
+          "term": "Child resource",
+          "definition": "A nested resource below a parent resource type."
+        },
+        {
+          "term": "managedBy",
+          "definition": "A property indicating that one resource manages another."
+        },
+        {
+          "term": "Asynchronous delete",
+          "definition": "A delete accepted for background processing."
+        },
+        {
+          "term": "Soft delete",
+          "definition": "A service-specific recovery feature, not resource group recovery."
+        }
+      ],
+      "watchOut": "- Resource group deletion is irreversible.\n- Locks can block deletion.\n- Group delete permission is enough for contained resources, subject to locks and dependencies.\n- Child resources are deleted first.\n- Resources connected to resources outside the group can still cause failures.",
+      "productionTip": {
+        "official": "Microsoft documents deletion order, lock-related failures, required resource group delete access, retry behavior, and that deleting a resource group is irreversible.",
+        "recommendation": "Export an inventory, confirm backups, remove locks only in the approved window, monitor provider failures, and do not assume all soft-deleted resources can be recovered."
+      },
+      "memoryTrick": "Unlock, then Azure cleans inside-out. Keep this exam shortcut in mind, but verify service-specific exceptions in production.",
+      "examTip": "Clue words are **delete resource group**, **CanNotDelete lock**, and **order**. Choose lock removal plus child-first deletion. A harder item may test the required delete action or outside-group dependencies. For deletion-order questions, identify blockers first: locks and external dependencies can prevent success. After blockers are removed, remember the sequence child resources, managed-by controllers, then remaining resources."
+    },
+    "sources": [
+      {
+        "title": "Delete Resource Groups and Resources",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/delete-resource-group"
+      },
+      {
+        "title": "Use the Azure portal and Azure Resource Manager to Manage Resource Groups - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.4-07",
+    "objective": "D1.3.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a resource group named `rg-support` that contains 15 virtual machines, 3 storage accounts, and 2 public IP addresses. A Microsoft Entra group named `HelpdeskReaders` must view the Azure control-plane configuration of all current and future resources in `rg-support`. The group must not make changes, and you need to minimize administrative effort.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign the Reader role to `HelpdeskReaders` at the `rg-support` resource group scope"
+      },
+      {
+        "id": "B",
+        "text": "Assign the Reader role separately on each current resource in `rg-support`"
+      },
+      {
+        "id": "C",
+        "text": "Assign the Contributor role to `HelpdeskReaders` at the subscription scope"
+      },
+      {
+        "id": "D",
+        "text": "Move all resources to a management group and assign Reader there"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The requirement is to view Azure Resource Manager control-plane information, not data inside services such as blobs or VM guest files.",
+    "sections": {
+      "correctAnswer": "**A. Assign the Reader role to `HelpdeskReaders` at the `rg-support` resource group scope**. RBAC assignments at resource group scope are inherited by resources in that group, and Reader provides view-only control-plane access.",
+      "technical": "An Azure RBAC role assignment has a principal, role definition, and scope. Scope can be management group, subscription, resource group, or resource, and lower scopes inherit permissions from higher scopes. Because the requirement is all current and future resources in exactly one resource group, the resource group is the narrowest scope that covers the target set. The Reader built-in role includes `*/read` for control-plane information and no data actions, so it can view resource configuration without granting write access or service data access. Resource-by-resource assignments would not automatically include future resources. Subscription scope would overgrant outside `rg-support`. Management groups contain subscriptions, not individual resources moved out of resource groups.\n\nThe Reader role is appropriate only for management-plane viewing. If the helpdesk later asks to read files in a storage account, messages in a queue, or data inside a database, that is a separate data-plane requirement. The resource group Reader assignment may let them see that the storage account exists, but it does not automatically grant data access inside the account.\n\nFuture resources are the decisive clue. A resource group assignment automatically covers resources later created in that group, while individual resource assignments do not. This is why the narrowest sufficient scope is not always the smallest possible scope; it is the smallest scope that contains the whole required set over time.\n\nThis is also why assigning to a group principal is cleaner than assigning directly to many helpdesk users. Membership can change in Microsoft Entra ID without editing the resource group assignment.",
+      "wrongOptions": {
+        "B": "Per-resource assignments miss future resources and increase administration. Misconception: Least privilege always means individual resource scope. Could be correct when only specific named resources are in scope.",
+        "C": "Contributor is too powerful and subscription scope is too broad. Misconception: Simpler broad access is acceptable for read-only support. Could be correct when a team must manage all subscription resources.",
+        "D": "Resources are not moved into management groups. Misconception: Management groups directly contain resources. Could be correct for assigning Reader across subscriptions under a management group."
+      },
+      "plainEnglish": "The helpdesk needs a read-only badge for one project box. Put the badge on the box, not on every item one by one. Anything currently in the box, and anything later added to the box, inherits the ability to be viewed. The badge should not open the whole subscription, and it should not let users change resources.",
+      "analogy": "A museum gives a tour group permission to view every exhibit in one room. The guard does not issue a separate badge for every painting or open the whole museum.\n\n| Analogy | Azure reality |\n|---|---|\n| Tour group | Microsoft Entra group |\n| Viewing badge | Reader role |\n| One room | Resource group |\n| New exhibits | Future resources |\n\n**Where the analogy breaks down:** Azure RBAC also has data-plane distinctions, deny assignments, conditions, and propagation timing.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra group",
+          "definition": "An identity group that can receive Azure role assignments."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Role-based access control for Azure resources."
+        },
+        {
+          "term": "Reader",
+          "definition": "Built-in role for reading control-plane information."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where access applies."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "Permissions at a parent scope apply to child scopes."
+        },
+        {
+          "term": "Data actions",
+          "definition": "Permissions for data inside a resource; Reader has none."
+        }
+      ],
+      "watchOut": "- Reader at group scope covers future resources in the group.\n- Reader is control-plane read, not automatic service-data read.\n- Subscription scope is broader than required.\n- Management groups organize subscriptions, not individual resources.",
+      "productionTip": {
+        "official": "Microsoft documents RBAC scope inheritance and the Reader role's `*/read` control-plane permission with no data actions. The portal role assignment flow starts by identifying scope.",
+        "recommendation": "Assign roles to groups, not individual users, at the narrowest scope that matches the job. Add service-specific data roles only when the helpdesk truly needs data access."
+      },
+      "memoryTrick": "Everything in this group means assign at the group.",
+      "examTip": "Clue words are **all current and future resources**, **view**, **resource group**, and **minimize effort**. Choose Reader at resource group scope. A harder version may add blob data access, requiring a storage data role. Expect distractors that confuse control-plane Reader with data-reader roles. If the task says view configuration in a resource group, Reader at group scope fits. If it says open blob contents, switch to storage data roles."
+    },
+    "sources": [
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      },
+      {
+        "title": "Azure built-in roles for General",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/general"
+      },
+      {
+        "title": "Assign Azure roles using the Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-portal"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.4-08",
+    "objective": "D1.3.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A company runs an application that has a web app, an App Service plan, an application storage account, and a test virtual machine used only during the development phase. The test VM is deleted every month and recreated from a script. The production web app and storage account remain for years.\n\nHow should you design resource groups for lifecycle management?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Put all resources in one resource group because they are part of the same business application"
+      },
+      {
+        "id": "B",
+        "text": "Put resources that are deployed, updated, and deleted together in the same resource group, and place the monthly test VM in a separate group"
+      },
+      {
+        "id": "C",
+        "text": "Create one resource group per Azure region regardless of lifecycle"
+      },
+      {
+        "id": "D",
+        "text": "Put each individual resource in its own resource group to avoid all dependencies"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The question focuses on resource group lifecycle design. Access, policy, tags, and cost reporting can influence real designs but are not the primary issue here.",
+    "sections": {
+      "correctAnswer": "**B. Put resources that are deployed, updated, and deleted together in the same resource group, and place the monthly test VM in a separate group**. Microsoft recommends grouping resources that share the same lifecycle.",
+      "technical": "Resource groups are intended to manage related resources as a group. Microsoft says to add resources sharing the same lifecycle to the same resource group so they can be deployed, updated, and deleted together. If a resource has a different deployment cycle, it should be in another resource group. Here, the web app, plan, and storage account are long-lived application components. The test VM is disposable and recreated monthly, so it has a different lifecycle. Putting it with production resources increases the risk that cleanup or deletion affects long-lived components. Region is not the primary design criterion because resources in a group can be in different regions. One group per resource usually increases overhead and loses useful group-level operations.\n\nLifecycle grouping is especially important because deleting a resource group deletes all resources in it. A temporary resource placed in a long-lived production group makes cleanup automation dangerous, while a long-lived resource placed in a disposable group can be accidentally removed. Use resource groups as operational blast-radius boundaries, not just visual folders.\n\nA good lifecycle boundary also improves cleanup confidence. When all disposable development resources live in a disposable group, a delete operation has a predictable blast radius. When temporary and permanent resources share a group, every cleanup job needs extra filtering, and a filtering mistake can become an outage.\n\nIf later the test VM becomes permanent or production-critical, revisit the design. Resource group boundaries should follow the current lifecycle, not the first script that happened to create the resource.",
+      "wrongOptions": {
+        "A": "Same business application is not enough when lifecycles differ. Misconception: All resources with one application name must share a group. Could be correct if all components were deployed and retired together.",
+        "C": "Resource group location does not force resource region, and region alone is not the lifecycle rule. Misconception: Resource groups are regional folders. Could be correct when regional stacks also have separate lifecycles.",
+        "D": "One group per resource is usually unnecessary overhead. Misconception: Maximum separation is always best. Could be correct for exceptional resources with completely independent ownership and lifecycle."
+      },
+      "plainEnglish": "Put things together when you expect to handle them together. The production resources live for years, so they should not be in the same cleanup target as a VM that is destroyed monthly. A separate test group makes the monthly delete safer and makes ownership clearer.",
+      "analogy": "A kitchen has appliances that stay for years and party decorations thrown away after each event. Do not store the disposable decorations in the same box as the permanent appliances just because both relate to the kitchen.\n\n| Analogy | Azure reality |\n|---|---|\n| Appliances | Long-lived production resources |\n| Party decorations | Monthly test VM |\n| Separate decoration box | Test resource group |\n\n**Where the analogy breaks down:** Azure groups also affect RBAC scope, deployment history, and resource IDs.",
+      "jargon": [
+        {
+          "term": "Lifecycle",
+          "definition": "The pattern of creating, updating, and deleting a resource."
+        },
+        {
+          "term": "App Service plan",
+          "definition": "Compute capacity for Azure App Service apps."
+        },
+        {
+          "term": "Web app",
+          "definition": "An Azure App Service web application resource."
+        },
+        {
+          "term": "Storage account",
+          "definition": "An Azure resource for storage services."
+        },
+        {
+          "term": "Test VM",
+          "definition": "A temporary virtual machine for development or testing."
+        },
+        {
+          "term": "Lifecycle grouping",
+          "definition": "Resource group design based on shared deploy/update/delete timing."
+        }
+      ],
+      "watchOut": "- Same app name does not always mean same resource group.\n- Temporary resources should not share destructive automation with production resources.\n- Region alone is not the grouping rule.\n- Deleting a resource group deletes everything in it.",
+      "productionTip": {
+        "official": "Microsoft states that resources in a resource group should generally share a lifecycle and resources with different deployment cycles should be in different groups.",
+        "recommendation": "Name groups by workload and environment, such as `rg-payroll-prod` and `rg-payroll-devtest`, and point cleanup automation only at disposable groups."
+      },
+      "memoryTrick": "Group by the day you would delete it. If resources should not die together, separate them.",
+      "examTip": "Clue words are **deleted every month** versus **remain for years**. Pick lifecycle separation, not one group per region or per resource. A harder version may include shared databases used by multiple apps. The wording 'deleted every month' is not background color; it is the design signal. Select the answer that separates the monthly lifecycle from the years-long lifecycle, even though the resources support one application."
+    },
+    "sources": [
+      {
+        "title": "What is Azure Resource Manager?",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview"
+      },
+      {
+        "title": "Use the Azure portal and Azure Resource Manager to Manage Resource Groups - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.4-09",
+    "objective": "D1.3.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You need to delete a resource group named `rg-lab` that contains several virtual machines and virtual machine scale sets that are stuck in deletion. You decide to use a supported resource group force deletion option for only the supported compute types.\n\nWhich command should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`Remove-AzResourceGroup -Name \"rg-lab\" -Force`"
+      },
+      {
+        "id": "B",
+        "text": "`Remove-AzResourceGroup -Name \"rg-lab\" -ForceDeletionType \"Microsoft.Compute/virtualMachines,Microsoft.Compute/virtualMachineScaleSets\"`"
+      },
+      {
+        "id": "C",
+        "text": "`Remove-AzResourceGroup -Name \"rg-lab\" -ForceDeletionType \"Microsoft.Network/virtualNetworks,Microsoft.Storage/storageAccounts\"`"
+      },
+      {
+        "id": "D",
+        "text": "`Remove-AzResourceGroup -Name \"rg-lab\" -AsJob`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. You have permission to delete the group. The question is about documented force deletion types, not confirmation suppression.",
+    "sections": {
+      "correctAnswer": "**B. `Remove-AzResourceGroup -Name \"rg-lab\" -ForceDeletionType \"Microsoft.Compute/virtualMachines,Microsoft.Compute/virtualMachineScaleSets\"`**. Resource group force deletion supports these compute resource types.",
+      "technical": "Resource group deletion normally deletes all resources in the group. Azure Resource Manager also exposes a force-deletion option on the resource group DELETE REST API through the `forceDeletionTypes` query parameter. The REST documentation states that currently supported values are `Microsoft.Compute/virtualMachines` and `Microsoft.Compute/virtualMachineScaleSets`. Az PowerShell exposes this as `Remove-AzResourceGroup -ForceDeletionType`. This is different from `-Force`, which suppresses confirmation, and `-AsJob`, which runs the local cmdlet in the background. Individual VM and VMSS delete APIs also have `forceDeletion=true`, but this question asks about deleting a resource group with supported force-deletion types.\n\nThe supported force-deletion type list is intentionally narrow. The resource group delete API still targets the group as a whole, but the force-deletion hint applies only to the documented resource types. If another provider resource is stuck, troubleshoot that provider's documented delete behavior instead of guessing a `ForceDeletionType` string.\n\nFor resource group force deletion, the names must be provider type strings, not friendly names like VM or VMSS. The comma-separated list in the command is passed to Resource Manager so it can apply the documented force behavior to those compute resources during the broader group deletion request.\n\nThis command still deserves normal deletion safeguards: confirm the target group name, remove locks deliberately, and make sure no required lab evidence or disks must be retained before issuing it.",
+      "wrongOptions": {
+        "A": "`-Force` skips confirmation but does not specify force-deletion resource types. Misconception: Every Force parameter means provider-level force deletion. Could be correct for a normal delete where you only want no prompt.",
+        "C": "Those resource types are not the documented resource group force-deletion types. Misconception: Any provider type can be named for force deletion. Could be correct only if Microsoft later documents support for those types.",
+        "D": "`-AsJob` changes how PowerShell runs the command locally; it does not request force deletion. Misconception: Running in background makes Azure use stronger deletion. Could be correct when you want a normal delete to continue as a job."
+      },
+      "plainEnglish": "`-Force` and `-ForceDeletionType` are not the same. `-Force` means do not ask for confirmation. `-ForceDeletionType` tells Azure to use special force-delete handling for supported stuck resource types. For a resource group with stuck VMs and VM scale sets, name those two Microsoft.Compute types.\n\nThis means the safest exam answer names the two supported compute provider types exactly. A command that merely runs without asking, or runs in the background, might still perform an ordinary delete and leave the stuck compute resources unresolved.",
+      "analogy": "A cleanup crew has a normal work order, a checkbox that says do not ask again, and a special approved tool for jammed server racks. The checkbox does not use the special tool.\n\n| Analogy | Azure reality |\n|---|---|\n| Do not ask checkbox | `-Force` |\n| Special tool | `-ForceDeletionType` |\n| Jammed server racks | Stuck VMs and VMSS |\n\n**Where the analogy breaks down:** Azure force deletion is provider API behavior with asynchronous status handling, not a physical tool that guarantees every dependency disappears instantly.",
+      "jargon": [
+        {
+          "term": "ForceDeletionType",
+          "definition": "PowerShell parameter specifying supported types to force delete during resource group deletion."
+        },
+        {
+          "term": "forceDeletionTypes",
+          "definition": "REST query parameter for resource group force deletion."
+        },
+        {
+          "term": "Virtual machine",
+          "definition": "Compute resource type `Microsoft.Compute/virtualMachines`."
+        },
+        {
+          "term": "Virtual machine scale set",
+          "definition": "Compute resource type `Microsoft.Compute/virtualMachineScaleSets`."
+        },
+        {
+          "term": "`-Force`",
+          "definition": "PowerShell switch that suppresses confirmation."
+        },
+        {
+          "term": "`-AsJob`",
+          "definition": "PowerShell switch that runs a cmdlet as a background job."
+        }
+      ],
+      "watchOut": "- `-Force` and `-ForceDeletionType` are different.\n- Supported resource group force-deletion types are limited.\n- Resource group deletion still deletes the whole group.\n- Remove locks before deletion.\n- Individual VM force deletion uses a different API parameter.",
+      "productionTip": {
+        "official": "The Resource Groups Delete REST API documents `forceDeletionTypes` for virtual machines and virtual machine scale sets. `Remove-AzResourceGroup` documents the `-ForceDeletionType` parameter.",
+        "recommendation": "Use force deletion only for exception handling. Record stuck resource IDs, confirm deletion intent, run the documented command, and review activity logs after completion."
+      },
+      "memoryTrick": "`-Force` skips the question; `-ForceDeletionType` names the stuck compute types.",
+      "examTip": "Clue words are **force deletion**, **VMs**, **VMSS**, and **resource group**. Choose the option with `-ForceDeletionType` and the two Microsoft.Compute types. A harder version may show the REST `forceDeletionTypes` query parameter. Do not pick `-Force` just because it sounds stronger. In PowerShell questions, read the parameter name carefully: confirmation suppression, background jobs, and force-deletion type selection are three separate behaviors."
+    },
+    "sources": [
+      {
+        "title": "Resource Groups - Delete - REST API (Azure Resource Management)",
+        "url": "https://learn.microsoft.com/en-us/rest/api/resources/resource-groups/delete?view=rest-resources-2021-04-01"
+      },
+      {
+        "title": "Remove-AzResourceGroup (Az.Resources)",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.resources/remove-azresourcegroup?view=azps-16.3.0"
+      },
+      {
+        "title": "Virtual Machines - Delete - REST API (Azure Compute)",
+        "url": "https://learn.microsoft.com/en-us/rest/api/compute/virtual-machines/delete?view=rest-compute-2026-04-01"
+      },
+      {
+        "title": "Virtual Machine Scale Sets - Delete - REST API (Azure Compute)",
+        "url": "https://learn.microsoft.com/en-us/rest/api/compute/virtual-machine-scale-sets/delete?view=rest-compute-2026-04-01"
+      },
+      {
+        "title": "Delete Resource Groups and Resources",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/delete-resource-group"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.4-10",
+    "objective": "D1.3.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You need to create a resource group in an Azure subscription. The naming standard requires the name to include a project name, environment, and sequence number.\n\nWhich name satisfies the Azure Resource Manager rules for resource group names?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`rg-payroll-prod-01.`"
+      },
+      {
+        "id": "B",
+        "text": "`rg_payroll(prod)-01`"
+      },
+      {
+        "id": "C",
+        "text": "`rg/payroll/prod/01`"
+      },
+      {
+        "id": "D",
+        "text": "`rg-payroll-prod-01#eastus`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The question tests Azure Resource Manager resource group naming rules only. An organization can be stricter than Azure but cannot allow names Azure rejects.",
+    "sections": {
+      "correctAnswer": "**B. `rg_payroll(prod)-01`**. Resource group names can use underscores, hyphens, periods, parentheses, and letters or digits, and they cannot end with a period.",
+      "technical": "Microsoft's naming rules list `Microsoft.Resources/resourcegroups` at subscription scope. The length is 1 to 90 characters. Valid characters include underscores, hyphens, periods, parentheses, and letters or digits as defined by .NET `Char.IsLetterOrDigit` categories. The name cannot end with a period. The naming article also warns not to use `#` in resource names because it interferes with URL parsing, and slash is not in the valid character list. Microsoft notes that resource and resource group names are case-insensitive unless specifically noted; the FAQ confirms resource group names are treated as case-insensitive.\n\nRemember that these are Azure platform rules, not recommendations. A name can be valid in Azure and still violate your organization's convention, but the reverse is not true: an internal standard cannot make an invalid Azure name deploy successfully. Validating names before deployment avoids late pipeline failures and inconsistent manual corrections.\n\nThe valid option also demonstrates that parentheses are allowed for resource groups even though many teams avoid them for simplicity. The exam may include a character that looks unusual but is still valid. Evaluate against the official list rather than personal naming preference, then apply company standards only after deciding Azure validity.\n\nCase is a separate trap. Azure treats resource group names case-insensitively, so changing only uppercase and lowercase characters does not create a distinct second resource group.",
+      "wrongOptions": {
+        "A": "It ends with a period, which is not allowed. Misconception: If periods are allowed, they are allowed anywhere. Could be correct if the final period were removed.",
+        "C": "Slash is not valid and has path meaning in Azure resource IDs. Misconception: Slashes can show hierarchy in the name. Could be correct only as external documentation, not the actual name.",
+        "D": "`#` is not valid for resource group names and interferes with URL parsing. Misconception: Any punctuation is acceptable under 90 characters. Could be correct if the hash were replaced with a valid character."
+      },
+      "plainEnglish": "Azure has a rulebook for resource group names. The valid option uses accepted letters, numbers, an underscore, parentheses, and a hyphen, and it does not end in a dot. The other options break a specific Azure rule by ending with a dot, using slashes, or using a hash sign.\n\nAlso remember that the Azure portal, CLI, PowerShell, and REST API all ultimately submit the name to Azure Resource Manager. A name that fails the platform rule will fail regardless of which tool you use to create the group.",
+      "analogy": "Choosing a resource group name is like choosing a vehicle plate. Your company can prefer a pattern, but the transport authority rejects banned symbols.\n\n| Analogy | Azure reality |\n|---|---|\n| License plate | Resource group name |\n| Authority rules | Azure naming rules |\n| Company style | Naming standard |\n| Banned symbols | Slash and hash |\n\n**Where the analogy breaks down:** Azure names become part of API URLs and resource IDs, so restrictions also protect request parsing.",
+      "jargon": [
+        {
+          "term": "Resource group name",
+          "definition": "The subscription-scoped name of a resource group."
+        },
+        {
+          "term": "Subscription scope",
+          "definition": "The boundary where the name is created."
+        },
+        {
+          "term": "`Char.IsLetterOrDigit`",
+          "definition": "A .NET character test referenced by Microsoft."
+        },
+        {
+          "term": "Case-insensitive",
+          "definition": "Names differing only by case are treated as the same."
+        },
+        {
+          "term": "URI parsing",
+          "definition": "How APIs interpret characters in URLs."
+        },
+        {
+          "term": "Naming standard",
+          "definition": "An organization's naming pattern that must fit Azure rules."
+        }
+      ],
+      "watchOut": "- Resource group names are 1 to 90 characters.\n- Valid punctuation includes underscore, hyphen, period, and parentheses.\n- Names cannot end with a period.\n- Resource group names are case-insensitive.\n- Do not use slash or hash as separators.",
+      "productionTip": {
+        "official": "Microsoft's naming rules specify length, valid characters, and no trailing period for resource groups. The FAQ states names are case-insensitive and may be returned with different casing.",
+        "recommendation": "Use a simple pipeline-validated convention with lowercase letters, digits, and hyphens unless you have a documented reason to use other allowed characters."
+      },
+      "memoryTrick": "Allowed punctuation is limited, and the final character cannot be a dot.",
+      "examTip": "Eliminate slashes, hashes, and trailing periods first. A harder item may ask about case sensitivity or a name Azure allows but a company's stricter standard rejects. A harder naming question may provide two names that both look odd. Test each rule separately: length, allowed characters, final period, case-insensitive comparison, and characters such as slash or hash that break resource ID or URL expectations."
+    },
+    "sources": [
+      {
+        "title": "Naming rules and restrictions for Azure resources",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules"
+      },
+      {
+        "title": "Azure Resource Manager frequently asked questions",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/frequently-asked-questions"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.4-11",
+    "objective": "D1.3.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A CI/CD pipeline deploys ARM templates to a resource group named `rg-platform` several times a day. The deployment history at the resource group scope grows beyond 700 entries. You want new deployments to keep succeeding without manually deleting old deployment records.\n\nWhat should you expect Azure Resource Manager to do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Automatically delete the oldest deployment records until the history is down to 600, as long as the deploying identity can delete deployment history"
+      },
+      {
+        "id": "B",
+        "text": "Block every deployment as soon as the history reaches 700 entries"
+      },
+      {
+        "id": "C",
+        "text": "Delete the deployed Azure resources that were created by the oldest deployments"
+      },
+      {
+        "id": "D",
+        "text": "Let you opt out of automatic cleanup for only `rg-platform` while keeping cleanup enabled for other resource groups"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The pipeline identity has `Microsoft.Resources/deployments/delete` at the resource group scope, and no CanNotDelete lock blocks deployment-history cleanup.",
+    "sections": {
+      "correctAnswer": "**A. Automatically delete the oldest deployment records until the history is down to 600, as long as the deploying identity can delete deployment history**. Each scope stores up to 800 deployments, and Resource Manager automatically grooms old history after the count exceeds 700.",
+      "technical": "Azure Resource Manager records deployment details in deployment history at the deployment scope. Each resource group, subscription, management group, or tenant scope can store up to 800 deployments. Microsoft documents automatic cleanup when history exceeds 700 deployments: Resource Manager deletes the oldest deployment records until the history is down to 600. If a scope is already at the 800 limit, the next deployment fails, automatic deletion starts immediately, and you can retry after a short wait. What-if and validation operations can also trigger cleanup. Deleting a deployment from history does not delete deployed resources. Cleanup is requested under the identity that deployed the template, so that identity needs `Microsoft.Resources/deployments/delete`. A CanNotDelete lock on the scope can block cleanup. Opting out is a subscription-level feature flag and cannot be applied to only one resource group.\n\nDeployment history is useful for troubleshooting, but it is not a permanent audit archive. Automatic grooming keeps deployments working by deleting old records. If your organization needs long-term release evidence, store deployment logs, approvals, artifacts, and change tickets in a system designed for retention instead of relying on unlimited Azure deployment history.\n\nThe cleanup count is easy to reverse by mistake. Azure does not wait until every slot is full before doing any grooming; it begins after the history exceeds 700 and trims to 600. The 800 number remains important because a scope already at that limit can fail the next deployment before cleanup gives you room to retry.",
+      "wrongOptions": {
+        "B": "700 is the cleanup trigger, not the hard maximum. Misconception: 700 is the enforced limit. Could be correct only at 800, where a deployment can fail before retrying after cleanup starts.",
+        "C": "Deployment history cleanup deletes records, not resources. Misconception: Deployment records own the live resources. Could be correct when explicitly deleting resources or a resource group, not grooming history.",
+        "D": "Opting out is not per resource group; the documented feature flag is subscription-level. Misconception: Cleanup is configured independently per group. Could be correct for disabling automatic deletion across a subscription, with caution."
+      },
+      "plainEnglish": "Azure keeps a log of deployments. The log can hold 800 records at a scope. When it gets above 700, Azure normally removes old log entries until only 600 remain. It does not remove the resources that were created. The cleanup still needs permission and can be blocked by delete locks.",
+      "analogy": "A reception desk has a binder for 800 visitor sign-in sheets. When the binder gets too full, the oldest sheets are removed so new visitors can sign in. The visitors are not removed from the building.\n\n| Analogy | Azure reality |\n|---|---|\n| Sign-in binder | Deployment history |\n| 800 sheets | History limit |\n| Remove old sheets | Delete oldest records |\n| Clerk authority | `deployments/delete` permission |\n\n**Where the analogy breaks down:** Azure cleanup also depends on identities, locks, validation operations, and feature flags.",
+      "jargon": [
+        {
+          "term": "Deployment history",
+          "definition": "Records of ARM or Bicep deployments at a scope."
+        },
+        {
+          "term": "Deployment scope",
+          "definition": "The target level such as resource group or subscription."
+        },
+        {
+          "term": "Automatic deletion",
+          "definition": "Resource Manager cleanup of old deployment records."
+        },
+        {
+          "term": "What-if",
+          "definition": "A Resource Manager preview operation that can trigger cleanup."
+        },
+        {
+          "term": "`Microsoft.Resources/deployments/delete`",
+          "definition": "Permission required to delete deployment records."
+        },
+        {
+          "term": "CanNotDelete lock",
+          "definition": "A lock that can prevent deletion operations."
+        }
+      ],
+      "watchOut": "- The hard limit is 800 deployments per scope.\n- Cleanup begins above 700 and trims to 600.\n- Deleted deployment records do not delete resources.\n- Cleanup uses the deployer's permissions.\n- Opt-out is not per resource group.",
+      "productionTip": {
+        "official": "Microsoft documents the 800 deployment per-scope limit, cleanup above 700 down to 600, oldest-first deletion, permission requirement, lock behavior, and that deleting history does not affect resources.",
+        "recommendation": "Let automatic cleanup run for CI/CD, keep release evidence in the pipeline system, and avoid unnecessary CanNotDelete locks on heavily deployed scopes."
+      },
+      "memoryTrick": "History is a log, not the resources: over 700, trim to 600, hard limit 800.",
+      "examTip": "Clue words are **deployment history**, **700**, **800**, and **resource group scope**. Choose automatic oldest-record cleanup. A harder version may ask why cleanup failed because of missing permission or a lock. If a deployment-history question mentions old records disappearing, do not infer resource loss. If it mentions cleanup not happening, check two blockers: the deploying identity lacks `deployments/delete`, or a CanNotDelete lock prevents history deletion."
+    },
+    "sources": [
+      {
+        "title": "Deployment history deletions",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-history-deletions"
+      },
+      {
+        "title": "Use the Azure portal and Azure Resource Manager to Manage Resource Groups - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

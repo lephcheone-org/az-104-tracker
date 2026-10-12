@@ -1,0 +1,1061 @@
+[
+  {
+    "id": "D1.1.4-01",
+    "objective": "D1.1.4",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a Microsoft Entra workforce tenant. A help desk user must invite `alex@fabrikam.com` by using **Entra ID** > **Users** > **Invite external user**. The user must not receive broad user-administration permissions.\n\nWhich role should you assign?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Directory Readers"
+      },
+      {
+        "id": "B",
+        "text": "Security Reader"
+      },
+      {
+        "id": "C",
+        "text": "Guest Inviter"
+      },
+      {
+        "id": "D",
+        "text": "Groups Administrator"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra workforce or external tenant defaults apply unless the scenario states otherwise. No unrelated Conditional Access, deny assignment, service-specific policy, or licensing exception blocks the described operation.",
+    "sections": {
+      "correctAnswer": "**C. Guest Inviter**. Guest Inviter is the least-privilege directory role named for inviting B2B guests.",
+      "technical": "A B2B invitation is a directory operation. Microsoft documents Guest Inviter and User Administrator as roles that can invite guests, with Guest Inviter being narrower. Creating the invitation creates a guest object, but the guest must still redeem the invitation or use a tenant-specific direct link. Invitation rights do not grant the guest app access or Azure resource access; those require group, app, or Azure RBAC assignments. Domain restrictions and cross-tenant access settings can still block an invitation. In this scenario, the access path has three checkpoints: Erin must have invitation permission, Fabrikam must not be blocked by tenant policy, and Alex must later receive an app or group assignment. Guest Inviter satisfies only the first checkpoint, which is exactly why it is least privilege for the help desk request.",
+      "wrongOptions": {
+        "A": "Directory Readers is wrong because it allows reading directory information, not creating B2B invitations. Misconception: read access to users is enough to add users. Could be correct when Erin only needs to inspect existing users, groups, or tenant metadata.",
+        "B": "Security Reader is wrong because it is a view-only security role and does not send invitations. Misconception: a security role covers every identity-security action. Could be correct when Erin only needs to read security configuration or reports.",
+        "D": "Groups Administrator is wrong because Alex is not yet a guest to place in a group, and group management is broader/different than inviting. Misconception: group membership management includes guest creation. Could be correct when Erin must manage group membership after the guest exists."
+      },
+      "plainEnglish": "Erin needs permission to send a visitor-style invitation, not permission to run the whole directory. The Guest Inviter role is built for that exact job: it lets a help desk user invite Alex as an outside collaborator. Alex still uses the Fabrikam account he already has, and Contoso separately decides which app or group Alex can use after the guest record is created.",
+      "analogy": "A library has a front-desk worker who can issue temporary researcher passes. That worker cannot hire staff, change payroll records, or unlock every archive room.\n\n| Analogy | Azure reality |\n|---|---|\n| Temporary researcher pass | B2B guest invitation |\n| Front-desk pass permission | Guest Inviter role |\n| Library staff administrator | User Administrator or broader directory role |\n| Archive room permission | Separate app, group, or Azure RBAC assignment |\n\n**Where the analogy breaks down:** A paper pass does not model domain allow lists, cross-tenant access checks, or the guest redemption state that Microsoft Entra evaluates after the invite is sent.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft cloud identity platform for users, groups, apps, authentication, and directory roles."
+        },
+        {
+          "term": "Microsoft Entra External ID",
+          "definition": "Microsoft Entra features for external collaboration and customer identity scenarios."
+        },
+        {
+          "term": "B2B collaboration",
+          "definition": "External ID capability that lets outside business users access workforce-tenant resources with their own identities."
+        },
+        {
+          "term": "Guest user",
+          "definition": "A user object representing an external collaborator in your tenant, usually with restricted default directory permissions."
+        },
+        {
+          "term": "Guest Inviter",
+          "definition": "Directory role that can invite guest users."
+        },
+        {
+          "term": "Directory role",
+          "definition": "Microsoft Entra role for tenant and directory administration."
+        },
+        {
+          "term": "Resource tenant",
+          "definition": "Tenant containing the app or resource being shared."
+        }
+      ],
+      "watchOut": "- Guest Inviter is a Microsoft Entra directory role, not an Azure RBAC role.\n- A successful invitation does not assign Alex to an application.\n- Domain allow/block lists and cross-tenant access settings can still stop an invitation.\n- User Administrator can also invite guests, but it is broader than the stated help desk task.",
+      "productionTip": {
+        "official": "A B2B invitation is a directory operation. Microsoft documents Guest Inviter and User Administrator as roles that can invite guests, with Guest Inviter being narrower. Creating the invitation creates a guest object, but the guest must still redeem the invitation or use a tenant-specific direct link....",
+        "recommendation": "Use a controlled group for Guest Inviter assignments and review it regularly. Grant actual application or resource access through groups after the guest object exists."
+      },
+      "memoryTrick": "For invitations, remember **GI = Guest Inviter**. This shortcut is only for sending guest invitations; it does not grant app access, group ownership, or Azure resource permissions.",
+      "examTip": "The exam clue is the combination of **invite external user** and **must not receive broad permissions**. Remove read-only roles first because they cannot create invitations. Remove Groups Administrator because the guest does not exist yet. A harder version might add that only specific admin roles can invite guests; Guest Inviter still matches that restricted setting."
+    },
+    "sources": [
+      {
+        "title": "Quickstart: Add a guest user and send an invitation",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/b2b-quickstart-add-guest-users-portal"
+      },
+      {
+        "title": "Configure external collaboration",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/external-collaboration-settings-configure"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.4-02",
+    "objective": "D1.1.4",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You need to invite 80 partner users with the least manual effort. You open **Entra ID** > **Users** > **Bulk operations** > **Bulk invite** and download the CSV template.\n\nWhich two values must you provide for each invitation? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "`Email address to invite`"
+      },
+      {
+        "id": "B",
+        "text": "A generated `#EXT#` user principal name"
+      },
+      {
+        "id": "C",
+        "text": "An Azure subscription ID"
+      },
+      {
+        "id": "D",
+        "text": "`Redirection url`"
+      },
+      {
+        "id": "E",
+        "text": "A temporary password"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra workforce or external tenant defaults apply unless the scenario states otherwise. No unrelated Conditional Access, deny assignment, service-specific policy, or licensing exception blocks the described operation.",
+    "sections": {
+      "correctAnswer": "**A. `Email address to invite`** and **D. `Redirection url`**. The bulk invite template requires the invitee email and the URL where the guest is sent after accepting.",
+      "technical": "Bulk invite uses a Microsoft-provided CSV template. The first template rows and headings must be preserved, and each guest row must include required values such as the email address to invite and the redirection URL. The redirect often points to My Apps. Microsoft Entra generates the guest object and `#EXT#`-style UPN after processing; administrators do not pre-create that value. B2B guests use their own identity provider or supported redemption method, so a temporary password is not part of the invitation. The upload is validated before submission, and operation results should be reviewed. The CSV template is also a guardrail: Microsoft Entra validates the file before running the job. If one row has a malformed email address or missing redirect URL, the bulk operation results identify which request failed so administrators can correct only the affected entries. The portal template also keeps optional invitation-message fields in a known order, which reduces parsing surprises during large partner onboarding.",
+      "wrongOptions": {
+        "B": "The generated `#EXT#` UPN is wrong because Microsoft Entra creates it after invitation processing. Misconception: guest UPNs must be precomputed in the upload. Could be correct when verifying invited users later with PowerShell or Microsoft Graph.",
+        "C": "An Azure subscription ID is wrong because bulk invite is a tenant directory operation, not an Azure resource deployment. Misconception: every Azure portal workflow requires a subscription value. Could be correct when granting Azure RBAC after guests are created.",
+        "E": "A temporary password is wrong because B2B guests authenticate with their own identity or a supported redemption method. Misconception: B2B guests are local password accounts. Could be correct when creating internal cloud-only users instead of inviting guests."
+      },
+      "plainEnglish": "A bulk invite spreadsheet is not asking you to invent accounts. It asks for the partner email address and the place to send the person after they accept. Microsoft Entra uses those rows to create invitations and guest records. The `#EXT#` account name appears later as a result of the process, and the partner keeps using their own sign-in method instead of a password you create.",
+      "analogy": "A training coordinator imports a roster for a partner workshop. The roster needs each attendee email and the room link they should land on after registering. It does not need a badge number the registration system will print later.\n\n| Analogy | Azure reality |\n|---|---|\n| Attendee email | Email address to invite |\n| Workshop landing page | Redirection URL |\n| Printed badge number | Generated guest UPN with `#EXT#` |\n| Registration import report | Bulk operation results |\n\n**Where the analogy breaks down:** Microsoft Entra also validates the CSV template structure and enforces tenant collaboration policies before invitations are successfully created.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft cloud identity platform for users, groups, apps, authentication, and directory roles."
+        },
+        {
+          "term": "Microsoft Entra External ID",
+          "definition": "Microsoft Entra features for external collaboration and customer identity scenarios."
+        },
+        {
+          "term": "B2B collaboration",
+          "definition": "External ID capability that lets outside business users access workforce-tenant resources with their own identities."
+        },
+        {
+          "term": "Guest user",
+          "definition": "A user object representing an external collaborator in your tenant, usually with restricted default directory permissions."
+        },
+        {
+          "term": "Bulk invite",
+          "definition": "Admin-center operation for inviting many B2B users with a CSV file."
+        },
+        {
+          "term": "CSV",
+          "definition": "Comma-separated values file."
+        },
+        {
+          "term": "Redirection URL",
+          "definition": "URL used after invitation acceptance."
+        },
+        {
+          "term": "#EXT#",
+          "definition": "Common marker in generated B2B guest UPNs."
+        }
+      ],
+      "watchOut": "- Do not remove the required template rows or headings.\n- The redirect URL is required even if you plan to assign apps later.\n- The `#EXT#` UPN is output, not input.\n- A CSV upload can partially fail; review per-row operation results.",
+      "productionTip": {
+        "official": "Bulk invite uses a Microsoft-provided CSV template. The first template rows and headings must be preserved, and each guest row must include required values such as the email address to invite and the redirection URL. The redirect often points to My Apps. Microsoft Entra generates the guest object an...",
+        "recommendation": "Download the latest template, pilot with a few users, avoid commas in custom messages, and use groups for later access assignment."
+      },
+      "memoryTrick": "Bulk invite needs **address plus after-party**: the email address and the post-acceptance redirect. This mnemonic does not include optional message fields or later access assignments.",
+      "examTip": "Look for **Bulk operations > Bulk invite** and **CSV template**. Required input columns beat generated identifiers. A harder item may show a CSV where the sample row was left in place or the required redirect column was blank."
+    },
+    "sources": [
+      {
+        "title": "Bulk invite B2B users",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/tutorial-bulk-invite"
+      },
+      {
+        "title": "Tutorial for bulk inviting B2B collaboration users",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/bulk-invite-powershell"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.4-03",
+    "objective": "D1.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You invite Mei as a B2B collaboration user. Mei does not open the invitation email. You send Mei a tenant-specific direct link to an assigned enterprise application, and Mei uses it for first access.\n\nWhat happens?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The invitation is bypassed because Mei did not use the email link."
+      },
+      {
+        "id": "B",
+        "text": "Mei is guided through first-time sign-in and consent for the resource tenant."
+      },
+      {
+        "id": "C",
+        "text": "Mei must create a password stored in your tenant."
+      },
+      {
+        "id": "D",
+        "text": "The guest object is created only after the direct link is selected."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra workforce or external tenant defaults apply unless the scenario states otherwise. No unrelated Conditional Access, deny assignment, service-specific policy, or licensing exception blocks the described operation.",
+    "sections": {
+      "correctAnswer": "**B. Mei is guided through first-time sign-in and consent for the resource tenant.**. A tenant-specific direct link can lead through redemption, but it does not skip first-time sign-in and consent.",
+      "technical": "B2B collaboration separates guest object creation from redemption. When an admin adds the guest, the user object exists with pending acceptance. The guest can redeem through invitation email, a common endpoint, or a tenant-specific direct link. The direct link includes tenant context, sends the guest to the correct resource tenant, and still presents the first-time consent experience such as privacy terms and terms of use if configured. The guest uses their own credentials or a supported fallback method; your tenant does not create a local password for this B2B guest. The consent status is important for troubleshooting. A user can appear in the Users list while still being unable to reach resources because the invitation is pending, a terms-of-use prompt is waiting, or the link lacks tenant context. Those states are different from missing app authorization.",
+      "wrongOptions": {
+        "A": "Bypass is wrong because a direct link still takes Mei through first-time redemption and consent. Misconception: redemption is tied only to clicking the invitation email. Could be correct for a later access after Mei already accepted.",
+        "C": "A local password is wrong because B2B collaboration does not require Contoso to store Mei's password. Misconception: every user object has tenant-owned credentials. Could be correct for a separate internal user account, not a B2B guest.",
+        "D": "Click-time object creation is wrong because the guest was created when the admin invited or added Mei. Misconception: pending acceptance means no user object exists. Could be correct for some self-service sign-up designs where account creation occurs during sign-up."
+      },
+      "plainEnglish": "The email invitation is one way to start the first visit, not the only way. Mei already has a pending guest record. When she uses a tenant-specific app link, Microsoft Entra can still connect her outside account to that guest record and ask her to accept the resource tenant consent prompts before opening the app.",
+      "analogy": "A museum sends invited researchers an email ticket, but a researcher can also check in at a kiosk with a prearranged reservation code. Either path still requires the researcher to accept the museum access rules on the first visit.\n\n| Analogy | Azure reality |\n|---|---|\n| Researcher reservation | Pending B2B guest object |\n| Email ticket | Invitation email redemption link |\n| Kiosk with museum code | Tenant-specific direct link |\n| Accept access rules | Consent and terms-of-use prompts |\n\n**Where the analogy breaks down:** The museum kiosk does not represent identity-provider discovery, token issuance, or fallback methods such as email one-time passcode.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft cloud identity platform for users, groups, apps, authentication, and directory roles."
+        },
+        {
+          "term": "Microsoft Entra External ID",
+          "definition": "Microsoft Entra features for external collaboration and customer identity scenarios."
+        },
+        {
+          "term": "B2B collaboration",
+          "definition": "External ID capability that lets outside business users access workforce-tenant resources with their own identities."
+        },
+        {
+          "term": "Guest user",
+          "definition": "A user object representing an external collaborator in your tenant, usually with restricted default directory permissions."
+        },
+        {
+          "term": "Redemption",
+          "definition": "First-time process where an invited guest accepts and links their external identity."
+        },
+        {
+          "term": "Direct link",
+          "definition": "Tenant-specific URL to a portal or app."
+        },
+        {
+          "term": "Consent experience",
+          "definition": "Prompts where a guest accepts the resource organization privacy or terms requirements."
+        }
+      ],
+      "watchOut": "- The direct link should contain tenant context such as a tenant ID or verified domain.\n- Pending acceptance means the user object can exist before Mei accepts.\n- Consent prompts are skipped only after they have already been accepted or automatic redemption applies.\n- Alias-address scenarios can require the invitation email link.",
+      "productionTip": {
+        "official": "B2B collaboration separates guest object creation from redemption. When an admin adds the guest, the user object exists with pending acceptance. The guest can redeem through invitation email, a common endpoint, or a tenant-specific direct link. The direct link includes tenant context, sends the gues...",
+        "recommendation": "Provide tenant-specific links in onboarding messages and explain the expected consent prompts so guests recognize the legitimate flow."
+      },
+      "memoryTrick": "A direct link is a **side door to the same lobby**, not a skip pass. This simplification stops applying after the guest has already redeemed the invitation.",
+      "examTip": "Clue words are **does not open the invitation email** and **tenant-specific direct link**. Rule out answers that create a local password or delay object creation until click time. A harder version may ask why a common URL sends the user to the wrong place without tenant context."
+    },
+    "sources": [
+      {
+        "title": "Microsoft Entra B2B collaboration invitation redemption",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/redemption-experience"
+      },
+      {
+        "title": "Add B2B collaboration users",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/add-users-administrator"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.4-04",
+    "objective": "D1.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Your company has two Microsoft Entra tenants after an acquisition. Users from the acquired company must authenticate in their original tenant, but in your tenant they must be treated as internal members for policies that evaluate `UserType`.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Leave `UserType` as `Guest` because `Identities` is `ExternalAzureAD`."
+      },
+      {
+        "id": "B",
+        "text": "Create local accounts with passwords in your tenant."
+      },
+      {
+        "id": "C",
+        "text": "Assign Directory Readers to each user."
+      },
+      {
+        "id": "D",
+        "text": "Set or convert the B2B collaboration users to `UserType` `Member`."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra workforce or external tenant defaults apply unless the scenario states otherwise. No unrelated Conditional Access, deny assignment, service-specific policy, or licensing exception blocks the described operation.",
+    "sections": {
+      "correctAnswer": "**D. Set or convert the B2B collaboration users to `UserType` `Member`.**. An external member can authenticate externally while having `UserType` set to Member in the resource tenant.",
+      "technical": "`Identities` and `UserType` are independent properties. `Identities` describes where or how the user authenticates, such as another Microsoft Entra organization. `UserType` describes the relationship to the host tenant, such as Guest or Member. Microsoft documents external member scenarios for multi-tenant organizations where users are homed elsewhere but treated as members in another tenant. Converting `UserType` does not move the home account, create a password, or grant application or Azure permissions by itself; it changes the relationship value that policies and apps may inspect. For the acquisition scenario, the safest rollout is to test one application or policy that reads `UserType` before converting a large population. If a dynamic group targets `user.userType -eq \"Guest\"`, converted external members drop out of that guest-targeted group after processing. The conversion should therefore be treated as a policy-affecting identity change, not a cosmetic profile edit. Access reviews should confirm that the acquired users still need the same applications after their relationship label changes.",
+      "wrongOptions": {
+        "A": "Leaving Guest is wrong because policies that evaluate `UserType` would still see the users as guests. Misconception: `ExternalAzureAD` automatically provides member treatment. Could be correct when the acquired users should remain ordinary external guests.",
+        "B": "Local accounts are wrong because the requirement says authentication remains in the original tenant. Misconception: member treatment requires a password in the resource tenant. Could be correct for users whose credentials must be fully managed by the new tenant.",
+        "C": "Directory Readers is wrong because it grants read privileges but does not change the relationship value. Misconception: directory roles define whether a user is a guest or member. Could be correct when an external administrator needs directory-read capability."
+      },
+      "plainEnglish": "The acquired users can keep their original home accounts and still be labelled as members in your tenant. The sign-in source and the relationship label are different fields. Change the field that policies read, `UserType`, instead of creating new passwords or adding a directory-read role.",
+      "analogy": "A hospital network buys a clinic. Clinic doctors still use the clinic credential system, but the main hospital marks them as staff in its scheduling system so staff-only rules apply.\n\n| Analogy | Azure reality |\n|---|---|\n| Clinic credential system | Original Microsoft Entra tenant |\n| Hospital staff label | `UserType` set to Member |\n| Visiting consultant label | `UserType` set to Guest |\n| Scheduling rule reads staff label | App or policy evaluates `UserType` |\n\n**Where the analogy breaks down:** A hospital badge label does not automatically model app assignments, Conditional Access, or Azure RBAC permissions.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft cloud identity platform for users, groups, apps, authentication, and directory roles."
+        },
+        {
+          "term": "Microsoft Entra External ID",
+          "definition": "Microsoft Entra features for external collaboration and customer identity scenarios."
+        },
+        {
+          "term": "B2B collaboration",
+          "definition": "External ID capability that lets outside business users access workforce-tenant resources with their own identities."
+        },
+        {
+          "term": "Guest user",
+          "definition": "A user object representing an external collaborator in your tenant, usually with restricted default directory permissions."
+        },
+        {
+          "term": "UserType",
+          "definition": "User property representing Member or Guest relationship to the host tenant."
+        },
+        {
+          "term": "Member",
+          "definition": "UserType value for users treated as part of the host organization."
+        },
+        {
+          "term": "Identities",
+          "definition": "Property showing the user identity provider."
+        },
+        {
+          "term": "ExternalAzureAD",
+          "definition": "Identity value for a user homed in another Microsoft Entra organization."
+        }
+      ],
+      "watchOut": "- `Identities` explains authentication source; `UserType` explains relationship.\n- Converting to Member does not grant app access by itself.\n- Do not use local passwords if the requirement says users authenticate in the original tenant.\n- Review dynamic groups or policies that include `user.userType -eq \"Guest\"` before conversion.",
+      "productionTip": {
+        "official": "`Identities` and `UserType` are independent properties. `Identities` describes where or how the user authenticates, such as another Microsoft Entra organization. `UserType` describes the relationship to the host tenant, such as Guest or Member. Microsoft documents external member scenarios for multi...",
+        "recommendation": "Before converting many users, inventory Conditional Access policies, dynamic groups, and app logic that use `userType`, then document the business reason."
+      },
+      "memoryTrick": "**Where you sign in is Identities; what you are here is UserType.** The rule of thumb fails for apps that ignore `UserType` and use their own roles.",
+      "examTip": "The key phrase is **authenticate in their original tenant** plus **treated as internal members**. That combination points to external member, not local account creation. A harder item may ask what happens to the UPN; changing UserType does not move the home identity."
+    },
+    "sources": [
+      {
+        "title": "B2B guest user properties",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/user-properties"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.4-05",
+    "objective": "D1.1.4",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You need to tighten external collaboration. Only users assigned invitation-related admin roles should be able to invite guests, and invitations should be allowed only to `fabrikam.com` and `adatum.com`.\n\nWhich two settings should you configure? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Guest users have the same access as members"
+      },
+      {
+        "id": "B",
+        "text": "Only users assigned to specific admin roles can invite guest users"
+      },
+      {
+        "id": "C",
+        "text": "B2B direct connect inbound settings"
+      },
+      {
+        "id": "D",
+        "text": "Guest user access is restricted to their own objects"
+      },
+      {
+        "id": "E",
+        "text": "Allow invitations only to the specified domains"
+      }
+    ],
+    "correct": [
+      "B",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra workforce or external tenant defaults apply unless the scenario states otherwise. No unrelated Conditional Access, deny assignment, service-specific policy, or licensing exception blocks the described operation.",
+    "sections": {
+      "correctAnswer": "**B. Only users assigned to specific admin roles can invite guest users** and **E. Allow invitations only to the specified domains**. Use the role-restricted guest invite setting and a domain allow list for the approved domains.",
+      "technical": "External collaboration settings contain separate controls. Guest invite settings determine who can send B2B collaboration invitations; selecting only users assigned to specific admin roles allows roles such as Guest Inviter or User Administrator while blocking ordinary users and guests. Collaboration restrictions determine which email domains can receive invitations. An allow list permits only specified domains, while unlisted domains are blocked. Microsoft documents that you can configure either an allow list or a block list, not both. Guest access restrictions affect what signed-in guests can read, and B2B direct connect is a separate trust model. The allow-list decision should be made before the role restriction is communicated to users. Otherwise a newly authorized Guest Inviter might still see invitation failures for domains that are not on the approved list. Those failures are expected enforcement, not a role assignment problem.",
+      "wrongOptions": {
+        "A": "Member-like guest access is wrong because it changes what guests can read, not who may invite or which domains are allowed. Misconception: all external collaboration restrictions are controlled by guest visibility. Could be correct if the goal were to make guests read directory data like members.",
+        "C": "B2B direct connect is wrong because the scenario is about B2B guest invitations. Misconception: direct connect is the replacement control for every partner setting. Could be correct for Teams shared channel collaboration without guest objects.",
+        "D": "Own-object guest access is wrong because it is a post-sign-in directory visibility setting. Misconception: making guests more private also limits invitation senders and domains. Could be correct when the security goal is only to hide directory users and groups from guests."
+      },
+      "plainEnglish": "This scenario has two knobs. One knob decides who inside your company can send invitations. The other knob decides which outside email domains can receive them. You need the role-based invite option for the first knob and an allow list containing Fabrikam and Adatum for the second.",
+      "analogy": "A corporate travel office lets only certified coordinators book visitor travel, and it books only for approved partner companies. Both rules must be true before a trip is arranged.\n\n| Analogy | Azure reality |\n|---|---|\n| Certified travel coordinator | User with Guest Inviter or another permitted role |\n| Approved partner-company list | Domain allow list |\n| Booking request | B2B invitation attempt |\n| Visitor itinerary | Invitation email or redemption link |\n\n**Where the analogy breaks down:** Travel booking does not include cross-tenant access policy checks, pending invitation redemption, or existing redeemed guests that remain in the tenant.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft cloud identity platform for users, groups, apps, authentication, and directory roles."
+        },
+        {
+          "term": "Microsoft Entra External ID",
+          "definition": "Microsoft Entra features for external collaboration and customer identity scenarios."
+        },
+        {
+          "term": "B2B collaboration",
+          "definition": "External ID capability that lets outside business users access workforce-tenant resources with their own identities."
+        },
+        {
+          "term": "Guest user",
+          "definition": "A user object representing an external collaborator in your tenant, usually with restricted default directory permissions."
+        },
+        {
+          "term": "External collaboration settings",
+          "definition": "Settings for invitation permissions, guest visibility, and domain restrictions."
+        },
+        {
+          "term": "Guest invite settings",
+          "definition": "Control for who can invite guests."
+        },
+        {
+          "term": "Allow list",
+          "definition": "Policy where only listed domains are permitted."
+        },
+        {
+          "term": "Block list",
+          "definition": "Policy where listed domains are denied."
+        },
+        {
+          "term": "B2B direct connect",
+          "definition": "Cross-tenant trust model for scenarios such as Teams shared channels."
+        }
+      ],
+      "watchOut": "- You can create an allow list or a block list, not both.\n- Role-restricted inviting does not decide which domains are approved.\n- A new allow list does not delete already redeemed guests from other domains.\n- Pending invitations can fail if a newly configured policy blocks the domain before redemption.",
+      "productionTip": {
+        "official": "External collaboration settings contain separate controls. Guest invite settings determine who can send B2B collaboration invitations; selecting only users assigned to specific admin roles allows roles such as Guest Inviter or User Administrator while blocking ordinary users and guests. Collaboratio...",
+        "recommendation": "Pair role-restricted inviting with a maintained domain allow list, an exception process, and periodic review of Guest Inviter assignments."
+      },
+      "memoryTrick": "Use **role gate plus domain gate**: one gate for the inviter, one gate for the invitee domain. The phrase does not cover later group or app authorization.",
+      "examTip": "The word **only** appears twice: only certain inviters and only certain domains. Select one answer from the invite settings area and one from collaboration restrictions. A harder version might ask whether SharePoint domain sharing lists replace this setting; they do not."
+    },
+    "sources": [
+      {
+        "title": "Configure external collaboration",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/external-collaboration-settings-configure"
+      },
+      {
+        "title": "Allow or block invitations",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/allow-deny-list"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.4-06",
+    "objective": "D1.1.4",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Security requires guest users to see only their own profile information by default. Guests should not browse other users, groups, or group memberships.\n\nWhich guest user access setting should you choose?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Guest users have the same access as members"
+      },
+      {
+        "id": "B",
+        "text": "Guest users have limited access to properties and memberships of directory objects"
+      },
+      {
+        "id": "C",
+        "text": "Guest user access is restricted to properties and memberships of their own directory objects"
+      },
+      {
+        "id": "D",
+        "text": "Guests can invite other guests"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra workforce or external tenant defaults apply unless the scenario states otherwise. No unrelated Conditional Access, deny assignment, service-specific policy, or licensing exception blocks the described operation.",
+    "sections": {
+      "correctAnswer": "**C. Guest user access is restricted to properties and memberships of their own directory objects**. The most restrictive guest user access option limits guests to their own directory objects.",
+      "technical": "Guest user access restrictions control how much Microsoft Entra directory information guests can read by default. The most inclusive option gives guest users member-like directory access. The default middle option gives limited access and blocks broad enumeration, but it can still expose selected properties and non-hidden group membership information. The most restrictive option limits guests to properties and memberships of their own directory objects. This setting does not decide who can invite guests, which domains can receive invitations, or which Azure resources a guest can manage. Explicit administrator roles or Azure RBAC assignments are separate grants. When troubleshooting, separate directory discovery from resource authorization. A guest might be unable to enumerate users because of this setting, yet still open an assigned enterprise application or Azure resource. That is not inconsistent; different authorization layers answer different questions.",
+      "wrongOptions": {
+        "A": "Same access as members is wrong because it is the most inclusive guest directory option. Misconception: guests need member-like visibility to use assigned apps. Could be correct only when an organization deliberately wants guests to browse directory data like members.",
+        "B": "Limited access is wrong because it is not the most restrictive own-profile-only setting. Misconception: the word limited means no visibility into any other object. Could be correct when the organization accepts the default guest visibility balance.",
+        "D": "Guests can invite is wrong because it controls whether guests can send invitations, not what they can read. Misconception: invitation permission and directory visibility are one control. Could be correct when the question asks whether existing guests may invite other guests."
+      },
+      "plainEnglish": "The security team is not asking who can invite guests or which companies can be invited. They are asking what a guest can look up after signing in. Choose the option that limits a guest to their own profile and own directory object information. In this question, the guest has already been invited or might be invited later; the concern is what directory information that guest can discover. The answer uses the strongest visibility restriction, not a domain list, invite setting, or Azure role.",
+      "analogy": "A hotel self-service screen can show a guest their own reservation and room number, but not the full guest list or staff schedule.\n\n| Analogy | Azure reality |\n|---|---|\n| Own reservation page | Guest user own profile |\n| Full guest list | Directory users and contacts |\n| Staff schedule | Groups and group memberships |\n| Privacy mode on kiosk | Most restrictive guest user access setting |\n\n**Where the analogy breaks down:** Microsoft Entra roles, Microsoft 365 service behavior, and Azure RBAC assignments can still grant specific access outside the default guest directory setting.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft cloud identity platform for users, groups, apps, authentication, and directory roles."
+        },
+        {
+          "term": "Microsoft Entra External ID",
+          "definition": "Microsoft Entra features for external collaboration and customer identity scenarios."
+        },
+        {
+          "term": "B2B collaboration",
+          "definition": "External ID capability that lets outside business users access workforce-tenant resources with their own identities."
+        },
+        {
+          "term": "Guest user",
+          "definition": "A user object representing an external collaborator in your tenant, usually with restricted default directory permissions."
+        },
+        {
+          "term": "Guest user access restrictions",
+          "definition": "Settings that control default directory data visible to guests."
+        },
+        {
+          "term": "Directory object",
+          "definition": "User, group, application, or other object in Microsoft Entra ID."
+        },
+        {
+          "term": "Profile",
+          "definition": "Properties associated with a user account."
+        },
+        {
+          "term": "Default permissions",
+          "definition": "Baseline permissions from user type and settings."
+        }
+      ],
+      "watchOut": "- The default limited option is less restrictive than own-object-only access.\n- This setting does not stop a permitted user from inviting guests.\n- Adding a guest to an administrator role can expand directory permissions.\n- Azure resource visibility is controlled through Azure RBAC, not this directory visibility setting.",
+      "productionTip": {
+        "official": "Guest user access restrictions control how much Microsoft Entra directory information guests can read by default. The most inclusive option gives guest users member-like directory access. The default middle option gives limited access and blocks broad enumeration, but it can still expose selected pr...",
+        "recommendation": "Use the most restrictive setting for high-privacy tenants, then grant specific directory roles only when a guest truly needs them."
+      },
+      "memoryTrick": "For privacy, think **guest sees guest**: their own object only. This is a directory default, not a promise that every Microsoft service hides every shared resource.",
+      "examTip": "Clue words are **only their own profile** and **should not browse groups**. Ignore options about invitation rights. A harder version may include Teams or Azure portal behavior; separate service permissions can still matter."
+    },
+    "sources": [
+      {
+        "title": "Configure external collaboration",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/external-collaboration-settings-configure"
+      },
+      {
+        "title": "Default user permissions",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/users-default-permissions"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.4-07",
+    "objective": "D1.1.4",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Contoso collaborates with Fabrikam, another Microsoft Entra organization. Only selected Fabrikam users should access one Contoso enterprise application. Contoso requires MFA but wants to trust MFA already completed in Fabrikam.\n\nWhich two Contoso cross-tenant access settings should you configure? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Outbound B2B collaboration for all Contoso users"
+      },
+      {
+        "id": "B",
+        "text": "Inbound B2B collaboration scoped to selected Fabrikam users and the Contoso app"
+      },
+      {
+        "id": "C",
+        "text": "External collaboration setting: no one can invite guests"
+      },
+      {
+        "id": "D",
+        "text": "A domain block list for `fabrikam.com`"
+      },
+      {
+        "id": "E",
+        "text": "Inbound trust settings to trust MFA from Microsoft Entra tenants"
+      }
+    ],
+    "correct": [
+      "B",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra workforce or external tenant defaults apply unless the scenario states otherwise. No unrelated Conditional Access, deny assignment, service-specific policy, or licensing exception blocks the described operation.",
+    "sections": {
+      "correctAnswer": "**B. Inbound B2B collaboration scoped to selected Fabrikam users and the Contoso app** and **E. Inbound trust settings to trust MFA from Microsoft Entra tenants**. Fabrikam users are entering Contoso resources, so configure inbound B2B collaboration and inbound MFA trust.",
+      "technical": "Cross-tenant access direction is from the perspective of the tenant being configured. Contoso owns the app, so Fabrikam users are inbound external users. Inbound B2B collaboration settings can allow or block external users and groups and scope access to internal applications. Trust settings are also inbound: they decide whether Contoso Conditional Access can trust MFA, compliant device, or hybrid joined device claims from Fabrikam. Trusting MFA does not remove the MFA policy; it lets a home-tenant MFA claim satisfy it. Outbound settings would control Contoso users accessing Fabrikam resources. Domain block lists and invitation settings do not provide MFA trust.",
+      "wrongOptions": {
+        "A": "Outbound is wrong because it governs Contoso users accessing Fabrikam resources, not Fabrikam users entering Contoso. Misconception: outbound means traffic coming from outside. Could be correct if Contoso employees needed access to Fabrikam apps.",
+        "C": "No one can invite is wrong because it blocks new invitations but does not scope Fabrikam users to a Contoso app or trust MFA. Misconception: invitation blocking is equivalent to cross-tenant access control. Could be correct during a temporary tenant-wide freeze on new guest invites.",
+        "D": "A Fabrikam domain block is wrong because it conflicts with allowing selected Fabrikam users. Misconception: a block list can be used as a selective allow mechanism. Could be correct when Fabrikam must be excluded from B2B invitations."
+      },
+      "plainEnglish": "Fabrikam users are coming into Contoso, so Contoso configures inbound access for that partner. The application is also in Contoso, so the allowed application is selected on Contoso inbound settings. To avoid a second MFA prompt when Fabrikam already performed MFA, Contoso configures inbound trust for MFA claims.",
+      "analogy": "A data center lets only named technicians from a partner company enter one server room and accepts that partner company's completed biometric screening. The visitor list and the screening-trust decision are separate controls.\n\n| Analogy | Azure reality |\n|---|---|\n| Named partner technicians | Selected Fabrikam users or groups |\n| One server room | One Contoso enterprise application |\n| Data center receiving visitors | Contoso inbound B2B collaboration |\n| Accepted biometric screening | Trusted Fabrikam MFA claim |\n\n**Where the analogy breaks down:** Microsoft Entra evaluates token claims and Conditional Access policies rather than physical security stamps, and supporting portal applications may also be needed for a smooth user experience.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft cloud identity platform for users, groups, apps, authentication, and directory roles."
+        },
+        {
+          "term": "Microsoft Entra External ID",
+          "definition": "Microsoft Entra features for external collaboration and customer identity scenarios."
+        },
+        {
+          "term": "B2B collaboration",
+          "definition": "External ID capability that lets outside business users access workforce-tenant resources with their own identities."
+        },
+        {
+          "term": "Guest user",
+          "definition": "A user object representing an external collaborator in your tenant, usually with restricted default directory permissions."
+        },
+        {
+          "term": "Cross-tenant access settings",
+          "definition": "Policies for B2B collaboration and trust with other Microsoft Entra organizations."
+        },
+        {
+          "term": "Inbound access",
+          "definition": "Controls external users accessing your tenant resources."
+        },
+        {
+          "term": "Outbound access",
+          "definition": "Controls your users accessing external tenant resources."
+        },
+        {
+          "term": "Trust settings",
+          "definition": "Controls for trusting MFA or device claims from another tenant."
+        },
+        {
+          "term": "MFA",
+          "definition": "Multifactor authentication."
+        },
+        {
+          "term": "Conditional Access",
+          "definition": "Policy engine that enforces controls such as MFA."
+        }
+      ],
+      "watchOut": "- Inbound and outbound are from Contoso's point of view.\n- Trusting MFA does not disable the Contoso MFA policy; it changes how the requirement can be satisfied.\n- Organization-specific settings for Fabrikam take precedence over Contoso defaults.\n- Blocking the Fabrikam domain conflicts with the collaboration requirement.",
+      "productionTip": {
+        "official": "Cross-tenant access direction is from the perspective of the tenant being configured. Contoso owns the app, so Fabrikam users are inbound external users. Inbound B2B collaboration settings can allow or block external users and groups and scope access to internal applications. Trust settings are also...",
+        "recommendation": "Use organization-specific policies for strategic partners, test sign-in logs from both tenants, and document why MFA trust is acceptable."
+      },
+      "memoryTrick": "If **they enter your app**, use inbound. If you **accept their MFA**, use inbound trust. Reverse the direction only when Contoso users go to Fabrikam resources.",
+      "examTip": "The decisive phrase is **Fabrikam users should access one Contoso application**. That eliminates outbound settings. A harder version may allow only SharePoint and then require extra Microsoft apps such as My Apps or My Sign-ins for the user journey."
+    },
+    "sources": [
+      {
+        "title": "Cross-tenant access overview",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/cross-tenant-access-overview"
+      },
+      {
+        "title": "Cross-tenant access settings",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/cross-tenant-access-settings-b2b-collaboration"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.4-08",
+    "objective": "D1.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A freelancer outside your organization must restart virtual machines in resource group `rg-lab` for two weeks. The freelancer is not in your directory. You need least-privilege Azure resource access in the Azure portal.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use `rg-lab` Access control (IAM) to add a role assignment, invite/select the external user, and assign an appropriate Azure RBAC role at resource group scope"
+      },
+      {
+        "id": "B",
+        "text": "Assign Guest Inviter to the freelancer"
+      },
+      {
+        "id": "C",
+        "text": "Convert the freelancer to `UserType` Member"
+      },
+      {
+        "id": "D",
+        "text": "Add the freelancer to Directory Readers"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra workforce or external tenant defaults apply unless the scenario states otherwise. No unrelated Conditional Access, deny assignment, service-specific policy, or licensing exception blocks the described operation.",
+    "sections": {
+      "correctAnswer": "**A. Use `rg-lab` Access control (IAM) to add a role assignment, invite/select the external user, and assign an appropriate Azure RBAC role at resource group scope**. Use Azure RBAC at the resource group scope; the portal can invite/select the external user during role assignment.",
+      "technical": "External Azure resource access requires an identity object and an Azure RBAC role assignment. The Azure portal role assignment flow can invite an external user from the member picker if the user is not already in the directory. The administrator opens Access control (IAM) at the resource group, selects a suitable role, chooses User, group, or service principal, and selects or invites the external email. Resource group scope is narrower than subscription scope and covers all VMs in `rg-lab`. The administrator needs role assignment write permission, such as Owner or User Access Administrator. Directory roles and UserType conversion do not grant VM actions. Role selection still matters after choosing the correct scope. If restart is the only requirement, compare built-in role permissions rather than automatically assigning broad Contributor or Owner. The prompt asks for least privilege, so both scope and role must be constrained.",
+      "wrongOptions": {
+        "B": "Guest Inviter is wrong because it would let the freelancer invite guests, not restart virtual machines. Misconception: directory invitation roles grant Azure management rights. Could be correct if the freelancer were helping onboard other partner users.",
+        "C": "Converting to Member is wrong because guests can receive Azure RBAC assignments without becoming members. Misconception: only member users can manage Azure resources. Could be correct when the person's organizational relationship truly changes.",
+        "D": "Directory Readers is wrong because reading directory data does not authorize VM operations. Misconception: seeing users or groups equals managing Azure resources. Could be correct if the freelancer needed approved directory-read visibility for administration."
+      },
+      "plainEnglish": "The freelancer needs permission on Azure virtual machines, not permission to manage your directory. Create or select the guest during the Azure role assignment flow and grant an Azure RBAC role at the `rg-lab` scope. The guest identity is who the freelancer is; the Azure role assignment is what the freelancer can do.",
+      "analogy": "A robotics lab gives a visiting technician a temporary lab badge and access only to the test bay where the robots are located. The technician is not made a campus registrar.\n\n| Analogy | Azure reality |\n|---|---|\n| Temporary lab badge | B2B guest object |\n| Test bay access | Azure RBAC role at `rg-lab` |\n| Campus registrar | Directory administrator role |\n| End of service window | Remove the time-limited role assignment |\n\n**Where the analogy breaks down:** Azure authorization also includes inherited scopes, deny assignments, token refresh, and the exact actions contained in the selected role definition.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft cloud identity platform for users, groups, apps, authentication, and directory roles."
+        },
+        {
+          "term": "Microsoft Entra External ID",
+          "definition": "Microsoft Entra features for external collaboration and customer identity scenarios."
+        },
+        {
+          "term": "B2B collaboration",
+          "definition": "External ID capability that lets outside business users access workforce-tenant resources with their own identities."
+        },
+        {
+          "term": "Guest user",
+          "definition": "A user object representing an external collaborator in your tenant, usually with restricted default directory permissions."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control for Azure resources."
+        },
+        {
+          "term": "Access control (IAM)",
+          "definition": "Azure portal blade for role assignments."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "Grant connecting a principal, role, and scope."
+        },
+        {
+          "term": "Resource group",
+          "definition": "Azure container for resources managed together."
+        },
+        {
+          "term": "Owner",
+          "definition": "Azure role with full management access including role assignment."
+        },
+        {
+          "term": "User Access Administrator",
+          "definition": "Azure role that can manage access to Azure resources."
+        }
+      ],
+      "watchOut": "- Azure RBAC is assigned at management group, subscription, resource group, or resource scope.\n- The administrator granting access needs role assignment write permission.\n- Guest Inviter would let the freelancer invite people, not restart VMs.\n- The freelancer may need to switch to the correct directory after redemption.",
+      "productionTip": {
+        "official": "External Azure resource access requires an identity object and an Azure RBAC role assignment. The Azure portal role assignment flow can invite an external user from the member picker if the user is not already in the directory. The administrator opens Access control (IAM) at the resource group, sele...",
+        "recommendation": "Use time-bound, group-based access for vendors where possible, and remove or review the assignment when the two-week engagement ends."
+      },
+      "memoryTrick": "For Azure resources, **IAM is the door key**. Guest status identifies the person, but Access control (IAM) grants the resource action.",
+      "examTip": "Clue words are **virtual machines**, **resource group**, and **Azure portal**. Choose Access control (IAM), not an Entra directory role. A harder question may ask for the narrowest scope: one VM, the resource group, or the whole subscription."
+    },
+    "sources": [
+      {
+        "title": "Assign Azure roles to external users using the Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-external-users"
+      },
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.4-09",
+    "objective": "D1.1.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You need a Microsoft Entra group named `All-Guests` that automatically includes every current and future guest user. Administrators should not manually add members.\n\nWhich dynamic membership rule should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`user.mail -endsWith \"#EXT#\"`"
+      },
+      {
+        "id": "B",
+        "text": "`user.identities -eq \"ExternalAzureAD\"`"
+      },
+      {
+        "id": "C",
+        "text": "`user.userPrincipalName -contains \"Guest\"`"
+      },
+      {
+        "id": "D",
+        "text": "`user.userType -eq \"Guest\"`"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra workforce or external tenant defaults apply unless the scenario states otherwise. No unrelated Conditional Access, deny assignment, service-specific policy, or licensing exception blocks the described operation.",
+    "sections": {
+      "correctAnswer": "**D. `user.userType -eq \"Guest\"`**. Dynamic membership rules support `userType`, and Guest is the documented relationship value for guest users.",
+      "technical": "Dynamic membership groups calculate members from attribute rules. For user rules, Microsoft documents `userType` as a supported string property with allowed values including `member`, `guest`, and `null`. The rule `user.userType -eq \"Guest\"` automatically includes users whose relationship value is Guest and removes them if the value changes. Administrators cannot manually add or remove individual dynamic group members. UPN patterns such as `#EXT#` are less reliable than the documented property, and `Identities` describes the sign-in provider rather than the guest relationship. Dynamic user groups require appropriate licensing. Processing is attribute-based: when a relevant user attribute changes, Microsoft Entra evaluates dynamic group rules and updates membership if the rule is satisfied or no longer satisfied. The rule is intentionally short because the supported property carries the meaning. Adding name-pattern checks would make processing less clear and can fail for external members, renamed users, or future changes to generated UPN formats.",
+      "wrongOptions": {
+        "A": "The mail pattern is wrong because `mail` is not the documented guest relationship property and `#EXT#` is a UPN pattern. Misconception: generated names are better than attributes. Could be correct only for a rough report in a tenant with consistent naming.",
+        "B": "Identities is wrong because identity provider is not the same as guest relationship; some guests use OTP, Microsoft accounts, Google, or federation. Misconception: every guest is ExternalAzureAD. Could be correct when filtering specifically for users homed in another Entra tenant in a supported query context.",
+        "C": "UPN contains Guest is wrong because Microsoft Entra does not add the word Guest to UPNs by default. Misconception: portal labels appear inside usernames. Could be correct only if your organization intentionally uses such a custom naming convention."
+      },
+      "plainEnglish": "A dynamic group is a smart list. To include every guest, test the official property that says whether the user is a Guest. Do not test the spelling of the account name or the identity provider because those details can vary across external users. This matters for future users too: when a new guest is added, the dynamic rule can include them without an administrator editing membership. If an administrator later converts that user to Member, the same rule stops matching. That is why the official relationship property is safer than matching text in names.",
+      "analogy": "A school automatically builds a visitor mailing list from the \"visitor\" checkbox in the student information system. It does not search for the word visitor in a person's email address.\n\n| Analogy | Azure reality |\n|---|---|\n| Visitor checkbox | `user.userType` equals `Guest` |\n| Auto-built mailing list | Dynamic membership group |\n| Email text search | UPN or `#EXT#` pattern matching |\n| Checkbox changed to staff | UserType converted to Member |\n\n**Where the analogy breaks down:** Dynamic group processing can be delayed, requires supported rule syntax, and has licensing requirements for user-based dynamic membership.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft cloud identity platform for users, groups, apps, authentication, and directory roles."
+        },
+        {
+          "term": "Microsoft Entra External ID",
+          "definition": "Microsoft Entra features for external collaboration and customer identity scenarios."
+        },
+        {
+          "term": "B2B collaboration",
+          "definition": "External ID capability that lets outside business users access workforce-tenant resources with their own identities."
+        },
+        {
+          "term": "Guest user",
+          "definition": "A user object representing an external collaborator in your tenant, usually with restricted default directory permissions."
+        },
+        {
+          "term": "Dynamic membership group",
+          "definition": "Group whose members are calculated from an attribute rule."
+        },
+        {
+          "term": "Membership rule",
+          "definition": "Expression that determines dynamic group membership."
+        },
+        {
+          "term": "userType",
+          "definition": "Supported rule property for Member or Guest relationship."
+        },
+        {
+          "term": "UPN",
+          "definition": "User principal name."
+        },
+        {
+          "term": "Microsoft Entra ID P1",
+          "definition": "License tier that includes dynamic user group capability under documented requirements."
+        }
+      ],
+      "watchOut": "- Dynamic group members cannot be manually added one by one.\n- `#EXT#` is common but not the documented relationship property.\n- External members with `UserType` Member will not match an all-guests rule.\n- Dynamic user groups require appropriate Microsoft Entra licensing.",
+      "productionTip": {
+        "official": "Dynamic membership groups calculate members from attribute rules. For user rules, Microsoft documents `userType` as a supported string property with allowed values including `member`, `guest`, and `null`. The rule `user.userType -eq \"Guest\"` automatically includes users whose relationship value is G...",
+        "recommendation": "Use dynamic all-guest groups for broad targeting, but use assigned groups for highly privileged access where attribute-write risk and processing delay matter."
+      },
+      "memoryTrick": "Sort guests by **type, not typography**. The trick fails when you need a subset such as only guests from one sponsor or partner domain.",
+      "examTip": "The words **automatically includes every current and future guest** point to a dynamic group rule. Pick `user.userType -eq \"Guest\"`. A harder item may include B2B users converted to Member; those are external but not guests for this rule."
+    },
+    "sources": [
+      {
+        "title": "Manage rules for dynamic membership groups in Microsoft Entra ID",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-dynamic-membership"
+      },
+      {
+        "title": "Create or Edit a Dynamic Membership Group and Get Its Processing Status",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-create-rule"
+      },
+      {
+        "title": "B2B guest user properties",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/user-properties"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.4-10",
+    "objective": "D1.1.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Dana accepted a B2B invitation with `dana@oldvendor.com`. Dana moved to a new company and must sign in with `dana@newvendor.com`. You must keep Dana's guest object ID, group memberships, and app assignments.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Delete Dana's guest account and invite the new email"
+      },
+      {
+        "id": "B",
+        "text": "Change Dana's `UserType` to Member"
+      },
+      {
+        "id": "C",
+        "text": "Reset Dana's redemption status and reinvite Dana with the new email"
+      },
+      {
+        "id": "D",
+        "text": "Assign Directory Readers to Dana"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra workforce or external tenant defaults apply unless the scenario states otherwise. No unrelated Conditional Access, deny assignment, service-specific policy, or licensing exception blocks the described operation.",
+    "sections": {
+      "correctAnswer": "**C. Reset Dana's redemption status and reinvite Dana with the new email**. Reset redemption lets the guest redeem a new invitation while preserving the existing object, memberships, and app assignments.",
+      "technical": "Reset redemption status is intended for changes to a B2B user sign-in relationship, such as a new email or identity provider, a recreated home account, or an approved handoff. Microsoft documents that resetting and reinviting can keep the user object ID, group memberships, and app assignments. The UPN does not change when the user redeems the new invitation, but the sign-in name can change to the new email or to an address in `otherMails`. In the admin center, update email information if needed and use Reset redemption status from the B2B collaboration tile. Microsoft Graph can also set `resetRedemption` on an invitation. Reset redemption should be paired with identity verification. Preserving the object means preserving access, so the administrator should confirm Dana is the same approved collaborator or that the access owner has approved a handoff before sending the new redemption invitation.",
+      "wrongOptions": {
+        "A": "Deleting is wrong because it creates a new object and can lose memberships and app assignments tied to the old object ID. Misconception: email changes require recreating guests. Could be correct when Dana is a different person or should receive no inherited access.",
+        "B": "Changing UserType is wrong because it affects relationship semantics, not the redeemed sign-in identity. Misconception: Guest versus Member controls the invited email. Could be correct when Dana becomes part of the organization and policies need Member behavior.",
+        "D": "Directory Readers is wrong because it grants read visibility and does not reset redemption. Misconception: directory permissions repair sign-in identity changes. Could be correct if Dana needs to read directory objects for an approved support role."
+      },
+      "plainEnglish": "Dana is the same directory object and should keep the same access, but the sign-in identity needs to be refreshed. Reset redemption is designed for that situation. It lets Dana accept again with the new email while preserving the object that groups and apps already reference.",
+      "analogy": "A contractor changes companies but remains approved for the same project. Security updates the contractor's contact email and reissues the onboarding link instead of deleting the badge record and rebuilding every door permission.\n\n| Analogy | Azure reality |\n|---|---|\n| Existing badge record | Guest object ID |\n| Door permissions | Group memberships and app assignments |\n| New company email | New invited email address |\n| Reissued onboarding link | Reset redemption invitation |\n\n**Where the analogy breaks down:** Microsoft Entra also has UPN behavior, `mail` and `otherMails` properties, Graph API constraints, and identity-provider matching rules.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft cloud identity platform for users, groups, apps, authentication, and directory roles."
+        },
+        {
+          "term": "Microsoft Entra External ID",
+          "definition": "Microsoft Entra features for external collaboration and customer identity scenarios."
+        },
+        {
+          "term": "B2B collaboration",
+          "definition": "External ID capability that lets outside business users access workforce-tenant resources with their own identities."
+        },
+        {
+          "term": "Guest user",
+          "definition": "A user object representing an external collaborator in your tenant, usually with restricted default directory permissions."
+        },
+        {
+          "term": "Reset redemption status",
+          "definition": "Action that lets a guest redeem again while preserving the existing object."
+        },
+        {
+          "term": "Object ID",
+          "definition": "Stable unique identifier of a Microsoft Entra object."
+        },
+        {
+          "term": "App assignment",
+          "definition": "Assignment granting a user or group access to an enterprise app."
+        },
+        {
+          "term": "otherMails",
+          "definition": "User property for additional email addresses."
+        },
+        {
+          "term": "Microsoft Graph invitation API",
+          "definition": "API for creating and resetting invitations."
+        }
+      ],
+      "watchOut": "- Deleting and reinviting creates a new object and can lose object-linked access.\n- The UPN does not change merely because the sign-in email changes.\n- Update `mail` or `otherMails` when the new email should be used.\n- Preserve access only when the business owner confirms Dana is still entitled to it.",
+      "productionTip": {
+        "official": "Reset redemption status is intended for changes to a B2B user sign-in relationship, such as a new email or identity provider, a recreated home account, or an approved handoff. Microsoft documents that resetting and reinviting can keep the user object ID, group memberships, and app assignments. The U...",
+        "recommendation": "Treat reset redemption as access continuity: verify the new identity, record approval, and run an access review after redemption completes."
+      },
+      "memoryTrick": "**Same person, same object: reset. Different person, different access: recreate.** This is a governance shortcut, not a substitute for access-owner approval.",
+      "examTip": "The giveaway phrase is **keep object ID, group memberships, and app assignments**. Those preserved items identify reset redemption. A harder version may ask for Microsoft Graph behavior: use the invitation API with `resetRedemption` set to true."
+    },
+    "sources": [
+      {
+        "title": "Reset guest redemption status",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/reset-redemption-status"
+      },
+      {
+        "title": "B2B guest user properties",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/user-properties"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.4-11",
+    "objective": "D1.1.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A development team is building a public SaaS application for thousands of consumers and business customers. These customers should not be guest users in the employee workforce tenant. The app needs custom sign-up and sign-in experiences.\n\nWhich Microsoft Entra External ID approach should you recommend?",
+    "options": [
+      {
+        "id": "A",
+        "text": "B2B collaboration in the workforce tenant for every customer"
+      },
+      {
+        "id": "B",
+        "text": "B2B direct connect for all customers"
+      },
+      {
+        "id": "C",
+        "text": "Microsoft Entra External ID in an external tenant"
+      },
+      {
+        "id": "D",
+        "text": "Azure RBAC assignments at subscription scope"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra workforce or external tenant defaults apply unless the scenario states otherwise. No unrelated Conditional Access, deny assignment, service-specific policy, or licensing exception blocks the described operation.",
+    "sections": {
+      "correctAnswer": "**C. Microsoft Entra External ID in an external tenant**. External tenants are designed for customer identity and access management with customer sign-up and sign-in experiences separate from the workforce tenant.",
+      "technical": "Microsoft Entra External ID includes both workforce-tenant B2B collaboration and external-tenant customer identity scenarios. B2B collaboration is for employees collaborating with business partners and guests; it creates guest user objects in the workforce tenant and is suitable for enterprise apps, SaaS apps, Microsoft 365, or line-of-business collaboration. An external tenant is a distinct tenant configuration for apps published to consumers or business customers. It contains customer accounts, app registrations, user flows, sign-in methods, branding, and customer account management. B2B direct connect is for scenarios such as Teams shared channels. Azure RBAC grants Azure resource management permissions, not SaaS customer authentication. This distinction also protects administration boundaries. Workforce tenants contain employees and organizational resources; external tenants are built for app users, sign-in methods, branding, user flows, and customer account management. Mixing thousands of customers into the workforce tenant complicates governance.",
+      "wrongOptions": {
+        "A": "Workforce-tenant B2B for every customer is wrong because it would create customer guests in the employee tenant, which the scenario rejects. Misconception: every external user belongs in B2B collaboration. Could be correct for named partner collaborators accessing workforce apps.",
+        "B": "B2B direct connect is wrong because it is not a customer sign-up and CIAM platform. Misconception: direct connect is the general external identity replacement. Could be correct for Teams shared channels between two Entra organizations.",
+        "D": "Azure RBAC is wrong because it grants Azure management access, not SaaS sign-up or authentication. Misconception: app customers need subscription role assignments. Could be correct for an external operator who must manage Azure resources."
+      },
+      "plainEnglish": "Customers of a public SaaS app are not the same as partner guests collaborating with employees. Put customer accounts in an external tenant so the app can have customer sign-up, branding, and account-management flows without filling the employee workforce tenant with thousands of guests.",
+      "analogy": "A company separates its employee office from its public online store. Vendors visiting employees get visitor badges; shoppers create store accounts in the e-commerce identity system.\n\n| Analogy | Azure reality |\n|---|---|\n| Employee office | Workforce tenant |\n| Vendor visitor badge | B2B collaboration guest |\n| Online store account | Customer account in an external tenant |\n| Store registration page | External tenant user flow |\n\n**Where the analogy breaks down:** A SaaS app can integrate multiple identity providers and Conditional Access decisions, while a store account analogy does not show token protocols or application registrations.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft cloud identity platform for users, groups, apps, authentication, and directory roles."
+        },
+        {
+          "term": "Microsoft Entra External ID",
+          "definition": "Microsoft Entra features for external collaboration and customer identity scenarios."
+        },
+        {
+          "term": "B2B collaboration",
+          "definition": "External ID capability that lets outside business users access workforce-tenant resources with their own identities."
+        },
+        {
+          "term": "Guest user",
+          "definition": "A user object representing an external collaborator in your tenant, usually with restricted default directory permissions."
+        },
+        {
+          "term": "External tenant",
+          "definition": "Tenant configuration for consumer and business customer apps."
+        },
+        {
+          "term": "CIAM",
+          "definition": "Customer identity and access management."
+        },
+        {
+          "term": "User flow",
+          "definition": "Configured sign-up or sign-in journey."
+        },
+        {
+          "term": "B2B direct connect",
+          "definition": "Cross-tenant trust model for Teams shared channels without guest objects."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure resource authorization, not customer app identity."
+        },
+        {
+          "term": "Azure AD B2C",
+          "definition": "Legacy customer identity solution no longer available for new customers to purchase as of May 1, 2025."
+        }
+      ],
+      "watchOut": "- External ID is an umbrella; B2B collaboration and external tenants solve different audiences.\n- B2B direct connect is not a customer sign-up platform.\n- Azure RBAC grants Azure management access, not SaaS customer authentication.\n- Azure AD B2C is legacy and not available for new customers to purchase as of May 1, 2025.",
+      "productionTip": {
+        "official": "Microsoft Entra External ID includes both workforce-tenant B2B collaboration and external-tenant customer identity scenarios. B2B collaboration is for employees collaborating with business partners and guests; it creates guest user objects in the workforce tenant and is suitable for enterprise apps,...",
+        "recommendation": "Keep customer identities out of the workforce tenant unless there is a true collaboration requirement; plan branding, user flows, MFA, lifecycle, and retention in the external tenant."
+      },
+      "memoryTrick": "**Guests work with your workforce; customers belong in a customer tenant.** This is simplified because a business customer can also be a named B2B partner in a separate collaboration scenario.",
+      "examTip": "Clue words are **public SaaS**, **thousands of consumers**, **not guest users**, and **custom sign-up**. Those words point to an external tenant for CIAM. A harder item may describe Teams shared channels; that would move the answer toward B2B direct connect."
+    },
+    "sources": [
+      {
+        "title": "Microsoft Entra External ID Overview",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/external-identities-overview"
+      },
+      {
+        "title": "External Tenant Overview",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/customers/overview-customers-ciam"
+      },
+      {
+        "title": "What is Microsoft Entra B2B collaboration?",
+        "url": "https://learn.microsoft.com/en-us/entra/external-id/what-is-b2b"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

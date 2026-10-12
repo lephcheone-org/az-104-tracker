@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Original AZ-104 Azure Administrator practice questions with full explanations, progress tracking and cross-device sync.">
+<meta name="robots" content="noindex">
+<title>AZ-104 Practice Lab</title>
+<script>
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("scoutTheme");
+    const theme =
+      param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
+<script>
+  (() => {
+    if (new URLSearchParams(window.location.search).get("scoutTheme")) return;
+    try {
+      const saved = localStorage.getItem("az104-theme");
+      if (saved === "light" || saved === "dark") document.documentElement.setAttribute("data-theme", saved);
+    } catch (e) { /* storage unavailable */ }
+  })();
+</script>
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <a class="brand" href="#home"><span class="brand-mark" aria-hidden="true">104</span><span><strong>AZ-104 Practice Lab</strong><span class="muted small">Azure Administrator</span></span></a>
+  <nav aria-label="Main">
+    <a href="#home" data-nav="home">Overview</a>
+    <a href="#practice" data-nav="practice">Practice</a>
+    <a href="#library" data-nav="library">Question bank</a>
+    <a href="#progress" data-nav="progress">Progress</a>
+    <a href="#study" data-nav="study">Study guide</a>
+  </nav>
+  <div class="header-tools">
+    <a class="icon-button" href="#sync" title="Cross-device sync"><span id="sync-dot" class="sync-dot"></span><span id="sync-label">Sync</span></a>
+    <button class="icon-button" type="button" data-action="theme" aria-label="Toggle light or dark theme">Theme</button>
+  </div>
+</header>
+<div id="app-notice" class="notice" role="status" hidden></div>
+<main id="main" tabindex="-1"></main>
+<footer class="site-footer">
+  <span>Original practice questions. Not affiliated with or endorsed by Microsoft. Real exam content is confidential.</span>
+  <span>Bank __VERSION__ &middot; __COUNT__ questions &middot; built __BUILT__</span>
+</footer>
+<dialog id="confirm-dialog">
+  <form method="dialog">
+    <h2>Confirm</h2>
+    <p></p>
+    <div class="button-row"><button class="secondary" value="cancel">Cancel</button><button class="primary" value="ok">Confirm</button></div>
+  </form>
+</dialog>
+<input id="import-file" type="file" accept="application/json,.json" hidden>
+<script id="bank" type="application/json">/*__DATA__*/</script>
+<script>
+/*__JS__*/
+</script>
+</body>
+</html>

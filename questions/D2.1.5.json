@@ -1,0 +1,757 @@
+[
+  {
+    "id": "D2.1.5-01",
+    "objective": "D2.1.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a storage account named `stfiles01` that contains SMB Azure file shares. No identity source is configured for Azure Files.\n\nContoso has Microsoft Entra-joined Windows 11 clients. Users have hybrid identities that are synced from on-premises Active Directory Domain Services (AD DS) to Microsoft Entra ID. The clients don't have line-of-sight to domain controllers during normal access.\n\nYou need users to access the SMB file shares by using identity-based authentication. You also need to choose a supported identity source for the storage account.\n\nWhat should you enable?",
+    "options": [
+      {
+        "id": "A",
+        "text": "On-premises AD DS authentication and Microsoft Entra Kerberos authentication on the same storage account"
+      },
+      {
+        "id": "B",
+        "text": "Microsoft Entra Domain Services authentication"
+      },
+      {
+        "id": "C",
+        "text": "Microsoft Entra Kerberos authentication"
+      },
+      {
+        "id": "D",
+        "text": "Identity-based authentication on an NFS Azure file share"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The file shares use SMB, not NFS. The users are hybrid identities synchronized to the same Microsoft Entra tenant as the storage account subscription. Clients meet current Microsoft Entra Kerberos operating system and join requirements.",
+    "sections": {
+      "correctAnswer": "**C. Microsoft Entra Kerberos authentication**. Microsoft Entra Kerberos lets Microsoft Entra ID issue Kerberos tickets for SMB Azure file shares and is a supported fit for Microsoft Entra-joined or hybrid-joined clients that use hybrid identities without relying on domain-controller connectivity for normal authentication.",
+      "technical": "Azure Files identity-based access over SMB starts with one storage-account-level identity source. The supported identity sources are on-premises AD DS, Microsoft Entra Domain Services, and Microsoft Entra Kerberos. Microsoft documentation states that you can use only one identity source for file access authentication per storage account, and that the choice applies to all file shares in that account.\n\nThe access path then has several gates:\n\n1. The storage account must have Kerberos allowed in the SMB security settings and must be configured for one identity source.\n2. The identity must successfully authenticate and receive a Kerberos ticket from that source.\n3. The identity needs a share-level permission, either a specific Azure RBAC assignment or a default share-level permission.\n4. The identity also needs directory and file permissions through Windows ACLs.\n5. Network connectivity and DNS must let the client reach the SMB endpoint.\n\nFor the scenario, Microsoft Entra Kerberos is the best fit because the clients are Microsoft Entra-joined and the users are hybrid identities synced to Microsoft Entra ID. The overview specifically describes Microsoft Entra Kerberos as useful for cloud-first or hybrid environments, Microsoft Entra-joined clients, and clients without domain-controller connectivity. On-premises AD DS would require domain-controller connectivity for authentication, and Microsoft Entra Domain Services would require clients to be joined to the managed domain or have connectivity to its managed domain controllers. Azure Files identity-based authentication currently applies to SMB file shares; NFS file shares don't support identity-based authentication.",
+      "wrongOptions": {
+        "A": "Enabling both AD DS and Microsoft Entra Kerberos on the same storage account is not supported for Azure Files user identity authentication. A storage account can have only one identity source for file access authentication at a time. Misconception: More identity sources mean broader compatibility. Could be correct when planning a migration in phases, but the old identity source must be disabled before the new one is enabled on the same storage account.",
+        "B": "Microsoft Entra Domain Services can be a valid identity source, but it is not the best answer here because the clients are Microsoft Entra-joined and don't have normal line-of-sight to managed domain controllers. Entra Domain Services scenarios require a managed domain and client connectivity to its domain controllers. Misconception: Any Microsoft Entra-branded option works for Microsoft Entra-joined devices. Could be correct when Azure VMs are joined to a Microsoft Entra Domain Services managed domain and can reach those domain controllers.",
+        "D": "Azure Files doesn't currently support identity-based authentication for NFS file shares. NFS relies on network-based access patterns and file permissions rather than the Azure Files SMB identity-based authentication model. Misconception: Identity-based access is a storage-account feature that applies to every protocol. Could be correct when the share is SMB and one supported identity source is selected."
+      },
+      "plainEnglish": "Azure Files can act like a Windows file server, but only for SMB shares when you turn on one identity system for the storage account. You must pick one door guard: traditional AD DS, Microsoft Entra Domain Services, or Microsoft Entra Kerberos. You can't ask all three guards to run the same storage account at once.\n\nIn this question, the computers are joined to Microsoft Entra ID, and users are synced into Microsoft Entra ID. They normally can't talk to old domain controllers. Microsoft Entra Kerberos is designed for that kind of modern sign-in path. It lets Microsoft Entra ID issue the Kerberos ticket that Azure Files understands. NFS is a different file-sharing protocol and is not part of this identity-based SMB feature.",
+      "analogy": "A building has one front-desk identity system for a set of rooms. You can staff the desk with the old corporate badge desk, a managed badge desk in Azure, or a modern cloud badge desk. You can't staff the same desk with all three systems at the same time.\n\n| Analogy | Azure reality |\n|---|---|\n| Building | Storage account |\n| Rooms | Azure file shares |\n| One front desk | One identity source per storage account |\n| Modern cloud badge desk | Microsoft Entra Kerberos |\n| Old badge desk | On-premises AD DS |\n\n**Where the analogy breaks down:** Azure still evaluates share-level Azure RBAC, Windows ACLs, network rules, SMB protocol settings, and Kerberos ticket contents after the identity source is chosen. A real front desk doesn't model all of those authorization layers.",
+      "jargon": [
+        {
+          "term": "Azure Files",
+          "definition": "The Azure service that provides managed file shares accessible by SMB and NFS protocols."
+        },
+        {
+          "term": "SMB",
+          "definition": "Server Message Block, the file-sharing protocol used by Windows clients and supported by Azure Files for identity-based authentication."
+        },
+        {
+          "term": "NFS",
+          "definition": "Network File System, a file-sharing protocol supported by Azure Files but not by Azure Files identity-based authentication."
+        },
+        {
+          "term": "Identity source",
+          "definition": "The directory or Kerberos authority configured on a storage account for authenticating Azure Files SMB users."
+        },
+        {
+          "term": "AD DS",
+          "definition": "Active Directory Domain Services, the traditional Windows Server directory service often used by domain-joined devices."
+        },
+        {
+          "term": "Microsoft Entra Kerberos",
+          "definition": "A Microsoft Entra ID feature that issues Kerberos tickets for Azure Files SMB access for supported hybrid or cloud-only identities."
+        },
+        {
+          "term": "Hybrid identity",
+          "definition": "An identity that exists in on-premises AD DS and is synchronized to Microsoft Entra ID."
+        },
+        {
+          "term": "Kerberos ticket",
+          "definition": "A signed authentication token used to prove a user's identity to a service without sending the user's password to that service."
+        }
+      ],
+      "watchOut": "- Identity-based authentication for Azure Files is for SMB shares, not NFS shares.\n- Only one user identity source can be enabled per storage account for Azure Files authentication.\n- Authentication alone isn't enough; users still need share-level permission and Windows ACL permission.\n- Microsoft Entra Kerberos reduces domain-controller dependency for normal access, but some ACL-management methods for hybrid identities still require domain-controller connectivity.",
+      "productionTip": {
+        "official": "Microsoft documents a sequence for identity-based Azure Files access: enable the identity source, assign share-level permissions, configure file and directory permissions, configure network access and DNS, and then prepare clients and mount the share.",
+        "recommendation": "Choose the identity source per storage account before creating many shares. Use separate storage accounts when different applications need different identity models, and document the choice because changing identity source can temporarily interrupt identity-based access."
+      },
+      "memoryTrick": "One storage account, one identity source, SMB only. This is a simplification because managed identities for applications are a separate feature and can coexist with user identity-based authentication.",
+      "examTip": "Clue words are **Microsoft Entra-joined clients**, **hybrid identities**, and **no domain-controller connectivity**. Those point to Microsoft Entra Kerberos, not AD DS or Microsoft Entra Domain Services. If the question says the clients are joined to a Microsoft Entra Domain Services managed domain, the answer can change. If it says NFS, rule out Azure Files identity-based authentication for the share."
+    },
+    "sources": [
+      {
+        "title": "Overview - Azure Files Identity-Based Authentication",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+      },
+      {
+        "title": "Microsoft Entra Kerberos Authentication for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-auth-hybrid-identities-enable"
+      },
+      {
+        "title": "Use Microsoft Entra Domain Services with Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-auth-domain-services-enable"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.5-02",
+    "objective": "D2.1.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an SMB Azure file share named `apps` in a storage account that has identity-based access configured.\n\nA Microsoft Entra group named `AppWriters` must be able to read, write, and delete files and directories in the `apps` share. Members of the group must not be able to change Windows ACLs unless the ACLs already grant that ability at the file or directory level. You need to follow least privilege for the share-level permission.\n\nWhich built-in Azure RBAC role should you assign at the file share scope?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Storage File Data SMB Share Reader"
+      },
+      {
+        "id": "B",
+        "text": "Storage File Data SMB Share Contributor"
+      },
+      {
+        "id": "C",
+        "text": "Storage File Data SMB Share Elevated Contributor"
+      },
+      {
+        "id": "D",
+        "text": "Storage Account Contributor"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The share uses SMB and a supported identity source. The `AppWriters` group is represented in Microsoft Entra ID in a way supported by the chosen identity source. Directory and file Windows ACLs are configured separately.",
+    "sections": {
+      "correctAnswer": "**B. Storage File Data SMB Share Contributor**. This share-level role grants read, write, and delete access to files and directories in Azure Files without adding the broader ACL-modification capability of the Elevated Contributor role.",
+      "technical": "Azure Files identity-based authorization has two major permission layers. First, Azure RBAC grants share-level permissions. Second, Windows ACLs grant directory and file-level permissions. The request succeeds only when both layers allow the operation, and the effective result is the most restrictive combination.\n\nThe built-in SMB share roles map to common share-level needs:\n\n| Role | Share-level capability |\n|---|---|\n| Storage File Data SMB Share Reader | Read files and directories |\n| Storage File Data SMB Share Contributor | Read, write, and delete files and directories |\n| Storage File Data SMB Share Elevated Contributor | Read, write, delete, and modify ACLs |\n\nThe requirement is read, write, and delete at the share level, but not a share-level grant that includes modify-ACLs access. Therefore `Storage File Data SMB Share Contributor` is the least-privilege built-in role. The role should be assigned at the file share scope to keep the grant limited to the `apps` share. A broader storage account or resource group scope could grant the same role over more shares than needed. `Storage Account Contributor` is a management-plane role for managing storage account settings and isn't the correct data-plane SMB share role for file access.",
+      "wrongOptions": {
+        "A": "Storage File Data SMB Share Reader is too limited because it grants read access, not write or delete access. Misconception: Read access at the share plus NTFS write ACLs is enough. Could be correct when the group only needs to list and read files and the Windows ACLs also allow only read operations.",
+        "C": "Storage File Data SMB Share Elevated Contributor is too broad for this requirement because it includes modify-ACLs access at the share permission layer. Misconception: Elevated Contributor is the normal write role for Azure Files. Could be correct when users must manage ACLs on files and directories and that administrative capability is explicitly required.",
+        "D": "Storage Account Contributor is a management role for the storage account, not the least-privilege SMB file data role for a group that needs file read, write, and delete access. Misconception: Storage account management roles automatically represent file-share data permissions. Could be correct when the group must manage storage account configuration, subject to separate data-access assignments."
+      },
+      "plainEnglish": "Think of share-level permission as the main entrance permission for the whole file share. The group needs to enter the share and make normal changes to files: read them, create or update them, and delete them. They don't need to change the security rules on the files.\n\nThe Reader role is too weak because it only lets them look. The Elevated Contributor role is stronger than needed because it includes changing permissions. Storage Account Contributor is about managing the Azure storage account itself, not the safest way to grant access to files. Share Contributor matches the exact file actions requested at the share level.",
+      "analogy": "A document room has several badge types. A visitor badge lets someone read documents. A staff badge lets someone read, add, change, and remove documents. A security supervisor badge also lets someone change who else can access the cabinets. The application writers need the staff badge, not the visitor badge or the security supervisor badge.\n\n| Analogy | Azure reality |\n|---|---|\n| Document room | Azure file share |\n| Staff badge | Storage File Data SMB Share Contributor |\n| Visitor badge | Storage File Data SMB Share Reader |\n| Security supervisor badge | Storage File Data SMB Share Elevated Contributor |\n\n**Where the analogy breaks down:** Azure also checks Windows ACLs on each directory and file. A staff badge at the entrance doesn't guarantee every cabinet opens if cabinet-level permissions are stricter.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the system for assigning roles to identities at scopes such as a file share."
+        },
+        {
+          "term": "Share-level permission",
+          "definition": "An Azure RBAC permission that controls whether an authenticated identity can access an Azure file share."
+        },
+        {
+          "term": "Storage File Data SMB Share Reader",
+          "definition": "A built-in role that grants read access to files and directories in Azure Files over SMB."
+        },
+        {
+          "term": "Storage File Data SMB Share Contributor",
+          "definition": "A built-in role that grants read, write, and delete access to files and directories in Azure Files over SMB."
+        },
+        {
+          "term": "Storage File Data SMB Share Elevated Contributor",
+          "definition": "A built-in role that grants read, write, delete, and ACL-modification access for SMB Azure file shares."
+        },
+        {
+          "term": "Windows ACL",
+          "definition": "A Windows access control list that controls permissions at a directory or file level."
+        },
+        {
+          "term": "Scope",
+          "definition": "The Azure resource boundary where a role assignment applies, such as a single file share."
+        }
+      ],
+      "watchOut": "- Do not use storage-account management roles when the requirement is SMB file data access.\n- The share-level role doesn't replace Windows ACLs; both are enforced.\n- Elevated Contributor is not the default write role; it adds ACL-modification capability.\n- Assign the role at the narrowest useful scope, usually the file share for one-share requirements.",
+      "productionTip": {
+        "official": "Microsoft documents built-in Azure RBAC roles specifically for Azure Files, including SMB Share Reader, SMB Share Contributor, and SMB Share Elevated Contributor. It also documents that share-level permissions are configured for Microsoft Entra users, groups, or service principals.",
+        "recommendation": "Use groups rather than individual users for share-level roles. Start with SMB Share Reader or Contributor and reserve Elevated Contributor for file-share administrators who have a documented need to manage permissions."
+      },
+      "memoryTrick": "Reader reads, Contributor changes files, Elevated Contributor changes file permissions too. This shortcut doesn't replace checking the exact role definition for custom or newly added data actions.",
+      "examTip": "The phrase **read, write, and delete** maps directly to SMB Share Contributor. The phrase **modify ACLs** is the clue for Elevated Contributor or an admin role. If an option mentions `Storage Account Contributor`, remember that the exam often tests management-plane versus data-plane permissions."
+    },
+    "sources": [
+      {
+        "title": "Assign Share-Level Permissions for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+      },
+      {
+        "title": "Configure Directory and File-Level Permissions for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+      },
+      {
+        "title": "Azure built-in roles for Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.5-03",
+    "objective": "D2.1.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stlegacy` that contains several SMB Azure file shares. The storage account is configured for on-premises AD DS authentication.\n\nSome users and computer accounts can authenticate to AD DS but can't be synchronized as individual objects to Microsoft Entra ID. You still need authenticated AD DS identities to pass the share-level gate and then rely on Windows ACLs for granular directory and file access.\n\nWhich two actions should you take? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Configure a default share-level permission on the storage account"
+      },
+      {
+        "id": "B",
+        "text": "Assign Azure RBAC share-level roles directly to each non-synced computer account"
+      },
+      {
+        "id": "C",
+        "text": "Use Windows ACLs on directories and files for granular authorization"
+      },
+      {
+        "id": "D",
+        "text": "Enable Microsoft Entra Kerberos in addition to AD DS on the same storage account"
+      },
+      {
+        "id": "E",
+        "text": "Use an NFS share so AD DS identities can bypass Azure RBAC"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The shares use SMB. The chosen default share-level permission is no more permissive than the high-level access all authenticated identities should have. Existing or planned Windows ACLs accurately represent per-directory and per-file permissions.",
+    "sections": {
+      "correctAnswer": "**A. Configure a default share-level permission on the storage account** and **C. Use Windows ACLs on directories and files for granular authorization**. A default share-level permission can grant the share-level gate to all authenticated identities without per-identity Microsoft Entra RBAC assignments, while Windows ACLs provide the detailed restrictions.",
+      "technical": "Azure Files requires a share-level permission before an identity can access an SMB file share by using identity-based authentication. Usually, you assign an Azure RBAC role such as Storage File Data SMB Share Reader, Contributor, or Elevated Contributor to a specific Microsoft Entra user or group. That method requires the target identity to be represented in Microsoft Entra ID in a supported way.\n\nMicrosoft also documents a default share-level permission. The default permission is set on the storage account and applies to all file shares in that storage account. It is intended for scenarios where on-premises AD DS identities can't be synchronized to Microsoft Entra ID, or where the AD DS deployment is synchronized to a different tenant from the one containing the file share. With a default share-level permission, Azure Files doesn't need a per-user Microsoft Entra RBAC assignment to pass the share-level check.\n\nThis doesn't mean everyone should get unlimited file access. Windows ACLs are still enforced at the directory and file levels. The normal evaluation is: authenticate the identity, pass the share-level permission, then evaluate directory and file ACLs. If the share-level permission is broader than the NTFS ACL, the ACL can still restrict the user. If the ACL is broader than the share-level permission, the share-level role still caps access. Non-synced computer accounts don't have Microsoft Entra identities for direct Azure RBAC assignments, so a default permission is the correct share-level workaround.",
+      "wrongOptions": {
+        "B": "Computer accounts don't have identities in Microsoft Entra ID for direct Azure RBAC share-level assignments. The documentation specifically points to default share-level permission for computer accounts and other identities that aren't synchronized. Misconception: Every AD DS security principal can be selected in Azure RBAC. Could be correct for users or groups that are represented in Microsoft Entra ID and supported by the chosen identity source.",
+        "D": "A storage account can't use AD DS and Microsoft Entra Kerberos as simultaneous user identity sources for Azure Files. Misconception: Adding another identity source fixes synchronization gaps without changing anything else. Could be correct only as a migration plan where AD DS is disabled before Microsoft Entra Kerberos is enabled.",
+        "E": "NFS shares don't support Azure Files identity-based authentication, so moving to NFS doesn't solve AD DS identity-based access for SMB users. Misconception: NFS avoids the share-level permission model while keeping the same identity behavior. Could be correct when an application specifically needs NFS and uses network-based controls and POSIX-style permissions instead of Azure Files SMB identity-based authentication."
+      },
+      "plainEnglish": "Azure Files asks two main questions. First, is this person allowed through the front door of the share? Second, once inside, which folders and files can they actually use? Normally, Azure answers the front-door question by looking up a user or group in Microsoft Entra ID.\n\nIn this case, some identities can't be looked up that way. A default share-level permission is like a general front-door rule for everyone who can prove they are authenticated in the connected AD DS environment. After that, the actual folder and file permissions still do the detailed work, so you can keep access narrow with Windows ACLs.",
+      "analogy": "A factory has a guarded main gate and locked rooms inside. Most employees have named badges in the cloud badge system. Some legacy machines and service identities don't. The company sets a rule that any authenticated legacy badge can pass the main gate, but each room still has its own lock list.\n\n| Analogy | Azure reality |\n|---|---|\n| Main gate | Share-level permission |\n| General authenticated legacy badge rule | Default share-level permission |\n| Room lock list | Windows ACL on a folder or file |\n| Legacy machine identity | Non-synced AD DS computer account |\n\n**Where the analogy breaks down:** A default share-level permission applies to all file shares in the storage account, and Azure evaluates both allow and effective permission combinations in a precise authorization model rather than a physical gate.",
+      "jargon": [
+        {
+          "term": "Default share-level permission",
+          "definition": "A storage-account setting that grants one Azure Files share-level role to all authenticated identities for all file shares in the account."
+        },
+        {
+          "term": "AD DS",
+          "definition": "Active Directory Domain Services, the on-premises identity service used here for Kerberos authentication."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory."
+        },
+        {
+          "term": "Computer account",
+          "definition": "An Active Directory account representing a computer rather than a person."
+        },
+        {
+          "term": "Windows ACL",
+          "definition": "A list of users, groups, and permissions attached to a directory or file."
+        },
+        {
+          "term": "Granular authorization",
+          "definition": "Detailed control over exactly which folder or file operations are allowed."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, used by Azure Files for share-level permissions."
+        }
+      ],
+      "watchOut": "- A default share-level permission applies to all shares in the storage account, so choose the role carefully.\n- It doesn't remove the need for Windows ACLs when granular restrictions are required.\n- Specific Azure RBAC assignments and default permissions can coexist; higher-level share permissions can take precedence between those share-level grants.\n- NFS is not a workaround for SMB identity-based authentication requirements.",
+      "productionTip": {
+        "official": "Microsoft documents default share-level permissions for scenarios where on-premises AD DS identities can't be synced to Microsoft Entra ID and notes that Windows ACLs can still enforce granular file and directory permissions.",
+        "recommendation": "Use default share-level permission only when specific RBAC assignments aren't practical. Keep shares with legacy default access in their own storage account if possible, and audit ACLs carefully because every authenticated identity has the same share-level starting point."
+      },
+      "memoryTrick": "Default share permission opens the share door for all authenticated identities; NTFS ACLs decide the rooms. This is a simplification because share-level roles can still cap what the ACL would otherwise allow.",
+      "examTip": "Look for phrases like **can't sync identities** or **all authenticated users and groups**. Those are clues for default share-level permission. If the question asks for least privilege to one synced group, choose a specific Azure RBAC assignment instead. If it says NFS, don't apply the SMB identity-based model."
+    },
+    "sources": [
+      {
+        "title": "Assign Share-Level Permissions for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+      },
+      {
+        "title": "On-Premises AD DS Authentication for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-ad-ds-overview"
+      },
+      {
+        "title": "Configure Directory and File-Level Permissions for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+      },
+      {
+        "title": "Overview - Azure Files Identity-Based Authentication",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.5-04",
+    "objective": "D2.1.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an SMB Azure file share named `finance`. A user named Ana has the following permissions.\n\n| Layer | Permission |\n|---|---|\n| Share-level Azure RBAC | Storage File Data SMB Share Contributor |\n| Windows ACL on `\\\\finance\\\\Quarterly` | Read |\n\nAna tries to create a new file in `\\\\finance\\\\Quarterly`.\n\nWhat is the result?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The write succeeds because the share-level Contributor role includes write access"
+      },
+      {
+        "id": "B",
+        "text": "The write succeeds only if Ana also has the Reader role on the storage account"
+      },
+      {
+        "id": "C",
+        "text": "The write fails because the Windows ACL is more restrictive"
+      },
+      {
+        "id": "D",
+        "text": "The write fails because Azure Files ignores Windows ACLs"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Ana authenticates successfully by using a supported identity source. No other role assignments, deny effects, inherited ACLs, or ownership entries grant Ana additional write permission on the target directory.",
+    "sections": {
+      "correctAnswer": "**C. The write fails because the Windows ACL is more restrictive**. Azure Files enforces both share-level permissions and Windows ACLs, and when the layers differ, the most restrictive effective permission applies.",
+      "technical": "For SMB identity-based access to Azure Files, authorization is layered. Share-level permissions are Azure RBAC roles such as SMB Share Reader, Contributor, and Elevated Contributor. Directory and file-level permissions are Windows ACLs, also called NTFS permissions. Microsoft documents that both layers are enforced and that if there are differences among share-level, file-level, and directory-level permissions, only the most restrictive one applies.\n\nAna's share-level role is `Storage File Data SMB Share Contributor`. At the share gate, that role can allow read, write, and delete operations. However, the target directory's Windows ACL grants only Read. The ACL doesn't allow creating or writing a new file. Because the request must pass both layers, the effective permission is read only for that directory. The write operation fails.\n\nThe reverse is also true. If the Windows ACL allowed Modify or Full Control but the share-level role was only SMB Share Reader, Ana would still be limited to read through the share-level gate. This is why administrators often use share-level roles as a broad cap and Windows ACLs for granular permissions. Troubleshooting must check both the Azure RBAC assignment and the ACL on the root, parent directories, and target file or directory.",
+      "wrongOptions": {
+        "A": "The share-level Contributor role includes write capability, but it doesn't override a more restrictive Windows ACL on the target directory. Misconception: Azure RBAC is the only permission layer that matters for Azure Files. Could be correct when the Windows ACL also grants Write, Modify, or Full Control for the target directory.",
+        "B": "The Reader role on the storage account is a management-plane visibility role and doesn't solve a missing Windows ACL write permission. Misconception: Storage-account Reader is required to use file data. Could be correct when Ana needs to view the storage account resource metadata in Azure, not when she needs to create a file in a directory.",
+        "D": "Azure Files does enforce Windows ACLs for SMB identity-based access. Misconception: NTFS permissions are only for traditional Windows file servers. Could be correct only for a different access method or protocol where Windows ACL evaluation doesn't apply in the same SMB identity-based way."
+      },
+      "plainEnglish": "Ana has permission at the share entrance to be a contributor, but the specific folder says she can only read. Azure checks both rules. To create a file, both the entrance rule and the folder rule must allow writing. Since the folder rule doesn't allow writing, the new file can't be created.\n\nThis is like having a building pass that lets you work in the finance area, but a particular filing cabinet is marked read-only for you. The broad pass gets you to the area, but it doesn't let you change papers in a cabinet where the cabinet lock says read-only.",
+      "analogy": "A library has a front desk and individual shelf locks. Ana's front-desk badge says she is allowed to borrow and return books in the finance section. One shelf, `Quarterly`, has a lock that only lets her look at books. When she tries to add a new book to that shelf, the shelf lock blocks her.\n\n| Analogy | Azure reality |\n|---|---|\n| Front-desk badge | Share-level Azure RBAC role |\n| Shelf lock | Windows ACL on a directory |\n| Add a new book | Create a file |\n| Look only | Read ACL |\n\n**Where the analogy breaks down:** Azure permissions can be inherited through directory trees and groups, and troubleshooting may require checking multiple parent ACLs and role assignments rather than one shelf lock.",
+      "jargon": [
+        {
+          "term": "Storage File Data SMB Share Contributor",
+          "definition": "A built-in share-level role that grants read, write, and delete access to Azure Files over SMB, subject to Windows ACLs."
+        },
+        {
+          "term": "Windows ACL",
+          "definition": "A Windows access control list that grants or denies operations on a file or directory."
+        },
+        {
+          "term": "NTFS permissions",
+          "definition": "Windows file system permissions such as Read, Write, Modify, and Full Control; Azure Files uses this ACL model over SMB."
+        },
+        {
+          "term": "Most restrictive",
+          "definition": "The effective result when multiple permission layers apply and the narrowest allowed operation wins."
+        },
+        {
+          "term": "Management plane",
+          "definition": "Azure operations for viewing or changing resource configuration rather than file contents."
+        },
+        {
+          "term": "Data plane",
+          "definition": "Operations against data inside a service, such as reading or writing files in Azure Files."
+        }
+      ],
+      "watchOut": "- A write-capable share role doesn't guarantee write access to every directory.\n- A write-capable ACL doesn't help if the share-level role is read-only.\n- Check inherited ACLs from parent directories when the direct folder ACL doesn't explain the result.\n- Storage-account Reader is not the same as file data read permission.",
+      "productionTip": {
+        "official": "Microsoft documents that share-level permissions act as a high-level gatekeeper and Windows ACLs provide granular directory and file-level control. When permissions differ, the most restrictive one applies.",
+        "recommendation": "For migrations, preserve existing NTFS ACLs with supported copy tools and then assign the narrowest share-level role that matches the broadest intended access. Test with a representative user before cutting over production file shares."
+      },
+      "memoryTrick": "Azure Files SMB access needs two yeses: the share must say yes and the file or folder ACL must say yes. If either says no or read-only, write doesn't happen.",
+      "examTip": "When a question shows both an Azure RBAC share role and an NTFS permission, don't stop at the first table row. Combine them and choose the most restrictive outcome. Harder questions may reverse the values, such as share Reader plus NTFS Full Control, which still results in read-only file access."
+    },
+    "sources": [
+      {
+        "title": "Configure Directory and File-Level Permissions for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+      },
+      {
+        "title": "Assign Share-Level Permissions for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.5-05",
+    "objective": "D2.1.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have an SMB Azure file share named `projects` that uses identity-based authentication. Existing Windows ACLs deny the storage operations team access to several folders.\n\nAn administrator must modify the ACLs without mounting the share by using a storage account key. You need to use a documented Azure Files SMB admin approach.\n\nWhich action should you take first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign the Storage File Data SMB Admin role to the administrator"
+      },
+      {
+        "id": "B",
+        "text": "Assign the Storage File Data SMB Share Reader role to the administrator"
+      },
+      {
+        "id": "C",
+        "text": "Assign the Storage Account Contributor role to the administrator"
+      },
+      {
+        "id": "D",
+        "text": "Disable identity-based authentication and mount the share with anonymous access"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The administrator uses SMB with a supported identity source. The goal is to avoid using the storage account key. The administrator has a Windows client that can mount the share and reach required identity infrastructure for the chosen authentication method.",
+    "sections": {
+      "correctAnswer": "**A. Assign the Storage File Data SMB Admin role to the administrator**. This documented role supports the Windows permission model for SMB admin, allowing the administrator to mount with identity-based authentication and take ownership when existing ACLs block ACL changes.",
+      "technical": "Microsoft documents two main ways to mount a share with admin-level access for Windows ACL work: use the Windows permission model for SMB admin or use the storage account key. The storage account key works but is less secure because it grants immediate full access and is a sensitive account credential. The question explicitly requires avoiding the storage account key.\n\nThe Windows permission model for SMB admin uses the built-in `Storage File Data SMB Admin` role. This role grants share-level access and the `takeOwnership` permission. The administrator mounts the share by using identity-based authentication, not the account key. If existing ACLs already grant sufficient permission, the administrator can edit the ACLs directly. If existing ACLs deny access, the administrator can use the Windows `takeown` command to take ownership of the target file or directory, and then modify the ACL.\n\nThis is different from normal file access. The SMB Admin role doesn't simply ignore all ACLs for ordinary file reads and writes in the same way a storage account key does. Microsoft notes that existing ACLs still apply for normal file access, and the special privilege is used when ownership must be taken to repair or set permissions. Reader and storage-account management roles don't provide this documented SMB ACL administration path.",
+      "wrongOptions": {
+        "B": "Storage File Data SMB Share Reader grants read access at the share level and doesn't provide take-ownership capability for ACL repair. Misconception: Any Azure Files data role lets an administrator change permissions. Could be correct when the administrator only needs to list or read files and the ACLs also allow that read access.",
+        "C": "Storage Account Contributor manages storage account settings but isn't the documented SMB admin role for taking ownership and changing file or directory ACLs over SMB. Misconception: Management-plane control over the storage account equals administrative control over file ACLs. Could be correct when the task is changing storage account configuration, such as networking or redundancy settings.",
+        "D": "Anonymous access isn't the documented or supported way to administer SMB Azure file share ACLs, and disabling identity-based authentication would interrupt the intended access model. Misconception: Security must be turned off before ACLs can be repaired. Could be correct only in a completely different service that explicitly supports anonymous access for public data, not for SMB Azure Files ACL administration."
+      },
+      "plainEnglish": "The administrator needs to fix folder permissions, but some folders currently say the operations team isn't allowed in. Using the storage account key would be like using a master password for the whole storage account, and the question says not to do that.\n\nAzure Files has a safer administrator path. Give the administrator the SMB Admin role, let them sign in normally, and then use the Windows ownership model when a folder's existing rules block them. Taking ownership lets them repair the permission list without handing out the storage account key.",
+      "analogy": "A locked office has broken access lists. The company could use a building master key, but that key is too powerful to hand around. Instead, it gives a facilities manager a special authority card that lets them claim responsibility for a locked room and then fix the room's access list.\n\n| Analogy | Azure reality |\n|---|---|\n| Building master key | Storage account key |\n| Facilities authority card | Storage File Data SMB Admin role |\n| Claim responsibility for a room | Use `takeown` to take ownership |\n| Fix the room's access list | Modify Windows ACLs |\n\n**Where the analogy breaks down:** The SMB Admin role is an Azure RBAC role with specific data actions. It doesn't make every normal file access operation ignore ACLs in exactly the same way as mounting with the storage account key.",
+      "jargon": [
+        {
+          "term": "Storage File Data SMB Admin",
+          "definition": "A built-in Azure role that supports SMB administrative access for Azure Files, including take-ownership capability."
+        },
+        {
+          "term": "Storage account key",
+          "definition": "A powerful secret for a storage account that can be used to authorize broad access and should be protected carefully."
+        },
+        {
+          "term": "takeown",
+          "definition": "A Windows command used to take ownership of a file or directory so permissions can be changed."
+        },
+        {
+          "term": "Owner",
+          "definition": "The security principal that owns a file or directory and can usually change its permissions."
+        },
+        {
+          "term": "Windows permission model for SMB admin",
+          "definition": "The documented Azure Files approach for administrators to mount with identity-based authentication and manage ACLs without the storage account key."
+        },
+        {
+          "term": "ACL repair",
+          "definition": "Changing permissions when current access control entries block intended administrative or user access."
+        }
+      ],
+      "watchOut": "- Mounting with the storage account key grants immediate full access but is less secure.\n- The SMB Admin role uses ownership semantics; normal ACLs still matter for ordinary access.\n- Use `net use` when mounting for ACL work if you need the share visible to File Explorer and cmd.exe.\n- Don't confuse Storage Account Contributor with file data ACL administration.",
+      "productionTip": {
+        "official": "Microsoft recommends the Windows permission model for SMB admin instead of mounting with the storage account key. The documented role includes read and write backup semantics plus take-ownership data actions.",
+        "recommendation": "Create a small file-share administrator group, assign Storage File Data SMB Admin only where needed, and audit ownership changes. Keep storage account keys out of day-to-day ACL operations and rotate keys if they were previously shared."
+      },
+      "memoryTrick": "To fix ACLs without the account key, think **SMB Admin, then take ownership**. This doesn't mean the admin should keep broad access forever; remove or narrow the assignment when the repair is done.",
+      "examTip": "The clues are **without storage account key**, **existing ACLs deny access**, and **modify ACLs**. That points to the documented SMB Admin role and ownership flow. If the question instead says the user already has Full Control ACL and only needs share-level modify-ACL permission, Elevated Contributor may appear as a plausible answer."
+    },
+    "sources": [
+      {
+        "title": "Configure Directory and File-Level Permissions for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+      },
+      {
+        "title": "Assign Share-Level Permissions for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+      },
+      {
+        "title": "Azure built-in roles for Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.5-06",
+    "objective": "D2.1.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an on-premises Windows 11 client that must mount an SMB Azure file share by using identity-based authentication. The storage account is configured correctly, and the user has the required share-level role and Windows ACL permissions.\n\nThe mount fails from the office network. A network test shows that outbound TCP port 445 is blocked by the internet service provider. You need to provide a supported path for SMB access without relying on the blocked public internet path.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use SMB over QUIC directly to the Azure file share"
+      },
+      {
+        "id": "B",
+        "text": "Use VPN or ExpressRoute connectivity so SMB traffic can reach Azure Files over an allowed private path"
+      },
+      {
+        "id": "C",
+        "text": "Switch the share to NFS and keep the same identity-based permissions"
+      },
+      {
+        "id": "D",
+        "text": "Assign Storage File Data SMB Share Elevated Contributor to bypass the port requirement"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The target share is an SMB Azure file share. DNS is configured to resolve the storage account file endpoint appropriately for the chosen public or private endpoint path. The client operating system otherwise supports SMB 3.x access.",
+    "sections": {
+      "correctAnswer": "**B. Use VPN or ExpressRoute connectivity so SMB traffic can reach Azure Files over an allowed private path**. SMB uses TCP port 445, and if the public outbound path blocks that port, supported private connectivity such as point-to-site VPN, site-to-site VPN, or ExpressRoute can provide another route.",
+      "technical": "Identity-based authentication doesn't remove SMB networking requirements. Azure Files SMB access uses TCP port 445. Microsoft documentation states that connections fail if port 445 is blocked and shows testing with `Test-NetConnection` against the storage account's `file.core.windows.net` endpoint. The Azure Files networking guidance also notes that SMB uses TCP port 445 and that some organizations or internet service providers block outbound traffic on that port.\n\nThe correct response is to provide a network route where SMB can reach Azure Files. Options include point-to-site VPN for individual clients, site-to-site VPN for an office network, or ExpressRoute private peering for private connectivity from on-premises networks. Private endpoints can put a private IP address for the file service in a virtual network; on-premises clients then need routing through VPN or ExpressRoute and DNS that resolves the storage account file name to the private endpoint.\n\nSMB over QUIC is not a direct Azure Files feature. The current Azure Files networking documentation says Azure Files doesn't support SMB over QUIC directly; SMB over QUIC can be used with a Windows Server cache through Azure File Sync in certain designs. Azure RBAC roles and Windows ACLs affect authorization after connectivity and authentication, but they don't bypass a blocked TCP port.",
+      "wrongOptions": {
+        "A": "Azure Files doesn't support SMB over QUIC directly. Microsoft documents SMB over QUIC as an option through a Windows Server cache with Azure File Sync, not as a direct protocol endpoint for Azure Files. Misconception: SMB over QUIC on Windows Server means Azure Files also accepts QUIC directly. Could be correct when designing access to a Windows Server Azure File Sync cache that supports SMB over QUIC.",
+        "C": "NFS doesn't keep the same SMB identity-based permissions because Azure Files identity-based authentication isn't supported for NFS shares. Misconception: Changing protocol preserves the same authentication and authorization model. Could be correct for a workload that specifically supports NFS and is designed around NFS network access and permissions rather than SMB identity-based access.",
+        "D": "Elevated Contributor affects share-level authorization, not network reachability. A role assignment can't make a blocked TCP connection succeed. Misconception: Permission errors and network errors are solved by granting more access. Could be correct when the connection reaches the service but the user lacks share-level modify-ACL capability."
+      },
+      "plainEnglish": "The user may have the right identity and permissions, but the network road is closed. SMB, the file-sharing protocol, normally travels on TCP port 445. If the office internet provider blocks that port, the computer can't reach the Azure file share over the public internet path.\n\nThe fix is to give the traffic a different supported road to Azure, such as VPN or ExpressRoute. Those options connect the office or client to an Azure virtual network and can reach Azure Files through public or private endpoint designs without depending on the blocked public outbound path.",
+      "analogy": "A driver has a valid license and the correct warehouse pass, but the bridge to the warehouse is closed. Giving the driver a more powerful pass doesn't open the bridge. You need a different road, such as a private company tunnel.\n\n| Analogy | Azure reality |\n|---|---|\n| Driver license | User authentication |\n| Warehouse pass | Share-level role and ACLs |\n| Closed bridge | TCP port 445 blocked |\n| Private tunnel | VPN or ExpressRoute path |\n\n**Where the analogy breaks down:** Azure networking also involves DNS, public and private endpoints, firewalls, routing, SMB encryption, and client protocol support, not just a single road closure.",
+      "jargon": [
+        {
+          "term": "TCP port 445",
+          "definition": "The network port used by SMB for Azure Files SMB access."
+        },
+        {
+          "term": "Point-to-site VPN",
+          "definition": "A VPN connection from an individual client computer to an Azure virtual network."
+        },
+        {
+          "term": "Site-to-site VPN",
+          "definition": "A VPN connection between an on-premises network and an Azure virtual network."
+        },
+        {
+          "term": "ExpressRoute",
+          "definition": "A private connectivity service between on-premises networks and Microsoft cloud services."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A network interface with a private IP address in a virtual network that provides private access to an Azure service."
+        },
+        {
+          "term": "SMB over QUIC",
+          "definition": "A Windows Server capability that carries SMB over UDP port 443; Azure Files doesn't support it directly."
+        },
+        {
+          "term": "Test-NetConnection",
+          "definition": "A PowerShell cmdlet that can test whether a host and port, such as port 445, are reachable."
+        }
+      ],
+      "watchOut": "- Identity and permissions don't matter if the client can't reach the SMB endpoint.\n- SMB uses TCP 445; HTTPS or portal access doesn't prove SMB will mount successfully.\n- Azure Files doesn't directly support SMB over QUIC.\n- Private endpoints require DNS and routing, not just creating the endpoint resource.",
+      "productionTip": {
+        "official": "Microsoft documentation states that SMB requires TCP port 445 and recommends VPN options when mounting from outside Azure without opening port 445. The networking overview describes VPN and ExpressRoute private connectivity from on-premises networks.",
+        "recommendation": "Test port 445 and name resolution from the actual client network before migration day. For offices with blocked SMB, prefer private endpoint plus site-to-site VPN or ExpressRoute, and document DNS forwarding for `privatelink.file.core.windows.net`."
+      },
+      "memoryTrick": "Permissions open doors; port 445 opens the road. You need both. This shortcut ignores NFS and REST because they use different protocols and authorization models.",
+      "examTip": "When a question says **port 445 is blocked**, stop thinking about RBAC first and solve network path. Pick VPN, ExpressRoute, or private endpoint designs over bigger roles. If the option says SMB over QUIC directly to Azure Files, rule it out with current Azure Files documentation."
+    },
+    "sources": [
+      {
+        "title": "Mount SMB Azure File Share on Windows",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-how-to-use-files-windows"
+      },
+      {
+        "title": "Networking Considerations for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-networking-overview"
+      },
+      {
+        "title": "Overview - Azure Files Identity-Based Authentication",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.5-07",
+    "objective": "D2.1.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You plan to enable on-premises AD DS authentication for SMB Azure file shares in a storage account named `stcorpfiles`. Security requires Kerberos AES-256 and a documented domain-join process.\n\nYou run the configuration from a domain-joined administrative workstation. You need to register the storage account in AD DS and avoid future authentication failures caused by the AD object password aging out.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create only a DNS CNAME record for `stcorpfiles.file.core.windows.net` and rotate the storage account access keys monthly"
+      },
+      {
+        "id": "B",
+        "text": "Use the AzFilesHybrid `Join-AzStorageAccount` cmdlet to create a computer or service logon account, and update the AD object password before its maximum password age"
+      },
+      {
+        "id": "C",
+        "text": "Enable Microsoft Entra Domain Services on the storage account and leave AD DS enabled at the same time"
+      },
+      {
+        "id": "D",
+        "text": "Use PowerShell 7 in Azure Cloud Shell to run the manual AD DS cmdlets against the on-premises domain"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The organization has on-premises AD DS and has met Azure Files AD DS prerequisites. The administrative workstation has required modules and network connectivity to AD DS and Azure. The storage account is not already configured for another Azure Files identity source.",
+    "sections": {
+      "correctAnswer": "**B. Use the AzFilesHybrid `Join-AzStorageAccount` cmdlet to create a computer or service logon account, and update the AD object password before its maximum password age**. This is the recommended documented approach for registering the storage account with AD DS, and password maintenance prevents Kerberos authentication failures.",
+      "technical": "To enable on-premises AD DS authentication for Azure Files, the storage account must be represented in AD DS. Microsoft describes this as registering the storage account with AD DS by creating either a computer account or a service logon account. The recommended approach is to use the AzFilesHybrid PowerShell module. Its `Join-AzStorageAccount` cmdlet performs the equivalent of an offline domain join for the storage account and configures required properties.\n\nCurrent documentation states that the AzFilesHybrid module supports AES-256 Kerberos encryption. It also warns that older RC4 configurations should be upgraded to AES-256. For the AD object representing the storage account, password aging matters. A service logon account password can expire based on password policy, while computer account password behavior is driven by machine password-change behavior and doesn't expire in AD in the same way. Microsoft states that for either account type, you must update the password before the maximum password age to avoid authentication failures when accessing Azure file shares.\n\nThe process is more than DNS. Kerberos requires the AD object, SPN-related configuration, storage account domain properties, and keys that match. Manual configuration is possible, but the manual AD PowerShell steps require PowerShell 5.1 with the Active Directory module and can't be run from PowerShell 7.x or Azure Cloud Shell for the on-premises AD cmdlets. You also can't enable multiple identity sources at the same time on one storage account.",
+      "wrongOptions": {
+        "A": "A DNS record alone doesn't register the storage account with AD DS or configure the Kerberos identity. Rotating storage account access keys isn't the same as maintaining the AD object password used for Kerberos. Misconception: Name resolution is the same as domain join. Could be correct as one small part of a custom DNS design, but not as the identity enablement process.",
+        "C": "A storage account can use only one Azure Files user identity source at a time, so Microsoft Entra Domain Services can't be enabled alongside AD DS for the same purpose. Misconception: Managed domain services can be layered on top of AD DS on the same storage account. Could be correct for a different storage account whose clients are joined to Microsoft Entra Domain Services.",
+        "D": "The manual AD DS steps require Windows PowerShell 5.1 and the Active Directory module; the documentation states that PowerShell 7.x and Azure Cloud Shell don't work for that scenario. Misconception: Any PowerShell host can run any AD DS enablement command. Could be correct for unrelated Azure PowerShell management commands that don't need on-premises Active Directory cmdlets."
+      },
+      "plainEnglish": "Azure Files must look like a file server to your old Active Directory domain. The recommended tool, AzFilesHybrid, creates the right kind of account in AD DS for the storage account and sets the Azure side to match. That account has a password used for Kerberos. If the password gets too old according to your domain rules and isn't updated correctly, users can fail to sign in to the file share.\n\nSo the answer is not just creating a DNS name or rotating storage keys. You need the storage account's AD DS identity and a plan to keep its password current.",
+      "analogy": "A company wants a cloud filing cabinet to be accepted by the old corporate security desk as if it were a branch office cabinet. AzFilesHybrid registers the cabinet with security and gives it a secret badge. If that badge expires and isn't renewed, employees with valid badges still can't open the cabinet.\n\n| Analogy | Azure reality |\n|---|---|\n| Cloud filing cabinet | Storage account with Azure file shares |\n| Corporate security desk | On-premises AD DS |\n| Secret badge | AD object password and Kerberos key material |\n| Registration tool | AzFilesHybrid `Join-AzStorageAccount` |\n\n**Where the analogy breaks down:** AD DS authentication also involves SPNs, SIDs, domain properties, Kerberos encryption types, Azure roles, and Windows ACLs. A badge analogy doesn't capture all protocol details.",
+      "jargon": [
+        {
+          "term": "AzFilesHybrid",
+          "definition": "A Microsoft-provided PowerShell module for enabling hybrid AD DS scenarios with Azure Files."
+        },
+        {
+          "term": "Join-AzStorageAccount",
+          "definition": "An AzFilesHybrid cmdlet that domain-joins or registers a storage account with AD DS for Azure Files authentication."
+        },
+        {
+          "term": "Computer account",
+          "definition": "An AD DS account type commonly used to represent a machine or server, including a storage account identity for Azure Files."
+        },
+        {
+          "term": "Service logon account",
+          "definition": "An AD DS account type that can represent a service and can be used for the storage account identity when appropriate."
+        },
+        {
+          "term": "AES-256",
+          "definition": "A strong encryption algorithm used by supported Azure Files Kerberos authentication configurations for ticket encryption."
+        },
+        {
+          "term": "SPN",
+          "definition": "Service principal name, the Kerberos name that identifies a service such as `cifs/<storage-account>.file.core.windows.net`."
+        },
+        {
+          "term": "Maximum password age",
+          "definition": "The password policy setting that determines when an account password must be changed."
+        }
+      ],
+      "watchOut": "- AzFilesHybrid is the recommended route for AD DS enablement and supports AES-256.\n- The AD object password must be maintained; otherwise Kerberos authentication can fail.\n- Manual AD DS steps aren't for PowerShell 7.x or Azure Cloud Shell.\n- DNS and storage account access key rotation don't replace the AD DS registration process.\n- Only one identity source can be enabled for Azure Files authentication on the storage account.",
+      "productionTip": {
+        "official": "Microsoft's AD DS enablement article recommends the AzFilesHybrid module and documents that `Join-AzStorageAccount` can create a computer account or service logon account. It also warns to update the password before maximum password age to avoid authentication failures.",
+        "recommendation": "Use a dedicated OU for storage account identities, document whether each object is a computer or service logon account, monitor password age, and test `Debug-AzStorageAccountAuth` after changes. Upgrade any legacy RC4 configuration to AES-256."
+      },
+      "memoryTrick": "For AD DS Azure Files, join it like a file server and rotate its secret before it expires. This is a simplification because the exact account type and policy depend on your AD design.",
+      "examTip": "Clues are **on-premises AD DS**, **register the storage account**, **AES-256**, and **password aging**. Choose AzFilesHybrid and password update. If an option mentions Cloud Shell for manual AD cmdlets or enabling another identity source at the same time, it conflicts with the documented requirements."
+    },
+    "sources": [
+      {
+        "title": "Enable AD DS Authentication for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-ad-ds-enable"
+      },
+      {
+        "title": "On-Premises AD DS Authentication for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-ad-ds-overview"
+      },
+      {
+        "title": "Overview - Azure Files Identity-Based Authentication",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.5-08",
+    "objective": "D2.1.5",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You plan to enable Microsoft Entra Kerberos authentication for SMB Azure file shares. The users are hybrid identities synced from on-premises AD DS to Microsoft Entra ID. Client devices include Windows 11 Enterprise and Windows Server 2022.\n\nYou need to satisfy the documented prerequisites for Microsoft Entra Kerberos access by using the standard flow.\n\nWhich three requirements must you meet? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Synchronize the hybrid users, and groups used for share-level RBAC, from AD DS to Microsoft Entra ID"
+      },
+      {
+        "id": "B",
+        "text": "Join the clients only to on-premises AD DS and prevent Microsoft Entra join or hybrid join"
+      },
+      {
+        "id": "C",
+        "text": "Use supported operating systems such as Windows 11 Enterprise/Pro or Windows Server 2022 with the required cumulative updates"
+      },
+      {
+        "id": "D",
+        "text": "Enable AD DS authentication at the same time as Microsoft Entra Kerberos on the storage account"
+      },
+      {
+        "id": "E",
+        "text": "Ensure clients are Microsoft Entra joined or Microsoft Entra hybrid joined"
+      },
+      {
+        "id": "F",
+        "text": "Rely on RC4 Kerberos ticket encryption for compatibility with older clients"
+      }
+    ],
+    "correct": [
+      "A",
+      "C",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The shares use SMB. The organization uses the standard Microsoft Entra Kerberos flow described in current Microsoft documentation, not the separate cloud trust path for unsupported clients. The storage account has no other Azure Files identity source enabled.",
+    "sections": {
+      "correctAnswer": "**A. Synchronize the hybrid users, and groups used for share-level RBAC, from AD DS to Microsoft Entra ID**, **C. Use supported operating systems such as Windows 11 Enterprise/Pro or Windows Server 2022 with the required cumulative updates**, and **E. Ensure clients are Microsoft Entra joined or Microsoft Entra hybrid joined**. These are core documented prerequisites for Microsoft Entra Kerberos with hybrid identities.",
+      "technical": "Microsoft Entra Kerberos lets Microsoft Entra ID issue Kerberos tickets for Azure Files SMB access. For hybrid identities, the users originate in AD DS and are synchronized to Microsoft Entra ID by Microsoft Entra Connect Sync or Microsoft Entra Cloud Sync. If Azure RBAC share-level permissions are assigned to a user group, that group must also be created in Active Directory and synchronized to Microsoft Entra ID. This is because the share-level permission is assigned to the Microsoft Entra representation of the identity or group.\n\nThe standard client requirements are also specific. For hybrid identities, Microsoft documents supported Windows client operating systems, including Windows 11 Enterprise/Pro single or multi-session, Windows 10 Enterprise/Pro version 2004 or later with latest cumulative updates, Windows Server 2025 with latest cumulative updates, and Windows Server 2022 with latest cumulative updates. Clients must be Microsoft Entra joined or Microsoft Entra hybrid joined. The documentation states that clients can't be joined to Microsoft Entra Domain Services or joined only to AD for this standard flow.\n\nOnly one Azure Files identity source can be enabled on a storage account at a time, so AD DS authentication and Microsoft Entra Kerberos aren't enabled together. Microsoft Entra Kerberos ticket encryption is always AES-256 according to current documentation; RC4 isn't the target compatibility choice. Other prerequisites also exist, such as allowing Kerberos in SMB security settings and handling the storage account application MFA exception, but the three correct options are the ones listed in the question.",
+      "wrongOptions": {
+        "B": "The standard Microsoft Entra Kerberos flow requires clients to be Microsoft Entra joined or Microsoft Entra hybrid joined; AD-only joined clients don't meet that requirement. Misconception: Hybrid users mean clients should stay AD-only. Could be correct for an on-premises AD DS authentication design rather than Microsoft Entra Kerberos.",
+        "D": "A storage account can't use AD DS and Microsoft Entra Kerberos simultaneously as Azure Files identity sources. Misconception: Microsoft Entra Kerberos is an add-on to AD DS authentication on the same storage account. Could be correct only as a migration topic where one source is disabled before the other is enabled.",
+        "F": "Current Microsoft Entra Kerberos documentation states that Kerberos ticket encryption is always AES-256. RC4 is not the desired compatibility setting. Misconception: Older Kerberos encryption should be kept for Azure Files compatibility. Could be correct only in a legacy troubleshooting discussion outside this Microsoft Entra Kerberos prerequisite, and even AD DS documentation recommends AES-256."
+      },
+      "plainEnglish": "Microsoft Entra Kerberos works when the cloud identity system knows who the user is, the computer is joined to the right cloud-aware identity state, and the operating system understands the required sign-in flow. For hybrid users, their old AD DS accounts must be synced into Microsoft Entra ID. Groups used for share permissions must be synced too.\n\nThe client can't just be an old-style domain-joined machine for the standard flow. It must be Microsoft Entra joined or hybrid joined, and it must run a supported Windows version with updates. The storage account also can't run the old AD DS identity source at the same time as Microsoft Entra Kerberos.",
+      "analogy": "A modern train system accepts cloud-issued tickets. Passengers from the old town registry can ride only if their names have been copied into the cloud ticket system. The train gates work only with newer gate cards, not old town-only cards. The station can't use the old ticket office and the cloud ticket office for the same gate at the same time.\n\n| Analogy | Azure reality |\n|---|---|\n| Old town registry | On-premises AD DS |\n| Cloud ticket system | Microsoft Entra ID |\n| Newer gate card | Microsoft Entra joined or hybrid joined client |\n| Supported train gate software | Supported Windows versions and updates |\n\n**Where the analogy breaks down:** Kerberos uses cryptographic tickets, service principals, SMB protocol settings, and Azure RBAC. A train ticket analogy doesn't model encryption or Windows ACL enforcement.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra Kerberos",
+          "definition": "An authentication method where Microsoft Entra ID issues Kerberos tickets for Azure Files SMB access."
+        },
+        {
+          "term": "Hybrid identity",
+          "definition": "A user or group that originates in on-premises AD DS and is synchronized to Microsoft Entra ID."
+        },
+        {
+          "term": "Microsoft Entra Connect Sync",
+          "definition": "A synchronization tool that copies selected on-premises identity information to Microsoft Entra ID."
+        },
+        {
+          "term": "Microsoft Entra Cloud Sync",
+          "definition": "A lightweight cloud-managed synchronization agent for syncing on-premises identities to Microsoft Entra ID."
+        },
+        {
+          "term": "Microsoft Entra joined",
+          "definition": "A device state where the device is joined directly to Microsoft Entra ID."
+        },
+        {
+          "term": "Microsoft Entra hybrid joined",
+          "definition": "A device state where a device is joined to AD DS and also registered as joined in Microsoft Entra ID."
+        },
+        {
+          "term": "AES-256",
+          "definition": "The Kerberos ticket encryption used by Microsoft Entra Kerberos for Azure Files."
+        },
+        {
+          "term": "Cumulative update",
+          "definition": "A Windows update package that includes security and reliability fixes required for supported behavior."
+        }
+      ],
+      "watchOut": "- Hybrid users and RBAC groups must be synchronized to Microsoft Entra ID for this scenario.\n- AD-only joined or Microsoft Entra Domain Services-joined clients don't satisfy the standard Microsoft Entra Kerberos client requirement.\n- Microsoft Entra Kerberos ticket encryption is AES-256, not RC4.\n- Don't enable another identity source on the same storage account at the same time.\n- ACL-management choices may add more requirements, such as domain-controller connectivity for some hybrid ACL tools.",
+      "productionTip": {
+        "official": "Microsoft lists minimum prerequisites and operating system and domain prerequisites for Microsoft Entra Kerberos, including synchronized hybrid identities, supported Windows versions, and Microsoft Entra joined or hybrid joined clients.",
+        "recommendation": "Before rollout, build a pilot matrix by Windows version, join state, user type, and share. Verify Kerberos ticket acquisition and file access separately from ACL editing, and keep a rollback plan if changing a storage account from AD DS to Microsoft Entra Kerberos."
+      },
+      "memoryTrick": "For Entra Kerberos hybrid access: synced identity, supported Windows, Entra-aware join. This is a shortcut; you still must configure SMB Kerberos, RBAC, ACLs, networking, and app policy prerequisites.",
+      "examTip": "For multiple-answer questions, separate identity, device, and storage-account requirements. Choose synced hybrid identities, supported operating systems, and Microsoft Entra joined or hybrid joined devices. Rule out answers that keep clients AD-only, enable two identity sources, or mention RC4. A harder question may add cloud-only identities, where the supported OS list differs from hybrid identities."
+    },
+    "sources": [
+      {
+        "title": "Microsoft Entra Kerberos Authentication for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-auth-hybrid-identities-enable"
+      },
+      {
+        "title": "Overview - Azure Files Identity-Based Authentication",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+      },
+      {
+        "title": "Assign Share-Level Permissions for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+      },
+      {
+        "title": "Configure Directory and File-Level Permissions for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-configure-file-level-permissions"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

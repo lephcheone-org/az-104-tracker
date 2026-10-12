@@ -1,0 +1,692 @@
+[
+  {
+    "id": "D3.2.5-01",
+    "objective": "D3.2.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains a Windows virtual machine named `vm-sql-prod`. The database engine on the VM stores its data files on one managed data disk and its operating system on a separate OS disk. The database team requires the data disk to support more than 100,000 IOPS with consistently very low latency. Cost is less important than meeting the storage performance target.\n\nWhich disk design should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use a Premium SSD v2 disk as the OS disk and enable ReadOnly host caching for the database data files"
+      },
+      {
+        "id": "B",
+        "text": "Use a Standard SSD data disk with performance plus, because Standard SSD supports the highest maximum IOPS"
+      },
+      {
+        "id": "C",
+        "text": "Use a Premium SSD data disk with ReadWrite host caching, because caching raises the disk's maximum IOPS above Ultra Disk"
+      },
+      {
+        "id": "D",
+        "text": "Use an Ultra Disk as the data disk, keep the OS on a supported OS disk type such as Premium SSD, and don't enable host caching on the Ultra Disk"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The selected region and VM size support Ultra Disk. The question is about managed disk type selection, not SQL Server licensing, VM CPU sizing, or encryption-at-host configuration.",
+    "sections": {
+      "correctAnswer": "**D. Use an Ultra Disk as the data disk, keep the OS on a supported OS disk type such as Premium SSD, and don't enable host caching on the Ultra Disk**. Microsoft documents Ultra Disk as the highest-performing Azure managed disk type, with a maximum of 400,000 IOPS, while Ultra Disk must be used as a data disk and doesn't support disk caching.",
+      "technical": "Azure managed disks have five current disk types for IaaS VMs: Ultra Disk, Premium SSD v2, Premium SSD, Standard SSD, and Standard HDD. The selection should start with the workload's measurable requirement, then check disk-role support, VM compatibility, regional support, caching support, and cost. In this scenario, the workload asks for more than 100,000 IOPS on a data disk. The comparison table in Microsoft Learn lists Ultra Disk at up to 400,000 IOPS, Premium SSD v2 at up to 80,000 IOPS, Premium SSD at up to 20,000 IOPS, Standard SSD at up to 6,000 IOPS, and Standard HDD at 2,000 or 3,000 IOPS depending on performance plus. Only Ultra Disk in that list can satisfy the stated IOPS requirement by itself.\n\nTwo important limitations then control the design. First, Ultra Disks must be data disks and can't be used as OS disks. Microsoft recommends using Premium SSDs as operating system disks when Ultra Disks are used for data. Second, Ultra Disks don't support disk caching. That isn't a problem here because Ultra Disk already supplies provisioned IOPS and throughput directly; you just shouldn't try to add host caching as a setting.\n\nPremium SSD v2 is also a high-performance data disk option and can be adjusted granularly, but its documented maximum is 80,000 IOPS, so it doesn't meet the numeric requirement. Premium SSD can be good for production workloads and supports features such as performance tiers and bursting, yet its per-disk limits are lower. Standard SSD and Standard HDD are cost-oriented choices for less demanding workloads.",
+      "wrongOptions": {
+        "A": "Premium SSD v2 is strong for performance-sensitive data disks, but Microsoft lists it as not usable for OS disks and not supporting host caching. It also tops out at 80,000 IOPS, below the requirement in the scenario. Misconception: The newest SSD family is automatically the right choice for every disk role. Could be correct when a data disk needs up to 80,000 IOPS and the design accepts the Premium SSD v2 limitations.",
+        "B": "Standard SSD is designed for consistent performance at lower IOPS levels and lower cost, not for a single data disk that must exceed 100,000 IOPS. Even with documented performance plus, Standard SSD doesn't approach Ultra Disk's top IOPS. Misconception: Turning on a performance feature changes a budget disk into the highest-performance tier. Could be correct when a web server, test VM, or lightly used application needs predictable storage at a lower price.",
+        "C": "Premium SSD with caching can help some read-heavy workloads, but caching doesn't change the published Premium SSD maximum into Ultra Disk territory, and ReadWrite caching is risky unless the application handles durable cache flushing. Misconception: Host caching is a universal replacement for selecting a disk type with enough provisioned performance. Could be correct when a workload fits Premium SSD limits and has a read pattern that benefits from the supported cache setting."
+      },
+      "plainEnglish": "Think of each Azure disk type as a different class of storage. Standard HDD is cheap and slowest, Standard SSD is steadier and still economical, Premium SSD is a common production choice, Premium SSD v2 gives more adjustable high performance, and Ultra Disk is for the heaviest data-disk workloads. The question gives a hard number: more than 100,000 IOPS. That removes every option except Ultra Disk. After that, you still have to obey the role rules. Ultra Disk can hold database data, but it can't be the disk that boots Windows or Linux. It also doesn't use the host caching feature. So the safe design is a normal supported OS disk plus an Ultra Disk for the database files.",
+      "analogy": "A company is choosing vehicles for a delivery route. A bicycle is cheap, a van handles ordinary routes, a performance truck handles heavy work, and a specialized freight train handles the extreme load. The route in the question needs the freight train, but the train can't be used as the office car.\n\n| Analogy | Azure reality |\n|---|---|\n| Freight train | Ultra Disk data disk |\n| Office car | OS disk such as Premium SSD |\n| Load rating | IOPS and throughput limits |\n| Extra passenger heater | Host caching setting |\n| Route permit | Region and VM-size support |\n\n**Where the analogy breaks down:** Azure disks are virtual block devices with precise regional, role, and SKU rules. A real freight train doesn't have a separate maximum IOPS limit or a VM compatibility matrix.",
+      "jargon": [
+        {
+          "term": "Managed disk",
+          "definition": "An Azure block storage volume managed by Azure and attached to a virtual machine as an OS disk or data disk."
+        },
+        {
+          "term": "IOPS",
+          "definition": "Input/output operations per second; a storage performance measure that counts how many read or write operations can be handled each second."
+        },
+        {
+          "term": "Latency",
+          "definition": "The time taken for one storage operation to complete from the application's point of view."
+        },
+        {
+          "term": "Ultra Disk",
+          "definition": "Azure's highest-performance managed disk type for data disks, with configurable IOPS and throughput and no host caching support."
+        },
+        {
+          "term": "Premium SSD v2",
+          "definition": "A high-performance managed SSD data disk type with independently adjustable capacity, IOPS, and throughput, but not usable as an OS disk."
+        },
+        {
+          "term": "Premium SSD",
+          "definition": "A production SSD managed disk type that can be used for OS disks and data disks on compatible VM sizes."
+        },
+        {
+          "term": "Standard SSD",
+          "definition": "A lower-cost SSD managed disk type for predictable but less demanding workloads."
+        },
+        {
+          "term": "Standard HDD",
+          "definition": "A magnetic disk managed disk type for latency-tolerant, infrequently accessed, or noncritical workloads."
+        },
+        {
+          "term": "OS disk",
+          "definition": "The persistent disk that contains the operating system and boot volume for a virtual machine."
+        },
+        {
+          "term": "Host caching",
+          "definition": "A VM host feature that can cache disk reads or writes for supported disk types and workloads."
+        }
+      ],
+      "watchOut": "- Ultra Disk and Premium SSD v2 aren't OS disk choices.\n- Ultra Disk and Premium SSD v2 don't support host caching.\n- The disk's limit isn't the only limit; the VM size must also support enough IOPS and throughput.\n- Standard HDD OS disks are documented as retiring in 2028, so don't treat them as a future-looking OS disk design.",
+      "productionTip": {
+        "official": "Microsoft documents Ultra Disk as suitable for I/O-intensive workloads such as SAP HANA and top-tier databases, and documents that Ultra Disks must be used as data disks and don't support disk caching. The same disk type page compares the maximum IOPS, throughput, disk size, and OS-disk support for all five managed disk types.",
+        "recommendation": "Measure the database's 50th, 90th, and 99th percentile IOPS, throughput, and latency before choosing the SKU. For an Ultra Disk design, also verify VM-size support, zone placement, quota, and application-level backup before deployment so that the storage choice isn't isolated from the rest of the architecture."
+      },
+      "memoryTrick": "For extreme data-disk IOPS, remember **Ultra is ultra-fast but not the boot disk**. This shortcut fails if the VM size, region, or application architecture can't use Ultra Disk.",
+      "examTip": "The decisive clue is **more than 100,000 IOPS**. Compare that number to the disk type table before thinking about caching. If an answer makes Ultra Disk an OS disk or adds caching to Ultra Disk, eliminate it. A harder version may lower the target to 60,000 IOPS; then Premium SSD v2 could become a better cost/performance answer if the disk is a data disk."
+    },
+    "sources": [
+      {
+        "title": "Select a disk type for Azure IaaS VMs - managed disks",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+      },
+      {
+        "title": "Overview - Options to improve Azure managed disk performance",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-performance-options"
+      },
+      {
+        "title": "Azure premium storage: Design for high performance",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/premium-storage-performance"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.5-02",
+    "objective": "D3.2.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You administer a virtual machine named `vm-import01`. A developer configured an import application to write uploaded customer files to drive `D:` on a Windows VM because the drive was already present and didn't require a new managed disk. The files must survive VM maintenance, redeployment, and stop/start operations.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep the files on the temporary disk because drive `D:` is persistent after every VM lifecycle event"
+      },
+      {
+        "id": "B",
+        "text": "Move the uploaded files to a managed data disk and use the temporary disk only for disposable data"
+      },
+      {
+        "id": "C",
+        "text": "Move the uploaded files to the OS disk because Azure recommends storing all application data on the boot volume"
+      },
+      {
+        "id": "D",
+        "text": "Create a snapshot of the temporary disk before maintenance and restore it after the VM redeploys"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The Windows VM uses the standard Azure temporary disk behavior and not an application-specific replication system. The uploaded files are business data that must be retained.",
+    "sections": {
+      "correctAnswer": "**B. Move the uploaded files to a managed data disk and use the temporary disk only for disposable data**. Microsoft describes the temporary disk as short-term storage whose data might be lost during maintenance, redeployment, or when the VM is stopped, while data disks are managed disks intended for applications and data.",
+      "technical": "Azure VM storage has three main disk roles. The OS disk is persistent and contains the boot volume. Every VM has one OS disk. The data disk is also persistent managed storage attached to the VM for application data or other data. A VM can have multiple data disks, and the VM size controls how many can be attached. The temporary disk is different: it isn't a managed disk and is meant for short-term storage such as page files, swap files, or temporary database scratch files.\n\nThe role order matters when classifying a file location. First ask whether the data must survive lifecycle events. If yes, don't use the temporary disk. Next ask whether the data is application or business data. If yes, prefer a managed data disk over crowding the OS disk. Microsoft states that data disks offer benefits over using the OS disk, including backup and disaster recovery, flexibility, performance isolation, easier maintenance, and access control.\n\nOn Azure Windows VMs, the temporary disk is drive D by default. Microsoft states that data on the temporary disk might be lost during a maintenance event, when you redeploy a VM, or when you stop the VM. A successful standard restart is different; temporary disk data can persist through that event. That exception doesn't save this design, because the requirement includes maintenance, redeployment, and stop/start operations.\n\nThe correct fix is to add or attach a managed data disk, put the upload location there, and treat the temporary disk as a cache or scratch space that the application can recreate.",
+      "wrongOptions": {
+        "A": "The temporary disk isn't safe for required customer files because Microsoft documents loss scenarios that include maintenance, redeployment, and stopping the VM. Misconception: A drive letter that appears every day is automatically durable storage. Could be correct when the files are scratch data, page files, swap files, or temporary processing output that the application can regenerate.",
+        "C": "The OS disk is persistent, but Microsoft generally recommends using data disks for applications and data because they provide better flexibility, isolation, backup, and maintenance characteristics. Misconception: Persistence alone makes the OS disk the preferred application data location. Could be correct for small legacy components that must live on the boot volume and fit within OS disk constraints.",
+        "D": "The temporary disk isn't a managed disk backup target in the same way as OS and data disks, and the exam-safe answer is to place durable data on durable storage instead of building a restore ritual around disposable space. Misconception: Any Azure disk-like drive can be snapshotted and restored like a managed disk. Could be correct when you are snapshotting a managed OS disk or managed data disk for backup or troubleshooting."
+      },
+      "plainEnglish": "The D: drive on many Azure Windows VMs is not a safe filing cabinet. It is more like a workbench beside the machine. It is useful for things you can throw away, such as temporary files or a cache. If the VM is moved to another host, redeployed, or stopped in a way that releases the host, the workbench can be cleared. Customer uploads are real records. They belong on a managed data disk, where Azure treats the disk as a separate persistent storage volume attached to the VM.",
+      "analogy": "Imagine a hotel room with a desk drawer and a rented safe-deposit box. The drawer is convenient while you occupy the room, but housekeeping or a room move might clear it. The safe-deposit box is meant for items that must remain yours.\n\n| Analogy | Azure reality |\n|---|---|\n| Hotel room | Virtual machine host |\n| Desk drawer | Temporary disk |\n| Safe-deposit box | Managed data disk |\n| Guest's suitcase instructions | Application file path |\n| Room move | Redeploy or maintenance event |\n\n**Where the analogy breaks down:** Azure temporary disk behavior is documented by VM platform events, not by human housekeeping. A managed data disk is also virtual block storage, not a physical safe.",
+      "jargon": [
+        {
+          "term": "OS disk",
+          "definition": "The persistent disk attached to a VM that contains the operating system and boot files."
+        },
+        {
+          "term": "Data disk",
+          "definition": "A managed disk attached to a VM to store applications, databases, uploads, or other persistent data."
+        },
+        {
+          "term": "Temporary disk",
+          "definition": "Local short-term storage provided with many VM sizes and intended only for data that can be lost or recreated."
+        },
+        {
+          "term": "Managed disk",
+          "definition": "Azure-managed block storage where Azure handles the underlying storage account placement and replicas."
+        },
+        {
+          "term": "Redeploy",
+          "definition": "An Azure operation that moves a VM to a new Azure host, often used to recover from host-level problems."
+        },
+        {
+          "term": "Maintenance event",
+          "definition": "A platform operation that services Azure infrastructure and can affect where or how a VM runs."
+        },
+        {
+          "term": "Drive D",
+          "definition": "The default Windows drive letter commonly assigned to the temporary disk on Azure VMs."
+        },
+        {
+          "term": "Persistent storage",
+          "definition": "Storage intended to retain data beyond VM restarts and platform lifecycle events."
+        }
+      ],
+      "watchOut": "- Drive letters don't prove durability; know the disk role.\n- A standard restart isn't the same as every maintenance, redeploy, or stop scenario.\n- Application data normally belongs on data disks, not on the temporary disk.\n- Don't design backup around the temporary disk; design the write path correctly first.",
+      "productionTip": {
+        "official": "Microsoft documents that data disks are managed disks used to store application data, while the temporary disk isn't a managed disk and is intended for short-term storage such as page files, swap files, or SQL Server tempdb files. The same overview lists VM events where temporary disk data might be lost.",
+        "recommendation": "Put business data on dedicated data disks and give each application a clear storage map. For temporary paths, configure the application to tolerate deletion, and monitor disk space so a full temporary disk doesn't interrupt imports or patching."
+      },
+      "memoryTrick": "**D can disappear** is the safe exam memory hook for Windows temporary disks. It is a simplification because data can survive some ordinary restarts, but you must not depend on that survival.",
+      "examTip": "The clue words are **drive D**, **uploaded customer files**, and **survive redeployment**. When a question combines the temporary disk with durable business data, choose a managed data disk. A harder version may mention Linux paths such as `/dev/disk/azure/resource`; the role is still temporary storage, not a durable data disk."
+    },
+    "sources": [
+      {
+        "title": "Overview of Azure Disk Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.5-03",
+    "objective": "D3.2.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a Linux virtual machine named `vm-app01`. You attach a new empty 1-TiB managed data disk in the Azure portal. After selecting **Save**, the application team reports that the expected `/datadrive` mount point doesn't exist inside the guest operating system.\n\nWhat should you do next?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Delete and recreate the VM because a managed data disk can't be attached after VM creation"
+      },
+      {
+        "id": "B",
+        "text": "Initialize and format every attached disk in Linux so that the new disk receives the next available device name"
+      },
+      {
+        "id": "C",
+        "text": "Use Linux commands such as `lsblk` or `azure-nvme-id` to identify the attached disk, then partition, format, mount it, and add an `/etc/fstab` entry by UUID"
+      },
+      {
+        "id": "D",
+        "text": "Change the disk to an OS disk so Azure automatically mounts it as `/datadrive`"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The disk is newly created and empty. The Linux distribution supports the documented tools and filesystem commands, and the operator has root or sudo access inside the VM.",
+    "sections": {
+      "correctAnswer": "**C. Use Linux commands such as `lsblk` or `azure-nvme-id` to identify the attached disk, then partition, format, mount it, and add an `/etc/fstab` entry by UUID**. Attaching the managed disk updates the Azure VM configuration, but a new empty disk still has to be prepared inside the guest OS before Linux can use it as a mounted filesystem.",
+      "technical": "Attaching a managed data disk is a two-layer operation. The Azure control plane first creates or attaches the disk resource to the VM at a logical unit number, or LUN. The guest operating system then needs to recognize a block device, partition it if it's empty, create a filesystem, mount that filesystem, and optionally configure persistent mounting. The portal article for Linux shows both parts: under the VM's **Disks** pane you can create and attach a new disk or attach an existing disk, then you SSH to the VM to prepare or mount it.\n\nThe safe sequence for a new Linux data disk is:\n\n1. Identify the disk. On SCSI-based VMs, `lsblk -o NAME,HCTL,SIZE,MOUNTPOINT` can show devices such as `/dev/sdc`. On NVMe-based VMs, Microsoft documents `azure-nvme-id` to map managed disks to LUNs.\n2. Confirm that the disk is the new empty disk. This check protects existing data.\n3. Create a partition table and partition. For disks of 2 TiB or larger, use GPT; below 2 TiB, MBR or GPT can be used.\n4. Create a filesystem such as XFS if that matches the operating system and application standard.\n5. Create a mount point such as `/datadrive` and mount the filesystem.\n6. Add an `/etc/fstab` entry by UUID so the disk mounts after reboot. Microsoft warns that improper `fstab` editing can make a system unbootable and recommends options such as `nofail` where appropriate.\n\nFor an existing disk containing data, skip destructive partitioning and formatting and instead mount the existing filesystem correctly.",
+      "wrongOptions": {
+        "A": "The Azure portal supports attaching both new and existing managed data disks to a Linux VM. Recreating the VM would add avoidable risk and still wouldn't format the disk inside Linux. Misconception: Storage choices are fixed at VM creation. Could be correct when a completely different VM image, generation, or architecture is required, not for a normal data disk attachment.",
+        "B": "Formatting every attached disk is dangerous because existing data disks may contain application or operating system data. Microsoft explicitly warns to initialize and format only a newly created empty disk. Misconception: All visible unmounted devices are safe to erase. Could be correct only after you have positively identified the one new empty disk and confirmed no existing data must be preserved.",
+        "D": "An OS disk is for booting the VM, not for automatically creating an application mount point. Azure doesn't convert a data disk into `/datadrive` just because the application expects that path. Misconception: Azure disk role controls Linux mount names. Could be correct when replacing or repairing the VM's boot disk, which is a different administrative task."
+      },
+      "plainEnglish": "Azure can plug a new virtual disk into the VM, but Linux doesn't automatically know how you want to use that blank disk. It is like handing someone a new empty notebook: they still have to label it, divide it into sections, and decide where to keep it. In Linux terms, you find the new disk, make a partition, put a filesystem on it, mount it at the desired folder, and record the mount by UUID so it comes back after reboot. If the disk already had data, you would not format it.",
+      "analogy": "A facilities team installs a new empty storage cabinet in an office. The cabinet is present, but nobody can file documents until someone labels the drawers and tells the team where the cabinet belongs in the floor plan.\n\n| Analogy | Azure reality |\n|---|---|\n| Installing the cabinet | Attaching the managed disk |\n| Cabinet location label | LUN and device mapping |\n| Dividing drawers | Partitioning |\n| Labeling folders | Formatting with a filesystem |\n| Floor-plan note | `/etc/fstab` entry |\n\n**Where the analogy breaks down:** Linux device names can change, which is why Microsoft recommends using UUIDs for persistent mounting rather than relying on a simple cabinet number.",
+      "jargon": [
+        {
+          "term": "LUN",
+          "definition": "Logical unit number; an identifier Azure uses for an attached data disk as presented to the VM."
+        },
+        {
+          "term": "SCSI",
+          "definition": "A storage controller interface that can expose Azure managed disks to some VM operating systems."
+        },
+        {
+          "term": "NVMe",
+          "definition": "A newer storage controller interface used by some Azure VM sizes to expose managed disks and local disks."
+        },
+        {
+          "term": "`lsblk`",
+          "definition": "A Linux command that lists block devices, partitions, sizes, and mount points."
+        },
+        {
+          "term": "`azure-nvme-id`",
+          "definition": "A utility from the Azure VM utilities package that maps NVMe devices to Azure disk roles and LUNs."
+        },
+        {
+          "term": "Partition",
+          "definition": "A defined section of a disk that the operating system can format and mount."
+        },
+        {
+          "term": "Filesystem",
+          "definition": "The structure, such as XFS or ext4, that lets an operating system store files and directories on a partition."
+        },
+        {
+          "term": "UUID",
+          "definition": "A unique identifier for a filesystem, often used in `/etc/fstab` so Linux mounts the intended disk after reboot."
+        },
+        {
+          "term": "`/etc/fstab`",
+          "definition": "A Linux configuration file that describes filesystems to mount automatically."
+        }
+      ],
+      "watchOut": "- Attaching a disk in Azure doesn't by itself create a Linux filesystem or mount point.\n- Don't format an existing disk that might already contain data.\n- Use GPT for disks that are 2 TiB or larger.\n- Prefer UUID-based `fstab` entries so device name changes don't mount the wrong disk.",
+      "productionTip": {
+        "official": "Microsoft's Linux data disk article documents attaching a new or existing managed disk in the portal and then connecting to the VM to identify, partition, format, mount, and persist the disk. It warns that formatting an existing disk can erase data and that incorrect `/etc/fstab` edits can prevent boot.",
+        "recommendation": "In production, capture the expected disk name, LUN, size, and mount point in a change record. Have another administrator verify the target disk before running destructive commands, and test reboot behavior after editing `/etc/fstab` during a maintenance window."
+      },
+      "memoryTrick": "**Attach outside, prepare inside**: Azure attaches the disk to the VM; the guest OS prepares it for files. The phrase is simplified because existing disks may only need mounting, not partitioning or formatting.",
+      "examTip": "The clue is that the disk was attached but the Linux mount point is missing. Choose the answer that moves into the guest OS and prepares the new empty disk. A harder version may say the disk is an existing data disk; then you should mount it without reinitializing or formatting it."
+    },
+    "sources": [
+      {
+        "title": "Use the portal to attach a data disk to a Linux VM",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/attach-disk-portal"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.5-04",
+    "objective": "D3.2.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You manage a Windows virtual machine named `vm-fin01`. The VM has a 2-TiB Premium SSD managed data disk that contains a single NTFS volume. The finance application now requires a 5-TiB volume on the same disk. You must preserve the data and follow supported Azure disk resize behavior.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Deallocate the VM and detach the Premium SSD before expanding it beyond 4 TiB, then start the VM and extend the Windows volume"
+      },
+      {
+        "id": "B",
+        "text": "Shrink the existing disk to remove unused blocks, then expand it online to 5 TiB from Disk Management only"
+      },
+      {
+        "id": "C",
+        "text": "Use expand without downtime because all data disks can cross the 4-TiB boundary while attached"
+      },
+      {
+        "id": "D",
+        "text": "Increase the Azure managed disk size and skip the guest operating system step because Azure automatically extends NTFS"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The disk type is Premium SSD, not Premium SSD v2 or Ultra Disk. The VM and disk use supported Windows disk tooling, and the application can tolerate a maintenance window.",
+    "sections": {
+      "correctAnswer": "**A. Deallocate the VM and detach the Premium SSD before expanding it beyond 4 TiB, then start the VM and extend the Windows volume**. Microsoft documents that Standard HDD, Standard SSD, and Premium SSD data disks that are 4 TiB or less must be deallocated and detached before expanding beyond 4 TiB; after the Azure disk is expanded, the volume must be extended inside Windows.",
+      "technical": "Azure disk expansion has two distinct layers. First, you increase the managed disk size in Azure. Second, the operating system must expand the partition or volume to use the newly available capacity. The Azure step alone doesn't make NTFS, XFS, or another filesystem use the extra space automatically.\n\nThe downtime rule depends on the disk role, disk type, and size boundary. Microsoft documents expand without downtime for eligible data disks, but with an important limitation for Standard HDD, Standard SSD, and Premium SSD. If one of those disk types is 4 TiB or less, you must deallocate the VM and detach the disk before expanding it beyond 4 TiB. If one of those disk types is already greater than 4 TiB, it can be expanded without deallocating and detaching. Microsoft states that this 4-TiB limitation doesn't apply to Premium SSD v2 or Ultra Disks.\n\nThis question uses a 2-TiB Premium SSD and asks for 5 TiB. That crosses the 4-TiB boundary from below, so the supported path includes deallocation and detachment. After resizing, restart or reattach as appropriate, connect to Windows, rescan if needed, and extend the volume using Disk Management or DiskPart.\n\nThere are also one-way capacity rules. Shrinking an existing managed disk isn't supported and might result in data loss. For OS disks, Microsoft separately documents a maximum capacity of 4,095 GiB, and many MBR-partitioned systems only use up to 2 TiB unless converted to GPT.",
+      "wrongOptions": {
+        "B": "Shrinking an existing Azure managed disk isn't supported and might result in data loss, and Windows Disk Management alone can't increase the Azure-managed disk object. Misconception: Cloud disks can be freely shrunk and grown like a local lab VHD. Could be correct only for extending a Windows volume after the managed disk has already been expanded to a larger supported size.",
+        "C": "Expand without downtime is real, but the documented exception matters here: a Premium SSD that is 4 TiB or less must be deallocated and detached before being expanded beyond 4 TiB. Misconception: A feature headline applies to every size transition. Could be correct for an eligible data disk expansion that doesn't cross this boundary, or for Premium SSD v2 and Ultra Disk scenarios that meet their own limits.",
+        "D": "Azure increases the virtual disk capacity, but the guest operating system must still extend the volume to use the additional space. Misconception: The platform changes the filesystem layout automatically. Could be correct only as the first half of the task, before the required OS-level partition or volume extension."
+      },
+      "plainEnglish": "Making a disk bigger is a two-step job. Azure can make the virtual disk larger, but Windows still sees a volume that needs to be stretched into the new empty space. This scenario also crosses a special boundary: the disk starts below 4 TiB and is a Premium SSD, so Azure requires a more disruptive resize path before going past 4 TiB. You schedule downtime, deallocate and detach as required, resize the disk, bring the VM back, and then extend the Windows volume.",
+      "analogy": "A warehouse manager wants to expand a storage room through a structural wall. If the expansion stays inside the existing room, workers might do it while the office remains open. Crossing the structural wall requires closing the area, moving equipment, then reopening and repainting the floor lines.\n\n| Analogy | Azure reality |\n|---|---|\n| Storage room | Managed data disk |\n| Structural wall | 4-TiB expansion boundary for certain disk types |\n| Closing the area | Deallocating the VM and detaching the disk |\n| Repainting floor lines | Extending the Windows volume |\n| Trying to shrink shelves | Unsupported disk shrink attempt |\n\n**Where the analogy breaks down:** Azure's 4-TiB rule is based on platform support for particular managed disk types, not on a physical wall in a building.",
+      "jargon": [
+        {
+          "term": "Deallocate",
+          "definition": "Stop a VM so Azure releases its compute allocation; it is more than a guest operating system shutdown."
+        },
+        {
+          "term": "Detach",
+          "definition": "Remove a data disk from a VM's storage profile while keeping the managed disk resource."
+        },
+        {
+          "term": "Premium SSD",
+          "definition": "A production Azure managed SSD disk type with fixed size tiers, IOPS, and throughput values."
+        },
+        {
+          "term": "TiB",
+          "definition": "Tebibyte, a binary unit of storage capacity equal to 1,024 GiB."
+        },
+        {
+          "term": "NTFS",
+          "definition": "A Windows filesystem commonly used for volumes that store files and application data."
+        },
+        {
+          "term": "Disk Management",
+          "definition": "A Windows administrative tool used to initialize disks and extend or manage volumes."
+        },
+        {
+          "term": "DiskPart",
+          "definition": "A Windows command-line tool for selecting disks and extending volumes, among other disk operations."
+        },
+        {
+          "term": "GPT",
+          "definition": "GUID Partition Table, a partitioning format that supports larger disks than MBR."
+        },
+        {
+          "term": "MBR",
+          "definition": "Master Boot Record, an older partitioning format with a common 2-TiB usable size limitation."
+        }
+      ],
+      "watchOut": "- You can expand managed disks, but you can't shrink them.\n- Azure disk size expansion and guest volume extension are separate steps.\n- OS disks and ineligible data disks require deallocation.\n- A Premium SSD below or at 4 TiB crossing beyond 4 TiB has the detach and deallocate requirement.",
+      "productionTip": {
+        "official": "Microsoft documents that only eligible data disks can be expanded without deallocating the VM, and that OS disks and data disks not meeting the no-downtime requirements require deallocation. It also documents the 4-TiB boundary limitation for Standard HDD, Standard SSD, and Premium SSD, and states that shrinking isn't supported.",
+        "recommendation": "Before resizing, snapshot or back up the disk, confirm partition style, and rehearse the OS extension commands on a nonproduction VM. For production finance workloads, schedule the resize with application owners and verify both Azure disk size and filesystem size afterward."
+      },
+      "memoryTrick": "**Grow in Azure, then grow in the guest**. Add **crossing four needs more care** for Premium SSD, Standard SSD, and Standard HDD disks that start at or below 4 TiB.",
+      "examTip": "Look for the disk type and starting size. A 2-TiB Premium SSD becoming 5 TiB isn't the simple no-downtime case. A harder question may change the disk to Premium SSD v2 or say the Premium SSD is already 6 TiB; those details change the deallocation analysis, but the guest volume still has to be extended."
+    },
+    "sources": [
+      {
+        "title": "Expand Virtual Hard Disks Attached to a Windows VM in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/expand-disks"
+      },
+      {
+        "title": "Overview of Azure Disk Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.5-05",
+    "objective": "D3.2.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a SQL Server workload on an Azure VM that uses Premium SSD managed disks. The database data files are read-heavy, and the transaction log disk is write-heavy. You need to choose host caching settings and understand the operational impact of changing them.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Configure ReadOnly host caching for the read-heavy data file disk when the workload can benefit from cached reads"
+      },
+      {
+        "id": "B",
+        "text": "Configure None for the write-heavy log disk because log writes don't benefit from ReadOnly caching"
+      },
+      {
+        "id": "C",
+        "text": "Configure ReadWrite caching for all database disks because Azure guarantees that cached writes are always persisted by any application"
+      },
+      {
+        "id": "D",
+        "text": "Change cache settings freely during business hours because Azure updates the setting without detaching disks or restarting VMs"
+      },
+      {
+        "id": "E",
+        "text": "Use host caching with Ultra Disk or Premium SSD v2 to make those disk types eligible for OS disks"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The workload uses disk types that support host caching, such as Premium SSD. The question is about host caching, not SQL Server Always On design or Azure Backup configuration.",
+    "sections": {
+      "correctAnswer": "**A. Configure ReadOnly host caching for the read-heavy data file disk when the workload can benefit from cached reads** and **B. Configure None for the write-heavy log disk because log writes don't benefit from ReadOnly caching**. Microsoft recommends ReadOnly caching for read-only and read-write data disks where reads benefit, and None for write-only or write-heavy data disks such as log volumes.",
+      "technical": "Host caching, also called BlobCache in Microsoft documentation, uses host RAM and local SSD on supported high-scale VMs to improve disk access patterns for supported disk types. The cache setting is a per-disk setting. The common values are None, ReadOnly, and ReadWrite. Defaults are also role-specific: OS disks default to ReadWrite, and data disks default to ReadOnly.\n\nFor a database workload, match the setting to the I/O pattern. A data-file disk often has many reads, so ReadOnly caching can reduce read latency and can let cached reads avoid counting against the underlying disk's IOPS and throughput limits. A transaction log disk is write-heavy and must preserve ordered durable writes. Microsoft recommends None for write-only and write-heavy disks. ReadWrite caching is much more restrictive: use it only when the application properly handles writing cached data to persistent disks when needed, because otherwise data loss can occur if the VM crashes.\n\nChanging the cache setting isn't a harmless label change. Microsoft states that changing the cache setting of an Azure disk detaches and reattaches the target disk. If the target disk is the operating system disk, the VM is restarted. Stop affected applications and services before changing the cache setting to avoid corruption or interruption.\n\nFinally, caching support depends on disk type. Standard HDD, Standard SSD, and Premium SSD can use BlobCache on supported VMs. Ultra Disk and Premium SSD v2 don't support host caching, and that fact doesn't change their OS-disk limitation.",
+      "wrongOptions": {
+        "C": "ReadWrite caching isn't a blanket database recommendation because an application must correctly persist cached writes; otherwise a VM crash can lead to data loss. Misconception: Faster cache settings are always safer and better. Could be correct when an application is explicitly designed and validated to handle write-back caching semantics for that disk.",
+        "D": "Microsoft documents that changing an Azure disk cache setting detaches and reattaches the disk, and an OS disk cache change restarts the VM. Misconception: Cache configuration is a live metadata-only change. Could be correct for some unrelated VM tags or monitoring labels, but not for disk caching settings.",
+        "E": "Ultra Disk and Premium SSD v2 don't support host caching, and neither can be used as an OS disk. Misconception: Enabling a feature can override disk role limitations. Could be correct only in the sense that Premium SSD, Standard SSD, and Standard HDD can use supported host caching settings on compatible VMs."
+      },
+      "plainEnglish": "A cache is a fast nearby copy. It helps most when the computer keeps reading the same information. Database data files often have useful repeated reads, so ReadOnly cache can help. A transaction log is different: it is mostly a stream of writes that must land safely and in order. ReadOnly cache doesn't help that pattern, and careless write caching can be dangerous. Also, changing the cache mode can briefly disconnect the disk from the VM, so treat it like a maintenance operation rather than a harmless checkbox.",
+      "analogy": "A restaurant keeps popular recipe cards on the counter but sends official order tickets straight to the permanent order book. The recipe cards speed up repeated reading. The order tickets must be written reliably, not left on a sticky note that might disappear.\n\n| Analogy | Azure reality |\n|---|---|\n| Recipe cards on counter | ReadOnly cache for read-heavy data |\n| Official order book | Persistent transaction log disk |\n| Sticky note write cache | Risky ReadWrite cache without application support |\n| Closing a station to rearrange it | Detach and reattach during cache change |\n| Kitchen station type | Disk type support for caching |\n\n**Where the analogy breaks down:** Azure host caching is implemented by VM host RAM and SSD, not by paper copies, and the exact benefit depends on workload measurements.",
+      "jargon": [
+        {
+          "term": "Host caching",
+          "definition": "A per-disk VM setting that can cache storage operations on the Azure host for supported disk types."
+        },
+        {
+          "term": "BlobCache",
+          "definition": "Microsoft's term for the multitier host caching technology that uses host RAM and local SSD."
+        },
+        {
+          "term": "ReadOnly",
+          "definition": "A cache mode that can serve reads from cache while writes still go to the disk."
+        },
+        {
+          "term": "ReadWrite",
+          "definition": "A cache mode that can cache writes and should be used only when the application handles durable write persistence correctly."
+        },
+        {
+          "term": "None",
+          "definition": "A data disk cache setting that disables host caching for that disk."
+        },
+        {
+          "term": "Transaction log",
+          "definition": "A database file that records changes and is usually write-heavy and durability-sensitive."
+        },
+        {
+          "term": "IOPS",
+          "definition": "Input/output operations per second, a measure of disk operation rate."
+        },
+        {
+          "term": "Throughput",
+          "definition": "The amount of data read from or written to storage per second."
+        },
+        {
+          "term": "Ultra Disk",
+          "definition": "A high-performance Azure data disk type that doesn't support host caching."
+        },
+        {
+          "term": "Premium SSD v2",
+          "definition": "A high-performance adjustable Azure data disk type that doesn't support host caching."
+        }
+      ],
+      "watchOut": "- OS disks default to ReadWrite; data disks default to ReadOnly.\n- None is the documented choice for write-only and write-heavy disks.\n- Ultra Disk and Premium SSD v2 don't support host caching.\n- Changing cache settings can detach and reattach disks, so plan downtime or application quiescence.",
+      "productionTip": {
+        "official": "Microsoft documents ReadOnly caching as a way to reduce read latency and improve read IOPS for suitable workloads, None for write-heavy data disks, and cautions that changing cache settings detaches and reattaches the disk. The disk type documentation states that Ultra Disk and Premium SSD v2 don't support host caching.",
+        "recommendation": "Benchmark database data and log disks separately before and after changing cache settings. For SQL Server-style layouts, start with ReadOnly for read-heavy data files and None for logs, then validate latency, write stall metrics, and recovery behavior under realistic load."
+      },
+      "memoryTrick": "**Reads may be cached; logs need landing**. This is a rule of thumb, not a substitute for testing a particular database engine and storage layout.",
+      "examTip": "The clue words are **read-heavy data files** and **write-heavy log disk**. Pick ReadOnly for the read-friendly disk and None for the log. Reject answers that apply ReadWrite everywhere or pretend cache changes have no operational impact. A harder version may introduce Premium SSD v2; then caching isn't available at all."
+    },
+    "sources": [
+      {
+        "title": "Azure premium storage: Design for high performance",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/premium-storage-performance"
+      },
+      {
+        "title": "Select a disk type for Azure IaaS VMs - managed disks",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.5-06",
+    "objective": "D3.2.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You manage a virtual machine named `vm-testpatch01`. Before applying a risky application patch, you need a point-in-time copy of the VM's managed OS disk so that you can later create a new managed disk for troubleshooting or rollback testing. You expect to take similar disk backups repeatedly and want to reduce storage consumed by later backups when only small amounts of data change.\n\nWhat should you create?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A shared disk with `maxShares=2`, then attach it to the original VM and a test VM at the same time"
+      },
+      {
+        "id": "B",
+        "text": "A temporary disk copy, because temporary disks are billed only for the used size"
+      },
+      {
+        "id": "C",
+        "text": "A new Premium SSD performance tier, because changing the tier stores previous disk blocks"
+      },
+      {
+        "id": "D",
+        "text": "An incremental managed disk snapshot, then create a managed disk from the snapshot when you need to restore or test"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The requirement is a disk-level point-in-time copy, not a full application-consistent backup policy. The OS disk is a managed disk, and the operator has permission to create snapshots and disks.",
+    "sections": {
+      "correctAnswer": "**D. An incremental managed disk snapshot, then create a managed disk from the snapshot when you need to restore or test**. Microsoft documents managed disk snapshots as read-only point-in-time copies that can create new managed disks, and incremental snapshots store only changes after the first full copy.",
+      "technical": "A managed disk snapshot is a read-only point-in-time copy of a managed disk. Full snapshots are full copies of a disk, stored as standard managed disks by default, and they exist independently of the source disk. They can be taken from either OS disks or data disks and can be used to create new managed disks. Microsoft recommends cleanly shutting down a VM first if you plan to use a snapshot to create a new VM, because that clears in-progress activity.\n\nIncremental snapshots solve a different part of the scenario: repeated point-in-time backups where later changes may be small. Microsoft documents that the first incremental snapshot is a full copy of the disk, and subsequent incremental snapshots contain only the delta changes since the last snapshot. When you restore a disk from an incremental snapshot, Azure reconstructs the full disk as it existed at that point in time. Incremental snapshots are billed for used size only and can be more cost-effective because they don't store the whole disk again for every backup unless necessary.\n\nThe restore or test step is a separate operation. You create a managed disk from the snapshot, using a command such as `az disk create --source <snapshotId>` or the portal equivalent. For Premium SSD v2 and Ultra Disk snapshots, background copy and completion behavior can matter; disks created from snapshots might be attachable while a background copy is running but can have a performance impact until complete. For common AZ-104 scenarios, remember the core sequence: snapshot the managed disk, then create a managed disk from the snapshot when needed.",
+      "wrongOptions": {
+        "A": "Shared disks are for clustered applications that coordinate simultaneous block access; they aren't point-in-time backup copies. Misconception: Sharing a disk with a test VM is the same as preserving a previous state. Could be correct when building a Windows Server Failover Cluster or Pacemaker cluster with software that handles write locking.",
+        "B": "The temporary disk isn't a managed disk snapshot source for durable rollback, and it might lose data during VM lifecycle events. Misconception: Low-cost temporary storage is suitable for backup copies. Could be correct when the data is scratch content that can disappear without business impact.",
+        "C": "A Premium SSD performance tier changes IOPS and throughput billing behavior; it doesn't store historical disk blocks for rollback. Misconception: A performance setting is a backup feature. Could be correct when a Premium SSD needs temporarily higher sustained performance without increasing disk size."
+      },
+      "plainEnglish": "A snapshot is like taking a frozen picture of a disk at a moment in time. If the patch breaks something, you can use that picture to make a new disk and inspect or rebuild from it. An incremental snapshot is smarter for repeated pictures: the first one captures the whole disk, and the next ones save only what changed. It is not the same as attaching the same disk to two computers, and it is not the same as making the disk faster.",
+      "analogy": "A mechanic photographs an engine before each risky repair. The first photo album shows every part. Later albums record only the changed parts, but the mechanic can still reconstruct how the engine looked on any photo day.\n\n| Analogy | Azure reality |\n|---|---|\n| Engine | Managed disk |\n| First photo album | First incremental snapshot as a full copy |\n| Later changed-part notes | Delta data in subsequent incremental snapshots |\n| Rebuilt engine model | Managed disk created from snapshot |\n| Two mechanics using one engine | Shared disk, not a backup |\n\n**Where the analogy breaks down:** Azure reconstructs a block-level disk through storage metadata and background copy processes; it doesn't literally store visual photographs.",
+      "jargon": [
+        {
+          "term": "Snapshot",
+          "definition": "A read-only point-in-time copy of an Azure managed disk."
+        },
+        {
+          "term": "Incremental snapshot",
+          "definition": "A managed disk snapshot type where the first snapshot is full and later snapshots store only changes since the previous snapshot."
+        },
+        {
+          "term": "Full snapshot",
+          "definition": "A snapshot that represents a full copy of the managed disk at a point in time."
+        },
+        {
+          "term": "OS disk",
+          "definition": "The managed disk that contains the virtual machine's boot volume and operating system."
+        },
+        {
+          "term": "Data disk",
+          "definition": "A managed disk attached to a VM for application or user data."
+        },
+        {
+          "term": "Read-only",
+          "definition": "A state where the snapshot can be used as a source but isn't modified like a running disk."
+        },
+        {
+          "term": "Background copy",
+          "definition": "An Azure storage process that copies disk data after creating a disk from certain snapshots or sources and can affect performance until complete."
+        },
+        {
+          "term": "`az disk create`",
+          "definition": "An Azure CLI command that can create a managed disk, including from a snapshot source."
+        }
+      ],
+      "watchOut": "- A snapshot is crash-consistent at the disk level; plan application-consistent backup separately when required.\n- The first incremental snapshot is full; later ones are deltas.\n- Creating a disk from a snapshot is a new disk operation, not an in-place undo button.\n- Premium SSD v2 and Ultra Disk snapshot restores can involve background copy behavior and temporary performance impact.",
+      "productionTip": {
+        "official": "Microsoft documents snapshots as full, read-only copies that exist independently from the source disk and can create new managed disks. Microsoft also documents incremental snapshots as point-in-time backups that store only changes after the first full incremental snapshot and reconstruct a full disk during restore.",
+        "recommendation": "For production rollback, don't rely on an unmanaged pile of snapshots alone. Define retention, naming, tags, test-restore cadence, and whether the workload needs Azure Backup or application-aware backup in addition to disk snapshots."
+      },
+      "memoryTrick": "**Snapshot saves state; incremental saves changes**. The phrase is simplified because a restored disk is reconstructed as a complete disk even when the stored snapshot chain uses deltas.",
+      "examTip": "The clue words are **point-in-time copy**, **managed OS disk**, **create a new managed disk**, and **repeated backups with small changes**. Choose incremental snapshot. A harder version may ask for a coordinated multi-disk application backup; a single managed disk snapshot doesn't coordinate multiple striped disks."
+    },
+    "sources": [
+      {
+        "title": "Create a snapshot of an Azure managed disk",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/snapshot-copy-managed-disk"
+      },
+      {
+        "title": "Create an incremental snapshot",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-incremental-snapshots"
+      },
+      {
+        "title": "Create managed disk from snapshot (Linux) - CLI sample",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/scripts/create-managed-disk-from-snapshot"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.5-07",
+    "objective": "D3.2.5",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You plan to deploy a two-node clustered database workload on Azure VMs in different availability zones. The application requires shared block storage and uses a cluster manager that handles node communication and write locking. You also want the disk storage to survive a zone failure better than a disk replicated only within one datacenter.\n\nWhich two configuration choices should you make? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable Azure shared disks and set `maxShares=2` on a supported data disk while the disk is detached"
+      },
+      {
+        "id": "B",
+        "text": "Use a ZRS managed disk type supported for shared disks, such as Premium SSD or Standard SSD, when regional support and workload requirements allow it"
+      },
+      {
+        "id": "C",
+        "text": "Use a Standard HDD shared disk because all Azure managed disk types support shared disks and ZRS"
+      },
+      {
+        "id": "D",
+        "text": "Rely on the shared disk feature to provide a fully managed SMB or NFS file system without cluster software"
+      },
+      {
+        "id": "E",
+        "text": "Use an LRS disk to synchronously replicate the disk across three availability zones"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The workload has a supported clustered file system or database clustering layer, and the selected region supports availability zones and the chosen disk SKU. The question is about managed disks, not Azure Files shares.",
+    "sections": {
+      "correctAnswer": "**A. Enable Azure shared disks and set `maxShares=2` on a supported data disk while the disk is detached** and **B. Use a ZRS managed disk type supported for shared disks, such as Premium SSD or Standard SSD, when regional support and workload requirements allow it**. Shared disks provide shared block storage for clustered applications, and ZRS replicates supported managed disks across three availability zones.",
+      "technical": "Azure shared disks allow one managed disk to be attached to multiple VMs simultaneously. Microsoft positions the feature for clustered applications such as Windows Server Failover Cluster or Pacemaker, where cluster software handles node communication and write locking. The disk is shared block storage exposed as LUNs; it doesn't become a fully managed SMB or NFS file service. Applications coordinate access by mechanisms such as SCSI Persistent Reservations.\n\nThe `maxShares` value controls how many nodes can share the disk at the same time. For a two-node cluster, set `maxShares=2`. Microsoft documents that `maxShares` can only be set or edited when the disk is detached from all nodes. Supported shared disk types currently include Ultra Disk, Premium SSD v2, Premium SSD, and Standard SSD. Standard HDD isn't in that list. Host caching isn't supported for shared disks, and Premium SSD or Standard SSD shared disks can only be enabled on data disks, not OS disks.\n\nRedundancy is a separate choice. LRS replicates data three times within a single datacenter in the selected region and has lower write latency. ZRS synchronously replicates a managed disk across three availability zones in a region and offers higher availability for managed disks. For managed disks, ZRS support is limited to Premium SSD and Standard SSD; it isn't supported with Premium SSD v2 or Ultra Disk. A shared ZRS disk can be attached to primary and secondary VMs in different zones for clustered or distributed applications, assuming the workload and region support the design.",
+      "wrongOptions": {
+        "C": "Standard HDD isn't listed as a supported shared disk type, and ZRS for managed disks is limited to Premium SSD and Standard SSD. Misconception: Every lower-cost disk SKU supports every high-availability feature. Could be correct when choosing low-cost nonshared storage for backup or infrequently accessed latency-tolerant data.",
+        "D": "Azure shared disks provide shared block storage, not a managed SMB or NFS filesystem. The documentation says a cluster manager is required for communication and write locking. Misconception: Multi-attach storage automatically becomes a safe shared file share. Could be correct when using Azure Files or another file service that actually provides SMB or NFS semantics.",
+        "E": "LRS keeps three copies within a single datacenter, not across three availability zones. Misconception: Three replicas always mean three zones. Could be correct when lower write latency is more important and the application supplies its own cross-zone replication or backup strategy."
+      },
+      "plainEnglish": "A shared disk lets two cluster nodes connect to the same virtual block device, but the nodes still need traffic rules so they don't write over each other. That is what cluster software does. The `maxShares` setting is the disk's limit for how many nodes can attach. For a two-node cluster, the limit should be two. If you also care about a datacenter zone failing, use a disk redundancy type that stores copies across zones. That is ZRS, and for managed disks it is supported on selected SSD disk types, not on every disk family.",
+      "analogy": "Two surgeons can use the same operating room only if a coordinator controls who is doing which procedure. The room must also be in a hospital design that can keep working if one building wing loses power.\n\n| Analogy | Azure reality |\n|---|---|\n| Operating room | Shared managed data disk |\n| Procedure coordinator | Cluster manager such as WSFC or Pacemaker |\n| Two-surgeon limit | `maxShares=2` |\n| Three protected wings | ZRS across availability zones |\n| Single building storage closet | LRS in one datacenter |\n\n**Where the analogy breaks down:** Azure shared disks use block storage, SCSI reservations, and VM attachments; surgeons and rooms don't model I/O throttles or disk SKU limitations.",
+      "jargon": [
+        {
+          "term": "Azure shared disks",
+          "definition": "A managed disk feature that lets a supported data disk attach to multiple VMs at the same time for clustered workloads."
+        },
+        {
+          "term": "`maxShares`",
+          "definition": "The disk property that sets the maximum number of VMs that can simultaneously share a managed disk."
+        },
+        {
+          "term": "Cluster manager",
+          "definition": "Software such as Windows Server Failover Cluster or Pacemaker that coordinates cluster node membership and storage access."
+        },
+        {
+          "term": "SCSI Persistent Reservations",
+          "definition": "A storage coordination mechanism that clustered applications use to control which node can write to shared block storage."
+        },
+        {
+          "term": "LRS",
+          "definition": "Locally redundant storage; it replicates managed disk data three times within one datacenter in a region."
+        },
+        {
+          "term": "ZRS",
+          "definition": "Zone-redundant storage; it synchronously replicates supported managed disk data across three availability zones in a region."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate location in an Azure region with independent power, cooling, and networking."
+        },
+        {
+          "term": "Premium SSD",
+          "definition": "A production SSD managed disk type that supports both shared disks and ZRS in supported configurations."
+        },
+        {
+          "term": "Standard SSD",
+          "definition": "A lower-cost SSD managed disk type that supports shared disks and ZRS in supported configurations."
+        },
+        {
+          "term": "SMB/NFS",
+          "definition": "File sharing protocols; Azure shared disks don't natively provide a managed file system over these protocols."
+        }
+      ],
+      "watchOut": "- Shared disks are for data disks, not OS disks, for Premium SSD and Standard SSD.\n- Set or edit `maxShares` only while the disk is detached from all nodes.\n- Shared disks still require cluster software to protect writes.\n- ZRS managed disks support Premium SSD and Standard SSD, not Premium SSD v2 or Ultra Disk.",
+      "productionTip": {
+        "official": "Microsoft documents shared disks as simultaneous managed disk attachment for clustered applications and states that a cluster manager is required. Microsoft also documents LRS as three replicas in one datacenter and ZRS as synchronous replication across three availability zones, with ZRS managed disk support limited to Premium SSD and Standard SSD.",
+        "recommendation": "For clustered production databases, validate the complete support matrix: operating system, cluster stack, disk SKU, zone placement, backup method, and disaster recovery plan. Test node failure, disk reservation behavior, and forced detach procedures before relying on the design."
+      },
+      "memoryTrick": "**Share needs a shepherd; zones need ZRS**. The shepherd is cluster software, and ZRS is the disk redundancy choice for supported cross-zone resilience.",
+      "examTip": "The clues are **clustered database**, **shared block storage**, **write locking**, and **different availability zones**. Select shared disks with the right `maxShares` plus ZRS on a supported disk type. A harder version may offer Ultra Disk for performance; remember Ultra can be shared, but managed disk ZRS doesn't support Ultra Disk."
+    },
+    "sources": [
+      {
+        "title": "Share an Azure managed disk across VMs",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-shared"
+      },
+      {
+        "title": "Redundancy options for Azure managed disks",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-redundancy"
+      },
+      {
+        "title": "Overview of Azure Disk Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/managed-disks-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

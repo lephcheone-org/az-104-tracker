@@ -1,0 +1,756 @@
+[
+  {
+    "id": "D3.1.1-01",
+    "objective": "D3.1.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You are reviewing a small ARM template that a teammate found in a deployment repository.\n\n```json\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"location\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\"\n    }\n  },\n  \"variables\": {\n    \"accountName\": \"[format('st{0}', uniqueString(resourceGroup().id))]\"\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Storage/storageAccounts\",\n      \"apiVersion\": \"2025-06-01\",\n      \"name\": \"[variables('accountName')]\",\n      \"location\": \"[parameters('location')]\",\n      \"sku\": { \"name\": \"Standard_LRS\" },\n      \"kind\": \"StorageV2\"\n    }\n  ],\n  \"outputs\": {\n    \"blobEndpoint\": {\n      \"type\": \"string\",\n      \"value\": \"[reference(variables('accountName')).primaryEndpoints.blob]\"\n    }\n  }\n}\n```\n\nWhich statement correctly interprets the template structure and result?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The `functions` section is required, and without it the storage account resource is ignored."
+      },
+      {
+        "id": "B",
+        "text": "The template deploys one StorageV2 account in the resource group's location and returns its blob endpoint; `$schema`, `contentVersion`, and `resources` are the required top-level sections shown here."
+      },
+      {
+        "id": "C",
+        "text": "The `contentVersion` value selects the storage resource provider API version used by the deployment."
+      },
+      {
+        "id": "D",
+        "text": "The `outputs` section is required because every deployment must return at least one value."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The snippet is read as an ARM JSON deployment template for a resource-group deployment, not as a Bicep file or a parameters file.",
+    "sections": {
+      "correctAnswer": "**B. The template deploys one StorageV2 account in the resource group's location and returns its blob endpoint; `$schema`, `contentVersion`, and `resources` are the required top-level sections shown here.** Microsoft documents `$schema`, `contentVersion`, and `resources` as required elements in the standard ARM template structure. The other sections in the snippet customize values or return information after deployment.",
+      "technical": "An ARM template is a JSON description of the desired resource state. In the documented template format, `$schema` points tools to the template language schema, `contentVersion` records the version of this template document, and `resources` lists the Azure resource types to deploy or update. Those three top-level elements are required in the structure shown by Microsoft.\n\nThe optional sections in this snippet still matter:\n\n| Section | How this template uses it | Required here? |\n|---|---|---|\n| `parameters` | Lets the deployment accept or default the `location` value | No |\n| `variables` | Stores the calculated storage account name once | No |\n| `outputs` | Returns the storage account's blob endpoint after deployment | No |\n| `functions` | Not present; no custom functions are needed | No |\n\nThe deployment reads `parameters('location')`; because the parameter has `defaultValue`, a caller can omit it and Resource Manager uses `resourceGroup().location`. The `variables('accountName')` expression combines `st` with `uniqueString(resourceGroup().id)`. The single object in `resources` is a `Microsoft.Storage/storageAccounts` resource using API version `2025-06-01`, SKU `Standard_LRS`, and kind `StorageV2`.\n\nThe output expression uses `reference(variables('accountName'))` to retrieve runtime properties for the deployed account, then selects `primaryEndpoints.blob`. The output does not cause a second storage account to be created. It only reports a value after Resource Manager can evaluate the resource's runtime state.",
+      "wrongOptions": {
+        "A": "The `functions` section is optional and is only needed when the author defines user-defined template functions. This template can deploy the storage account without a custom function list. Misconception: Every item in the sample template format is mandatory. Could be correct when a particular template expression calls a user-defined function that must be declared first.",
+        "C": "`contentVersion` is a version label for the template itself, not the resource provider API version. The storage API version appears inside the resource object as `apiVersion`. Misconception: Any field containing the word version must control Azure REST behavior. Could be correct if the statement referred to `apiVersion` on `Microsoft.Storage/storageAccounts`.",
+        "D": "`outputs` is optional. It is useful when a deployment needs to return values such as IDs, endpoints, or generated names, but a template with resources can be valid without any outputs. Misconception: Deployment success requires a returned value. Could be correct in an internal pipeline standard that requires outputs by convention, not as an ARM language rule."
+      },
+      "plainEnglish": "This file is like a shopping list for Azure. The required header tells tools which rulebook to use, the version number labels this copy of the list, and the resources section says what Azure should make. In this example the list asks Azure to create one storage account. The parameter is a blank that can be filled in by the person deploying the file. If nobody fills it in, the template uses the resource group's location. The variable is a nickname for a calculated storage account name. The output is a receipt line that reports the blob address after Azure has created or updated the account.",
+      "analogy": "Imagine a building work order. It must identify the form type, the form revision, and the construction items. It may also include customer choices, shorthand notes, and a final inspection report.\n\n| Analogy | Azure reality |\n|---|---|\n| Form type | `$schema` |\n| Form revision | `contentVersion` |\n| Construction item | `resources` entry |\n| Customer choice | `parameters` value |\n| Shorthand note | `variables` entry |\n| Inspection report | `outputs` value |\n\n**Where the analogy breaks down:** Azure expressions are evaluated by Resource Manager and can call functions such as `resourceGroup()` and `reference()`. A paper work order does not have runtime functions or API versions.",
+      "jargon": [
+        {
+          "term": "ARM template",
+          "definition": "A JSON file that describes Azure resources declaratively for Azure Resource Manager to deploy or update."
+        },
+        {
+          "term": "Azure Resource Manager",
+          "definition": "The Azure deployment and management service that processes ARM templates and Bicep-generated templates."
+        },
+        {
+          "term": "`$schema`",
+          "definition": "A top-level template property containing the URI of the JSON schema that describes the template language version."
+        },
+        {
+          "term": "`contentVersion`",
+          "definition": "A required top-level value that the author uses to track the version of the template document."
+        },
+        {
+          "term": "`parameters`",
+          "definition": "A template section for values supplied or defaulted when a deployment starts."
+        },
+        {
+          "term": "`variables`",
+          "definition": "A template section for reusable JSON fragments or expressions that simplify later template expressions."
+        },
+        {
+          "term": "`resources`",
+          "definition": "The top-level section that lists resources to deploy or update."
+        },
+        {
+          "term": "`outputs`",
+          "definition": "A template section that returns values after deployment, such as endpoints or resource IDs."
+        },
+        {
+          "term": "`apiVersion`",
+          "definition": "The resource provider API version used for a specific resource declaration."
+        },
+        {
+          "term": "Blob endpoint",
+          "definition": "The service URL for Blob Storage on a storage account."
+        }
+      ],
+      "watchOut": "- Do not confuse `contentVersion` with a resource `apiVersion`.\n- Optional template sections can be absent even when the sample structure shows them.\n- A variable does not create a resource by itself; it only stores a calculated value.\n- Outputs report values after deployment and are not required for a valid template.",
+      "productionTip": {
+        "official": "Microsoft documents the template structure with `$schema`, `contentVersion`, and `resources` as required top-level elements, while parameters, variables, functions, and outputs are optional. Microsoft also documents Bicep as offering the same capabilities with easier syntax.",
+        "recommendation": "For production templates, keep top-level sections purposeful. Add outputs only for values that operators, pipelines, or later deployments need, and treat `contentVersion` as an author-controlled change marker rather than as a substitute for source control."
+      },
+      "memoryTrick": "Remember **S-C-R** for a basic ARM JSON template: Schema, Content version, Resources. The shortcut helps for this template format, but languageVersion 2.0 adds other capabilities that do not make every optional section mandatory.",
+      "examTip": "The clue is the question asking for structure and result together. First identify the required sections, then inspect the only object in `resources`. If an answer says `outputs`, `parameters`, `variables`, or `functions` is always required, compare it to the official template structure before accepting it."
+    },
+    "sources": [
+      {
+        "title": "Template structure and syntax - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+      },
+      {
+        "title": "Template functions - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions"
+      },
+      {
+        "title": "Template functions - scope - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-scope"
+      },
+      {
+        "title": "Microsoft.Storage/storageAccounts - Bicep, ARM template & Terraform AzAPI reference",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.storage/storageaccounts"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.1-02",
+    "objective": "D3.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have the following ARM template fragment for a storage account deployment.\n\n```json\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"prefix\": {\n      \"type\": \"string\",\n      \"minLength\": 3\n    },\n    \"storageSku\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"Standard_LRS\",\n      \"allowedValues\": [\n        \"Standard_LRS\",\n        \"Standard_GRS\"\n      ]\n    }\n  },\n  \"variables\": {\n    \"name\": \"[concat(parameters('prefix'), uniqueString(resourceGroup().id))]\"\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Storage/storageAccounts\",\n      \"apiVersion\": \"2025-06-01\",\n      \"name\": \"[variables('name')]\",\n      \"location\": \"[resourceGroup().location]\",\n      \"sku\": { \"name\": \"[parameters('storageSku')]\" },\n      \"kind\": \"StorageV2\"\n    }\n  ]\n}\n```\n\nA deployment supplies `prefix` as `ab` and `storageSku` as `Basic_LRS`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The deployment succeeds because `defaultValue` replaces any `storageSku` value that is not allowed."
+      },
+      {
+        "id": "B",
+        "text": "The deployment creates a storage account with `Standard_LRS`, but the name starts with `ab`."
+      },
+      {
+        "id": "C",
+        "text": "The deployment fails validation because `prefix` is too short and `Basic_LRS` is outside the allowed values."
+      },
+      {
+        "id": "D",
+        "text": "The template ignores `minLength` unless the deployment is started from the Azure portal."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "The deployment engine is Azure Resource Manager in Azure public cloud. The supplied parameter values are evaluated before resource operations are attempted.",
+    "sections": {
+      "correctAnswer": "**C. The deployment fails validation because `prefix` is too short and `Basic_LRS` is outside the allowed values.** Parameter constraints are checked before Resource Manager starts creating resources, so neither invalid supplied value is silently repaired.",
+      "technical": "Resource Manager resolves parameter values before starting deployment operations. Each parameter has a type and can also have constraints. In this fragment, `prefix` is a string with `minLength: 3`, so `ab` has too few characters. The `storageSku` parameter has `allowedValues` containing only `Standard_LRS` and `Standard_GRS`, so `Basic_LRS` is not accepted.\n\nThe `defaultValue` rule is often misunderstood. A default value is used only when a value is not provided for that parameter. It is not a fallback after a caller provides an invalid value. Because the caller explicitly supplies `storageSku` as `Basic_LRS`, validation compares that string against the allowed list and rejects it.\n\nThe validation sequence for this scenario is:\n\n1. Read supplied parameter values and template defaults.\n2. Resolve `storageSku`; because a value is supplied, do not use `Standard_LRS`.\n3. Check `allowedValues` for `storageSku`; `Basic_LRS` is absent, so the value is invalid.\n4. Check `minLength` for `prefix`; `ab` contains two characters, below the minimum of three.\n5. Stop before creating the `Microsoft.Storage/storageAccounts` resource.\n\nThe constraints are part of the template language and are not portal-only hints. They also help command-line and pipeline deployments fail early instead of sending an unsupported configuration to the storage resource provider.",
+      "wrongOptions": {
+        "A": "A default does not overwrite an explicit invalid value. It fills in a missing value. Misconception: Defaults act like automatic correction rules. Could be correct if the caller omitted `storageSku` entirely and the other parameters passed validation.",
+        "B": "The storage account is not created because both parameter constraints are evaluated before the resource operation. Misconception: Resource Manager can partially accept bad parameters and continue with what it can use. Could be correct if `prefix` had at least three characters and `storageSku` were omitted or set to an allowed value.",
+        "D": "`minLength` is a template constraint documented for string and array parameters. The portal can display parameter metadata, but the constraint is not limited to portal deployments. Misconception: Validation attributes are only user-interface decorations. Could be correct for a purely descriptive `metadata.description` value, which guides humans rather than enforcing length."
+      },
+      "plainEnglish": "The parameter section is where the template says what answers are acceptable before Azure builds anything. Here, the prefix must be at least three characters, and the storage SKU must be one of two exact choices. The person deploying the file gave a two-letter prefix and a SKU that is not on the list. Azure does not guess a better value and does not switch to the default because a value was already provided. It rejects the deployment before the storage account is made.",
+      "analogy": "Think of an online order form for custom labels. One box says the label code must be at least three letters, and another box has a drop-down with two shipping speeds. If a customer types two letters and enters a shipping speed that is not in the drop-down, the order form refuses the order.\n\n| Analogy | Azure reality |\n|---|---|\n| Order form field | Template parameter |\n| Minimum three letters | `minLength: 3` |\n| Drop-down choices | `allowedValues` |\n| Pre-filled shipping speed | `defaultValue` |\n| Refused order | Deployment validation failure |\n\n**Where the analogy breaks down:** Azure also checks data types and evaluates template expressions. A simple web form does not model functions such as `concat()` or `uniqueString()`.",
+      "jargon": [
+        {
+          "term": "Parameter",
+          "definition": "A named input value that customizes a template deployment."
+        },
+        {
+          "term": "`defaultValue`",
+          "definition": "The value Resource Manager uses for a parameter when the deployment caller does not supply one."
+        },
+        {
+          "term": "`allowedValues`",
+          "definition": "A parameter constraint listing the values that are permitted during validation."
+        },
+        {
+          "term": "`minLength`",
+          "definition": "A minimum size constraint for string or array parameters; for strings it counts characters."
+        },
+        {
+          "term": "Validation",
+          "definition": "The pre-deployment checking stage that rejects parameter values or template shapes that do not meet rules."
+        },
+        {
+          "term": "SKU",
+          "definition": "A stock keeping unit or service tier choice; for a storage account it identifies a replication and performance option."
+        },
+        {
+          "term": "`concat()`",
+          "definition": "An ARM template function that joins strings or arrays together."
+        },
+        {
+          "term": "`uniqueString()`",
+          "definition": "A deterministic ARM template string function commonly used to create stable suffixes from scope values."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "An Azure service namespace, such as `Microsoft.Storage`, that exposes resource types and API versions."
+        }
+      ],
+      "watchOut": "- `defaultValue` is not an error handler for bad input.\n- `allowedValues` checks the exact provided value.\n- `minLength` applies to template validation, not just to portal forms.\n- If several parameters are invalid, the deployment can fail before any resource provider receives a create request.",
+      "productionTip": {
+        "official": "Microsoft documents that Resource Manager resolves parameter values before starting deployment operations. It also documents `allowedValues`, `defaultValue`, `minLength`, and `maxLength` for ARM template parameters, including that allowed values cause validation failure when a supplied value is not in the list.",
+        "recommendation": "Use parameter constraints to catch mistakes early, but keep allowed lists current. For storage SKUs, avoid hard-coding a narrow list unless the design intentionally limits choices for cost, compliance, or replication requirements."
+      },
+      "memoryTrick": "A default fills an empty seat; it does not eject a bad passenger. That memory aid covers this question, but it does not replace reading all parameter constraints in larger templates.",
+      "examTip": "The clue words are supplied values plus `allowedValues` and `minLength`. Do not jump to the resource block first. In parameter questions, decide whether the deployment reaches the resource operation at all."
+    },
+    "sources": [
+      {
+        "title": "Parameters in templates - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+      },
+      {
+        "title": "Template structure and syntax - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+      },
+      {
+        "title": "Template functions - string - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-string"
+      },
+      {
+        "title": "Microsoft.Storage/storageAccounts - Bicep, ARM template & Terraform AzAPI reference",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.storage/storageaccounts"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.1-03",
+    "objective": "D3.1.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "A team is comparing an ARM JSON dependency with a Bicep dependency.\n\n```json\n{\n  \"type\": \"Microsoft.Network/networkInterfaces\",\n  \"apiVersion\": \"2025-01-01\",\n  \"name\": \"nic-app1\",\n  \"location\": \"[resourceGroup().location]\",\n  \"dependsOn\": [\n    \"[resourceId('Microsoft.Network/publicIPAddresses', 'pip-app1')]\"\n  ],\n  \"properties\": {\n    \"ipConfigurations\": [\n      {\n        \"name\": \"ipconfig1\",\n        \"properties\": {\n          \"privateIPAllocationMethod\": \"Dynamic\",\n          \"publicIPAddress\": {\n            \"id\": \"[resourceId('Microsoft.Network/publicIPAddresses', 'pip-app1')]\"\n          }\n        }\n      }\n    ]\n  }\n}\n```\n\n```bicep\nparam location string = resourceGroup().location\n\nresource pip 'Microsoft.Network/publicIPAddresses@2025-01-01' = {\n  name: 'pip-app1'\n  location: location\n  sku: {\n    name: 'Basic'\n  }\n  properties: {\n    publicIPAllocationMethod: 'Dynamic'\n  }\n}\n\nresource nic 'Microsoft.Network/networkInterfaces@2025-01-01' = {\n  name: 'nic-app1'\n  location: location\n  properties: {\n    ipConfigurations: [\n      {\n        name: 'ipconfig1'\n        properties: {\n          privateIPAllocationMethod: 'Dynamic'\n          publicIPAddress: {\n            id: pip.id\n          }\n        }\n      }\n    ]\n  }\n}\n```\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "In the ARM JSON snippet, `dependsOn` explicitly tells Resource Manager to deploy `pip-app1` before `nic-app1`."
+      },
+      {
+        "id": "B",
+        "text": "In Bicep, `pip.id` is just a string value and does not affect deployment ordering."
+      },
+      {
+        "id": "C",
+        "text": "A nested child resource in ARM JSON is always automatically deployed after its parent, so explicit dependencies are never used for child resources."
+      },
+      {
+        "id": "D",
+        "text": "In the Bicep snippet, referencing the `pip` symbolic name creates an implicit dependency from `nic` to `pip`."
+      },
+      {
+        "id": "E",
+        "text": "Resource Manager deploys all resources strictly in file order even when no dependency exists."
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Both snippets are part of otherwise valid deployments in the same target resource group. The public IP resource is declared elsewhere in the ARM template and declared in the shown Bicep file.",
+    "sections": {
+      "correctAnswer": "**A. In the ARM JSON snippet, `dependsOn` explicitly tells Resource Manager to deploy `pip-app1` before `nic-app1`** and **D. In the Bicep snippet, referencing the `pip` symbolic name creates an implicit dependency from `nic` to `pip`**. The snippets express the same ordering need in different languages: ARM JSON uses a dependency array, while Bicep can infer the relationship from a symbolic resource reference.",
+      "technical": "Resource Manager builds a dependency graph, not a simple top-to-bottom script. For ARM JSON, the `dependsOn` element is an explicit dependency declaration. Its array names resources or resource IDs that must complete before the current resource starts. In the JSON fragment, the network interface is dependent on the public IP address resource ID, so Resource Manager must create or update the public IP before creating the NIC.\n\nBicep adds a higher-level symbolic model. A resource declaration such as `resource pip ...` creates a symbolic name. When another resource expression reads `pip.id`, Bicep knows that the NIC uses a value from the public IP resource declared in the same file. Microsoft documents this as an implicit dependency. The generated ARM template includes the correct dependency behavior without requiring the author to write `dependsOn` manually.\n\nThe deployment order logic is:\n\n1. Resource Manager evaluates declared explicit and implicit dependencies.\n2. Resources with no dependency between them can be deployed in parallel.\n3. A resource starts only after the resources it depends on have completed.\n4. Unnecessary dependencies can slow the deployment because they reduce safe parallelism.\n\nChild-resource behavior is a common trap. ARM JSON does not automatically create an implicit dependency merely because one resource is a child of another. Bicep nested child declarations and the Bicep `parent` property do create implicit parent dependencies, but that is a Bicep resource-declaration behavior, not a universal ARM JSON nesting shortcut.",
+      "wrongOptions": {
+        "B": "A symbolic reference such as `pip.id` is not treated as an arbitrary detached string in Bicep. It communicates that `nic` needs a value from `pip`, so the dependency is inferred. Misconception: Bicep only emits text and cannot understand resource relationships. Could be correct if the value were a plain string parameter containing a resource ID rather than a symbolic reference to a resource in the same deployment.",
+        "C": "ARM JSON child resources do not receive an automatic deployment dependency just because of nesting. Microsoft shows cases where a child resource needs an explicit dependency on the parent. Misconception: Parent-child naming always controls deployment order in every template language. Could be correct for a Bicep nested child resource, which has an implicit dependency on the containing resource.",
+        "E": "Resource Manager can deploy independent resources in parallel. It is not an imperative engine that processes resources only in file order. Misconception: JSON order is execution order. Could be correct for an ordinary script, but ARM and Bicep are declarative deployment descriptions."
+      },
+      "plainEnglish": "Azure first works out which things depend on which other things. If a network interface needs the public IP address ID, Azure must make the public IP first. In JSON, the author often writes that rule in `dependsOn`. In Bicep, using the public IP's symbolic name inside the NIC is enough for Bicep to understand the relationship. If two resources do not need each other, Azure may build them at the same time instead of waiting for file order.",
+      "analogy": "Picture a kitchen preparing an order. A burger cannot be assembled until the bun is ready, but the fries can cook at the same time. Written tickets can either say `wait for bun` explicitly or contain a step that uses `the prepared bun`, which implies the same order.\n\n| Analogy | Azure reality |\n|---|---|\n| Prepared bun | Public IP resource |\n| Burger assembly | Network interface resource |\n| `wait for bun` note | ARM `dependsOn` |\n| Recipe step using the bun | Bicep symbolic reference `pip.id` |\n| Fries cooking independently | Unrelated resource deployed in parallel |\n\n**Where the analogy breaks down:** Azure dependencies are evaluated from a resource graph. Real cooks may improvise, while Resource Manager follows the dependency graph it can infer or is given.",
+      "jargon": [
+        {
+          "term": "`dependsOn`",
+          "definition": "An ARM or Bicep property that explicitly lists resources that must be deployed before the current resource."
+        },
+        {
+          "term": "Explicit dependency",
+          "definition": "A dependency stated directly by the author, usually with `dependsOn`."
+        },
+        {
+          "term": "Implicit dependency",
+          "definition": "A deployment ordering relationship inferred from a resource reference rather than from an explicit dependency list."
+        },
+        {
+          "term": "Symbolic name",
+          "definition": "The Bicep identifier assigned to a resource or module declaration, such as `pip`, used to refer to that declaration elsewhere."
+        },
+        {
+          "term": "Network interface",
+          "definition": "An Azure network resource that connects a virtual machine or similar compute resource to a virtual network."
+        },
+        {
+          "term": "Public IP address",
+          "definition": "An Azure networking resource that provides an IP address reachable from outside a virtual network, depending on configuration."
+        },
+        {
+          "term": "Resource ID",
+          "definition": "The fully qualified Azure identifier for a resource, including subscription, resource group, provider namespace, type, and name."
+        },
+        {
+          "term": "Parallel deployment",
+          "definition": "Resource Manager starting independent resource operations at the same time when no dependency requires ordering."
+        },
+        {
+          "term": "Bicep",
+          "definition": "A declarative Azure infrastructure language that compiles to ARM templates."
+        }
+      ],
+      "watchOut": "- Use Bicep symbolic references when possible instead of adding decorative `dependsOn` entries.\n- A plain resource ID string may not create the same inferred ordering as a symbolic reference.\n- Avoid adding dependencies just to document relationships; the resource does not retain those deployment dependencies afterward.\n- Child-resource rules differ between ARM JSON and Bicep declarations.",
+      "productionTip": {
+        "official": "Microsoft documents that ARM templates use `dependsOn` for explicit dependencies and `reference` or `list` functions for implicit dependencies. For Bicep, Microsoft documents that one resource declaration referencing another in the same deployment creates an implicit dependency and advises not to add an explicit dependency when an implicit one exists.",
+        "recommendation": "Prefer the narrowest real dependency graph. Let Bicep infer dependencies from symbolic references, and add `dependsOn` only when the target resource genuinely must wait but no property reference expresses that need."
+      },
+      "memoryTrick": "In Bicep, **using the name wires the order**. The phrase is a shortcut for symbolic resource references, not for every string that happens to contain a resource name.",
+      "examTip": "When an item asks about order, ignore the visual order of the code at first and look for dependency signals. In JSON, search for `dependsOn`, `reference`, and `list*`. In Bicep, search for symbolic names such as `pip.id`, `storage.name`, or a `parent` property."
+    },
+    "sources": [
+      {
+        "title": "Set deployment order for resources - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/resource-dependency"
+      },
+      {
+        "title": "Set resource dependencies in Bicep - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/resource-dependencies"
+      },
+      {
+        "title": "Bicep file structure and syntax - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+      },
+      {
+        "title": "Microsoft.Network/networkInterfaces - Bicep, ARM template & Terraform AzAPI reference",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/networkinterfaces"
+      },
+      {
+        "title": "Microsoft.Network/publicIPAddresses - Bicep, ARM template & Terraform AzAPI reference",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/publicipaddresses"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.1-04",
+    "objective": "D3.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A reviewer asks you to explain this ARM template output and naming logic.\n\n```json\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"prefix\": { \"type\": \"string\", \"defaultValue\": \"diag\" },\n    \"location\": { \"type\": \"string\", \"defaultValue\": \"[resourceGroup().location]\" }\n  },\n  \"variables\": {\n    \"workspaceName\": \"[format('{0}-{1}', parameters('prefix'), uniqueString(resourceGroup().id))]\"\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.OperationalInsights/workspaces\",\n      \"apiVersion\": \"2025-02-01\",\n      \"name\": \"[variables('workspaceName')]\",\n      \"location\": \"[parameters('location')]\",\n      \"properties\": {\n        \"sku\": { \"name\": \"PerGB2018\" },\n        \"retentionInDays\": 30\n      }\n    }\n  ],\n  \"outputs\": {\n    \"workspaceId\": {\n      \"type\": \"string\",\n      \"value\": \"[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]\"\n    }\n  }\n}\n```\n\nWhat does the template do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "It creates one Log Analytics workspace in the resource group's location by default, gives it a deterministic name based on the resource group ID, and outputs the workspace resource ID."
+      },
+      {
+        "id": "B",
+        "text": "It creates a new random workspace name on every deployment because `uniqueString()` is random."
+      },
+      {
+        "id": "C",
+        "text": "It deploys a workspace to the subscription's home tenant location because `resourceGroup().location` returns tenant metadata."
+      },
+      {
+        "id": "D",
+        "text": "It outputs the workspace customer ID because `resourceId()` reads runtime workspace properties."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "The deployment target is a resource group that supports the workspace resource type and the `PerGB2018` SKU. No caller overrides the `location` parameter.",
+    "sections": {
+      "correctAnswer": "**A. It creates one Log Analytics workspace in the resource group's location by default, gives it a deterministic name based on the resource group ID, and outputs the workspace resource ID.** The template functions assemble a stable resource name and a resource identifier; they do not create random values or fetch workspace runtime secrets.",
+      "technical": "This question tests how to read common template functions. The `location` parameter has `defaultValue` set to `[resourceGroup().location]`, so if no deployment parameter overrides it, the workspace location is the current resource group's location. Microsoft documents `resourceGroup()` as returning an object for the current resource group, including its `location` property, when used in a resource-group deployment.\n\nThe workspace name is calculated in the variables section. The expression `format('{0}-{1}', parameters('prefix'), uniqueString(resourceGroup().id))` places the prefix in slot `{0}` and the result of `uniqueString(resourceGroup().id)` in slot `{1}`. `uniqueString()` is deterministic for the same input values; it is useful for producing stable suffixes, not for generating a fresh random string on every run. If the same template is deployed to the same resource group with the same prefix, the calculated name remains stable.\n\nThe output uses `resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))`. The purpose of `resourceId()` is to build the fully qualified Azure resource ID for a resource type and name at the current scope. It is different from `reference()`, which retrieves runtime properties from a resource. Therefore, `workspaceId` is an ARM resource ID string such as `/subscriptions/.../resourceGroups/.../providers/Microsoft.OperationalInsights/workspaces/...`, not the Log Analytics customer ID.\n\nThe evaluation order is: resolve parameters, compute variables from those parameter and scope values, deploy the workspace resource, and then evaluate the output expression.",
+      "wrongOptions": {
+        "B": "`uniqueString()` returns a deterministic hash-based string for the same inputs. It is not the function for generating a new value each deployment. Misconception: The word unique means random. Could be correct if the template used a randomizing function where supported, such as `newGuid()` in an allowed default-value context, and intentionally changed each run.",
+        "C": "`resourceGroup().location` returns the current resource group's location object property for a resource-group deployment. It is not tenant metadata. Misconception: Scope functions always return subscription or tenant information. Could be correct if the expression used `tenant()` and selected tenant-related properties, but this template does not.",
+        "D": "`resourceId()` constructs an Azure resource ID. It does not query runtime workspace properties. Misconception: Any function containing `resource` reads the deployed resource. Could be correct if the output used an appropriate `reference()` expression for a runtime property that the resource provider exposes."
+      },
+      "plainEnglish": "The template chooses a location, builds a name, creates a workspace, and prints the workspace's address in Azure's management system. The location defaults to the resource group's location. The name starts with `diag`, followed by a stable suffix made from the resource group ID. Stable means the same input gives the same suffix again. The output is not the workspace's data-ingestion ID; it is the management path Azure uses to identify that workspace resource.",
+      "analogy": "Consider a city office issuing a permit. The office uses the neighborhood from the application, formats a permit label from a prefix and a stable neighborhood code, then prints the permit's filing path.\n\n| Analogy | Azure reality |\n|---|---|\n| Neighborhood | Resource group location |\n| Prefix on permit label | `prefix` parameter |\n| Stable neighborhood code | `uniqueString(resourceGroup().id)` |\n| Formatted label | `format()` expression |\n| Filing path | `resourceId()` output |\n\n**Where the analogy breaks down:** Azure resource IDs include subscription and provider segments, and resource providers may expose additional runtime IDs that are separate from the management resource ID.",
+      "jargon": [
+        {
+          "term": "Log Analytics workspace",
+          "definition": "An Azure Monitor data store represented by the `Microsoft.OperationalInsights/workspaces` resource type."
+        },
+        {
+          "term": "`resourceGroup()`",
+          "definition": "An ARM scope function that returns information about the current resource group in a resource-group deployment."
+        },
+        {
+          "term": "`format()`",
+          "definition": "A string function that inserts arguments into numbered placeholders in a composite format string."
+        },
+        {
+          "term": "`uniqueString()`",
+          "definition": "A string function that returns a deterministic unique-looking string based on input values."
+        },
+        {
+          "term": "`resourceId()`",
+          "definition": "A resource function that constructs a fully qualified Azure resource ID for a type and name at a scope."
+        },
+        {
+          "term": "Runtime property",
+          "definition": "A value returned by a resource provider after or during deployment, typically read with functions such as `reference()` when supported."
+        },
+        {
+          "term": "Variable",
+          "definition": "A reusable named expression inside an ARM template."
+        },
+        {
+          "term": "Default parameter value",
+          "definition": "The value used for a parameter when the deployment caller does not provide one."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical container for Azure resources that also has a location used for deployment metadata."
+        }
+      ],
+      "watchOut": "- `uniqueString()` is stable for the same inputs; it is not a randomizer.\n- `resourceId()` builds an ID string and should not be confused with `reference()`.\n- `resourceGroup().location` is valid for resource-group deployments but has scope restrictions documented by Microsoft.\n- Function names often reveal intent, but the exact return value matters on exams.",
+      "productionTip": {
+        "official": "Microsoft documents ARM template string functions such as `format`, `concat`, and `uniqueString`, resource functions such as `resourceId`, and scope functions such as `resourceGroup`. The `resourceGroup()` function returns the current resource group object, including its location, in supported deployment scopes.",
+        "recommendation": "For production naming, combine deterministic functions with explicit prefixes that meet the resource provider's naming rules. Store meaningful outputs such as resource IDs for later automation, but avoid outputting secrets or sensitive runtime data."
+      },
+      "memoryTrick": "`resourceId()` gives the address; `reference()` asks the resource what it knows. That distinction is simplified, but it prevents the most common function-reading mistake in short ARM snippets.",
+      "examTip": "Look at each function's category. Scope functions describe the deployment scope, string functions shape text, and resource functions build or read resource information. A harder version may mix `resourceId()` and `reference()` in the same output block."
+    },
+    "sources": [
+      {
+        "title": "Template functions - string - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-string"
+      },
+      {
+        "title": "Template functions - resources - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-resource"
+      },
+      {
+        "title": "Template functions - scope - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-scope"
+      },
+      {
+        "title": "Microsoft.OperationalInsights/workspaces - Bicep, ARM template & Terraform AzAPI reference",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.operationalinsights/workspaces"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.1-05",
+    "objective": "D3.1.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You are interpreting the following Bicep file. The file `vm.bicep` exists in the same folder and accepts a `subnetId` parameter.\n\n```bicep\ntargetScope = 'resourceGroup'\n\nparam sharedNetworkRg string\nparam vnetName string\n\nvar selectedSubnet = 0\n\nresource hubVnet 'Microsoft.Network/virtualNetworks@2025-01-01' existing = {\n  name: vnetName\n  scope: resourceGroup(sharedNetworkRg)\n}\n\nmodule vm './vm.bicep' = {\n  name: 'vmDeploy'\n  params: {\n    subnetId: hubVnet.properties.subnets[selectedSubnet].id\n  }\n}\n\noutput networkId string = hubVnet.id\n```\n\nWhich two statements correctly describe the file? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "The `existing` keyword redeploys the virtual network before the module runs."
+      },
+      {
+        "id": "B",
+        "text": "The file targets subscription scope because it calls `resourceGroup(sharedNetworkRg)`."
+      },
+      {
+        "id": "C",
+        "text": "The `hubVnet` declaration references a virtual network that already exists in the named resource group and lets the file read its properties through the symbolic name."
+      },
+      {
+        "id": "D",
+        "text": "The module is deployed at the main file's resource-group scope because the module block does not set its own `scope` property."
+      },
+      {
+        "id": "E",
+        "text": "The `output` statement creates a new virtual network ID resource after the module finishes."
+      }
+    ],
+    "correct": [
+      "C",
+      "D"
+    ],
+    "assumptions": "The referenced virtual network and subnet exist, and the deployment identity has rights to read them and to start the module deployment. The module path is interpreted by Bicep, where forward slashes are used in module paths.",
+    "sections": {
+      "correctAnswer": "**C. The `hubVnet` declaration references a virtual network that already exists in the named resource group and lets the file read its properties through the symbolic name** and **D. The module is deployed at the main file's resource-group scope because the module block does not set its own `scope` property.** The `existing` keyword imports a resource reference, while the module block starts a nested deployment using the file path and passed parameters.",
+      "technical": "Bicep has first-class statements for parameters, variables, resources, modules, and outputs. In this file, `targetScope = 'resourceGroup'` states that the main deployment runs at resource-group scope, which is also the default if `targetScope` is omitted. The call `resourceGroup(sharedNetworkRg)` inside the existing resource does not change the file's target scope; it supplies the scope object for that referenced resource.\n\nThe resource declaration uses `existing`, which means the virtual network is not deployed again by this file. Microsoft documents `existing` for resources that are outside the current deployment but whose properties are needed. The symbolic name `hubVnet` lets the rest of the Bicep file use properties such as `hubVnet.id` or `hubVnet.properties.subnets[...]`. If the named resource does not exist at the given scope, deployment fails with a not-found type of error rather than creating it.\n\nThe module statement points to `./vm.bicep`. A Bicep module is another Bicep or ARM JSON file deployed by the current file. Because the module block does not include `scope`, it uses the current resource-group deployment scope. The `params` block passes one value, a subnet ID selected from the existing virtual network's subnet array.\n\nFinally, `output networkId string = hubVnet.id` returns the existing virtual network's resource ID. An output is a returned value from the deployment, not a resource declaration and not a request to create another Azure object.",
+      "wrongOptions": {
+        "A": "The `existing` keyword is specifically for referencing a resource that is not redeployed by the current Bicep file. Misconception: Declaring any resource block means create or update. Could be correct for a normal `resource` declaration without `existing`.",
+        "B": "The file explicitly says `targetScope = 'resourceGroup'`. The `resourceGroup(sharedNetworkRg)` expression is a scope object for the existing virtual network, not a subscription-scope target for the whole file. Misconception: Any scope function call changes the whole file's deployment level. Could be correct if the file declared `targetScope = 'subscription'.",
+        "E": "Outputs return values after deployment. They do not create resources, IDs, or provider objects. Misconception: Every top-level statement in Bicep creates something. Could be correct only if the statement were a `resource` declaration for a real resource type."
+      },
+      "plainEnglish": "This Bicep file is saying: deploy from a resource group, look up an already-created virtual network in another named resource group, send one of that network's subnet IDs to a VM module, and return the network ID as a result. The `existing` word is the clue that the virtual network is being looked up, not built. The module is like calling another deployment file. Since the module does not name a different scope, it runs where the main file is being deployed.",
+      "analogy": "A project manager may use an existing office building's room number when ordering furniture from a subcontractor. The work order does not rebuild the office building; it only references it and sends the room number to the subcontractor.\n\n| Analogy | Azure reality |\n|---|---|\n| Existing office building | `hubVnet` with `existing` |\n| Room number | Subnet ID |\n| Subcontractor work order | Bicep module `./vm.bicep` |\n| Project office location | Resource-group `targetScope` |\n| Final project note | `output networkId` |\n\n**Where the analogy breaks down:** Bicep resolves resource IDs and properties through Azure Resource Manager. A real subcontractor can often proceed with informal descriptions, but a Bicep module receives typed parameter values.",
+      "jargon": [
+        {
+          "term": "`targetScope`",
+          "definition": "A Bicep setting that identifies the deployment scope for the file, such as resource group, subscription, management group, or tenant."
+        },
+        {
+          "term": "`existing`",
+          "definition": "A Bicep keyword for declaring a reference to a resource that already exists and is not deployed by the current file."
+        },
+        {
+          "term": "Symbolic name",
+          "definition": "The Bicep identifier before the resource type, such as `hubVnet`, used to access a resource declaration."
+        },
+        {
+          "term": "Module",
+          "definition": "A Bicep file or ARM JSON template deployed from another Bicep file to organize and reuse deployment code."
+        },
+        {
+          "term": "`params` block",
+          "definition": "The module property that passes parameter names and values into the called module."
+        },
+        {
+          "term": "Scope object",
+          "definition": "A Bicep expression such as `resourceGroup(name)` or `subscription()` used to target a resource or module at a scope."
+        },
+        {
+          "term": "Virtual network",
+          "definition": "An Azure networking resource that contains subnets and provides private network address space."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A segment of a virtual network address space to which network interfaces and services can connect."
+        },
+        {
+          "term": "Output",
+          "definition": "A named value returned by a Bicep or ARM deployment after evaluation."
+        }
+      ],
+      "watchOut": "- `existing` fails if the referenced resource cannot be found at the declared name and scope.\n- A module without `scope` inherits the deployment scope of the file that calls it.\n- Bicep module paths use `/`, even on Windows machines.\n- `resourceGroup(name)` inside a declaration can target that declaration without changing `targetScope` for the whole file.",
+      "productionTip": {
+        "official": "Microsoft documents `existing` for referencing resources that are not deployed in the current Bicep file. Microsoft also documents modules as separate files deployed by a Bicep file, with an optional `scope` property for a different scope.",
+        "recommendation": "When using existing network resources, validate names and scopes in parameters and document who owns the shared resource. Keep module inputs narrow, such as passing a subnet ID rather than an entire virtual network object, to reduce coupling."
+      },
+      "memoryTrick": "`existing` means **look, don't build**. The phrase is reliable for resource creation, but the deployment can still fail if Azure cannot find the referenced object.",
+      "examTip": "For Bicep syntax questions, read keywords literally: `param` accepts input, `var` stores an expression, `resource` declares a resource or reference, `module` calls another file, and `output` returns a value. The harder twist is scope: check whether the module or resource has its own `scope` property."
+    },
+    "sources": [
+      {
+        "title": "Bicep file structure and syntax - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file"
+      },
+      {
+        "title": "Reference existing resource in Bicep - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/existing-resource"
+      },
+      {
+        "title": "Bicep modules - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+      },
+      {
+        "title": "Use Bicep to deploy resources to resource groups - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-to-resource-group"
+      },
+      {
+        "title": "Microsoft.Network/virtualNetworks - Bicep, ARM template & Terraform AzAPI reference",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/virtualnetworks"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.1-06",
+    "objective": "D3.1.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You are asked to interpret two ways to create repeated storage accounts for a lab.\n\n```json\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"storageCount\": { \"type\": \"int\", \"defaultValue\": 3 },\n    \"location\": { \"type\": \"string\", \"defaultValue\": \"[resourceGroup().location]\" }\n  },\n  \"resources\": [\n    {\n      \"copy\": {\n        \"name\": \"storagecopy\",\n        \"count\": \"[parameters('storageCount')]\"\n      },\n      \"type\": \"Microsoft.Storage/storageAccounts\",\n      \"apiVersion\": \"2025-06-01\",\n      \"name\": \"[format('st{0}{1}', copyIndex(), uniqueString(resourceGroup().id))]\",\n      \"location\": \"[parameters('location')]\",\n      \"sku\": { \"name\": \"Standard_LRS\" },\n      \"kind\": \"StorageV2\"\n    }\n  ]\n}\n```\n\n```bicep\nparam location string = resourceGroup().location\nparam storageCount int = 3\n\nresource accounts 'Microsoft.Storage/storageAccounts@2025-06-01' = [for i in range(0, storageCount): {\n  name: 'st${i}${uniqueString(resourceGroup().id)}'\n  location: location\n  sku: {\n    name: 'Standard_LRS'\n  }\n  kind: 'StorageV2'\n}]\n```\n\nIf the default count is used, which statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Both snippets create one storage account because the loop name `storagecopy` is a label, not a counter."
+      },
+      {
+        "id": "B",
+        "text": "Both snippets create three storage accounts with zero-based index values in their names; the resources are deployed in parallel unless serial behavior is specified."
+      },
+      {
+        "id": "C",
+        "text": "The ARM snippet creates accounts 1 through 3, while the Bicep snippet creates accounts 0 through 2."
+      },
+      {
+        "id": "D",
+        "text": "The Bicep snippet is invalid because `for` loops can only be used for outputs, not resources."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "The calculated storage account names meet global storage naming requirements in the target environment. The deployment tools support the documented ARM and Bicep loop behavior.",
+    "sections": {
+      "correctAnswer": "**B. Both snippets create three storage accounts with zero-based index values in their names; the resources are deployed in parallel unless serial behavior is specified.** ARM JSON uses a `copy` loop with `copyIndex()`, while Bicep uses a resource array with `for i in range(0, storageCount)`.",
+      "technical": "ARM JSON uses the `copy` element to deploy multiple instances of a resource type. The `count` property controls how many iterations occur. With the default `storageCount` of 3, the resource declaration is evaluated three times. `copyIndex()` returns the current zero-based index, so the name expression includes `0`, `1`, and `2` across the three resource instances. Microsoft documents that `copyIndex()` is zero-based and that you can offset it by passing a value to the function, which this template does not do.\n\nBicep expresses the same idea with a resource collection. The syntax `[for i in range(0, storageCount): { ... }]` builds one resource body for each integer in the array returned by `range`. With a start of `0` and a count of `3`, the values are 0, 1, and 2. The symbolic name `accounts` represents a collection of storage accounts.\n\nDeployment concurrency is another tested detail. Resource Manager deploys multiple instances in parallel by default for ARM copy loops. The ARM `copy` element can include `mode: 'serial'` and `batchSize` to stagger instances. Bicep resource loops also deploy resources in parallel by default unless dependencies or batching behavior change the graph. Microsoft documents loop limits as well: loop iterations cannot be negative or exceed 800 for ARM copy loops, and Bicep loops have the same maximum iteration theme for resource and module loops.\n\nThe loop name `storagecopy` is only an identifier for the ARM copy loop. It is not the count, and it does not become part of the resource name unless the template author uses it in an expression.",
+      "wrongOptions": {
+        "A": "The loop name labels the copy operation, but the `count` value controls iteration. With a count of three, one resource declaration expands into three resource instances. Misconception: A named loop is only metadata and does not repeat anything. Could be correct for a resource declaration that lacks `copy` or a Bicep `for` expression.",
+        "C": "Both shown index expressions start at zero. ARM `copyIndex()` is zero-based, and Bicep `range(0, storageCount)` starts with 0. Misconception: Human counting from 1 is the default in deployment loops. Could be correct if the ARM expression used `copyIndex(1)` or the Bicep range started at 1.",
+        "D": "Bicep supports loops for resources, modules, variables, properties, and outputs. The shown resource collection syntax is a documented pattern. Misconception: Iteration in Bicep is only for producing returned arrays. Could be correct if a specific expression tried to use a loop in an unsupported location or with values not known at deployment start."
+      },
+      "plainEnglish": "Both code blocks are saying, make this storage account three times and put the loop number in the name. Computers usually start this kind of counting at zero, so the suffixes use 0, 1, and 2. Azure does not wait for the first storage account to finish before starting the second unless the template tells it to use serial batches or another dependency forces waiting.",
+      "analogy": "A print shop needs three numbered badges. One instruction says `copy this badge three times and use the current copy number`; the other says `for each number from zero to two, print a badge`. Both produce three badges.\n\n| Analogy | Azure reality |\n|---|---|\n| Print three badges | Deploy three storage accounts |\n| Copy number | ARM `copyIndex()` |\n| Number list 0,1,2 | Bicep `range(0, storageCount)` |\n| Printing at several printers | Parallel deployment |\n| One-at-a-time batch | Serial mode or batch behavior |\n\n**Where the analogy breaks down:** Azure resource creation can fail because of global naming, provider quotas, policy, or regional availability. A print shop does not evaluate resource provider APIs.",
+      "jargon": [
+        {
+          "term": "`copy` loop",
+          "definition": "An ARM template resource construct that repeats a resource declaration for a specified number of iterations."
+        },
+        {
+          "term": "`count`",
+          "definition": "The ARM copy property that specifies how many loop iterations to run."
+        },
+        {
+          "term": "`copyIndex()`",
+          "definition": "An ARM numeric function that returns the current zero-based iteration number inside a copy loop."
+        },
+        {
+          "term": "Bicep `for` loop",
+          "definition": "Bicep syntax for iterating over a collection or range to define repeated resources, modules, variables, properties, or outputs."
+        },
+        {
+          "term": "`range()`",
+          "definition": "A function that creates an array of integers beginning at a start value and containing a specified number of elements."
+        },
+        {
+          "term": "Resource collection",
+          "definition": "A Bicep resource declaration that produces multiple resource instances from a loop."
+        },
+        {
+          "term": "Parallel",
+          "definition": "A deployment behavior where independent resource instances can be created at the same time."
+        },
+        {
+          "term": "Serial",
+          "definition": "A loop deployment mode where Resource Manager waits for one batch before starting the next batch."
+        },
+        {
+          "term": "Storage account",
+          "definition": "An Azure Storage resource that contains storage services such as blobs, files, queues, and tables."
+        }
+      ],
+      "watchOut": "- The ARM copy loop count cannot be negative and has a documented upper limit.\n- Zero-based indexing is normal in both examples shown.\n- Complete mode deployment with changed loop counts can affect resources no longer present after loop expansion.\n- Names in repeated resources must still be unique where the resource provider requires uniqueness.",
+      "productionTip": {
+        "official": "Microsoft documents ARM copy loops with `name`, `count`, optional `mode`, and optional `batchSize`. Microsoft also documents Bicep `for` loops for resources and modules, including unique names for each instance and loop limits.",
+        "recommendation": "Use loops to remove repeated boilerplate, but add safeguards around count parameters. In production, constrain counts, validate names, and use serial batches only when parallel updates could create risk for dependent systems."
+      },
+      "memoryTrick": "ARM says `copy` and Bicep says `for`, but both can mean `make a collection`. Keep the index starting point visible; it is where off-by-one exam traps hide.",
+      "examTip": "When comparing loop snippets, identify three things: the count, the index source, and whether serial behavior is configured. If no serial mode or dependency is shown, assume independent instances can run in parallel."
+    },
+    "sources": [
+      {
+        "title": "Deploy multiple instances of resources - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/copy-resources"
+      },
+      {
+        "title": "Iterative loops in Bicep - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/loops"
+      },
+      {
+        "title": "Template functions - string - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-string"
+      },
+      {
+        "title": "Microsoft.Storage/storageAccounts - Bicep, ARM template & Terraform AzAPI reference",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.storage/storageaccounts"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.1-07",
+    "objective": "D3.1.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You are interpreting a subscription-scope Bicep file that creates a resource group and optionally runs a module in that group.\n\n```bicep\ntargetScope = 'subscription'\n\nparam rgName string = 'rg-ops-demo'\nparam rgLocation string = 'australiaeast'\nparam deployDiagnostics bool = false\n\nresource opsRg 'Microsoft.Resources/resourceGroups@2025-04-01' = {\n  name: rgName\n  location: rgLocation\n}\n\nmodule diagnostics './diagnostics.bicep' = if (deployDiagnostics) {\n  name: 'diagDeploy'\n  scope: resourceGroup(opsRg.name)\n  params: {\n    location: rgLocation\n  }\n}\n\noutput createdGroup string = opsRg.name\n```\n\nWhat happens when the file is deployed with the default parameter values?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The file fails because resource groups can only be declared in resource-group-scope Bicep files."
+      },
+      {
+        "id": "B",
+        "text": "The resource group and the diagnostics module are both deployed because `if` applies only to module parameters."
+      },
+      {
+        "id": "C",
+        "text": "The deployment runs at subscription scope, creates the resource group, skips the diagnostics module, and outputs the resource group name."
+      },
+      {
+        "id": "D",
+        "text": "The diagnostics module runs at tenant scope because `targetScope` is not `resourceGroup`."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "The deployment identity can deploy at subscription scope and create a resource group in the specified Azure region. The module file is syntactically valid, although its contents are not evaluated when the module condition is false.",
+    "sections": {
+      "correctAnswer": "**C. The deployment runs at subscription scope, creates the resource group, skips the diagnostics module, and outputs the resource group name.** `targetScope = 'subscription'` makes the file a subscription-level deployment, and the module-level `if` expression is false by default.",
+      "technical": "Bicep target scope determines the level at which the file is deployed. Microsoft documents `targetScope = 'subscription'` for subscription deployments, which can create subscription-level resources such as resource groups. Resource groups are listed among supported resource types for subscription-scope deployments. Therefore, the `opsRg` declaration is valid at this target scope.\n\nThe parameter `deployDiagnostics` has a default value of `false`. The module declaration includes `= if (deployDiagnostics)`, which means the whole module is conditionally deployed only when that expression evaluates to true. With the default value, the module body is skipped. The `params` block is not a separate deployment by itself; it would pass values only if the module instance were created.\n\nThe module also has `scope: resourceGroup(opsRg.name)`. If the condition were true, that scope expression would target a nested deployment to the resource group named by `opsRg.name`. This does not turn the module into a tenant-scope deployment. It uses Bicep's scope functions to point a module at a resource group from a subscription-scope parent.\n\nThe output is evaluated as `opsRg.name`, returning `rg-ops-demo` with the defaults. The output statement does not depend on the skipped diagnostics module. In ARM JSON, the comparable feature is the `condition` property on a resource, where a true value deploys the resource and a false value skips it. Microsoft documents a similar rule for Bicep `if`: the condition applies to the whole resource or module, not to individual child resources unless each child also has its own condition.",
+      "wrongOptions": {
+        "A": "Resource groups are supported in subscription-scope deployments. A resource-group-scope deployment targets an existing resource group; it is not the only place resource groups can be declared. Misconception: The resource type name `resourceGroups` means the file must already be inside one. Could be correct for resource types that are only valid at resource-group scope.",
+        "B": "The `if` expression on a module controls whether the whole module is deployed. It is not limited to the `params` object. Misconception: Conditions only affect the nearest property block. Could be correct if the file had a conditional expression inside a parameter value instead of on the module declaration.",
+        "D": "The module's `scope` property explicitly targets a resource group. Subscription target scope does not imply tenant-scope module deployment. Misconception: Anything above resource-group level automatically becomes tenant level. Could be correct if the module scope were `tenant()` and the file had the required permissions and supported resource types."
+      },
+      "plainEnglish": "This file is run at the subscription level, which is the level above resource groups. That is why it can create a resource group. The diagnostics module is behind a switch named `deployDiagnostics`. The switch is off by default, so the module is not run. After creating the group, the deployment returns the group's name as an output.",
+      "analogy": "A company headquarters can open a new branch office and optionally send an equipment team to that office. In the default request, the branch office is opened, but the equipment-team checkbox is not selected.\n\n| Analogy | Azure reality |\n|---|---|\n| Headquarters-level request | Subscription-scope deployment |\n| New branch office | Resource group resource |\n| Equipment team | Diagnostics module |\n| Checkbox off | `deployDiagnostics` equals `false` |\n| Branch office name on receipt | `createdGroup` output |\n\n**Where the analogy breaks down:** A Bicep module is implemented as a nested deployment and has formal scope rules. A business team can act informally, but Azure enforces resource type and permission boundaries.",
+      "jargon": [
+        {
+          "term": "Subscription scope",
+          "definition": "A deployment level that targets an Azure subscription rather than a single resource group."
+        },
+        {
+          "term": "`targetScope`",
+          "definition": "A Bicep declaration that sets the intended deployment scope for the file."
+        },
+        {
+          "term": "Resource group resource",
+          "definition": "The `Microsoft.Resources/resourceGroups` resource type used to create or manage a resource group from subscription scope."
+        },
+        {
+          "term": "Conditional deployment",
+          "definition": "A template pattern where a resource or module is deployed only when a Boolean expression is true."
+        },
+        {
+          "term": "Bicep `if` expression",
+          "definition": "Syntax placed on a resource or module declaration to conditionally include that declaration in the deployment."
+        },
+        {
+          "term": "ARM `condition` property",
+          "definition": "The ARM JSON property that conditionally deploys a resource when its expression evaluates to true."
+        },
+        {
+          "term": "Module scope",
+          "definition": "The target scope for a module deployment, set with the module's optional `scope` property."
+        },
+        {
+          "term": "Nested deployment",
+          "definition": "A deployment started by another deployment, commonly used by Bicep modules or ARM nested templates."
+        },
+        {
+          "term": "Output",
+          "definition": "A deployment result value returned after template evaluation."
+        }
+      ],
+      "watchOut": "- A module-level `if` skips the whole module, not just a parameter assignment.\n- Conditional deployment does not automatically cascade to every child resource in separate declarations.\n- Subscription-scope deployments need a deployment location when run by CLI or PowerShell, even when resources have their own locations.\n- The scope of the parent file and the scope of an individual module can be different.",
+      "productionTip": {
+        "official": "Microsoft documents `targetScope = 'subscription'` for subscription-level Bicep files and lists resource groups as supported resources at that level. Microsoft also documents Bicep `if` for conditionally deploying a resource or module and ARM JSON `condition` for the analogous template behavior.",
+        "recommendation": "Use feature switches such as `deployDiagnostics` to keep optional resources explicit. In production, pair conditions with clear outputs and deployment logs so operators can tell whether optional modules actually ran."
+      },
+      "memoryTrick": "`targetScope` says **where the main file starts**; module `scope` says **where that module lands**. The shortcut fails only if you forget that each resource type still has its own supported scopes.",
+      "examTip": "For scope-and-condition questions, read three lines before choosing: `targetScope`, the resource type, and the Boolean default. If a conditional expression is attached to a resource or module declaration, it governs that whole declaration."
+    },
+    "sources": [
+      {
+        "title": "Use Bicep to deploy resources to subscription - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-to-subscription"
+      },
+      {
+        "title": "Conditional deployments in Bicep with the if expression - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/conditional-resource-deployment"
+      },
+      {
+        "title": "Conditional deployment with templates - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/conditional-resource-deployment"
+      },
+      {
+        "title": "Bicep modules - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+      },
+      {
+        "title": "Microsoft.Resources/resourceGroups - Bicep, ARM template & Terraform AzAPI reference",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.resources/resourcegroups"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

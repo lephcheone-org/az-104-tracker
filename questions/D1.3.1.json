@@ -1,0 +1,1086 @@
+[
+  {
+    "id": "D1.3.1-01",
+    "objective": "D1.3.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a subscription named `Sub1`. The governance team must manage three related controls as one baseline: allowed regions, approved virtual machine SKUs, and a required cost center tag. Each control must remain separately reusable and separately reportable.\n\nWhat should you create?",
+    "options": [
+      {
+        "id": "A",
+        "text": "One custom policy definition containing all three controls"
+      },
+      {
+        "id": "B",
+        "text": "One initiative definition that includes three policy definitions"
+      },
+      {
+        "id": "C",
+        "text": "Three Resource Policy Contributor role assignments"
+      },
+      {
+        "id": "D",
+        "text": "One policy exemption for the three controls"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Default Azure Policy behavior applies. No exclusions, exemptions, deny assignments, or preview-only capabilities apply unless the question explicitly states them.",
+    "sections": {
+      "correctAnswer": "**B. One initiative definition that includes three policy definitions**. An initiative groups related definitions so the baseline can be assigned and tracked as one item while each policy remains reusable.",
+      "technical": "A policy definition is one compliance rule with a condition and an effect. An initiative, also called a policy set, groups several definitions so they can be assigned together. When an initiative is assigned, Azure still evaluates each included definition independently and can report compliance for the overall initiative and for the individual rules inside it. This fits a baseline with allowed locations, approved VM SKUs, and required tags. A single large custom definition would reduce reuse and make reporting harder. Azure RBAC role assignments delegate who can manage policy objects; they do not express region, SKU, or tag rules. Exemptions are exception objects for assignments and are not a way to define the baseline itself.\n\n#### Additional exam detail\nFor this baseline design, remember the assignment object is only the delivery mechanism. The important design choice is where the reusable logic lives. Keeping the region rule, SKU rule, and tag rule as separate definitions lets operations teams change or exempt one control without rewriting the others. It also lets compliance reports identify the exact failed control instead of showing one opaque baseline failure.",
+      "wrongOptions": {
+        "A": "One giant definition is harder to reuse and report because the controls are separate rules. Misconception: in D1.3.1-01, choosing `One custom policy definition containing all three controls` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `One custom policy definition containing all three controls` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "C": "Role assignments delegate access but do not enforce locations, SKUs, or tags. Misconception: in D1.3.1-01, choosing `Three Resource Policy Contributor role assignments` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Three Resource Policy Contributor role assignments` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "D": "An exemption records an exception to an assignment rather than defining a baseline. Misconception: in D1.3.1-01, choosing `One policy exemption for the three controls` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `One policy exemption for the three controls` or for a task where that choice is the documented Azure feature, rather than the control requested here."
+      },
+      "plainEnglish": "Think of each policy as one checklist item: region, VM size, or tag. An initiative is the folder that contains the checklist items. You hand out the folder once, but you can still see which item passed or failed. This is better than writing one giant sentence that mixes every rule together, and it is different from giving someone permission to edit the checklist.\n\nAnother way to say it: For this baseline design, remember the assignment object is only the delivery mechanism. For this baseline item, choose the feature that packages separate rules without destroying their separate compliance results.",
+      "analogy": "A restaurant has separate hygiene, fire-safety, and accessibility forms. The city packages them into one inspection packet for a yearly review.\n\n| Analogy | Azure reality |\n|---|---|\n| One form | Policy definition |\n| Inspection packet | Initiative definition |\n| Giving packet to restaurant | Policy assignment |\n| Individual pass or fail | Per-definition compliance |\n\n**Where the analogy breaks down:** Azure can automatically enforce effects such as deny or modify; paper forms do not block a deployment API call.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates Azure resources and actions against business rules."
+        },
+        {
+          "term": "Policy definition",
+          "definition": "A JSON rule containing conditions and an effect."
+        },
+        {
+          "term": "Policy assignment",
+          "definition": "The application of a policy definition or initiative to a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The management group, subscription, resource group, or resource boundary where an assignment applies."
+        },
+        {
+          "term": "Effect",
+          "definition": "The response Azure Policy takes when a rule matches, such as audit, deny, modify, or disabled."
+        },
+        {
+          "term": "Initiative",
+          "definition": "A policy set that groups multiple policy definitions."
+        }
+      ],
+      "watchOut": "- Use initiatives for baselines made of multiple related controls.\n- An initiative does not merge the definitions into one rule.\n- RBAC grants permissions; it does not define resource standards.\n- Exemptions are exceptions after assignment, not packages of controls.",
+      "productionTip": {
+        "official": "Microsoft documents initiatives as groups of related policy definitions that simplify assignment and management. Assignments can target either a definition or an initiative and can provide parameter values.",
+        "recommendation": "Recommendation: Build baseline governance from small definitions and group them into initiatives. Prefer built-ins where possible, document each included control, and version custom initiatives carefully."
+      },
+      "memoryTrick": "One rule is a definition; a bundle of rules is an initiative. This is a simplification because initiatives can also have their own parameters.",
+      "examTip": "Clue words are **three related controls**, **one baseline**, **separately reusable**, and **reportable**. Those point to initiative. A harder version may ask how initiative parameters are passed to child definitions.  In this item, the deciding noun is **initiative**: one assigned package with separate reusable controls. A definition-only answer becomes less attractive because the stem stresses separate reporting and future reuse."
+    },
+    "sources": [
+      {
+        "title": "Overview of Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+      },
+      {
+        "title": "Details of Azure Policy definition structure basics",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+      },
+      {
+        "title": "Details of the initiative definition structure",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/initiative-definition-structure"
+      },
+      {
+        "title": "Details of the policy assignment structure",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/assignment-structure"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.1-02",
+    "objective": "D1.3.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a subscription named `Sub1` with resource groups `rg-prod`, `rg-dev`, and `rg-lab`. You need to enforce the built-in **Allowed locations** policy for all current and future resources in `Sub1`, except everything in `rg-lab`. Administrative effort must be minimized.\n\nWhich two settings should you configure? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set assignment scope to `Sub1`"
+      },
+      {
+        "id": "B",
+        "text": "Assign separately to `rg-prod` and `rg-dev` only"
+      },
+      {
+        "id": "C",
+        "text": "Add `rg-lab` to excluded scopes"
+      },
+      {
+        "id": "D",
+        "text": "Create exemptions for every current lab resource"
+      },
+      {
+        "id": "E",
+        "text": "Assign at tenant root"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Default Azure Policy behavior applies. No exclusions, exemptions, deny assignments, or preview-only capabilities apply unless the question explicitly states them.",
+    "sections": {
+      "correctAnswer": "**A. Set assignment scope to `Sub1` and C. Add `rg-lab` to excluded scopes**. Subscription scope includes current and future child resources, and `notScopes` excludes the lab resource group from evaluation.",
+      "technical": "Assignment scope is the primary inclusion boundary for Azure Policy. A subscription-scope assignment applies to the subscription, its resource groups, and resources below those resource groups. An assignment can also contain excluded scopes in `notScopes`; resources in those child scopes are not evaluated and do not count in compliance results for that assignment. For this requirement, `Sub1` is the narrowest parent that includes all governed resources. `rg-lab` is a broad testing area, so an excluded scope is appropriate. Exemptions are different: they are tracked child objects used when resources should be visible as exempt, often for time-bound or specific business reasons. Assigning only to current resource groups would miss future groups.\n\n#### Additional exam detail\nFor this scope design, notice that the lab exception is described as broad and environment-based, not as a temporary exception for one named resource. That wording favors assignment exclusion. If the lab later becomes governed, administrators can remove the excluded scope from the assignment instead of searching for many per-resource exception objects.",
+      "wrongOptions": {
+        "B": "Assigning only current resource groups misses future groups. Misconception: in D1.3.1-02, choosing `Assign separately to `rg-prod` and `rg-dev` only` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Assign separately to `rg-prod` and `rg-dev` only` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "D": "Per-resource exemptions are high effort and do not automatically cover future lab resources. Misconception: in D1.3.1-02, choosing `Create exemptions for every current lab resource` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Create exemptions for every current lab resource` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "E": "Tenant root would include unrelated subscriptions. Misconception: in D1.3.1-02, choosing `Assign at tenant root` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Assign at tenant root` or for a task where that choice is the documented Azure feature, rather than the control requested here."
+      },
+      "plainEnglish": "Put the rule on the whole subscription, then carve out the lab. New production or development resources are covered automatically because they live under the subscription. The lab resource group is outside the assignment because you explicitly excluded it. If you assigned only to today’s resource groups, you would have to remember to update policy every time a new group appears.\n\nAnother way to say it: For this scope design, notice that the lab exception is described as broad and environment-based, not as a temporary exception for one named resource. For this scope item, choose the feature that includes the subscription but removes the lab child scope from evaluation.",
+      "analogy": "A city speed rule applies to all roads in one district, except a fenced test track.\n\n| Analogy | Azure reality |\n|---|---|\n| District | Subscription `Sub1` |\n| Road | Resource group or resource |\n| Test track | `rg-lab` |\n| Rule applies district-wide | Assignment scope |\n| Written carve-out | Excluded scope |\n\n**Where the analogy breaks down:** Azure exclusions are Resource Manager scope properties and affect compliance calculation, not police discretion.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates Azure resources and actions against business rules."
+        },
+        {
+          "term": "Policy definition",
+          "definition": "A JSON rule containing conditions and an effect."
+        },
+        {
+          "term": "Policy assignment",
+          "definition": "The application of a policy definition or initiative to a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The management group, subscription, resource group, or resource boundary where an assignment applies."
+        },
+        {
+          "term": "Effect",
+          "definition": "The response Azure Policy takes when a rule matches, such as audit, deny, modify, or disabled."
+        },
+        {
+          "term": "Excluded scope",
+          "definition": "A child scope listed in assignment `notScopes` so it is not evaluated."
+        },
+        {
+          "term": "Exemption",
+          "definition": "A tracked exception object that marks resources as exempt from an assignment."
+        }
+      ],
+      "watchOut": "- Exclusion removes resources from evaluation.\n- Exemption keeps an exception visible as Exempted.\n- Assigning to current resource groups misses future resource groups.\n- Tenant root is broader than a single subscription requirement.",
+      "productionTip": {
+        "official": "Microsoft documents assignment scope as the inclusion boundary and `notScopes` as excluded scopes. Scope guidance distinguishes exclusions from exemptions and recommends exclusions for broad bypasses such as test environments.",
+        "recommendation": "Recommendation: Use excluded scopes sparingly and name lab scopes clearly. Use exemptions with expiration and metadata for narrow or time-bound business exceptions that must remain visible in compliance reports."
+      },
+      "memoryTrick": "Scope says in; excluded scope says out. This is a simplification because exemptions can also narrow evaluation while preserving tracking.",
+      "examTip": "Clue words are **all current and future resources**, **except one resource group**, and **minimize effort**. Pick parent scope plus exclusion. A harder version may ask when a waiver exemption is better than `notScopes`.  In this item, the deciding nouns are **subscription scope** and **excluded scope**. The lab boundary is broad, so avoid per-resource exemptions and avoid a root assignment that would govern unrelated subscriptions."
+    },
+    "sources": [
+      {
+        "title": "Understand scope in Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/scope"
+      },
+      {
+        "title": "Details of the policy assignment structure",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/assignment-structure"
+      },
+      {
+        "title": "Details of Azure Policy definition structure basics",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.1-03",
+    "objective": "D1.3.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A resource group has two applicable Azure Policy assignments. One uses `modify` to add the tag `environment=prod` when it is missing. Another uses `deny` to block resources that do not have the `environment` tag. A user deploys a storage account without the tag.\n\nWhich statement best describes the request processing?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`deny` always runs before `modify`"
+      },
+      {
+        "id": "B",
+        "text": "`audit` runs before `deny`"
+      },
+      {
+        "id": "C",
+        "text": "Only the newest assignment is evaluated"
+      },
+      {
+        "id": "D",
+        "text": "`modify` can alter the request before `deny` evaluates"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Default Azure Policy behavior applies. No exclusions, exemptions, deny assignments, or preview-only capabilities apply unless the question explicitly states them.",
+    "sections": {
+      "correctAnswer": "**D. `modify` can alter the request before `deny` evaluates**. For Resource Manager mode policies, `append` and `modify` are evaluated before `deny`, so the request can be changed before the deny rule sees it.",
+      "technical": "Azure Policy evaluates applicable assignments independently, but effects have a documented order for create and update requests in Resource Manager mode. `disabled` is checked first. `append` and `modify` are evaluated next because they can alter the request. `deny` is evaluated after that, followed by `audit`, `manual`, `auditIfNotExists`, and finally `denyAction`. After the Resource Provider returns success, `auditIfNotExists` and `deployIfNotExists` can evaluate for additional logging or action. In this scenario, the modify policy can add the tag to the request. The deny policy then evaluates the modified request, and if the tag is present the missing-tag deny condition no longer matches. This does not mean policies override each other; it is the documented effect order.\n\n#### Additional exam detail\nFor effect order questions, separate request-time effects from post-provisioning effects. Modify and append can shape the submitted request before a Resource Provider accepts it. Deny can then reject the shaped request if it is still non-compliant. DeployIfNotExists is different because it checks related resources after success or during remediation.",
+      "wrongOptions": {
+        "A": "The documented order puts `modify` before `deny`. Misconception: in D1.3.1-03, choosing ``deny` always runs before `modify`` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for ``deny` always runs before `modify`` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "B": "`deny` is evaluated before `audit`. Misconception: in D1.3.1-03, choosing ``audit` runs before `deny`` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for ``audit` runs before `deny`` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "C": "Azure Policy evaluates all applicable assignments, not just the newest. Misconception: in D1.3.1-03, choosing `Only the newest assignment is evaluated` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Only the newest assignment is evaluated` or for a task where that choice is the documented Azure feature, rather than the control requested here."
+      },
+      "plainEnglish": "Azure gives fixing effects a chance before blocking effects. If a policy can safely add the missing tag, the later blocking rule may see a tagged resource and allow it. If the tag cannot be added, the deny rule can still block the deployment. Both policies matter; the order explains the result.\n\nAnother way to say it: For effect order questions, separate request-time effects from post-provisioning effects. For this effect-order item, choose the answer that lets request mutation happen before request rejection.",
+      "analogy": "An airport bag first passes a station that prints a missing routing label, then a station that rejects unlabeled bags.\n\n| Analogy | Azure reality |\n|---|---|\n| Bag | Resource request |\n| Routing label | Required tag |\n| Label printer | `modify` effect |\n| Rejection station | `deny` effect |\n\n**Where the analogy breaks down:** Azure can evaluate many assignments and post-provisioning effects; a conveyor belt is only a simple order model.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates Azure resources and actions against business rules."
+        },
+        {
+          "term": "Policy definition",
+          "definition": "A JSON rule containing conditions and an effect."
+        },
+        {
+          "term": "Policy assignment",
+          "definition": "The application of a policy definition or initiative to a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The management group, subscription, resource group, or resource boundary where an assignment applies."
+        },
+        {
+          "term": "Effect",
+          "definition": "The response Azure Policy takes when a rule matches, such as audit, deny, modify, or disabled."
+        },
+        {
+          "term": "Modify",
+          "definition": "An effect that can add, update, or remove supported tags or properties."
+        },
+        {
+          "term": "Deny",
+          "definition": "An effect that blocks a non-compliant create or update request."
+        },
+        {
+          "term": "Resource Provider",
+          "definition": "The Azure service namespace that processes resource operations."
+        }
+      ],
+      "watchOut": "- `append` and `modify` are before `deny`.\n- `deny` is before `audit`.\n- `deployIfNotExists` is not a pre-request edit.\n- Layered policies are cumulative, not newest-wins.\n- `modify` needs supported operations and permissions for remediation scenarios.",
+      "productionTip": {
+        "official": "Microsoft documents the Azure Policy effect evaluation order and states that `append` and `modify` can alter the request before `deny` and `audit` are evaluated.",
+        "recommendation": "Recommendation: Test auto-tagging policies at a small scope before pairing them with deny policies. Confirm the `modify` operation works for the resource types and API versions used by deployment teams."
+      },
+      "memoryTrick": "Fix before forbid: `modify` can run before `deny`. This is a simplification because Resource Provider modes and post-provisioning effects have separate details.",
+      "examTip": "Clue words are **modify adds tag** and **deny missing tag**. Remember effect order. A harder version may include an unsupported alias or conflictEffect, changing whether modification happens.  In this item, the deciding noun is **effect order**. When you see modify plus deny in one request path, check whether the request can be changed before the deny condition runs."
+    },
+    "sources": [
+      {
+        "title": "Azure Policy definitions effect basics",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effect-basics"
+      },
+      {
+        "title": "Azure Policy definitions modify effect",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effect-modify"
+      },
+      {
+        "title": "Details of the policy assignment structure",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/assignment-structure"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.1-04",
+    "objective": "D1.3.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are selecting controls for a subscription. Requirements are: resources only in `australiaeast` and `australiasoutheast`; virtual machines only from approved size SKUs; new resources inherit the `CostCenter` tag from the parent resource group when missing.\n\nWhich three Azure Policy approaches match these requirements? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign allowed locations with the two approved regions as parameter values"
+      },
+      {
+        "id": "B",
+        "text": "Use a policy restricting allowed virtual machine size SKUs"
+      },
+      {
+        "id": "C",
+        "text": "Use a tag inheritance policy with `modify` and `tagName=CostCenter`"
+      },
+      {
+        "id": "D",
+        "text": "Assign Reader at subscription scope"
+      },
+      {
+        "id": "E",
+        "text": "Create exemptions for approved VMs"
+      }
+    ],
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Default Azure Policy behavior applies. No exclusions, exemptions, deny assignments, or preview-only capabilities apply unless the question explicitly states them.",
+    "sections": {
+      "correctAnswer": "**A, B, and C**. These are resource-state governance requirements: allowed locations, VM SKU restrictions, and tag inheritance through `modify` are Azure Policy patterns.",
+      "technical": "Azure Policy compares resource properties to business rules. Microsoft Learn uses allowed locations as a standard policy example with an `allowedLocations` array parameter and a deny effect. VM size governance can be implemented by built-in or custom policies that check VM size or SKU properties. Tag governance can use the `modify` effect to add or replace tags during create or update; Microsoft documents a pattern that inherits a tag value from the parent resource group and can remediate existing resources with a remediation task. Reader is Azure RBAC and grants viewing permission only. Exemptions are for accepted or mitigated exceptions, not for resources that already comply with the allowed SKU requirement.\n\n#### Additional exam detail\nFor built-in policy selection questions, focus on the property being governed. Location, size, and tags are normal Azure Resource Manager properties or metadata. That makes them good candidates for policy definitions with parameters. Access roles can let a person view or change resources, but they do not express an approved list of regions or SKUs.",
+      "wrongOptions": {
+        "D": "Reader views resources but does not enforce location, SKU, or tag rules. Misconception: in D1.3.1-04, choosing `Assign Reader at subscription scope` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Assign Reader at subscription scope` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "E": "Exemptions are not needed for approved compliant VMs. Misconception: in D1.3.1-04, choosing `Create exemptions for approved VMs` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Create exemptions for approved VMs` or for a task where that choice is the documented Azure feature, rather than the control requested here."
+      },
+      "plainEnglish": "The first three choices are rules about what resources should look like: where they are, what size they use, and which tag they carry. Azure Policy is built for that. Reader does not enforce any of those standards. Exemptions are for exceptions, so you do not create one for every VM that already follows the rules.\n\nAnother way to say it: For built-in policy selection questions, focus on the property being governed. For this built-in-control item, choose controls that inspect resource location, VM size, and tag metadata.",
+      "analogy": "An online order form allows only two delivery regions, only approved laptop models, and auto-fills the department code.\n\n| Analogy | Azure reality |\n|---|---|\n| Delivery regions | Allowed locations |\n| Laptop models | VM size SKUs |\n| Department code | `CostCenter` tag |\n| Form validation | Azure Policy |\n\n**Where the analogy breaks down:** Azure Policy can enforce through Resource Manager and run remediation tasks; a normal form may only warn a user.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates Azure resources and actions against business rules."
+        },
+        {
+          "term": "Policy definition",
+          "definition": "A JSON rule containing conditions and an effect."
+        },
+        {
+          "term": "Policy assignment",
+          "definition": "The application of a policy definition or initiative to a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The management group, subscription, resource group, or resource boundary where an assignment applies."
+        },
+        {
+          "term": "Effect",
+          "definition": "The response Azure Policy takes when a rule matches, such as audit, deny, modify, or disabled."
+        },
+        {
+          "term": "VM SKU",
+          "definition": "The Azure virtual machine size identifier."
+        },
+        {
+          "term": "Tag",
+          "definition": "A key-value metadata pair on Azure resources."
+        },
+        {
+          "term": "Reader",
+          "definition": "An Azure RBAC role for read-only access."
+        }
+      ],
+      "watchOut": "- Locations, sizes, and tags are policy subjects.\n- Tag inheritance commonly uses `modify`.\n- Existing resources need remediation for tag changes.\n- RBAC Reader does not enforce standards.\n- Exemptions are for exceptions, not compliant resources.",
+      "productionTip": {
+        "official": "Microsoft Learn documents allowed locations, VM SKU policy examples, and tag policies that use `modify` with remediation tasks. The built-in policy list also confirms Microsoft provides many built-in definitions.",
+        "recommendation": "Recommendation: Prefer built-ins for common region, SKU, and tag controls, then assign with environment-specific parameters. Pilot deny policies before broad rollout and use clear non-compliance messages."
+      },
+      "memoryTrick": "If the requirement says what resources may look like, think Policy. If it says who may do it, think RBAC.",
+      "examTip": "Clue words are **approved regions**, **approved SKUs**, and **inherit tag**. Choose policy controls and rule out Reader. A harder version may require a remediation task for existing resources.  In this item, the deciding nouns are **locations**, **SKUs**, and **tags**. They are resource properties or metadata, so policy definitions fit better than role assignments or exemption records."
+    },
+    "sources": [
+      {
+        "title": "Overview of Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+      },
+      {
+        "title": "Details of Azure Policy definition structure basics",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+      },
+      {
+        "title": "Tutorial: Build policies to enforce compliance",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/tutorials/create-and-manage"
+      },
+      {
+        "title": "Pattern: Using tags in a policy definition",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/samples/pattern-tags"
+      },
+      {
+        "title": "List of built-in policy definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/samples/built-in-policies"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.1-05",
+    "objective": "D1.3.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You assigned a `modify` policy that should add a missing `Environment` tag. The assignment was created with an SDK, not the portal. Existing resources are non-compliant, and you need Azure Policy to update them.\n\nWhich two actions are required? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a remediation task"
+      },
+      {
+        "id": "B",
+        "text": "Change the effect to `audit`"
+      },
+      {
+        "id": "C",
+        "text": "Grant the assignment managed identity the required roles"
+      },
+      {
+        "id": "D",
+        "text": "Remove all parameters"
+      },
+      {
+        "id": "E",
+        "text": "Give every resource owner Reader"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Default Azure Policy behavior applies. No exclusions, exemptions, deny assignments, or preview-only capabilities apply unless the question explicitly states them.",
+    "sections": {
+      "correctAnswer": "**A. Create a remediation task and C. Grant the assignment managed identity the required roles**. Existing resources are changed by remediation tasks, and `modify` remediation uses the assignment managed identity with sufficient Azure RBAC permissions.",
+      "technical": "The `modify` effect can change new or updated requests when supported conditions match. Existing resources are different: an evaluation cycle marks them non-compliant but does not edit them automatically. To update existing non-compliant resources, create a remediation task. Remediation for `modify` and `deployIfNotExists` uses the managed identity associated with the policy assignment. The policy definition includes `roleDefinitionIds` that describe required permissions. When an assignment is created through the Azure portal, Azure Policy can grant those roles automatically. When an assignment is created through an SDK, the roles usually must be granted manually to the assignment identity. Audit would only report. Human Reader permissions do not let the policy service modify resources.\n\n#### Additional exam detail\nFor remediation questions, distinguish three identities: the human or automation creating the assignment, the caller whose resource request is evaluated, and the managed identity used by remediation. The last one needs Azure RBAC permissions to make the actual change. Without those permissions, non-compliant resources can be discovered but not repaired by the policy service.",
+      "wrongOptions": {
+        "B": "Audit reports only and does not update tags. Misconception: in D1.3.1-05, choosing `Change the effect to `audit`` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Change the effect to `audit`` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "D": "Parameters provide values and are not removed for remediation. Misconception: in D1.3.1-05, choosing `Remove all parameters` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Remove all parameters` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "E": "Reader for human owners does not grant the policy identity write permission. Misconception: in D1.3.1-05, choosing `Give every resource owner Reader` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Give every resource owner Reader` or for a task where that choice is the documented Azure feature, rather than the control requested here."
+      },
+      "plainEnglish": "Azure Policy has found old resources that need a tag. Finding them is not the same as fixing them. To fix them, you run a remediation task. That task acts through a managed identity, like a service account, so that identity needs permission to edit the tag. Because the SDK created the assignment, you must make sure the identity has the required role.\n\nAnother way to say it: For remediation questions, distinguish three identities: the human or automation creating the assignment, the caller whose resource request is evaluated, and the managed identity used by remediation. For this remediation item, choose the repair workflow and the identity permission needed to perform the repair.",
+      "analogy": "A facilities system finds rooms missing number signs. A report lists the rooms, but a work order and a worker with a key are needed to install signs.\n\n| Analogy | Azure reality |\n|---|---|\n| Inspection report | Compliance result |\n| Work order | Remediation task |\n| Worker | Managed identity |\n| Key | Azure RBAC role assignment |\n\n**Where the analogy breaks down:** Azure identities and role scopes are precise API permissions, not physical keys.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates Azure resources and actions against business rules."
+        },
+        {
+          "term": "Policy definition",
+          "definition": "A JSON rule containing conditions and an effect."
+        },
+        {
+          "term": "Policy assignment",
+          "definition": "The application of a policy definition or initiative to a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The management group, subscription, resource group, or resource boundary where an assignment applies."
+        },
+        {
+          "term": "Effect",
+          "definition": "The response Azure Policy takes when a rule matches, such as audit, deny, modify, or disabled."
+        },
+        {
+          "term": "Remediation task",
+          "definition": "A task that applies modify operations or deployIfNotExists templates to existing non-compliant resources."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "A Microsoft Entra identity used by Azure services."
+        },
+        {
+          "term": "roleDefinitionIds",
+          "definition": "Policy metadata listing roles needed for remediation."
+        }
+      ],
+      "watchOut": "- Existing resource evaluation reports non-compliance; remediation changes resources.\n- `modify` and `deployIfNotExists` remediation require a managed identity.\n- Portal assignment can grant roles automatically; SDK assignment may need manual grants.\n- The assignment identity is not used to evaluate the policy condition.",
+      "productionTip": {
+        "official": "Microsoft documents remediation tasks for `modify` and `deployIfNotExists` and states that remediation uses the policy assignment managed identity. It also documents the portal versus SDK permission behavior.",
+        "recommendation": "Recommendation: Verify the assignment identity principal ID, required role IDs, and target scope before remediating. Grant least privilege, then remediate a small scope before running at subscription scale."
+      },
+      "memoryTrick": "Evaluation reports; remediation repairs. Repairs need an identity with permission.",
+      "examTip": "Clue words are **existing resources**, **modify**, and **SDK**. Pick remediation task plus managed identity role assignment. A harder version may use `deployIfNotExists`, but the identity principle is the same.  In this item, the deciding nouns are **existing resources**, **remediation task**, and **managed identity**. If the assignment was not made in the portal, be suspicious of missing manual role grants."
+    },
+    "sources": [
+      {
+        "title": "Azure Policy definitions modify effect",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effect-modify"
+      },
+      {
+        "title": "Remediate non-compliant resources with Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/how-to/remediate-resources"
+      },
+      {
+        "title": "Overview of Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.1-06",
+    "objective": "D1.3.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Resource group `rg-legacy` is non-compliant with a diagnostic settings initiative. The app team uses an approved third-party monitoring agent that sends equivalent logs to security operations. The exception should remain visible in compliance and be reviewed in six months.\n\nWhich exemption category should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Waiver, because all exceptions are waivers"
+      },
+      {
+        "id": "B",
+        "text": "Mitigated, because the intent is met another way"
+      },
+      {
+        "id": "C",
+        "text": "Disabled, to stop the whole initiative"
+      },
+      {
+        "id": "D",
+        "text": "DoNotEnforce, because it is an exemption category"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Default Azure Policy behavior applies. No exclusions, exemptions, deny assignments, or preview-only capabilities apply unless the question explicitly states them.",
+    "sections": {
+      "correctAnswer": "**B. Mitigated, because the intent is met another way**. The Mitigated exemption category is for cases where the policy intent is satisfied through another method.",
+      "technical": "Azure Policy exemptions are child objects created on a resource hierarchy or individual resource. They reference a policy assignment and can optionally target selected definitions inside an initiative. Exempt resources count toward overall compliance but show as Exempted, so the exception remains visible. Microsoft documents two exemption categories. `Mitigated` means the policy intent is met through another method. `Waiver` means non-compliance is temporarily accepted, or the resource should be excluded from one or more definitions in an initiative. Here, equivalent approved monitoring satisfies the diagnostic intent through another control, so Mitigated is the right category. The six-month review can be represented with `expiresOn`. This differs from changing the policy effect to Disabled or setting assignment enforcement mode to DoNotEnforce, which are broader controls.\n\n#### Additional exam detail\nFor exemption questions, ask whether the risk is accepted or the intent is satisfied another way. A third-party logging platform may satisfy the monitoring objective even though the exact Azure diagnostic setting is absent. That is why the category matters; it tells reviewers whether they are accepting a gap or recognizing an alternate control.",
+      "wrongOptions": {
+        "A": "Waiver is not the category for an approved alternate control. Misconception: in D1.3.1-06, choosing `Waiver, because all exceptions are waivers` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Waiver, because all exceptions are waivers` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "C": "Disabled is an effect and would be broader than one resource group exception. Misconception: in D1.3.1-06, choosing `Disabled, to stop the whole initiative` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Disabled, to stop the whole initiative` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "D": "DoNotEnforce is assignment enforcement mode, not an exemption category. Misconception: in D1.3.1-06, choosing `DoNotEnforce, because it is an exemption category` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `DoNotEnforce, because it is an exemption category` or for a task where that choice is the documented Azure feature, rather than the control requested here."
+      },
+      "plainEnglish": "The team is not simply saying, `We accept the missing diagnostic setting.` They are saying, `We have another approved monitoring method that achieves the goal.` That is mitigation. Azure should still show the exception so reviewers can see it and revisit it later.\n\nAnother way to say it: For exemption questions, ask whether the risk is accepted or the intent is satisfied another way. For this exemption item, choose the category that explains an approved alternate monitoring control.",
+      "analogy": "A school normally requires bus transport, but one student has an approved accessible transport service that meets the safety requirement.\n\n| Analogy | Azure reality |\n|---|---|\n| Bus rule | Diagnostic settings policy |\n| Accessible transport | Third-party monitoring |\n| Exception record | Policy exemption |\n| Six-month review | `expiresOn` |\n\n**Where the analogy breaks down:** Azure exemptions affect automated compliance evaluation; school transport approvals are manual processes.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates Azure resources and actions against business rules."
+        },
+        {
+          "term": "Policy definition",
+          "definition": "A JSON rule containing conditions and an effect."
+        },
+        {
+          "term": "Policy assignment",
+          "definition": "The application of a policy definition or initiative to a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The management group, subscription, resource group, or resource boundary where an assignment applies."
+        },
+        {
+          "term": "Effect",
+          "definition": "The response Azure Policy takes when a rule matches, such as audit, deny, modify, or disabled."
+        },
+        {
+          "term": "Exemption",
+          "definition": "A tracked object exempting a resource or hierarchy from a policy assignment."
+        },
+        {
+          "term": "Mitigated",
+          "definition": "An exemption category meaning the policy intent is met another way."
+        },
+        {
+          "term": "Waiver",
+          "definition": "An exemption category meaning non-compliance is temporarily accepted."
+        },
+        {
+          "term": "expiresOn",
+          "definition": "An optional expiration time for an exemption."
+        }
+      ],
+      "watchOut": "- Mitigated means alternate control satisfies intent.\n- Waiver means temporary acceptance of non-compliance.\n- Exemptions remain visible as Exempted.\n- Expiration stops an exemption being honored but does not erase the record.\n- DoNotEnforce is not an exemption category.",
+      "productionTip": {
+        "official": "Microsoft documents policy exemptions, the Mitigated and Waiver categories, selected initiative definition references, metadata, and optional expiration.",
+        "recommendation": "Recommendation: Require owner, approver, ticket, category, and expiration metadata. Review mitigations to verify the alternate control really satisfies the intent before approving."
+      },
+      "memoryTrick": "Mitigated means met another way; Waiver means accepted for now.",
+      "examTip": "Clue words are **approved third-party monitoring** and **equivalent logs**. Choose Mitigated. A harder version may say the resource will be deleted next month with risk accepted, which points to Waiver.  In this item, the deciding noun is **Mitigated**. Equivalent third-party monitoring means the intent is satisfied another way; if the stem accepted the risk without an alternate control, Waiver would become stronger."
+    },
+    "sources": [
+      {
+        "title": "Details of the policy exemption structure",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/exemption-structure"
+      },
+      {
+        "title": "Understand scope in Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/scope"
+      },
+      {
+        "title": "Details of the policy assignment structure",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/assignment-structure"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.1-07",
+    "objective": "D1.3.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You assign a new audit policy to a large subscription at 09:00. At 09:05, the compliance dashboard has not finished showing results for all existing resources. The security team wants to request a scan rather than wait for the standard cycle.\n\nWhat should you tell them?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Compliance updates instantly for all resources"
+      },
+      {
+        "id": "B",
+        "text": "Existing resources evaluate only when redeployed"
+      },
+      {
+        "id": "C",
+        "text": "A remediation task is required just to evaluate"
+      },
+      {
+        "id": "D",
+        "text": "Evaluation begins after assignment and can take time; trigger on-demand scan"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Default Azure Policy behavior applies. No exclusions, exemptions, deny assignments, or preview-only capabilities apply unless the question explicitly states them.",
+    "sections": {
+      "correctAnswer": "**D. Evaluation begins after assignment and can take time; trigger on-demand scan**. New assignments start evaluation after application to the scope, large evaluations can take time, and Azure supports on-demand scans for subscription or resource group scopes.",
+      "technical": "Azure Policy compliance is updated by evaluation triggers, not by an instant full inventory at assignment creation. Microsoft documents that a new assignment takes about five minutes to be applied to the scope, then evaluation begins for applicable resources. Large scopes have no guaranteed completion time. A standard compliance evaluation cycle also runs once every 24 hours. Other triggers include assignment updates, resource create or update events, exemption changes, subscription moves in a management group hierarchy, and on-demand scans. An on-demand scan can be triggered for a subscription or resource group using REST, Azure CLI, Azure PowerShell, the Azure Policy extension for Visual Studio Code, or GitHub Actions. Some providers have limitations, so the resource provider must support the scan.\n\n#### Additional exam detail\nFor timing questions, avoid absolute words such as instantly and never. Azure Policy has several triggers, and the portal shows results only after an evaluation cycle has produced Policy Insights data. On-demand scanning is useful for a deliberate refresh, but it is still an asynchronous evaluation and not a guarantee of immediate dashboard completion.",
+      "wrongOptions": {
+        "A": "Full compliance is not guaranteed instantly. Misconception: in D1.3.1-07, choosing `Compliance updates instantly for all resources` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Compliance updates instantly for all resources` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "B": "Existing resources can be evaluated without redeployment. Misconception: in D1.3.1-07, choosing `Existing resources evaluate only when redeployed` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Existing resources evaluate only when redeployed` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "C": "Remediation fixes resources; it is not required merely to evaluate audit compliance. Misconception: in D1.3.1-07, choosing `A remediation task is required just to evaluate` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `A remediation task is required just to evaluate` or for a task where that choice is the documented Azure feature, rather than the control requested here."
+      },
+      "plainEnglish": "The dashboard is not late just because it is not done after five minutes. Azure needs time to check resources, especially in a large subscription. If the team needs a fresh check, they can start an on-demand compliance scan instead of waiting for the normal daily cycle.\n\nAnother way to say it: For timing questions, avoid absolute words such as instantly and never. For this compliance-timing item, choose the answer that allows asynchronous evaluation instead of instant dashboard completion.",
+      "analogy": "A teacher gives a new checklist to a large class. Five minutes later, grading has started but is not finished. The principal can ask for an extra grading pass instead of waiting for tomorrow.\n\n| Analogy | Azure reality |\n|---|---|\n| Checklist | Policy assignment |\n| Grading | Compliance evaluation |\n| Daily review | 24-hour cycle |\n| Extra pass | On-demand scan |\n\n**Where the analogy breaks down:** Azure scans are asynchronous service operations with provider-specific support.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates Azure resources and actions against business rules."
+        },
+        {
+          "term": "Policy definition",
+          "definition": "A JSON rule containing conditions and an effect."
+        },
+        {
+          "term": "Policy assignment",
+          "definition": "The application of a policy definition or initiative to a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The management group, subscription, resource group, or resource boundary where an assignment applies."
+        },
+        {
+          "term": "Effect",
+          "definition": "The response Azure Policy takes when a rule matches, such as audit, deny, modify, or disabled."
+        },
+        {
+          "term": "Compliance dashboard",
+          "definition": "The Azure Policy view of compliant, non-compliant, exempt, and unknown resources."
+        },
+        {
+          "term": "On-demand scan",
+          "definition": "A manually triggered policy evaluation scan."
+        },
+        {
+          "term": "PolicyStates",
+          "definition": "Policy Insights data containing policy state results."
+        }
+      ],
+      "watchOut": "- New assignments take about five minutes to apply before evaluation begins.\n- Large scopes can take longer; no fixed completion time is promised.\n- Standard evaluation runs every 24 hours.\n- On-demand scans can target subscription or resource group scopes.\n- Remediation is for fixing, not merely scanning.",
+      "productionTip": {
+        "official": "Microsoft documents policy evaluation triggers, the 24-hour standard cycle, approximate timing for new assignments, and on-demand scan methods including CLI and PowerShell.",
+        "recommendation": "Recommendation: Use on-demand scans for audit windows or release gates, but do not run them continuously. Record scan time and scope so dashboard changes can be interpreted correctly."
+      },
+      "memoryTrick": "Assign, wait, or trigger: assignment starts evaluation, daily cycle repeats it, scan asks now.",
+      "examTip": "Clue words are **new audit policy**, **large subscription**, and **trigger a scan**. Choose the answer with delay plus on-demand scan. A harder version may ask for `az policy state trigger-scan`.  In this item, the deciding nouns are **evaluation trigger** and **on-demand scan**. Five minutes starts the assignment process; it is not a promise that a large subscription dashboard is complete."
+    },
+    "sources": [
+      {
+        "title": "Get policy compliance data",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/how-to/get-compliance-data"
+      },
+      {
+        "title": "Overview of Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+      },
+      {
+        "title": "Details of the policy assignment structure",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/assignment-structure"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.1-08",
+    "objective": "D1.3.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "A custom policy definition `Restrict-Regions` has an array parameter named `allowedLocations`. It is already assigned to multiple subscriptions with different values. You need to update the definition safely and keep one reusable definition.\n\nWhich two statements are true? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Reference the array parameter as `[parameters('allowedLocations')]`"
+      },
+      {
+        "id": "B",
+        "text": "Remove the parameter from assigned definition safely"
+      },
+      {
+        "id": "C",
+        "text": "A new parameter on an assigned definition needs `defaultValue`"
+      },
+      {
+        "id": "D",
+        "text": "`allowedValues` is checked only after deployer RBAC"
+      },
+      {
+        "id": "E",
+        "text": "Each subscription needs a separate definition"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Default Azure Policy behavior applies. No exclusions, exemptions, deny assignments, or preview-only capabilities apply unless the question explicitly states them.",
+    "sections": {
+      "correctAnswer": "**A. Reference the array parameter as `[parameters('allowedLocations')]` and C. A new parameter on an assigned definition needs `defaultValue`**. Parameters make one definition reusable, and default values protect existing assignments when a parameter is added.",
+      "technical": "Policy parameters are declared in a definition and supplied at assignment time. The same definition can therefore be assigned to different subscriptions with different `allowedLocations` values. In a policy rule, parameters are referenced with the `parameters` function, for example a location condition can use `\"in\": \"[parameters('allowedLocations')]\"`. Microsoft documents that adding a parameter to an existing assigned definition is allowed only when the new parameter includes `defaultValue`; otherwise existing assignments would not have a value and would become invalid. Microsoft also documents that parameters cannot be removed from a policy definition because existing assignments might set them. `allowedValues` constrains accepted parameter values at assignment time; it is not the deployer RBAC authorization check.\n\n#### Additional exam detail\nFor parameter lifecycle questions, think about existing assignments as saved forms. A new required parameter without a default would leave those saved forms incomplete. Removing a parameter can also break assignments that still send a value. Safe custom policy updates therefore need compatibility planning, defaults, or migration to a replacement definition.",
+      "wrongOptions": {
+        "B": "Parameters cannot be removed safely because assignments may reference them. Misconception: in D1.3.1-08, choosing `Remove the parameter from assigned definition safely` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Remove the parameter from assigned definition safely` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "D": "`allowedValues` validates assignment input, not deployer RBAC after the fact. Misconception: in D1.3.1-08, choosing ``allowedValues` is checked only after deployer RBAC` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for ``allowedValues` is checked only after deployer RBAC` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "E": "Different values per assignment are the purpose of parameters. Misconception: in D1.3.1-08, choosing `Each subscription needs a separate definition` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Each subscription needs a separate definition` or for a task where that choice is the documented Azure feature, rather than the control requested here."
+      },
+      "plainEnglish": "A parameter is a blank on a reusable form. Each subscription can fill in the blank with its own region list. If you add a new required blank to a form that people already use, you need a default answer so old forms do not break. Removing a blank is risky because old assignments may still contain an answer for it.\n\nAnother way to say it: For parameter lifecycle questions, think about existing assignments as saved forms. For this parameter item, choose the syntax and lifecycle rule that keep current assignments valid.",
+      "analogy": "A travel form has an allowed destinations blank. Different teams use the same form with different destination lists.\n\n| Analogy | Azure reality |\n|---|---|\n| Form | Policy definition |\n| Blank field | Parameter |\n| Team-specific list | Assignment value |\n| Default answer | `defaultValue` |\n\n**Where the analogy breaks down:** Azure parameters are typed JSON values and can include schema, allowedValues, and portal metadata.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates Azure resources and actions against business rules."
+        },
+        {
+          "term": "Policy definition",
+          "definition": "A JSON rule containing conditions and an effect."
+        },
+        {
+          "term": "Policy assignment",
+          "definition": "The application of a policy definition or initiative to a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The management group, subscription, resource group, or resource boundary where an assignment applies."
+        },
+        {
+          "term": "Effect",
+          "definition": "The response Azure Policy takes when a rule matches, such as audit, deny, modify, or disabled."
+        },
+        {
+          "term": "Parameter",
+          "definition": "A named input in a policy definition or initiative."
+        },
+        {
+          "term": "defaultValue",
+          "definition": "A fallback parameter value required when adding a parameter to an already assigned definition."
+        },
+        {
+          "term": "allowedValues",
+          "definition": "A list of values accepted for a parameter during assignment."
+        }
+      ],
+      "watchOut": "- Parameters support reuse across assignments.\n- Use `[parameters('name')]` in rules.\n- Adding a parameter to an assigned definition requires `defaultValue`.\n- Do not remove parameters from assigned definitions.\n- Parameter validation is not the same as RBAC authorization.",
+      "productionTip": {
+        "official": "Microsoft documents parameter properties, use of the `parameters` function, the `defaultValue` requirement for newly added parameters, and the restriction on removing parameters.",
+        "recommendation": "Recommendation: Version custom policies like code. Add defaults for non-breaking parameters and create a replacement definition when you need to remove parameters or change behavior incompatibly."
+      },
+      "memoryTrick": "Parameters make policies reusable; defaults make updates survivable.",
+      "examTip": "Clue words are **already assigned**, **different values**, and **update safely**. Pick the parameter reference and defaultValue rule. A harder version may test `allowedValues` case sensitivity.  In this item, the deciding nouns are **parameter reference** and **defaultValue**. Reuse comes from assignment-specific values, but safe updates must protect assignments that already exist."
+    },
+    "sources": [
+      {
+        "title": "Details of the policy definition structure parameters",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-parameters"
+      },
+      {
+        "title": "Details of Azure Policy definition structure basics",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/definition-structure-basics"
+      },
+      {
+        "title": "Details of the policy assignment structure",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/assignment-structure"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.1-09",
+    "objective": "D1.3.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "A developer has the Contributor role on a resource group. Azure RBAC therefore allows the developer to create virtual machines there. An Azure Policy assignment with the `deny` effect blocks virtual machines in unapproved regions. The developer tries to create a VM in an unapproved region.\n\nWhat happens?",
+    "options": [
+      {
+        "id": "A",
+        "text": "VM is created because Contributor overrides policy"
+      },
+      {
+        "id": "B",
+        "text": "VM is created and marked non-compliant later"
+      },
+      {
+        "id": "C",
+        "text": "VM creation is blocked by deny policy despite RBAC allowing the action"
+      },
+      {
+        "id": "D",
+        "text": "Contributor role is removed automatically"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Default Azure Policy behavior applies. No exclusions, exemptions, deny assignments, or preview-only capabilities apply unless the question explicitly states them.",
+    "sections": {
+      "correctAnswer": "**C. VM creation is blocked by deny policy despite RBAC allowing the action**. Azure RBAC authorizes the user to attempt the action, but Azure Policy can still deny a non-compliant resource state.",
+      "technical": "Azure RBAC and Azure Policy are complementary. Azure RBAC focuses on who can perform actions at a scope. Azure Policy focuses on whether resource state or resource actions comply with business rules. A typical request first needs authorization for the user or service principal to perform the operation. If RBAC allows the VM create operation, Azure Policy assignments that apply to the target scope are still evaluated. A `deny` effect blocks a create or update request whose resulting resource would be non-compliant. Microsoft states that even if an individual has access to perform an action, Azure Policy can still block the create or update. The deny effect does not remove the Contributor role; it rejects the non-compliant request.\n\n#### Additional exam detail\nFor RBAC-versus-policy questions, the order is not best understood as one product winning over the other. RBAC grants the ability to call the operation. Policy evaluates the proposed result against governance rules. Both checks can matter for the same request, and a successful deployment needs to pass all applicable gates.",
+      "wrongOptions": {
+        "A": "RBAC does not override an applicable deny policy. Misconception: in D1.3.1-09, choosing `VM is created because Contributor overrides policy` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `VM is created because Contributor overrides policy` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "B": "That describes audit, not deny on a create request. Misconception: in D1.3.1-09, choosing `VM is created and marked non-compliant later` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `VM is created and marked non-compliant later` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "D": "Azure Policy does not automatically remove RBAC assignments. Misconception: in D1.3.1-09, choosing `Contributor role is removed automatically` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Contributor role is removed automatically` or for a task where that choice is the documented Azure feature, rather than the control requested here."
+      },
+      "plainEnglish": "The developer is allowed to try creating VMs, but not every VM request is acceptable. The company rule says VMs cannot be in that region. Azure Policy enforces the rule and stops the deployment. The developer still has the Contributor role for allowed work.\n\nAnother way to say it: For RBAC-versus-policy questions, the order is not best understood as one product winning over the other. For this RBAC-versus-policy item, choose the answer where authorization and policy enforcement are separate gates.",
+      "analogy": "An employee can submit purchase orders, but the ordering system blocks banned luxury chairs.\n\n| Analogy | Azure reality |\n|---|---|\n| Purchasing permission | Contributor role |\n| Purchase order | VM create request |\n| Banned item rule | Deny policy |\n| Rejected order | Blocked deployment |\n\n**Where the analogy breaks down:** Azure evaluates scoped role assignments and policy rules through Resource Manager APIs, not a human purchasing clerk.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates Azure resources and actions against business rules."
+        },
+        {
+          "term": "Policy definition",
+          "definition": "A JSON rule containing conditions and an effect."
+        },
+        {
+          "term": "Policy assignment",
+          "definition": "The application of a policy definition or initiative to a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The management group, subscription, resource group, or resource boundary where an assignment applies."
+        },
+        {
+          "term": "Effect",
+          "definition": "The response Azure Policy takes when a rule matches, such as audit, deny, modify, or disabled."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Role-based access control that manages who can perform Azure actions."
+        },
+        {
+          "term": "Contributor",
+          "definition": "A built-in role that can manage resources but cannot assign Azure RBAC roles."
+        },
+        {
+          "term": "Deny",
+          "definition": "A policy effect that blocks non-compliant create or update requests."
+        }
+      ],
+      "watchOut": "- RBAC is who can try.\n- Policy is what resource state is allowed.\n- Deny can block an action even when RBAC allows submission.\n- Policy violations do not automatically remove role assignments.\n- Audit would behave differently from deny.",
+      "productionTip": {
+        "official": "Microsoft documents the difference between Azure Policy and Azure RBAC and states that Policy can block a create or update even when the user has access to perform the action.",
+        "recommendation": "Recommendation: Use RBAC for least privilege and Azure Policy for guardrails. Add clear non-compliance messages so developers know whether they have an access problem or a policy problem."
+      },
+      "memoryTrick": "RBAC is who may try; Policy is what may exist. This is a simplification because denyAction can also govern delete actions.",
+      "examTip": "Clue words are **Contributor** plus **deny policy**. Do not assume the role wins. A harder version may ask whether audit would allow creation but report non-compliance.  In this item, the deciding nouns are **RBAC** and **deny policy**. RBAC lets the user attempt the operation; policy can still reject the requested state when it violates the rule."
+    },
+    "sources": [
+      {
+        "title": "Overview of Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+      },
+      {
+        "title": "Azure Policy definitions effect basics",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effect-basics"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.1-10",
+    "objective": "D1.3.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A tenant has management group `mg-corp` with subscriptions `Sub1` and `Sub2`. Next month `Sub3` will be moved under `mg-corp`. You need an Azure Policy assignment that enforces approved regions for all current and future subscriptions under `mg-corp`, but not subscriptions outside it. Administrative effort must be minimized.\n\nWhere should you assign the policy?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Each current subscription"
+      },
+      {
+        "id": "B",
+        "text": "The `mg-corp` management group"
+      },
+      {
+        "id": "C",
+        "text": "Each current resource group"
+      },
+      {
+        "id": "D",
+        "text": "Tenant root management group"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Default Azure Policy behavior applies. No exclusions, exemptions, deny assignments, or preview-only capabilities apply unless the question explicitly states them.",
+    "sections": {
+      "correctAnswer": "**B. The `mg-corp` management group**. Management group assignments inherit to child subscriptions and future subscriptions moved under that management group while avoiding unrelated branches.",
+      "technical": "Management groups provide a governance scope above subscriptions. Microsoft documents that policy and access conditions applied to a management group cascade by inheritance to associated subscriptions. Azure Policy assignment scope defines the included hierarchy. The `mg-corp` management group is the narrowest parent scope that contains `Sub1`, `Sub2`, and future `Sub3` after it is moved. Assigning at `mg-corp` covers child subscriptions and their resources. Assigning at each current subscription misses `Sub3` until another assignment is created. Assigning at resource groups is too narrow and high effort. Assigning at tenant root is broader than required and can affect all subscriptions in the directory.\n\n#### Additional exam detail\nFor management group questions, pay attention to future placement. The policy follows the hierarchy from the assignment scope downward. Moving a subscription under a governed management group can make inherited policies apply to that subscription without creating new subscription-level assignments.",
+      "wrongOptions": {
+        "A": "Current subscriptions miss future `Sub3`. Misconception: in D1.3.1-10, choosing `Each current subscription` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Each current subscription` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "C": "Resource group scope is too narrow and high effort. Misconception: in D1.3.1-10, choosing `Each current resource group` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Each current resource group` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "D": "Tenant root includes unrelated subscriptions. Misconception: in D1.3.1-10, choosing `Tenant root management group` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for `Tenant root management group` or for a task where that choice is the documented Azure feature, rather than the control requested here."
+      },
+      "plainEnglish": "Put the rule on the folder that contains the target subscriptions. Anything inside the folder gets the rule, including the future subscription after it is moved there. Other folders do not get the rule. This is less work and less risky than assigning at the tenant root.\n\nAnother way to say it: For management group questions, pay attention to future placement. For this inheritance item, choose the parent branch that contains the present and future subscriptions but excludes unrelated branches.",
+      "analogy": "A filing cabinet named Corporate contains two drawers now and will contain a third later. A label on the cabinet applies to every drawer inside it.\n\n| Analogy | Azure reality |\n|---|---|\n| Cabinet | Management group |\n| Drawer | Subscription |\n| Folder | Resource group |\n| Cabinet label | Policy assignment |\n\n**Where the analogy breaks down:** Azure inheritance can be affected by exclusions and exemptions, while a physical label is simpler.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates Azure resources and actions against business rules."
+        },
+        {
+          "term": "Policy definition",
+          "definition": "A JSON rule containing conditions and an effect."
+        },
+        {
+          "term": "Policy assignment",
+          "definition": "The application of a policy definition or initiative to a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The management group, subscription, resource group, or resource boundary where an assignment applies."
+        },
+        {
+          "term": "Effect",
+          "definition": "The response Azure Policy takes when a rule matches, such as audit, deny, modify, or disabled."
+        },
+        {
+          "term": "Management group",
+          "definition": "An Azure governance container above subscriptions."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "Parent-scope assignments applying to child scopes."
+        },
+        {
+          "term": "Tenant root management group",
+          "definition": "The top management group that contains all subscriptions and management groups in a tenant."
+        }
+      ],
+      "watchOut": "- Assign at the narrowest parent that contains the intended estate.\n- Future child subscriptions inherit management group assignments.\n- Current subscription assignments do not automatically follow future moves under the group.\n- Tenant root is usually too broad.\n- Exclusions can carve out child scopes if needed.",
+      "productionTip": {
+        "official": "Microsoft documents management groups as scopes where governance conditions cascade by inheritance to subscriptions. Azure Policy scope documentation states that assignment scope drives applicability.",
+        "recommendation": "Recommendation: Align management groups to governance boundaries and assign baselines there. Avoid tenant root except for must-have global controls and test subscription moves before relying on inherited policies."
+      },
+      "memoryTrick": "Policy goes on the branch, not every leaf.",
+      "examTip": "Clue words are **current and future subscriptions under a management group** and **not outside**. Choose the management group. A harder version may add an excluded child subscription.  In this item, the deciding nouns are **management group** and **future subscription**. The scope that naturally contains present and future subscriptions is the management group branch."
+    },
+    "sources": [
+      {
+        "title": "Organize your resources with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/overview"
+      },
+      {
+        "title": "Understand scope in Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/scope"
+      },
+      {
+        "title": "Overview of Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.1-11",
+    "objective": "D1.3.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You need to prevent accidental deletion of production Azure Cosmos DB accounts that have the tag `environment=prod`. Resource owners should still be able to update compliant resources, and the control should block delete requests at scale.\n\nWhich Azure Policy effect should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`denyAction` with `actionNames` set to `delete`"
+      },
+      {
+        "id": "B",
+        "text": "`auditIfNotExists` for the tag"
+      },
+      {
+        "id": "C",
+        "text": "`deployIfNotExists` to recreate deleted accounts"
+      },
+      {
+        "id": "D",
+        "text": "`Disabled` to ignore delete requests"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. Default Azure Policy behavior applies. No exclusions, exemptions, deny assignments, or preview-only capabilities apply unless the question explicitly states them.",
+    "sections": {
+      "correctAnswer": "**A. `denyAction` with `actionNames` set to `delete`**. The `denyAction` effect blocks requests based on intended action, and Microsoft documents `delete` as the supported action name.",
+      "technical": "The normal `deny` effect is used mostly to block non-compliant create or update state. `denyAction` is designed to block requests based on the action name at scale. Microsoft documents that the only supported action today is `DELETE`, and that a matching request returns `403 Forbidden`. A policy can target resource type and tags, then use `denyAction` with `actionNames` containing `delete`. There are important exceptions: several authorization and lockout-related resource types are exempt, policy does not block removal during subscription deletion, and resource group or cascade deletion behavior has documented conditions. `auditIfNotExists` audits missing related resources. `deployIfNotExists` deploys related resources after successful provisioning or remediation and is not a deletion-prevention strategy. `Disabled` turns off evaluation.\n\n#### Additional exam detail\nFor delete-protection questions, compare action blocking with state validation. A delete request is an action against an existing resource, so denyAction is the purpose-built effect. It reduces accidental deletion risk, but it is not a recovery feature and has documented exceptions that should be tested before relying on it alone.",
+      "wrongOptions": {
+        "B": "AuditIfNotExists reports related-resource issues and does not block delete. Misconception: in D1.3.1-11, choosing ``auditIfNotExists` for the tag` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for ``auditIfNotExists` for the tag` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "C": "Recreating resources is not prevention and may not restore data. Misconception: in D1.3.1-11, choosing ``deployIfNotExists` to recreate deleted accounts` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for ``deployIfNotExists` to recreate deleted accounts` or for a task where that choice is the documented Azure feature, rather than the control requested here.",
+        "D": "Disabled prevents evaluation and offers no protection. Misconception: in D1.3.1-11, choosing ``Disabled` to ignore delete requests` treats a different governance mechanism as if it satisfied this scenario's Azure Policy requirement. Could be correct when: the question explicitly asked for ``Disabled` to ignore delete requests` or for a task where that choice is the documented Azure feature, rather than the control requested here."
+      },
+      "plainEnglish": "The goal is to stop delete operations, not just report them and not recreate resources after the fact. `denyAction` is the policy effect built for action blocking. It lets normal updates continue unless another policy blocks them, but rejects matching delete requests for protected production resources.\n\nAnother way to say it: For delete-protection questions, compare action blocking with state validation. For this deletion item, choose the action-blocking effect rather than an audit or deployment effect.",
+      "analogy": "A museum lets curators rearrange displays but has an alarm that blocks removal of exhibits tagged priceless.\n\n| Analogy | Azure reality |\n|---|---|\n| Priceless tag | `environment=prod` tag |\n| Removing exhibit | Delete request |\n| Alarm | `denyAction` |\n| Rearranging display | Allowed update |\n\n**Where the analogy breaks down:** Azure has explicit API exceptions for subscription deletion, resource group deletion, and some resource types.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates Azure resources and actions against business rules."
+        },
+        {
+          "term": "Policy definition",
+          "definition": "A JSON rule containing conditions and an effect."
+        },
+        {
+          "term": "Policy assignment",
+          "definition": "The application of a policy definition or initiative to a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The management group, subscription, resource group, or resource boundary where an assignment applies."
+        },
+        {
+          "term": "Effect",
+          "definition": "The response Azure Policy takes when a rule matches, such as audit, deny, modify, or disabled."
+        },
+        {
+          "term": "denyAction",
+          "definition": "An effect that blocks requests by action name, currently delete."
+        },
+        {
+          "term": "actionNames",
+          "definition": "The denyAction detail listing blocked actions."
+        },
+        {
+          "term": "403 Forbidden",
+          "definition": "The HTTP response for a blocked request."
+        },
+        {
+          "term": "auditIfNotExists",
+          "definition": "An effect that audits when a related resource is missing."
+        },
+        {
+          "term": "deployIfNotExists",
+          "definition": "An effect that deploys related resources when they do not exist."
+        }
+      ],
+      "watchOut": "- `denyAction` currently supports delete.\n- Some resource types are exempt to avoid lockout.\n- Subscription deletion is not blocked by policy.\n- Resource group and cascade deletion have special behavior.\n- Deletion guardrails do not replace backup or disaster recovery.",
+      "productionTip": {
+        "official": "Microsoft documents `denyAction` as the effect for blocking intended actions at scale, `delete` as the supported action, and the important enforcement exceptions and cascade behaviors.",
+        "recommendation": "Recommendation: Use `denyAction` for broad accidental deletion guardrails, but also use service-native backup, restore, locks where appropriate, and a break-glass process for operational recovery."
+      },
+      "memoryTrick": "Deny state with `deny`; deny delete with `denyAction`. This is simplified because delete-blocking has documented exceptions.",
+      "examTip": "Clue words are **prevent deletion**, **delete requests**, and **at scale**. Choose `denyAction`. A harder version may ask which deletions are not blocked, such as subscription deletion.  In this item, the deciding nouns are **delete request** and **denyAction**. If the stem asked only to report a missing child resource, auditIfNotExists or deployIfNotExists would be plausible instead."
+    },
+    "sources": [
+      {
+        "title": "Azure Policy definitions denyAction effect",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effect-deny-action"
+      },
+      {
+        "title": "Azure Policy definitions effect basics",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effect-basics"
+      },
+      {
+        "title": "Overview of Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

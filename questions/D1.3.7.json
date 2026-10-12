@@ -1,0 +1,1008 @@
+[
+  {
+    "id": "D1.3.7-01",
+    "objective": "D1.3.7",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a Microsoft Entra tenant that contains several Azure subscriptions and management groups. The security team wants a single governance location that is above every subscription in the tenant. They are considering assigning a policy at a scope named **Tenant root group**.\n\nWhat should you tell them about this scope?",
+    "options": [
+      {
+        "id": "A",
+        "text": "It is a normal child management group that can be moved under another management group."
+      },
+      {
+        "id": "B",
+        "text": "It is the built-in root management group for the directory, and assignments there can affect the whole hierarchy."
+      },
+      {
+        "id": "C",
+        "text": "It is created separately in each subscription and affects only resources in that subscription."
+      },
+      {
+        "id": "D",
+        "text": "It is the same thing as the Azure RBAC root scope (`/`) used by the elevate-access API."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The tenant has the management group service initialized. The question is about the management group named Tenant root group, not Microsoft Entra administrative units or billing account hierarchy.",
+    "sections": {
+      "correctAnswer": "**B. It is the built-in root management group for the directory, and assignments there can affect the whole hierarchy.** The root management group's default display name is **Tenant root group**, all management groups and subscriptions fold up to it, and assignments at that scope can apply broadly across the directory hierarchy.",
+      "technical": "Each Microsoft Entra directory has one top-level management group called the root management group. By default, its display name is **Tenant root group**, and its ID is the Microsoft Entra tenant ID. The root management group is built into the hierarchy, cannot be moved or deleted, and all subscriptions and management groups in the directory fold up to it. New subscriptions automatically land under the root management group unless a hierarchy setting changes the default management group.\n\nThe evaluation order is hierarchical. A policy assignment or Azure role assignment at a parent management group is inherited by child management groups, subscriptions, resource groups, and resources. Therefore, an assignment at the root management group is effectively a tenant-wide governance decision for Azure resources in that hierarchy. That is powerful, but it is not the same object as the Azure RBAC root scope string `/` used by the Global Administrator elevation process. Both are broad scopes, but the root management group is a management group resource, while `/` is the absolute root scope for Azure RBAC role assignments.",
+      "wrongOptions": {
+        "A": "The root management group cannot be moved or deleted, so treating it as a movable child management group is wrong. Misconception: All management groups have the same lifecycle operations. Could be correct when describing an ordinary non-root management group that has no constraints preventing a move.",
+        "C": "The root management group exists once per directory hierarchy, not once per subscription. Misconception: Governance scopes begin only at the subscription boundary. Could be correct when describing a subscription-level role assignment or policy assignment that applies only within one subscription.",
+        "D": "The Tenant root group and root scope (`/`) are related broad governance concepts, but they are not the same identifier. Misconception: Every top-level Azure scope uses the same object path. Could be correct when the question specifically asks where elevated User Access Administrator is assigned after Global Administrator elevation."
+      },
+      "plainEnglish": "Imagine all of a company's Azure subscriptions as folders in one big filing system. The **Tenant root group** is the top folder that everything ultimately sits inside. If you put a rule on that top folder, the rule can flow down to every folder and file underneath it. That is why Microsoft warns administrators to use this scope only for controls that truly must affect the entire Azure estate.",
+      "analogy": "A university has a main rulebook that applies to every campus, department, and classroom. The Tenant root group is like that main rulebook location.\n\n| Analogy | Azure reality |\n|---|---|\n| University system | Microsoft Entra tenant |\n| Main rulebook shelf | Tenant root group |\n| Campus | Management group or subscription |\n| Classroom | Resource group or resource |\n| Rule placed on main shelf | Policy or RBAC assignment at the root management group |\n\n**Where the analogy breaks down:** Azure uses formal scopes, role definitions, inheritance, and policy evaluation. A paper rulebook does not model Azure RBAC root scope (`/`) or token refresh behavior.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra tenant",
+          "definition": "A dedicated identity directory for an organization; it was formerly associated with the Azure AD name."
+        },
+        {
+          "term": "Management group",
+          "definition": "An Azure governance container above subscriptions that can hold subscriptions and child management groups."
+        },
+        {
+          "term": "Tenant root group",
+          "definition": "The default display name of the built-in root management group for a directory."
+        },
+        {
+          "term": "Root management group",
+          "definition": "The single top-level management group under which all other management groups and subscriptions fold up."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for granting actions at Azure scopes."
+        },
+        {
+          "term": "Policy assignment",
+          "definition": "A link between an Azure Policy definition or initiative and a target scope where resources are evaluated."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The flow of assignments from a parent scope to child scopes below it."
+        }
+      ],
+      "watchOut": "- The root management group is visible in context to users who can see subscriptions, but not everyone can manage it.\n- Root management group assignments can affect every resource in the directory hierarchy.\n- Do not confuse the management group named Tenant root group with the Azure RBAC root scope string `/`.\n- New subscriptions default to the root management group unless hierarchy settings specify another default.",
+      "productionTip": {
+        "official": "Microsoft documents that all subscriptions and management groups fold up to one root management group in each directory, and that assignments at this scope can apply to the whole hierarchy.",
+        "recommendation": "Recommendation: keep root management group assignments rare, documented, and reviewed. Prefer lower management groups for business-unit, platform, or sandbox controls unless the requirement is explicitly tenant-wide."
+      },
+      "memoryTrick": "Tenant root group means **top folder for the tenant**. The trick is a simplification because Azure RBAC also has a separate root scope written as `/`.",
+      "examTip": "Clue words are **Tenant root group**, **above every subscription**, and **single governance location**. Pick the answer that recognizes a built-in, tenant-wide management group and its inherited effect. A harder version may ask whether a Global Administrator has access by default; the answer is no, they must elevate or be assigned access."
+    },
+    "sources": [
+      {
+        "title": "Organize your resources with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/overview"
+      },
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.7-02",
+    "objective": "D1.3.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You are a Global Administrator in a Microsoft Entra tenant. The organization has lost Azure RBAC access to several subscriptions and management groups. You need to regain the ability to assign Azure roles across the tenant, repair the normal access model, and then remove the emergency access.\n\nWhat should you do first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign yourself the Management Group Contributor role on the Tenant root group."
+      },
+      {
+        "id": "B",
+        "text": "Create a new management group and move the locked subscriptions under it."
+      },
+      {
+        "id": "C",
+        "text": "Enable **Access management for Azure resources** in Microsoft Entra ID properties."
+      },
+      {
+        "id": "D",
+        "text": "Assign yourself the Microsoft Entra User Administrator role."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. You are already an active Global Administrator in the same Microsoft Entra tenant as the affected Azure subscriptions. The goal is an emergency recovery method documented by Microsoft, followed by removal of elevated access.",
+    "sections": {
+      "correctAnswer": "**C. Enable Access management for Azure resources in Microsoft Entra ID properties.** A Global Administrator can use this documented elevation path to receive User Access Administrator at root scope (`/`) and assign Azure RBAC roles across subscriptions and management groups in the tenant.",
+      "technical": "Microsoft Entra roles and Azure resource roles are secured independently. A Global Administrator can manage many directory settings, but that role does not automatically grant Owner or User Access Administrator over Azure subscriptions. Microsoft provides a recovery path for Global Administrators: enable **Access management for Azure resources** or call the elevate-access API. That creates a User Access Administrator role assignment for the signed-in user at Azure RBAC root scope (`/`).\n\nThe normal sequence is: 1. sign in as a Global Administrator; 2. set the access-management toggle to **Yes** or use the documented REST endpoint; 3. assign the required Azure RBAC roles at the correct management group or subscription scopes; 4. remove the elevation by setting the toggle back to **No** or deleting the root-scope User Access Administrator assignment. The elevation grants access-management capability, not a permanent recommendation to administer resources from root scope.",
+      "wrongOptions": {
+        "A": "You cannot assign yourself Management Group Contributor on the Tenant root group until you already have permission to create that role assignment. Misconception: Being Global Administrator automatically lets you assign Azure roles at management group scope. Could be correct after elevation or if another authorized owner assigned that role to you.",
+        "B": "Creating a new management group does not solve missing Azure RBAC role-assignment permissions on existing subscriptions. Misconception: Moving hierarchy objects repairs authorization by itself. Could be correct when you already have the required move permissions and are reorganizing governance, not recovering lost access.",
+        "D": "User Administrator is a Microsoft Entra directory role and does not grant Azure RBAC role assignment authority over Azure subscriptions. Misconception: Any high directory role controls Azure resources. Could be correct for user and group management tasks inside Microsoft Entra ID."
+      },
+      "plainEnglish": "The identity directory and Azure resources have separate permission systems. Being the top directory administrator does not automatically give you every Azure resource key. Microsoft gives Global Administrators an emergency bridge. You turn on **Access management for Azure resources**, which temporarily gives you a resource-access role at the very top. You use it to put the proper owners or access administrators back on the subscriptions, then turn it off so your account does not keep unnecessary broad power.",
+      "analogy": "A hospital has an HR administrator and a facilities key system. HR can manage employee records, but HR does not normally hold every building key. In an emergency, HR can request a temporary master key to restore proper building access, then return it.\n\n| Analogy | Azure reality |\n|---|---|\n| HR administrator | Global Administrator |\n| Building keys | Azure RBAC assignments |\n| Temporary master key | User Access Administrator at `/` |\n| Return the key | Set the toggle back to No or remove the assignment |\n\n**Where the analogy breaks down:** Azure creates auditable role assignments and uses exact scopes; a physical key does not represent RBAC actions or the Microsoft Entra portal toggle.",
+      "jargon": [
+        {
+          "term": "Global Administrator",
+          "definition": "A highly privileged Microsoft Entra role that can use the documented elevation path for Azure resources."
+        },
+        {
+          "term": "Access management for Azure resources",
+          "definition": "A Microsoft Entra ID properties setting that elevates the signed-in Global Administrator to Azure User Access Administrator at root scope."
+        },
+        {
+          "term": "User Access Administrator",
+          "definition": "An Azure role that lets a principal manage access to Azure resources, including creating role assignments."
+        },
+        {
+          "term": "Root scope (`/`)",
+          "definition": "The broadest Azure RBAC scope for the tenant, above management groups and subscriptions."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control for authorizing actions on Azure resources."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly called Azure Active Directory."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that combines a principal, role definition, and scope."
+        }
+      ],
+      "watchOut": "- The elevation is per signed-in Global Administrator, not a tenant-wide switch for every Global Administrator.\n- The role granted is User Access Administrator at `/`, not Owner.\n- Remove elevated access after repairing the normal role assignments.\n- Deactivating a Privileged Identity Management Global Administrator role does not by itself set the toggle back to No.",
+      "productionTip": {
+        "official": "Microsoft documents both the portal toggle and API method and instructs administrators to remove the elevated User Access Administrator assignment after completing required changes at root scope.",
+        "recommendation": "Recommendation: treat this as break-glass activity. Record why it was used, make only the minimum RBAC repairs, verify normal owners exist, and remove the root-scope assignment immediately."
+      },
+      "memoryTrick": "Directory admin is not resource admin until you **elevate**. The shortcut is GA -> elevate -> User Access Administrator at `/` -> remove.",
+      "examTip": "Clue words are **Global Administrator**, **lost access**, **assign Azure roles**, and **remove emergency access**. Choose the documented elevation setting, not another Microsoft Entra role. A harder version might ask for the exact resulting role and scope: User Access Administrator at root scope (`/`)."
+    },
+    "sources": [
+      {
+        "title": "Elevate access to manage all Azure subscriptions and management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/elevate-access-global-admin"
+      },
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      },
+      {
+        "title": "Azure built-in roles for Privileged",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/privileged"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.7-03",
+    "objective": "D1.3.7",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Fabrikam is designing a management group hierarchy for an Azure tenant. The proposed design must stay within documented management group limits.\n\nWhich design is valid?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A hierarchy with six management group levels below the root management group and subscriptions below the sixth level."
+      },
+      {
+        "id": "B",
+        "text": "A hierarchy with seven management group levels below the root management group and subscriptions below the seventh level."
+      },
+      {
+        "id": "C",
+        "text": "A subscription linked directly to two parent management groups for shared governance."
+      },
+      {
+        "id": "D",
+        "text": "A directory containing 12,000 management groups because each subscription has its own branch."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The design uses one Microsoft Entra directory hierarchy and ordinary Azure management groups, not billing profiles or Microsoft Entra administrative units.",
+    "sections": {
+      "correctAnswer": "**A. A hierarchy with six management group levels below the root management group and subscriptions below the sixth level.** Microsoft documents a six-level management group tree depth limit that excludes the root level and subscription level.",
+      "technical": "Azure management groups have scale and hierarchy limits. A single directory can support 10,000 management groups. A management group tree can support up to six levels of depth, and that depth count excludes both the root management group and the subscription level. Each management group and each subscription can have only one parent, although each management group can have many children. All subscriptions and management groups are part of a single hierarchy in the directory.\n\nTherefore, a branch with six ordinary management group levels below the root, followed by subscriptions, fits the depth rule. A seventh management group level below root exceeds the limit. A subscription cannot be under two parents at the same time. A directory design with 12,000 management groups exceeds the documented 10,000 management group limit. These are structural limits, so no RBAC role choice makes an invalid hierarchy valid.",
+      "wrongOptions": {
+        "B": "Seven management group levels below root exceeds the documented six-level tree depth limit. Misconception: The root and subscription levels are counted inside the six, leaving extra room for seven child management groups. Could be correct only if one of those named levels were a subscription or resource group rather than a management group level.",
+        "C": "A subscription can have only one parent management group at a time. Misconception: Shared governance requires multiple parents. Could be correct when using inherited assignments from one parent plus direct subscription assignments, but not two management group parents.",
+        "D": "A single directory supports 10,000 management groups, so 12,000 exceeds the documented limit. Misconception: The limit is per branch or per subscription. Could be correct only after reducing the total management group count to the supported maximum or using a different tenant with its own hierarchy."
+      },
+      "plainEnglish": "Azure lets you build a tree of folders above subscriptions, but the tree has rules. You cannot keep nesting management group folders forever. You get up to six management group layers below the special root group, and then subscriptions can sit below those groups. Also, each subscription has one parent folder, not two. Finally, the whole directory has a maximum number of management group folders, so a design with too many groups is not allowed.",
+      "analogy": "Think of a company org chart. The CEO box is the root and does not count against the six department layers. You can create up to six layers of departments below the CEO before placing employee teams under them.\n\n| Analogy | Azure reality |\n|---|---|\n| CEO box | Root management group |\n| Department layers | Management group levels |\n| Employee team | Subscription |\n| One manager per employee team | One parent per subscription |\n| Company-wide org chart size | 10,000 management group limit |\n\n**Where the analogy breaks down:** Azure hierarchy is for governance, not human reporting, and Azure subscriptions contain resources rather than people.",
+      "jargon": [
+        {
+          "term": "Management group tree",
+          "definition": "The parent-child hierarchy made from management groups and subscriptions in a tenant."
+        },
+        {
+          "term": "Depth",
+          "definition": "The number of nested management group levels in a branch of the hierarchy."
+        },
+        {
+          "term": "Root management group",
+          "definition": "The built-in top management group that is not counted in the six-level depth limit."
+        },
+        {
+          "term": "Subscription level",
+          "definition": "The level where Azure subscriptions sit below management groups; it is not counted in the six-level management group depth limit."
+        },
+        {
+          "term": "Single parent",
+          "definition": "The rule that each management group or subscription can have only one parent management group."
+        },
+        {
+          "term": "Directory",
+          "definition": "The Microsoft Entra tenant that contains one management group hierarchy."
+        }
+      ],
+      "watchOut": "- Six levels means six management group levels excluding root and subscription.\n- The 10,000 limit is per directory, not per branch.\n- A subscription cannot be used as a child of two management groups to inherit from both.\n- Use direct assignments or policy exemptions for exceptions rather than invalid multiple-parent designs.",
+      "productionTip": {
+        "official": "Microsoft documents the 10,000 management group limit, six-level depth limit excluding root and subscription, and the one-parent rule for management groups and subscriptions.",
+        "recommendation": "Recommendation: keep the hierarchy shallower than the maximum where possible. A simpler tree is easier to troubleshoot, especially when RBAC, policy, and custom role definitions inherit through multiple levels."
+      },
+      "memoryTrick": "Remember **10K, 6 deep, 1 parent**. It is a simplification because it does not describe policy exemptions, direct assignments, or custom role constraints.",
+      "examTip": "When a question lists several hierarchy designs, immediately check depth, total count, and parentage. The exam often hides the correct answer in the wording **excluding root and subscription**. A harder version might combine these limits with a subscription move that changes inheritance."
+    },
+    "sources": [
+      {
+        "title": "Organize your resources with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.7-04",
+    "objective": "D1.3.7",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "Contoso wants new Azure subscriptions to land under a management group named `mg-quarantine` instead of the Tenant root group. Contoso also wants to prevent ordinary Microsoft Entra users from creating new management groups unless they have the required Azure RBAC write permission.\n\nWhich two hierarchy settings should you configure at the root management group? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign the Reader role at the Tenant root group."
+      },
+      {
+        "id": "B",
+        "text": "Define `mg-quarantine` as the default management group for new subscriptions."
+      },
+      {
+        "id": "C",
+        "text": "Disable inheritance on the Tenant root group."
+      },
+      {
+        "id": "D",
+        "text": "Enable the setting that requires authorization for creating new management groups."
+      },
+      {
+        "id": "E",
+        "text": "Create a policy exemption for the Tenant root group."
+      }
+    ],
+    "correct": [
+      "B",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. `mg-quarantine` already exists in the same management group hierarchy. You have permissions to read and update hierarchy settings on the root management group.",
+    "sections": {
+      "correctAnswer": "**B. Define `mg-quarantine` as the default management group for new subscriptions** and **D. Enable the setting that requires authorization for creating new management groups.** These are the documented hierarchy settings for controlling where new subscriptions land and whether users need write permissions to create management groups.",
+      "technical": "Management groups include hierarchy settings configured at the root management group. The default-management-group setting changes where new subscriptions are placed when they are added to the tenant. Without this setting, a new subscription becomes a member of the root management group. Setting `mg-quarantine` as the default makes new subscriptions land there so quarantine policies or RBAC assignments can apply before teams move them elsewhere.\n\nThe require-authorization setting controls management group creation. By default, any user can create new management groups in a tenant. When the setting is enabled, creating child management groups requires the `Microsoft.Management/managementGroups/write` operation on the root management group. Configuring these settings requires `Microsoft.Management/managementgroups/settings/read` and `Microsoft.Management/managementgroups/settings/write`, which are exposed in the Hierarchy Settings Administrator role. These settings do not disable normal inheritance; they change landing behavior and creation authorization.",
+      "wrongOptions": {
+        "A": "Reader at the root management group does not change the default landing location for new subscriptions or require write permission for group creation. Misconception: Read access settings control hierarchy behavior. Could be correct when users only need to view the hierarchy.",
+        "C": "There is no general setting to disable inheritance on the Tenant root group for this purpose. Misconception: Governance inheritance must be disabled to protect new subscriptions. Could be correct only in a different service that supports disabling inheritance; management groups use inherited governance by design.",
+        "E": "A policy exemption changes Azure Policy evaluation for selected scopes; it does not control subscription placement or management group creation rights. Misconception: All governance exceptions are configured through Azure Policy. Could be correct when a resource should be tracked as exempt from a specific policy assignment."
+      },
+      "plainEnglish": "Contoso needs two controls. First, it wants new subscriptions to be dropped into a safe waiting area called `mg-quarantine`. That is the default management group setting. Second, it wants to stop just anyone from making new management group folders. That is the require-authorization setting. Giving someone read access or adding a policy exemption does not change where new subscriptions go or who can create new folders.",
+      "analogy": "A company mailroom decides that every new package should go first to an inspection room, and only authorized facilities staff can create new storage rooms.\n\n| Analogy | Azure reality |\n|---|---|\n| Inspection room | Default management group `mg-quarantine` |\n| New package | New subscription |\n| Creating a storage room | Creating a management group |\n| Authorized facilities staff | User with `managementGroups/write` |\n| Mailroom rulebook | Hierarchy settings |\n\n**Where the analogy breaks down:** Azure settings are enforced through Azure Resource Manager permissions and REST endpoints, not by a physical mailroom process.",
+      "jargon": [
+        {
+          "term": "Hierarchy settings",
+          "definition": "Root management group settings that control default subscription placement and management group creation authorization."
+        },
+        {
+          "term": "Default management group",
+          "definition": "The management group where new subscriptions are placed instead of the root management group."
+        },
+        {
+          "term": "Require authorization",
+          "definition": "A hierarchy setting that requires specific write permission before a user can create management groups."
+        },
+        {
+          "term": "Microsoft.Management/managementGroups/write",
+          "definition": "The Azure RBAC operation required to create child management groups when authorization is required."
+        },
+        {
+          "term": "Hierarchy Settings Administrator",
+          "definition": "A built-in role containing permissions to read and update management group hierarchy settings."
+        },
+        {
+          "term": "Tenant root group",
+          "definition": "The default display name of the root management group."
+        },
+        {
+          "term": "Policy exemption",
+          "definition": "An Azure Policy object that marks part of a policy assignment as exempt for a reason while still tracking it."
+        }
+      ],
+      "watchOut": "- Default management group affects new subscriptions, not existing subscriptions already placed elsewhere.\n- Require authorization changes who can create management groups; it does not grant resource access by itself.\n- The settings are configured from the root management group.\n- If the portal button is unavailable, you may be on the wrong group or lack hierarchy settings permissions.",
+      "productionTip": {
+        "official": "Microsoft documents two hierarchy settings: define the default management group for new subscriptions and require authorization for creating new management groups. Updating these settings requires read and write operations on root management group settings.",
+        "recommendation": "Recommendation: use a quarantine or landing-zone default group with baseline policies, then require authorization so the management group tree remains intentional and auditable."
+      },
+      "memoryTrick": "Default group controls **where new subscriptions land**; require authorization controls **who may create groups**. This shortcut does not move existing subscriptions.",
+      "examTip": "Clue words are **new subscriptions land under** and **prevent ordinary users from creating management groups**. Choose the two hierarchy settings, not Reader or Policy options. A harder version may ask for the exact RBAC operation required after require authorization is enabled."
+    },
+    "sources": [
+      {
+        "title": "Protect your resource hierarchy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/how-to/protect-resource-hierarchy"
+      },
+      {
+        "title": "Organize your resources with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/overview"
+      },
+      {
+        "title": "Quickstart: Create a management group with portal",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/create-management-group-portal"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.7-05",
+    "objective": "D1.3.7",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You need to move subscription `Sub1` from management group `mg-old` to management group `mg-new`. Your permissions are listed below.\n\n| Scope | Role assignment |\n|---|---|\n| `Sub1` | Owner directly assigned |\n| `mg-old` | Management Group Contributor |\n| `mg-new` | Management Group Contributor |\n\nNo involved parent is the root management group. Will the move be allowed?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Yes. The direct Owner assignment on `Sub1` and management group write access on both current and target parents satisfy the documented move requirements."
+      },
+      {
+        "id": "B",
+        "text": "Yes, but only if you first assign yourself Reader at the Tenant root group."
+      },
+      {
+        "id": "C",
+        "text": "No. You must be Global Administrator in Microsoft Entra ID for every subscription move."
+      },
+      {
+        "id": "D",
+        "text": "No. Management Group Contributor cannot be used on the current and target parents for a move."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. `Sub1` is enabled and belongs to the same Microsoft Entra tenant as both management groups. The Owner role on `Sub1` is directly assigned, not inherited only from `mg-old`. No custom deny assignments or policy effects block the operation.",
+    "sections": {
+      "correctAnswer": "**A. Yes. The direct Owner assignment on `Sub1` and management group write access on both current and target parents satisfy the documented move requirements.** Moving a subscription requires permissions on the child subscription plus management group write access on the current and target parent management groups.",
+      "technical": "Moving subscriptions and management groups is a permission-sensitive operation because a move changes inherited RBAC and policy. Microsoft documents three permission layers for a move: the child subscription or management group being moved, the target parent management group, and the current parent management group. For a subscription move, the child layer includes management group write, management group subscription write, role assignment write, role assignment delete, and management registration operations. The built-in example for the child layer is Owner. The target and current parent layers require `Microsoft.Management/managementGroups/write`; built-in examples include Owner, Contributor, and Management Group Contributor.\n\nThis scenario satisfies those layers. You have Owner directly on the subscription, so you can move the subscription without losing an inherited-only ownership path. You also have Management Group Contributor on both non-root parents, which provides the management group write access needed for each parent. Root-management-group moves have an exception for parent permissions, but the scenario says neither parent is root, so both parent grants matter.",
+      "wrongOptions": {
+        "B": "Reader at the Tenant root group is not part of the documented move requirement and would not grant write permissions. Misconception: Broad read visibility is needed before hierarchy operations. Could be correct when you only need to view where a subscription sits in the hierarchy.",
+        "C": "Global Administrator is not required for ordinary subscription moves when Azure RBAC permissions are already present. Misconception: Microsoft Entra directory admins perform all tenant-wide Azure governance actions. Could be correct in a lost-access recovery scenario where a Global Administrator must elevate first.",
+        "D": "Management Group Contributor is listed as a built-in example that can provide management group write access on current and target parent management groups. Misconception: Only Owner can move hierarchy objects. Could be correct if the same user lacked required child-subscription permissions or needed to assign access, which Management Group Contributor does not allow."
+      },
+      "plainEnglish": "Moving a subscription is like moving a folder from one cabinet to another. You need authority over the folder being moved, authority over the old cabinet, and authority over the new cabinet. In this case, you own the subscription directly, and you can manage both management group cabinets. That is enough for the move. You do not need a directory super-admin role just because the subscription is moving inside the same Azure hierarchy.",
+      "analogy": "A records manager wants to move a project binder from the old department shelf to the new department shelf. The manager needs control of the binder, permission to remove it from the old shelf, and permission to place it on the new shelf.\n\n| Analogy | Azure reality |\n|---|---|\n| Project binder | Subscription `Sub1` |\n| Old shelf | Current parent `mg-old` |\n| New shelf | Target parent `mg-new` |\n| Binder owner | Direct Owner on the subscription |\n| Shelf manager | Management Group Contributor on each parent |\n\n**Where the analogy breaks down:** Azure also evaluates role-assignment write and delete operations and special root-management-group exceptions that a physical shelf does not show.",
+      "jargon": [
+        {
+          "term": "Subscription move",
+          "definition": "Changing the parent management group of an Azure subscription."
+        },
+        {
+          "term": "Current parent",
+          "definition": "The management group that currently contains the child subscription or management group."
+        },
+        {
+          "term": "Target parent",
+          "definition": "The management group that will contain the child after the move."
+        },
+        {
+          "term": "Owner",
+          "definition": "A privileged Azure role with full management access and role assignment capability at its scope."
+        },
+        {
+          "term": "Management Group Contributor",
+          "definition": "A built-in role for managing management group resources, but not assigning access."
+        },
+        {
+          "term": "Direct assignment",
+          "definition": "A role assignment placed directly at the target scope rather than inherited from a parent."
+        },
+        {
+          "term": "Root management group exception",
+          "definition": "The rule that parent permissions are not required when the current or target parent is the root management group."
+        }
+      ],
+      "watchOut": "- If Owner on the subscription is inherited only from the current management group, move targets can be limited.\n- Parent permissions are not required for the root management group, but non-root parents require write access.\n- Moving a subscription changes inherited RBAC and policy.\n- Management group cache and user tokens can take time to reflect hierarchy changes.",
+      "productionTip": {
+        "official": "Microsoft documents the three move-permission layers and notes that hierarchy changes may take time to appear because Azure Resource Manager caches management group details.",
+        "recommendation": "Recommendation: before moving production subscriptions, inventory inherited RBAC, policy, and custom role definitions. Schedule the move, verify effective access afterward, and avoid relying only on inherited Owner during reorganization."
+      },
+      "memoryTrick": "Move needs **child, old parent, new parent** permissions. The simplification fails when one parent is root or when ownership is inherited only from the current parent.",
+      "examTip": "Look for whether permissions exist on the child, source parent, and target parent. The direct Owner wording matters because inherited-only Owner can restrict move targets. A harder version may ask why a move fails after a custom role definition exists only in the old branch."
+    },
+    "sources": [
+      {
+        "title": "Organize your resources with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/overview"
+      },
+      {
+        "title": "Manage your Azure subscriptions at scale with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/manage"
+      },
+      {
+        "title": "Azure built-in roles for Privileged",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/privileged"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.7-06",
+    "objective": "D1.3.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank has this hierarchy.\n\n| Scope | Assignment |\n|---|---|\n| Management group `mg-prod` | `OpsTeam` has Reader |\n| Subscription `SubA` | Child of `mg-prod` |\n| Resource group `rg-app` | In `SubA` |\n\nA user named Nila is a member of `OpsTeam`. You move `SubA` from `mg-prod` to `mg-sandbox`. There is no Reader assignment for `OpsTeam` on `mg-sandbox` or directly on `SubA`.\n\nAfter Azure finishes reflecting the hierarchy change, what access should you expect Nila to have to `rg-app` from the `mg-prod` assignment?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Nila keeps Reader access forever because inherited assignments are copied to the subscription during a move."
+      },
+      {
+        "id": "B",
+        "text": "Nila keeps Reader access only until the next Azure Policy compliance cycle."
+      },
+      {
+        "id": "C",
+        "text": "Nila no longer receives Reader access from `mg-prod` because the subscription is no longer below that management group."
+      },
+      {
+        "id": "D",
+        "text": "Nila is promoted to Contributor on `rg-app` because management group inheritance recalculates at resource-group scope."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Nila has no other direct or inherited Azure RBAC role assignments, and no deny assignments or role assignment conditions affect the resource group. The hierarchy cache has refreshed after the move.",
+    "sections": {
+      "correctAnswer": "**C. Nila no longer receives Reader access from `mg-prod` because the subscription is no longer below that management group.** Azure RBAC assignments inherit down the current hierarchy; moving a subscription out of a management group removes that inherited path once the change is reflected.",
+      "technical": "Azure RBAC scope is hierarchical: management group, subscription, resource group, and resource. A role assignment at a higher scope applies to child scopes below it. In the original hierarchy, `SubA` is a child of `mg-prod`, so Reader assigned to `OpsTeam` at `mg-prod` applies to resources inside `SubA`, including `rg-app`.\n\nWhen `SubA` moves to `mg-sandbox`, it is no longer a descendant of `mg-prod`. Inherited role assignments are not copied as new direct assignments during a move. Instead, effective access is evaluated from applicable assignments in the current hierarchy. After the move and cache refresh, the `mg-prod` assignment is outside the path to `rg-app`, so Nila no longer receives Reader from that assignment. If `mg-sandbox` has its own assignments, those would start inheriting to `SubA`. Direct assignments on `SubA` or `rg-app` would remain because they are attached to those scopes, not to the former parent.",
+      "wrongOptions": {
+        "A": "Inherited role assignments are not permanently copied as direct subscription assignments during a move. Misconception: Inheritance becomes sticky after access is first granted. Could be correct only if an administrator separately created a direct Reader assignment on `SubA` before or during the move.",
+        "B": "Azure Policy compliance cycles do not control whether an Azure RBAC role assignment from a former parent applies. Misconception: Policy evaluation timing controls RBAC inheritance. Could be correct for when policy compliance state is re-evaluated, not for RBAC inheritance from a moved parent.",
+        "D": "Inheritance does not change the role definition from Reader to Contributor. Misconception: Moving scopes recalculates access to a stronger role. Could be correct only if Nila has a separate Contributor assignment from the new parent or another applicable scope."
+      },
+      "plainEnglish": "Nila's read access came from being under the `mg-prod` folder. When the subscription moves out of that folder, the old folder's read permission no longer reaches it. Azure does not secretly copy the old permission onto the subscription. It simply checks the current path from the resource upward. If the new path does not include `mg-prod`, the `mg-prod` permission no longer helps Nila.",
+      "analogy": "A person has a visitor badge for everything inside the Prod building. If a team moves its office to the Sandbox building, the Prod visitor badge no longer opens that office.\n\n| Analogy | Azure reality |\n|---|---|\n| Prod building | Management group `mg-prod` |\n| Team office | Subscription `SubA` |\n| Office room | Resource group `rg-app` |\n| Visitor badge | Reader role assignment |\n| Move to Sandbox building | Subscription move to `mg-sandbox` |\n\n**Where the analogy breaks down:** Azure authorization is recalculated from role assignments and scopes, and hierarchy changes can take time to appear because of cache and token refresh.",
+      "jargon": [
+        {
+          "term": "Azure RBAC scope",
+          "definition": "The boundary where a role assignment applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Reader",
+          "definition": "A built-in Azure role that allows viewing resources without changing them."
+        },
+        {
+          "term": "Inherited assignment",
+          "definition": "A role assignment from a parent scope that applies to child scopes."
+        },
+        {
+          "term": "Direct assignment",
+          "definition": "A role assignment created directly at the target scope."
+        },
+        {
+          "term": "Effective access",
+          "definition": "The final access a principal has after Azure evaluates applicable role assignments, inheritance, and blockers."
+        },
+        {
+          "term": "Hierarchy cache",
+          "definition": "Cached management group information that can delay visible results of hierarchy changes."
+        }
+      ],
+      "watchOut": "- Moving a subscription can remove inherited access from the old branch and add inherited access from the new branch.\n- Direct subscription and resource-group assignments are not removed just because the parent management group changes.\n- Policy and RBAC both inherit, but their evaluation timings and purposes differ.\n- Allow time for portal and token refresh when validating the move.",
+      "productionTip": {
+        "official": "Microsoft documents role inheritance from management groups and notes that moving a subscription makes it inherit access and policies from the new parent management group.",
+        "recommendation": "Recommendation: before a move, compare old and new inherited assignments and stage direct break-glass access if needed. After the move, validate with Access control (IAM) and activity logs."
+      },
+      "memoryTrick": "Inherited RBAC follows the **current family tree**, not the old address. This simplification assumes no direct assignments, deny assignments, or conditions.",
+      "examTip": "Clue words are **moved from** and **no direct assignment**. Do not treat inherited access as copied. A harder version might include both old and new parent assignments and ask for the combined effective permissions after the move."
+    },
+    "sources": [
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      },
+      {
+        "title": "Organize your resources with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/overview"
+      },
+      {
+        "title": "Manage your Azure subscriptions at scale with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/manage"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.7-07",
+    "objective": "D1.3.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Litware wants to enforce that production subscriptions can create virtual machines only in approved Azure regions. The production subscriptions are spread across three child management groups under `mg-production`. The policy must apply to current and future production subscriptions with minimum administrative effort.\n\nWhere should Litware assign the Azure Policy initiative?",
+    "options": [
+      {
+        "id": "A",
+        "text": "At each virtual machine resource after it is created."
+      },
+      {
+        "id": "B",
+        "text": "At each current production subscription only."
+      },
+      {
+        "id": "C",
+        "text": "At each resource group that contains virtual machines."
+      },
+      {
+        "id": "D",
+        "text": "At the `mg-production` management group."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. All subscriptions that should receive the control are, or will be, descendants of `mg-production`. The policy definition or initiative is available from a definition location that can target this scope.",
+    "sections": {
+      "correctAnswer": "**D. At the `mg-production` management group.** Azure Policy assignments at a management group can apply to child management groups and subscriptions, which covers current and future production subscriptions under that branch with one assignment.",
+      "technical": "Azure Policy uses Azure Resource Manager scope. A policy or initiative assignment includes resources in the assignment scope and can use exclusions or exemptions for exceptions. Assigning at a management group lets the policy evaluate resources in child management groups and child subscriptions. The management group overview specifically uses allowed VM locations as an example of a policy applied at a management group and inherited by descendant subscriptions and resources.\n\nFor this scenario, the common container for the production subscriptions is `mg-production`. Assigning there minimizes administrative effort because current child subscriptions inherit the initiative, and future subscriptions placed under the management group also fall in scope. Assigning at each subscription or resource group would require repeated assignments and would miss future scopes unless automation adds more assignments. Assigning after virtual machines exist is too late for a deny-style location control because policy can evaluate create or update requests at assignment scope.",
+      "wrongOptions": {
+        "A": "Assigning policy at individual virtual machines is too narrow and occurs after the resource exists, which does not meet the goal of controlling VM creation across subscriptions. Misconception: Policy is mainly a per-resource tagging tool. Could be correct for a very specific audit or exemption case targeting one resource.",
+        "B": "Subscription assignments cover only subscriptions selected today and require new assignments when future production subscriptions are added. Misconception: Subscriptions are the highest useful policy scope. Could be correct when each subscription needs a different parameter value or the subscriptions do not share a management group parent.",
+        "C": "Resource group assignments are too narrow and do not naturally cover future resource groups or subscriptions. Misconception: Policy should be assigned close to the resources even when the same rule applies broadly. Could be correct for a policy that must apply only to one application resource group."
+      },
+      "plainEnglish": "Litware has a production folder that contains several smaller folders and subscriptions. If the same rule must apply to everything production-related, put the rule on the production folder. Then the rule flows down to what is inside it. If Litware puts the rule on each subscription or resource group, administrators must remember to repeat the work whenever production grows.",
+      "analogy": "A museum chain wants every gallery in the production wing to follow the same fire-safety rule. It posts the rule at the entrance to the production wing instead of taping a separate copy to every room.\n\n| Analogy | Azure reality |\n|---|---|\n| Production wing | `mg-production` management group |\n| Galleries | Subscriptions and resource groups |\n| Fire-safety rule | Azure Policy initiative |\n| New gallery added later | Future subscription under the management group |\n| One sign at the entrance | One management group assignment |\n\n**Where the analogy breaks down:** Azure Policy has assignment objects, definition locations, effects, exemptions, exclusions, and compliance evaluation cycles; a wall sign does not enforce API requests.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates resources and actions against policy rules for compliance or enforcement."
+        },
+        {
+          "term": "Initiative",
+          "definition": "A collection of Azure Policy definitions grouped and assigned together."
+        },
+        {
+          "term": "Assignment scope",
+          "definition": "The management group, subscription, resource group, or resource where a policy assignment starts applying."
+        },
+        {
+          "term": "Definition location",
+          "definition": "The scope where a policy definition is saved; assignments can target resources within that hierarchy."
+        },
+        {
+          "term": "Exclusion",
+          "definition": "A `notScopes` setting that excludes part of an assignment scope from policy evaluation."
+        },
+        {
+          "term": "Exemption",
+          "definition": "A tracked Azure Policy object explaining why a resource or scope is exempt from an assignment."
+        },
+        {
+          "term": "Deny effect",
+          "definition": "A policy effect that can block non-compliant create or update requests."
+        }
+      ],
+      "watchOut": "- Policy definitions intended for several subscriptions should usually be located at a management group that contains those subscriptions.\n- Azure Policy and Azure RBAC are complementary: RBAC grants actions, while Policy can still block non-compliant resource states or actions.\n- Use exclusions or exemptions carefully; they change what is evaluated or how exceptions are tracked.\n- Only resources at subscription or resource group level are evaluated, even when the assignment is at a management group.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure Policy can be assigned at management group, subscription, resource group, or resource scope, and that management group assignments apply through the descendant resource hierarchy.",
+        "recommendation": "Recommendation: assign broad baseline initiatives at stable management groups, use parameters for allowed regions, test with audit effects first when safe, and document any exemptions with owners and expiry dates."
+      },
+      "memoryTrick": "For the same rule across many subscriptions, assign at their **common parent**. This is a simplification because definition location, exclusions, and exemptions can change the final scope.",
+      "examTip": "Clue words are **current and future subscriptions**, **minimum administrative effort**, and **under `mg-production`**. Those point to a management group assignment. A harder question might ask where the policy definition must be located so that the assignment can target several subscriptions."
+    },
+    "sources": [
+      {
+        "title": "Overview of Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/overview"
+      },
+      {
+        "title": "Understand scope in Azure Policy",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/scope"
+      },
+      {
+        "title": "Organize your resources with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.7-08",
+    "objective": "D1.3.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You create a management group in the Azure portal with the following values.\n\n| Field | Value |\n|---|---|\n| Management Group ID | `corp-platform` |\n| Display name | `Corporate Platform` |\n\nLater, the display name is changed to `Enterprise Platform`. You need to assign a custom role to the management group by using a scope string in automation.\n\nWhich scope should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`/providers/Microsoft.Management/managementGroups/Corporate Platform`"
+      },
+      {
+        "id": "B",
+        "text": "`/providers/Microsoft.Management/managementGroups/corp-platform`"
+      },
+      {
+        "id": "C",
+        "text": "`/providers/Microsoft.Management/managementGroups/Enterprise Platform`"
+      },
+      {
+        "id": "D",
+        "text": "`/subscriptions/corp-platform`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The management group ID is `corp-platform`; only the display name changed. The automation uses Azure Resource Manager scope strings for role definitions or role assignments.",
+    "sections": {
+      "correctAnswer": "**B. `/providers/Microsoft.Management/managementGroups/corp-platform`**. Management group scope strings use the management group ID, not the display name, and the ID is not editable after creation.",
+      "technical": "A management group has a directory-unique management group ID and an optional display name. The portal quickstart states that the Management Group ID is used to submit commands, is not editable after creation, and is used throughout Azure to identify the group. The display name is the friendly name shown in the portal and can be changed at any time. Azure CLI similarly uses `--name` as the unique identifier and `--display-name` for the friendly label.\n\nFor Azure RBAC, the management group scope format is `/providers/Microsoft.Management/managementGroups/{managementGroupName}`; in practice the placeholder is the management group ID, such as `corp-platform`. Display names with spaces are not the resource identifier and should not be used in scope strings. This distinction also matters for custom role `AssignableScopes`, policy definitions, and automation scripts.",
+      "wrongOptions": {
+        "A": "`Corporate Platform` was a display name, not the immutable management group ID. Misconception: The portal label is the API identifier. Could be correct only as a human-friendly label shown in documentation, not as an Azure scope string.",
+        "C": "`Enterprise Platform` is the new display name, but scope strings still use the management group ID. Misconception: Renaming a management group changes its resource path. Could be correct as the current portal display name after the rename.",
+        "D": "Management group scopes do not use the `/subscriptions/{id}` format. Misconception: Every Azure scope begins with a subscription path. Could be correct when assigning a role at an actual Azure subscription scope."
+      },
+      "plainEnglish": "Azure gives a management group two names. One is the permanent ID that computers use. The other is the friendly display name that people see in the portal. You can repaint the sign on the door, but the building's official address stays the same. Scripts and role scopes need the official address, so they must use `corp-platform`, not either display name.",
+      "analogy": "A person has a legal passport number and a nickname. Friends may call them by a nickname, and the nickname can change, but government forms need the passport number.\n\n| Analogy | Azure reality |\n|---|---|\n| Passport number | Management Group ID `corp-platform` |\n| Nickname | Display name |\n| Government form | Automation or role assignment scope |\n| Changing nickname | Renaming the display name |\n| Official address | `/providers/Microsoft.Management/managementGroups/corp-platform` |\n\n**Where the analogy breaks down:** Azure IDs are resource identifiers inside a hierarchy, not personal identity documents, and they are used by APIs rather than border agents.",
+      "jargon": [
+        {
+          "term": "Management Group ID",
+          "definition": "The directory-unique identifier used by Azure commands and resource paths for a management group."
+        },
+        {
+          "term": "Display name",
+          "definition": "A friendly name shown in the Azure portal that can be changed without changing the management group ID."
+        },
+        {
+          "term": "Scope string",
+          "definition": "The Azure Resource Manager path that identifies where a role assignment or role definition applies."
+        },
+        {
+          "term": "Azure Resource Manager",
+          "definition": "The Azure management layer that processes resource operations and uses resource IDs."
+        },
+        {
+          "term": "Custom role",
+          "definition": "An Azure RBAC role definition created by an organization when built-in roles do not fit."
+        },
+        {
+          "term": "AssignableScopes",
+          "definition": "The custom role property that lists the scopes where the role is available for assignment."
+        }
+      ],
+      "watchOut": "- Do not paste display names with spaces into management group scope strings.\n- Renaming a display name does not update automation that correctly uses the ID.\n- The root management group's ID is the Microsoft Entra tenant ID.\n- Typos in management group IDs can cause custom role definitions or assignments to target the wrong path or fail later.",
+      "productionTip": {
+        "official": "Microsoft documents that the Management Group ID is used for commands and is not editable after creation, while the display name can be changed at any time. RBAC scope documentation shows the management group path format.",
+        "recommendation": "Recommendation: choose stable, lowercase management group IDs for automation and keep display names readable for humans. Store IDs in configuration rather than scraping portal labels."
+      },
+      "memoryTrick": "Display name is the **sign**, ID is the **address**. Scripts need the address. This simplification does not cover subscriptions, where display names and subscription IDs have their own rules.",
+      "examTip": "Clue words are **display name changed** and **scope string in automation**. Eliminate options with spaces and the subscription path. A harder version might include a custom role assignable scope and ask whether to use the ID or display name."
+    },
+    "sources": [
+      {
+        "title": "Quickstart: Create a management group with portal",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/create-management-group-portal"
+      },
+      {
+        "title": "Quickstart: Create a management group with the Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/create-management-group-azure-cli"
+      },
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      },
+      {
+        "title": "Azure custom roles - Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.7-09",
+    "objective": "D1.3.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Adatum has a management group named `mg-legacy`. It contains one child management group and two subscriptions. You need to delete `mg-legacy`.\n\nWhat should you do first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Rename `mg-legacy` so the display name does not match any subscription."
+      },
+      {
+        "id": "B",
+        "text": "Assign the Reader role to yourself at `mg-legacy`."
+      },
+      {
+        "id": "C",
+        "text": "Move the child management group and subscriptions out of `mg-legacy`."
+      },
+      {
+        "id": "D",
+        "text": "Delete the Tenant root group, and then delete `mg-legacy`."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. `mg-legacy` is not the root management group. You can obtain the required write permissions to move child items and delete the management group.",
+    "sections": {
+      "correctAnswer": "**C. Move the child management group and subscriptions out of `mg-legacy`.** A management group must have no child management groups or subscriptions under it before it can be deleted.",
+      "technical": "Deleting a non-root management group has two key requirements. First, the management group must be empty: no child management groups and no subscriptions can remain under it. Second, the caller needs write permissions on the management group, such as Owner, Contributor, or Management Group Contributor. The documented delete steps in the portal show that if the Delete button is unavailable, hovering over it shows the reason; a common reason is that the group is not empty or permissions are insufficient.\n\nThe correct first step is to move the child management group and the two subscriptions to another valid parent management group. Moving those children has its own permission requirements on the child, target parent, and current parent, unless the root-management-group exception applies. After `mg-legacy` is empty and you have the required write permission, you can delete it by portal, PowerShell, or Azure CLI. The root management group itself cannot be moved or deleted.\n\nThe safe deletion order is: 1. list the children of `mg-legacy`; 2. choose a valid destination management group for each child; 3. move each subscription or child management group using the documented move process; 4. wait for the hierarchy view and token cache to refresh if the portal still shows old placement; 5. confirm `mg-legacy` has no children; 6. delete `mg-legacy`. The empty requirement is separate from permission evaluation: even an Owner cannot delete a management group that still contains subscriptions or child groups. Conversely, an empty group still cannot be deleted by a user who has only Reader.",
+      "wrongOptions": {
+        "A": "Changing the display name does not remove child subscriptions or child management groups, so deletion would still fail. Misconception: Name conflicts prevent management group deletion. Could be correct when the task is only to make the portal label clearer before a migration. For example, renaming might be useful if `mg-legacy` will remain temporarily as `Archive - pending empty`, but it does not satisfy the empty-container rule.",
+        "B": "Reader lets you view but not delete a management group, and it does not make the group empty. Misconception: Visibility is enough to perform lifecycle operations. Could be correct when an auditor needs only to inspect the management group hierarchy. For example, Reader would be appropriate for a compliance reviewer confirming that no production subscriptions remain under `mg-legacy`, but the reviewer could not perform the delete.",
+        "D": "The root management group cannot be deleted. Misconception: Deleting the root clears the hierarchy below it. Could be correct only as a trick answer to reject; an ordinary child management group must be emptied instead. The supported pattern is to keep the Tenant root group and remove ordinary child groups only after their children have been relocated."
+      },
+      "plainEnglish": "You cannot throw away a folder while it still contains other folders or subscriptions. First move everything inside `mg-legacy` somewhere else. Once it is empty, and once you have a role that allows changes, you can delete the empty management group. Renaming it or giving yourself read-only access does not empty it.",
+      "analogy": "A warehouse manager wants to remove an old storage cabinet. The cabinet still has boxes and a smaller organizer inside it. The manager must move the boxes and organizer first, then remove the empty cabinet.\n\n| Analogy | Azure reality |\n|---|---|\n| Storage cabinet | Management group `mg-legacy` |\n| Boxes | Subscriptions |\n| Smaller organizer | Child management group |\n| Empty cabinet rule | No child groups or subscriptions before deletion |\n| Manager permission | Owner, Contributor, or Management Group Contributor |\n\n**Where the analogy breaks down:** Azure also has formal move permissions, role assignments, and hierarchy caches; a physical cabinet does not inherit RBAC or policy.",
+      "jargon": [
+        {
+          "term": "Delete a management group",
+          "definition": "Remove a non-root management group resource after it has no child subscriptions or child management groups."
+        },
+        {
+          "term": "Child management group",
+          "definition": "A management group directly under another management group."
+        },
+        {
+          "term": "Subscription",
+          "definition": "An Azure billing and management container that can be a child of one management group."
+        },
+        {
+          "term": "Management Group Contributor",
+          "definition": "A built-in role that can create, rename, move, delete, and read management groups but cannot assign access."
+        },
+        {
+          "term": "Owner",
+          "definition": "A built-in Azure role with full management access, including role assignments."
+        },
+        {
+          "term": "Contributor",
+          "definition": "A built-in Azure role that can manage resources but cannot assign Azure RBAC roles."
+        },
+        {
+          "term": "Root management group",
+          "definition": "The built-in top group that cannot be moved or deleted."
+        }
+      ],
+      "watchOut": "- The management group must be empty before deletion.\n- Reader is not enough for deletion; write permissions are needed.\n- Moving children may require permissions on the child, current parent, and target parent.\n- The root management group is a special built-in object and cannot be deleted.\n- Empty means no subscriptions and no child management groups; having no Azure resources directly in the group is not enough because resources live inside subscriptions.\n- If a child subscription has custom role assignments that depend on a role definition available only in the old branch, moving it can fail or require role-definition cleanup first.",
+      "productionTip": {
+        "official": "Microsoft documents that deleting a management group requires no child management groups or subscriptions under it and requires write permissions such as Owner, Contributor, or Management Group Contributor. The same management group documentation also explains that moving children can require permissions on the child, target parent, and current parent before the delete prerequisite can be met.",
+        "recommendation": "Recommendation: before deleting a governance container, export or document inherited policy and RBAC assignments. Move children deliberately so they receive the intended new inherited controls. In production, run a before-and-after check of children and inherited assignments, then keep an activity-log record of who moved each child and when the final delete occurred."
+      },
+      "memoryTrick": "You delete an **empty** management group, not a full one. The shortcut assumes the group is not the root management group and that you have write permission.",
+      "examTip": "Clue words are **contains one child management group and two subscriptions**. The first action is to move children out. A harder version may ask which permissions are required to move those children before the delete step. If the answer choices include both permissions and children, handle prerequisites in order: a non-empty group fails before role choice matters, while an empty group still needs a write-capable role."
+    },
+    "sources": [
+      {
+        "title": "Manage your Azure subscriptions at scale with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/manage"
+      },
+      {
+        "title": "Organize your resources with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/overview"
+      },
+      {
+        "title": "Azure built-in roles for Management and governance",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/management-and-governance"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.7-10",
+    "objective": "D1.3.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A platform team member must be able to create, rename, move, delete, and read management groups in a governance branch. The member must not be able to assign Azure RBAC roles or assign Azure Policy. You need to use the least-privilege built-in role.\n\nWhich role should you assign at the management group scope?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Owner"
+      },
+      {
+        "id": "B",
+        "text": "Contributor"
+      },
+      {
+        "id": "C",
+        "text": "Management Group Reader"
+      },
+      {
+        "id": "D",
+        "text": "Management Group Contributor"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The task is limited to management group lifecycle operations at the assigned scope. The user does not need to manage child Azure resources, assign access, or assign policy.",
+    "sections": {
+      "correctAnswer": "**D. Management Group Contributor**. The management group roles table shows that Management Group Contributor can create, rename, move, delete, and read management groups, but it does not assign access or assign policy.",
+      "technical": "Azure includes management-group-specific built-in roles. The management group access table distinguishes broad roles such as Owner and Contributor from roles intended only for management group scope. Management Group Contributor allows specified lifecycle operations on management groups: create, rename, move, delete, and read. It does not include assigning access or assigning policy. Management Group Reader is read-only at management group scope.\n\nLeast privilege means choosing the narrowest role that includes the required actions and excludes unnecessary privileges. Owner is too broad because it can assign access. Contributor is also broader than the management-group-specific role because it manages resources generally at the scope, though it does not assign Azure RBAC roles. Management Group Reader lacks write operations. Management Group Contributor matches the requested lifecycle actions without access or policy assignment capability.",
+      "wrongOptions": {
+        "A": "Owner can assign access, which the requirement explicitly excludes. Misconception: Owner is acceptable whenever all required actions are included. Could be correct when a user truly needs full management and Azure RBAC role-assignment authority at the scope.",
+        "B": "Contributor is broader than necessary for management-group-only lifecycle work and is not the least-privilege management-group-specific choice. Misconception: Contributor is always the safe alternative to Owner. Could be correct when a user must manage a wider set of Azure resources but must not assign roles.",
+        "C": "Management Group Reader can read but cannot create, rename, move, or delete management groups. Misconception: Reader variants can perform harmless organizational changes. Could be correct for an auditor who only needs to inspect the hierarchy."
+      },
+      "plainEnglish": "The user needs to manage the folders in the Azure governance tree but should not hand out permissions or create policy rules. Owner is too powerful. Reader is too weak. Contributor is broader than needed. Management Group Contributor is built for this exact middle ground: manage management group containers without granting access or policy powers.",
+      "analogy": "A facilities coordinator may rearrange department folders in a filing room but cannot give people keys or write company rules.\n\n| Analogy | Azure reality |\n|---|---|\n| Rearrange department folders | Create, rename, move, delete management groups |\n| Read folder labels | Read management groups |\n| Give people keys | Assign Azure RBAC roles |\n| Write company rules | Assign Azure Policy |\n| Facilities coordinator badge | Management Group Contributor |\n\n**Where the analogy breaks down:** Azure permissions are exact role-definition actions, and some move operations have additional child and parent permission requirements.",
+      "jargon": [
+        {
+          "term": "Management Group Contributor",
+          "definition": "A built-in role for performing management group lifecycle operations at management group scope without assigning access or policy."
+        },
+        {
+          "term": "Management Group Reader",
+          "definition": "A built-in role for reading management groups without write operations."
+        },
+        {
+          "term": "Owner",
+          "definition": "A privileged Azure role that grants full management access including Azure RBAC role assignments."
+        },
+        {
+          "term": "Contributor",
+          "definition": "A built-in Azure role that manages resources but does not assign Azure RBAC roles."
+        },
+        {
+          "term": "Assign access",
+          "definition": "Create or manage Azure RBAC role assignments for users, groups, service principals, or managed identities."
+        },
+        {
+          "term": "Assign policy",
+          "definition": "Create a policy assignment that applies a policy definition or initiative to a scope."
+        },
+        {
+          "term": "Least privilege",
+          "definition": "The practice of granting only the permissions required for the job."
+        }
+      ],
+      "watchOut": "- Management Group Contributor is not the same as Contributor; it is scoped to management group operations.\n- Management Group Reader cannot modify the hierarchy.\n- Owner includes access-assignment capability and is too broad here.\n- Moving subscriptions or management groups can still require permissions on child and parent scopes beyond a simple role name comparison.",
+      "productionTip": {
+        "official": "Microsoft documents supported management group actions by role, including that Management Group Contributor can perform management group lifecycle actions while access and policy assignment columns are not enabled for that role.",
+        "recommendation": "Recommendation: separate hierarchy operators from access administrators and policy administrators. Use groups for each duty so emergency changes and reviews can identify exactly which capability was granted."
+      },
+      "memoryTrick": "**Management Group Contributor manages groups, not grants.** This simplification focuses on the role table and does not replace checking all move prerequisites.",
+      "examTip": "Clue words are **create, rename, move, delete, read** plus **must not assign access or policy**. Choose the management-group-specific contributor role. A harder version may ask you to compare it with User Access Administrator or Resource Policy Contributor."
+    },
+    "sources": [
+      {
+        "title": "Organize your resources with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/overview"
+      },
+      {
+        "title": "Azure built-in roles for Management and governance",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/management-and-governance"
+      },
+      {
+        "title": "Azure built-in roles for Privileged",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/privileged"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.7-11",
+    "objective": "D1.3.7",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You are creating an Azure custom role for platform operators. The role should be available for assignment under a management group whose management group ID is `mg-platform`. The role uses only control-plane `Actions`; it does not use `DataActions`.\n\nWhich two statements are correct for the role definition? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use `/providers/Microsoft.Management/managementGroups/mg-platform` in `AssignableScopes`."
+      },
+      {
+        "id": "B",
+        "text": "Use the management group's display name in `AssignableScopes` so the role follows future renames."
+      },
+      {
+        "id": "C",
+        "text": "Set `AssignableScopes` to `/` so the role is available everywhere in the tenant."
+      },
+      {
+        "id": "D",
+        "text": "A custom role definition can include any number of management groups in `AssignableScopes`."
+      },
+      {
+        "id": "E",
+        "text": "Because the role has no `DataActions`, it can be assigned at the management group scope if its assignable scope permits it."
+      }
+    ],
+    "correct": [
+      "A",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. `mg-platform` is the management group ID, not merely a display name. The custom role contains management-plane permissions in `Actions` only and no data-plane `DataActions`.",
+    "sections": {
+      "correctAnswer": "**A. Use `/providers/Microsoft.Management/managementGroups/mg-platform` in `AssignableScopes`** and **E. Because the role has no `DataActions`, it can be assigned at the management group scope if its assignable scope permits it.** Management group assignable scopes use the management group ID path, and the management group restriction specifically blocks assigning custom roles with `DataActions` at management group scope.",
+      "technical": "Azure custom roles use the `AssignableScopes` property to list where the role definition is available for assignment. Microsoft documents the management group scope path as `/providers/Microsoft.Management/managementGroups/{groupId}` and warns to use the management group ID, not the display name. A role with a management group assignable scope is available for assignment on that management group and below it, subject to custom role limitations.\n\nCustom role limitations matter here. You cannot set `AssignableScopes` to root scope (`/`). You can define only one management group in the assignable scopes of a custom role. Custom roles with `DataActions` cannot be assigned at management group scope. The scenario says the role uses only control-plane `Actions` and no `DataActions`, so that specific limitation does not block a management group assignment. If data-plane permissions were added later, the role could still include a management group in `AssignableScopes` for availability across subscriptions, but it could not be assigned at the management group scope itself.",
+      "wrongOptions": {
+        "B": "Display names are not the identifiers used in management group scope paths and can change. Misconception: Friendly portal names are stable automation identifiers. Could be correct only as a label in human documentation, not in `AssignableScopes`.",
+        "C": "Custom role limits state that `AssignableScopes` cannot be set to root scope (`/`). Misconception: Built-in roles and custom roles have identical root-scope availability rules. Could be correct for some built-in role definitions whose assignable scope is `/`, but not for a custom role you create.",
+        "D": "A custom role can define only one management group in `AssignableScopes`, so saying it can include any number is wrong. Misconception: `AssignableScopes` has no management-group-specific limits. Could be correct only for listing multiple subscription or resource group scopes within the supported custom role limits."
+      },
+      "plainEnglish": "A custom role needs to say where it is allowed to be used. For a management group, that place is written as a path that includes the management group ID. You cannot use the friendly display name, and you cannot use `/` as the assignable scope for a custom role. Also, roles that include data-access permissions have a special restriction at management group scope. This role has only management actions, so that restriction does not block assigning it at `mg-platform`.",
+      "analogy": "A company creates a special job badge for the platform department. The badge application must list the department's official code, not the nickname on the office door. The badge can be used in that department and its teams, but the company will not issue a custom badge that says it is valid everywhere with no boundary.\n\n| Analogy | Azure reality |\n|---|---|\n| Job badge | Custom role |\n| Official department code | Management group ID `mg-platform` |\n| Badge validity area | `AssignableScopes` |\n| Door nickname | Display name |\n| Data-room key | `DataActions` permissions |\n\n**Where the analogy breaks down:** Azure role definitions have exact JSON properties, action strings, and data-plane restrictions that are more precise than a physical badge policy.",
+      "jargon": [
+        {
+          "term": "Custom role",
+          "definition": "An Azure RBAC role definition created by an organization when built-in roles do not match required permissions."
+        },
+        {
+          "term": "AssignableScopes",
+          "definition": "A custom role property listing the scopes where the role is available for assignment."
+        },
+        {
+          "term": "Control plane",
+          "definition": "Azure management operations such as reading or changing resource configuration."
+        },
+        {
+          "term": "Actions",
+          "definition": "The role definition property for allowed control-plane operations."
+        },
+        {
+          "term": "DataActions",
+          "definition": "The role definition property for allowed data-plane operations on data inside a resource."
+        },
+        {
+          "term": "Management group ID",
+          "definition": "The stable identifier used in management group resource paths and automation."
+        },
+        {
+          "term": "Root scope (`/`)",
+          "definition": "The broadest Azure RBAC scope; custom role `AssignableScopes` cannot be set to this value."
+        }
+      ],
+      "watchOut": "- Use management group ID, not display name, in assignable scopes.\n- Custom roles cannot use `/` as an assignable scope.\n- A custom role can include only one management group in `AssignableScopes`.\n- Custom roles with `DataActions` cannot be assigned at management group scope, even though they can be useful for subscriptions below a management group.",
+      "productionTip": {
+        "official": "Microsoft documents the management group assignable-scope path, the one-management-group limitation for custom roles, the prohibition on root-scope assignable scopes, and the restriction on assigning custom roles with DataActions at management group scope.",
+        "recommendation": "Recommendation: start from a built-in role, remove unneeded permissions, avoid wildcards where possible, test in a non-production subscription, and document why management group availability is required."
+      },
+      "memoryTrick": "Custom role at management group: **ID path, no root `/`, watch DataActions**. This is a simplification because assignable scopes, assignment scopes, and role-definition locations are separate concepts.",
+      "examTip": "Clue words are **custom role**, **management group ID**, and **no DataActions**. Eliminate display names and root `/`. A harder version may add data-plane permissions and ask why the role cannot be assigned directly at management group scope."
+    },
+    "sources": [
+      {
+        "title": "Azure custom roles - Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles"
+      },
+      {
+        "title": "Organize your resources with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/overview"
+      },
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      },
+      {
+        "title": "Quickstart: Create a management group with portal",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/create-management-group-portal"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

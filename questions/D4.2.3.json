@@ -1,0 +1,403 @@
+[
+  {
+    "id": "D4.2.3-01",
+    "objective": "D4.2.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a virtual network named vnet-admin that will host a new Azure Bastion deployment for production virtual machines. The network team created four candidate subnets.\n\n| Subnet name | Prefix | Contains other resources? |\n|---|---:|---|\n| BastionSubnet | /26 | No |\n| AzureBastionSubnet | /27 | No |\n| AzureBastionSubnet | /26 | No |\n| AzureBastionSubnet | /26 | Yes, a test network appliance NIC |\n\nYou plan to deploy the Basic SKU or higher, not the Developer SKU.\n\nWhich subnet should you use for Azure Bastion?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`BastionSubnet` with a `/26` prefix and no other resources"
+      },
+      {
+        "id": "B",
+        "text": "`AzureBastionSubnet` with a `/27` prefix and no other resources"
+      },
+      {
+        "id": "C",
+        "text": "`AzureBastionSubnet` with a `/26` prefix and no other resources"
+      },
+      {
+        "id": "D",
+        "text": "`AzureBastionSubnet` with a `/26` prefix that also contains the test network appliance NIC"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The deployment is a dedicated Azure Bastion host using Basic, Standard, or Premium. The question does not use the Bastion Developer offering, and the subnet is being created for a new deployment after the documented /26 requirement took effect.",
+    "sections": {
+      "correctAnswer": "**C. `AzureBastionSubnet` with a `/26` prefix and no other resources**. Dedicated Azure Bastion deployments require a subnet with the exact name `AzureBastionSubnet`, the subnet must be /26 or larger, and it cannot contain other resources.",
+      "technical": "Azure Bastion has a special subnet requirement for dedicated deployments. Microsoft documents that, for any SKU except the Bastion Developer offering, Bastion requires a dedicated subnet named AzureBastionSubnet. For Bastion resources deployed on or after November 2, 2021, the minimum subnet size is /26 or larger, such as /25 or /24. The subnet must be in the same virtual network and resource group as the bastion host, and it cannot contain other resources.\n\nEvaluate the candidates in order. First check the name. BastionSubnet fails even though it has a /26 prefix, because the required name is exactly AzureBastionSubnet. Next check size. AzureBastionSubnet with /27 fails for a new dedicated deployment because it is smaller than /26. Older pre-November 2021 /27 deployments can continue to work, but that exception does not apply to this new exam scenario. Then check exclusivity. AzureBastionSubnet with /26 plus another resource fails because the subnet is reserved only for Bastion. The valid choice is therefore the empty /26 subnet with the exact name.\n\nDeveloper SKU is the major exception. The SKU comparison states that Developer does not require AzureBastionSubnet, does not provide a dedicated bastion host, and is aimed at dev/test with one VM connection at a time. Because this scenario explicitly says Basic or higher for production VMs, you must use the dedicated-host subnet rules. The /26 size also protects future growth because Standard and Premium support host scaling, and Microsoft recommends /26 or larger for scale units.",
+      "wrongOptions": {
+        "A": "The prefix size is acceptable, but the subnet name is wrong. Misconception: any descriptive subnet name works if the prefix is large enough. Could be correct for an unrelated application subnet, not for Basic, Standard, or Premium Bastion placement.",
+        "B": "The name is correct, but /27 is too small for a new dedicated deployment. Misconception: older /27 examples remain valid for new deployments. Could be correct only for an existing pre-November 2021 deployment that already works.",
+        "D": "The name and size are right, but the subnet cannot contain other resources. Misconception: Bastion can share a utility subnet with appliances. Could be correct for ordinary VM NICs in an application subnet, not the reserved Bastion subnet."
+      },
+      "plainEnglish": "Azure Bastion needs its own reserved parking space in the virtual network. For normal paid Bastion hosts, that space must have one exact label: AzureBastionSubnet. It must also be large enough, at least /26 for new deployments, and nothing else is supposed to park there. If the name is almost right, it still fails. If the space is too small, it fails. If another resource is already in that space, it fails.\n\nDeveloper SKU is different because it uses a shared service style and does not require the special subnet, but the question says Basic or higher. That wording is a clue to use the dedicated Bastion host requirements rather than the lightweight Developer exception.",
+      "analogy": "A city reserves a fire lane for emergency vehicles. The sign must say exactly Fire Lane, the lane must be wide enough for the truck, and delivery vans cannot park in it. A lane called Emergency Area is not the officially marked lane, and a narrow lane is unsafe even if the sign is correct.\n\n| Analogy | Azure reality |\n|---|---|\n| Fire lane sign | Required subnet name AzureBastionSubnet |\n| Lane width | /26 or larger prefix |\n| No delivery vans | No other resources in the subnet |\n| Fire truck stationing | Dedicated Basic, Standard, or Premium Bastion deployment |\n| Small temporary kiosk | Developer SKU exception |\n\n**Where the analogy breaks down:** Azure validates resource configuration rather than sending inspectors to a street. CIDR prefix size controls IP address capacity, not physical width.",
+      "jargon": [
+        {
+          "term": "Azure Bastion",
+          "definition": "A managed Azure service that provides RDP and SSH access to VMs over private IP addresses without exposing the VMs directly to the public internet."
+        },
+        {
+          "term": "`AzureBastionSubnet`",
+          "definition": "The exact subnet name required for dedicated Azure Bastion deployments using Basic, Standard, or Premium SKUs."
+        },
+        {
+          "term": "CIDR prefix",
+          "definition": "Slash notation describing a subnet size, such as /26, where a smaller suffix number means a larger address range."
+        },
+        {
+          "term": "Basic SKU",
+          "definition": "A paid dedicated Azure Bastion tier with fixed capacity and fewer advanced features than Standard."
+        },
+        {
+          "term": "Standard SKU",
+          "definition": "A Bastion tier that adds advanced capabilities such as native client, IP-based connection, shareable links, and host scaling."
+        },
+        {
+          "term": "Premium SKU",
+          "definition": "The Bastion tier that includes Standard capabilities plus features such as session recording and private-only deployment."
+        },
+        {
+          "term": "Developer SKU",
+          "definition": "A free dev/test Bastion tier using a shared resource and supporting one VM connection at a time."
+        },
+        {
+          "term": "Dedicated bastion host",
+          "definition": "A Bastion deployment placed in your virtual network rather than the shared Developer experience."
+        }
+      ],
+      "watchOut": "- The subnet name must be exact.\n- /26 or larger means /26, /25, /24, and so on; /27 is smaller.\n- Do not put other resources in AzureBastionSubnet.\n- Developer has different requirements and is not suitable for production workloads.\n- Sizing too small can block later scaling plans.",
+      "productionTip": {
+        "official": "Microsoft documents the subnet name, /26 minimum for newer deployments, same virtual network and resource group requirement, and the rule that the subnet cannot contain other resources. The SKU comparison distinguishes Developer from dedicated deployments.",
+        "recommendation": "Create `AzureBastionSubnet` early in hub networks with at least /26. Treat the subnet as platform infrastructure and prevent accidental placement of other resources through policy or code review."
+      },
+      "memoryTrick": "For dedicated Bastion, remember **Name, Size, Empty**: exact `AzureBastionSubnet`, /26 or larger, no other resources. This does not apply to the Developer SKU shared model.",
+      "examTip": "The clues are **Basic SKU or higher** and **new deployment**. Eliminate the near-name, the /27, and the shared subnet. A harder version may offer Developer SKU; then the special subnet is not required, but features are limited."
+    },
+    "sources": [
+      {
+        "title": "About Azure Bastion configuration settings",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+      },
+      {
+        "title": "Choose the right Azure Bastion SKU to meet your needs",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-sku-comparison"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.2.3-02",
+    "objective": "D4.2.3",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You are selecting an Azure Bastion SKU for a hub virtual network. The operations team lists the following requirements:\n\n| Requirement | Needed now? |\n|---|---|\n| Browser-based RDP and SSH to Azure VMs | Yes |\n| Native client connections through Azure CLI | Yes |\n| Connect by specifying a target IP address | Yes |\n| Generate shareable links for selected VM access | Yes |\n| Increase instance count for more concurrent sessions | Yes |\n| Session recording | No |\n| Private-only Bastion deployment with no public IP on the Bastion host | No |\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Standard SKU satisfies the listed feature requirements without requiring Premium."
+      },
+      {
+        "id": "B",
+        "text": "Basic SKU satisfies the requirements because it provides a dedicated host with two instances."
+      },
+      {
+        "id": "C",
+        "text": "Developer SKU satisfies the requirements if the hub virtual network is in a supported region."
+      },
+      {
+        "id": "D",
+        "text": "Premium SKU would also satisfy the requirements, but its extra features are not required by the table."
+      },
+      {
+        "id": "E",
+        "text": "Native client and IP-based connections require only the VM to have a public IP address, not a Bastion SKU change."
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The organization wants a dedicated Bastion deployment in a supported Azure region. Cost should be minimized while meeting the stated features, and the listed requirements do not include compliance session recording or private-only Bastion.",
+    "sections": {
+      "correctAnswer": "**A. Standard SKU satisfies the listed feature requirements without requiring Premium** and **D. Premium SKU would also satisfy the requirements, but its extra features are not required by the table**. Microsoft lists native client, IP-based connection, shareable link, and host scaling under Standard and Premium, while Premium adds capabilities such as session recording and private-only deployment.",
+      "technical": "Azure Bastion has four SKU tiers: Developer, Basic, Standard, and Premium. The right choice depends on both the connection method and the feature controls needed. The Microsoft SKU comparison and configuration pages show a clear break between Basic and Standard for the requirements in this scenario.\n\nBrowser-based RDP and SSH are available across Bastion SKUs, subject to the Developer SKU's lab-oriented limits. Native client through Azure CLI is supported by Standard or Premium. IP-based connection also requires Standard or higher and must be enabled. Shareable links require Standard or higher. Host scaling, which lets you change instance count for more concurrent connections, requires Standard or higher and supports configurable instance counts in Standard and Premium. Session recording is Premium only. Private-only deployment is also Premium only.\n\nBecause the table requires several Standard-or-higher features but explicitly does not require Premium-only features, Standard is the minimum SKU that satisfies the stated needs. Premium would also work because it includes the Standard feature set and adds Premium capabilities, but it is not necessary to meet the table as written.\n\nBasic is insufficient even though it is a dedicated host and creates two instances. Microsoft positions Basic for fixed capacity without advanced features such as native client, shareable links, IP-based connections, custom ports, file transfer, or host scaling. Developer is also insufficient: it is free for dev/test, uses a shared resource, supports only one VM connection at a time, and lacks the advanced methods in the table. Giving target VMs public IP addresses is unrelated; Bastion reaches targets over private IP and the SKU gates the Bastion features.",
+      "wrongOptions": {
+        "B": "Basic provides a dedicated deployment with fixed capacity, but it does not include the advanced features requested. Misconception: two fixed instances mean Basic is equivalent to scaled Standard. Could be correct when only browser-based portal access and Basic capacity are needed.",
+        "C": "Developer is for dev/test, uses a shared model, and lacks the peering, concurrency, and advanced connection features required here. Misconception: regional availability is the only Developer limitation. Could be correct for a low-cost lab needing one same-VNet VM connection at a time.",
+        "E": "The feature requirements are controlled by the Bastion SKU and settings, not by adding public IP addresses to target VMs. Misconception: native client and IP-based access are normal public RDP or SSH. Could be correct only for direct internet access designs outside Bastion."
+      },
+      "plainEnglish": "The team wants several advanced ways to use Bastion: connect with a local client, connect by typing an IP address, create shareable links, and increase the number of Bastion instances. Those capabilities start at Standard. Premium can do them too, but Premium's special reasons are different: recording sessions and running Bastion in a private-only form. Since the team says it does not need those Premium-only items, Standard is the least expensive SKU that fits the list.\n\nBasic is a real dedicated Bastion tier, but it is simpler. It can be enough when administrators only need the regular browser experience and fixed capacity. Developer is lighter and intended for development and testing. The table is asking for production-style advanced operations, so the answer moves up to Standard but does not force Premium.",
+      "analogy": "Choosing a Bastion SKU is like choosing a service vehicle. A basic van carries the team to the site. A standard command vehicle adds radio links, extra seating capacity, and remote coordination tools. A premium command vehicle adds audit cameras and a sealed private operating mode.\n\n| Analogy | Azure reality |\n|---|---|\n| Basic van | Basic SKU fixed dedicated host |\n| Standard command vehicle | Standard SKU with advanced connection features and host scaling |\n| Audit cameras | Premium session recording |\n| Sealed private mode | Premium private-only deployment |\n| Small training cart | Developer SKU for dev/test |\n\n**Where the analogy breaks down:** Azure SKU features are exact product capabilities, not optional equipment bolted onto any tier. Some features also require enabling settings after the SKU supports them.",
+      "jargon": [
+        {
+          "term": "SKU",
+          "definition": "A product tier that controls available capabilities, scale, and pricing for an Azure service."
+        },
+        {
+          "term": "Native client",
+          "definition": "A local SSH or RDP client connection through Azure Bastion using Azure CLI commands instead of only the browser portal session."
+        },
+        {
+          "term": "IP-based connection",
+          "definition": "A Bastion feature that connects to a target by IP address rather than selecting an Azure VM resource."
+        },
+        {
+          "term": "Shareable link",
+          "definition": "A Bastion feature that creates a link allowing a user to access a target resource without navigating through the Azure portal."
+        },
+        {
+          "term": "Host scaling",
+          "definition": "Changing the number of Bastion instances, also called scale units, to support more concurrent connections."
+        },
+        {
+          "term": "Session recording",
+          "definition": "A Premium Bastion capability that records graphical RDP or SSH sessions and stores recordings in a storage account."
+        },
+        {
+          "term": "Private-only deployment",
+          "definition": "A Premium Bastion deployment mode that has no public IP address on the Bastion host."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft command-line tool used by native client Bastion commands such as `az network bastion ssh`, `rdp`, or `tunnel`."
+        },
+        {
+          "term": "Instance",
+          "definition": "A managed Bastion scale unit through which users connect to target VMs."
+        }
+      ],
+      "watchOut": "- Standard is the first tier for native client, IP-based connection, shareable links, and host scaling.\n- Premium includes Standard features but is chosen for session recording or private-only deployment.\n- Basic has fixed capacity, not configurable host scaling.\n- Developer is not a production substitute.\n- Some features still need to be enabled after the SKU supports them.",
+      "productionTip": {
+        "official": "Microsoft SKU comparison lists which Bastion tier supports each feature. Separate configuration articles confirm that native client, IP-based connection, and host scaling require Standard or higher, while session recording and private-only deployment require Premium.",
+        "recommendation": "Choose the lowest SKU that satisfies mandatory controls, then document why higher-cost capabilities are or are not required. Revisit Premium when compliance requires session capture or private-only deployment."
+      },
+      "memoryTrick": "Think **Standard starts advanced access; Premium preserves proof**. This is a simplification because Premium also supports private-only deployment, and current SKU tables should always be checked.",
+      "examTip": "The question lists four Standard-or-higher features and says Premium-only features are not needed. Pick Standard as the minimum and Premium as also capable. A harder version may add session recording; that single requirement moves the minimum to Premium."
+    },
+    "sources": [
+      {
+        "title": "Choose the right Azure Bastion SKU to meet your needs",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-sku-comparison"
+      },
+      {
+        "title": "About Azure Bastion configuration settings",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+      },
+      {
+        "title": "About Azure Bastion IP-based connection",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/connect-ip-address"
+      },
+      {
+        "title": "Configure Bastion for native client connections",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/native-client"
+      },
+      {
+        "title": "Configure host scaling",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/configure-host-scaling"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.2.3-03",
+    "objective": "D4.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a virtual network named vnet-secure that contains three Azure VMs. Each VM has a private IP address only; none of the VMs has a public IP address. Administrators currently use a jump box with a public IP address to reach the VMs by RDP or SSH.\n\nYou plan to remove the jump box and deploy Azure Bastion. The security team asks whether every target VM must receive its own public IP address or an agent before administrators can connect through Bastion.\n\nWhat should you tell the security team?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign a public IP address to each target VM because Bastion tunnels through the VM's public endpoint."
+      },
+      {
+        "id": "B",
+        "text": "Install the Bastion agent on each VM so the Bastion host can relay browser sessions."
+      },
+      {
+        "id": "C",
+        "text": "Keep the VMs without public IP addresses; Bastion connects to target VMs over their private IP addresses and is agentless."
+      },
+      {
+        "id": "D",
+        "text": "Move the VMs into `AzureBastionSubnet` so Bastion can share their subnet and manage private connections."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The target VMs are reachable in the same virtual network as the Bastion host or by a supported peering design. Required Azure RBAC permissions and guest OS credentials or authentication rights are granted separately from network addressing.",
+    "sections": {
+      "correctAnswer": "**C. Keep the VMs without public IP addresses; Bastion connects to target VMs over their private IP addresses and is agentless.** Microsoft states that target VMs do not need public IP addresses for Bastion connections and that no agent or additional software is required on the VM for Bastion access.",
+      "technical": "Azure Bastion is designed to reduce direct exposure of management ports. In a regular Bastion deployment, administrators connect to the Bastion service, and Bastion opens the RDP or SSH session to the target VM over the VM private IP address within the virtual network. The FAQ explicitly states that you do not need a public IP on the Azure VM being accessed, and that Bastion is agentless and does not require extra software on the browser or target VM.\n\nThe requirements in this scenario should be separated. The Bastion host itself has deployment requirements. Dedicated Basic and Standard deployments require AzureBastionSubnet and normally a Standard static public IP on the Bastion host. Premium can also use private-only deployment when that is the design. The target VMs remain normal workload VMs in their application subnets; they do not move into AzureBastionSubnet. The target VMs need private IP connectivity from Bastion for the relevant protocol, such as RDP or SSH. Users need Azure permissions to the VM, NIC, Bastion resource, and virtual network as documented, plus operating system sign-in rights where applicable.\n\nAdding public IP addresses to every VM would work against the reason for using Bastion. Installing an imaginary Bastion agent is also wrong because the service does not require one. The remaining work is to design least-privilege access, ensure the private path is permitted by NSGs, and remove the old jump box once testing confirms administrators can reach the machines through Bastion.",
+      "wrongOptions": {
+        "A": "Bastion does not need target VMs to expose public endpoints. It connects to their private IP addresses. Misconception: remote administration must land directly on each VM public IP. Could be correct for direct RDP or SSH without Bastion, although that design is usually less secure.",
+        "B": "There is no Bastion agent to install on target VMs for standard RDP or SSH access. Misconception: managed remote access always requires guest software. Could be correct for unrelated management products that do require agents.",
+        "D": "`AzureBastionSubnet` is reserved for the Bastion resource and cannot contain other resources. Misconception: VMs must be colocated in the special subnet to be reachable. Could be correct only for placing the Bastion host infrastructure itself."
+      },
+      "plainEnglish": "Bastion is a managed front door for administration. Administrators go to Bastion, and Bastion talks privately to the VM. The VM does not need its own public internet address, and you do not need to install a special Bastion program inside the VM. That is the main security benefit: the VM RDP or SSH port does not have to be published to the internet.\n\nThe target VMs should stay where they are, in their normal subnets. The special AzureBastionSubnet is for the Bastion service itself, not for the servers you manage. You still need the right user permissions and passwords, SSH keys, or identity-based sign-in, but those are authentication requirements rather than public IP or agent requirements.",
+      "analogy": "A secure office replaces individual outside doors with one staffed reception desk. Employees do not add street doors to every private office, and offices do not install a special receptionist inside each room. Visitors enter through reception, then are escorted through internal hallways.\n\n| Analogy | Azure reality |\n|---|---|\n| Staffed reception desk | Azure Bastion host |\n| Private offices | Target virtual machines |\n| Internal hallways | Private IP connectivity in the VNet or supported peering |\n| No street door per office | No public IP required on each VM |\n| No receptionist in each room | No Bastion agent required on target VMs |\n\n**Where the analogy breaks down:** Azure still enforces exact RBAC, NSG, protocol, and guest OS authentication checks. A receptionist analogy cannot show the differences between portal, native client, and IP-based connection modes.",
+      "jargon": [
+        {
+          "term": "Public IP address",
+          "definition": "An Azure IP address that can be reached from the internet when routing and security controls permit it."
+        },
+        {
+          "term": "Private IP address",
+          "definition": "An address used inside a virtual network or connected private network, not directly reachable from the public internet by itself."
+        },
+        {
+          "term": "Jump box",
+          "definition": "A management VM used as an intermediate remote access point to reach other systems."
+        },
+        {
+          "term": "RDP",
+          "definition": "Remote Desktop Protocol, commonly used to sign in to Windows VMs graphically."
+        },
+        {
+          "term": "SSH",
+          "definition": "Secure Shell, commonly used to administer Linux VMs through encrypted command-line sessions."
+        },
+        {
+          "term": "Agentless",
+          "definition": "A service design that does not require installing extra software inside the target VM for the described connection feature."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, which grants management-plane permissions such as Reader access to Azure resources."
+        },
+        {
+          "term": "Guest OS credentials",
+          "definition": "The username, password, SSH key, or identity permission needed inside the operating system after the network path is available."
+        }
+      ],
+      "watchOut": "- Target VM public IPs are not required, but regular Bastion host deployment may require its own public IP.\n- Bastion does not bypass guest operating system authentication.\n- NSGs can still block private RDP or SSH.\n- Do not place target workloads in AzureBastionSubnet.\n- Remove a jump box only after Bastion access is tested.",
+      "productionTip": {
+        "official": "Microsoft FAQ states that VMs accessed through Bastion do not need public IP addresses and that Bastion is agentless. The same FAQ lists Reader role requirements on the VM, NIC, Bastion resource, and virtual network.",
+        "recommendation": "After deploying Bastion, remove public management IPs from workloads, tighten NSG rules around RDP and SSH, and grant Azure access through groups rather than individual assignments."
+      },
+      "memoryTrick": "Bastion means **public at the gate, private to the VM** for regular deployments. This is a simplification because Premium private-only Bastion removes the public IP from the Bastion host too, and authentication still happens separately.",
+      "examTip": "The clues are **target VMs need no public IP** and **agentless**. Rule out answers that expose every VM or invent software installation. A harder version may ask about the Bastion host public IP; that is a different resource from the target VM public IP."
+    },
+    "sources": [
+      {
+        "title": "Azure Bastion FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-faq"
+      },
+      {
+        "title": "About Azure Bastion configuration settings",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/configuration-settings"
+      },
+      {
+        "title": "Choose the right Azure Bastion SKU to meet your needs",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-sku-comparison"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.2.3-04",
+    "objective": "D4.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a hub-and-spoke network topology in Azure. The hub virtual network vnet-hub contains an Azure Bastion host using the Basic SKU. Spoke virtual network vnet-app is peered with vnet-hub. vnet-app contains a VM named vm-app2 that has only a private IP address.\n\nA junior administrator proposes deploying a separate Bastion host in vnet-app because they believe a Bastion host can connect only to VMs in the same virtual network.\n\nYou need to minimize cost and administrative effort while still allowing portal-based RDP or SSH to vm-app2.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use the existing Bastion host in `vnet-hub` to connect to `vm-app2` across the peered virtual network."
+      },
+      {
+        "id": "B",
+        "text": "Deploy a Developer SKU Bastion host in `vnet-app` because Developer supports peered virtual networks at no hourly charge."
+      },
+      {
+        "id": "C",
+        "text": "Assign a public IP address to `vm-app2` and connect directly because Basic Bastion cannot reach peered networks."
+      },
+      {
+        "id": "D",
+        "text": "Move `vm-app2` into `AzureBastionSubnet` in the hub virtual network so the existing Bastion host can manage it."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. Virtual network peering is correctly configured within a single Microsoft Entra tenant, required Reader permissions are assigned on the VM, NIC, Bastion resource, and virtual networks, and the requirement is ordinary portal-based RDP or SSH rather than IP-based connection to a non-Azure address.",
+    "sections": {
+      "correctAnswer": "**A. Use the existing Bastion host in `vnet-hub` to connect to `vm-app2` across the peered virtual network.** Microsoft documents that Azure Bastion can be used with virtual network peering and that a Bastion host in one virtual network can connect to VMs in peered virtual networks. Basic, Standard, and Premium support peered virtual networks; Developer does not.",
+      "technical": "Azure Bastion deployment is per virtual network, not per subscription, account, or virtual machine. The VNet peering architecture documentation states that when virtual network peering is configured, you do not have to deploy Azure Bastion in each peered VNet. A Bastion host in one virtual network can be used to connect to VMs deployed in a peered virtual network, centralizing the deployment in a hub-and-spoke model.\n\nThe SKU table matters. It lists support for connecting to VMs in peered virtual networks as No for Developer and Yes for Basic, Standard, and Premium. Therefore, the existing Basic Bastion host in the hub can satisfy portal-based RDP or SSH to an Azure VM in a peered spoke, assuming the rest of the permissions and network configuration are correct. There is no requirement for the target VM to have a public IP address; Bastion reaches target VMs over private IP. There is also no need to move the target VM into AzureBastionSubnet, which is reserved for the Bastion resource itself.\n\nThe implementation order is practical. Confirm vnet-hub and vnet-app are peered. Confirm the administrator has Reader access to the target VM, its NIC, the Bastion resource, and the virtual networks involved. Leave vm-app2 in its workload subnet with only a private IP address. Then use the hub Bastion option in the VM Connect experience to start portal RDP or SSH. If the requirement changed to IP-based connection by manually specifying an address, Standard or higher would be needed. That is a different feature from normal resource-based access to an Azure VM in a peered VNet.",
+      "wrongOptions": {
+        "B": "Developer does not support connecting to VMs in peered virtual networks and is intended for dev/test with one VM connection at a time. Misconception: free regional availability makes Developer a central hub option. Could be correct for a single same-VNet lab VM in a supported region.",
+        "C": "Basic Bastion supports peered virtual networks according to the SKU comparison. Adding a public IP to the target VM increases exposure and is not needed. Misconception: peering support starts only at Standard. Could be correct only for a direct public administration design outside Bastion.",
+        "D": "Target VMs should not be placed in `AzureBastionSubnet`; that subnet is reserved for Bastion. Misconception: being in the special subnet makes a VM manageable. Could be correct only for locating the Bastion infrastructure itself."
+      },
+      "plainEnglish": "A hub Bastion host can serve more than just VMs inside the hub, as long as the other virtual networks are peered and the SKU supports peering. Basic supports this. The spoke VM can stay in the spoke network and keep only its private IP address. That saves money because you avoid deploying another Bastion host, and it reduces work because administrators can use the central hub Bastion.\n\nThe junior administrator is mixing up two different ideas. Bastion is deployed into one virtual network, but that does not always limit it to only that virtual network. Peering lets virtual networks communicate privately, and Bastion is documented to work with that design. Developer SKU is not the workaround because it lacks peering support.",
+      "analogy": "A campus has one central security shuttle garage in the main building. If the walkways between buildings are connected, the same shuttle can take staff to offices in nearby buildings. You do not need to build a garage in every building.\n\n| Analogy | Azure reality |\n|---|---|\n| Main building garage | Bastion host in the hub VNet |\n| Nearby office building | VM in the spoke VNet |\n| Connected walkways | Virtual network peering |\n| One shuttle fleet | Centralized Bastion deployment |\n| No street-facing office door | Target VM without public IP |\n\n**Where the analogy breaks down:** Real Bastion access still depends on Azure RBAC and supported SKU features. Network peering is not just a walkway; it is an Azure configuration with routing and tenant limitations.",
+      "jargon": [
+        {
+          "term": "Hub-and-spoke topology",
+          "definition": "A network design with a central hub virtual network connected to multiple spoke virtual networks for shared services and workload isolation."
+        },
+        {
+          "term": "Virtual network peering",
+          "definition": "An Azure feature that connects virtual networks so resources can communicate over Microsoft backbone using private addresses."
+        },
+        {
+          "term": "Portal-based connection",
+          "definition": "Using the Azure portal browser experience to start an RDP or SSH session through Bastion."
+        },
+        {
+          "term": "Microsoft Entra tenant",
+          "definition": "The identity directory boundary used by Azure subscriptions and access control; formerly called an Azure AD tenant."
+        },
+        {
+          "term": "Reader role",
+          "definition": "An Azure RBAC role that allows viewing resource properties and is part of the documented permissions needed to start Bastion connections."
+        },
+        {
+          "term": "Spoke virtual network",
+          "definition": "A workload virtual network connected to a central hub in a hub-and-spoke architecture."
+        },
+        {
+          "term": "Hub virtual network",
+          "definition": "The central virtual network that commonly hosts shared services such as firewalls, Bastion, or DNS."
+        },
+        {
+          "term": "IP-based connection",
+          "definition": "A separate Bastion feature, requiring Standard or higher, where the user specifies a target IP address rather than selecting an Azure VM resource."
+        }
+      ],
+      "watchOut": "- Basic supports VMs in peered VNets; Developer does not.\n- A separate Bastion host per spoke is not required merely because the VM is in another peered VNet.\n- The target VM still does not need a public IP address.\n- Standard or higher is needed for IP-based connection, which is different from normal resource-based portal access.\n- Permissions must include the VM, NIC, Bastion resource, and virtual networks.",
+      "productionTip": {
+        "official": "Microsoft peering architecture documentation says a Bastion host in one VNet can connect to VMs in peered VNets and can be centralized in hub-and-spoke or full-mesh topologies. The FAQ and SKU table document required read access and peering support by SKU.",
+        "recommendation": "Centralize Bastion in a hub when it matches your administrative model, then standardize RBAC groups for each spoke. Use separate Bastion hosts only when isolation, tenancy, regional design, or ownership justifies the cost."
+      },
+      "memoryTrick": "For peered Azure VMs, **Basic can bridge; Developer cannot**. This is a simplification because advanced features such as IP-based connection, native client, or host scaling still require Standard or higher.",
+      "examTip": "The words **peered virtual network** and **Basic SKU** are the key. Do not assume Standard is required for every cross-network scenario. A harder question may replace normal VM selection with IP-based connection; then the minimum becomes Standard."
+    },
+    "sources": [
+      {
+        "title": "VNet peering and Azure Bastion architecture",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/vnet-peering"
+      },
+      {
+        "title": "Choose the right Azure Bastion SKU to meet your needs",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-sku-comparison"
+      },
+      {
+        "title": "Azure Bastion FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/bastion-faq"
+      },
+      {
+        "title": "About Azure Bastion IP-based connection",
+        "url": "https://learn.microsoft.com/en-us/azure/bastion/connect-ip-address"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

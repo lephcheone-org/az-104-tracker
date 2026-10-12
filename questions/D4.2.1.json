@@ -1,0 +1,375 @@
+[
+  {
+    "id": "D4.2.1-01",
+    "objective": "D4.2.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a virtual network named `vnet-prod` with two subnets: `snet-app` and `snet-db`. A network security group named `nsg-db` is associated with `snet-db`. You discover that application VMs in `snet-app` can connect to database VMs in `snet-db` on TCP port 1433 even though no custom allow rule was created for the database subnet. You must block that traffic from all sources except a future application security group that is not ready yet.\n\nWhat should you configure now?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create an inbound deny rule in `nsg-db` for TCP port 1433 with a priority such as 200"
+      },
+      {
+        "id": "B",
+        "text": "Delete the `AllowVNetInBound` default rule from `nsg-db`"
+      },
+      {
+        "id": "C",
+        "text": "Create an inbound allow rule at priority 65500 for TCP port 1433"
+      },
+      {
+        "id": "D",
+        "text": "Create a rule with priority 50 so it is evaluated before all default rules"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The subnet-level NSG is the intended current control point. The answer blocks new inbound connections to the database port; existing connections may remain because NSGs are stateful as documented by Microsoft.",
+    "sections": {
+      "correctAnswer": "**A. Create an inbound deny rule in `nsg-db` for TCP port 1433 with a priority such as 200**. Custom NSG rules use priorities from 100 through 4096, lower numbers are evaluated first, and a custom deny can override the default `AllowVNetInBound` rule because default rules have much lower precedence.",
+      "technical": "Every NSG contains default security rules. For inbound traffic, `AllowVNetInBound` has priority 65000 and allows traffic from the `VirtualNetwork` service tag to the `VirtualNetwork` service tag. The final inbound default rule, `DenyAllInbound`, has priority 65500. You cannot remove default rules, but Microsoft documents that you can override them by creating rules with higher priorities. Higher priority in this context means a lower priority number.\n\nA custom inbound deny rule at priority 200 is valid because the permitted custom range is 100 through 4096. It is evaluated long before default rules at priorities 65000 and 65500. Once traffic matches an NSG rule, processing stops. Therefore a rule that denies TCP destination port 1433 from the relevant source range or `*` to the database destination blocks new SQL connections before the default virtual-network allow rule can match.\n\n| Rule idea | Exam result |\n|---|---|\n| Priority 200 deny TCP 1433 | Valid custom rule that overrides the default allow |\n| Delete `AllowVNetInBound` | Not possible because default rules cannot be removed |\n| Priority 65500 allow | Conflicts with default priority space and would not be the right override |\n| Priority 50 | Invalid because custom priorities start at 100 |\n\nNSGs are stateful. If a flow has already been established, removing or changing the rule that allowed it does not necessarily interrupt the current connection; new connections are evaluated against the new rule set. That stateful behavior is important in production but does not change the correct configuration for future inbound database attempts.",
+      "wrongOptions": {
+        "B": "Azure creates default rules in every NSG, and Microsoft states that you cannot remove them. The supported method is to override defaults with higher-priority custom rules. Misconception: Default NSG rules are editable like administrator-created rules. Could be correct only as a conceptual desire to remove broad access, not as an actual Azure configuration step.",
+        "C": "A priority of 65500 is the priority of the default `DenyAllInbound` rule, not an appropriate custom allow rule, and the requirement is to block port 1433 for now. Misconception: Higher numeric priority means the rule runs earlier. Could be correct when discussing the built-in default deny rule itself, not when creating a custom override.",
+        "D": "Priority 50 is outside the documented NSG rule priority range of 100 through 4096. Misconception: Any smaller number is better because lower numbers are processed first. Could be correct for another product with a different priority range, but not for Azure NSG custom rules."
+      },
+      "plainEnglish": "Azure gives each NSG some built-in rules. One of them lets machines in the virtual network talk to other machines in the virtual network. That is why the app subnet can reach the database subnet even though you did not create an allow rule. You cannot delete that built-in rule, so you create your own rule with a normal custom priority number, such as 200. Azure reads lower priority numbers first. Your deny rule is read before the built-in allow, so new database connections are stopped.",
+      "analogy": "A building has a default policy that employees may walk between departments. The database room needs a temporary lockout. You cannot rip the default employee handbook page out, so you post a specific earlier instruction on the database door: no entry for this room until a named team list is ready.\n\n| Analogy | Azure reality |\n|---|---|\n| Employee handbook | Default NSG rules |\n| Earlier door notice | Custom rule with lower priority number |\n| Database room | `snet-db` and TCP 1433 destination |\n| Default movement allowed | `AllowVNetInBound` |\n| Temporary lockout | Inbound deny rule |\n\n**Where the analogy breaks down:** Azure evaluates numeric priorities and five-tuple traffic matches, not paper signs. A real guard might interrupt a person already inside, while NSG rule updates affect new connections rather than forcibly ending every established flow.",
+      "jargon": [
+        {
+          "term": "Network security group (NSG)",
+          "definition": "An Azure resource containing security rules that allow or deny inbound or outbound traffic."
+        },
+        {
+          "term": "Inbound rule",
+          "definition": "An NSG rule evaluated for traffic entering a subnet or network interface."
+        },
+        {
+          "term": "Priority",
+          "definition": "The number from 100 through 4096 on a custom NSG rule; lower numbers are processed before higher numbers."
+        },
+        {
+          "term": "Default security rule",
+          "definition": "A built-in NSG rule created by Azure, such as `AllowVNetInBound` or `DenyAllInbound`."
+        },
+        {
+          "term": "VirtualNetwork service tag",
+          "definition": "A tag representing virtual-network address spaces and related ranges used in Azure's default NSG rules."
+        },
+        {
+          "term": "TCP port 1433",
+          "definition": "The standard port commonly used by Microsoft SQL Server; the scenario uses it as the database listener port."
+        },
+        {
+          "term": "Stateful",
+          "definition": "A firewall behavior where return traffic or existing flow records are handled without requiring a separate matching rule for every packet."
+        },
+        {
+          "term": "Application security group",
+          "definition": "An Azure grouping of NICs that can be referenced in NSG rules as a source or destination."
+        }
+      ],
+      "watchOut": "- Custom NSG priorities are 100 through 4096; values like 50 are invalid.\n- Lower priority numbers are evaluated before higher priority numbers.\n- Default NSG rules cannot be deleted, but custom rules can override them.\n- NSG changes apply to new connections; existing connections can continue because flow records are stateful.",
+      "productionTip": {
+        "official": "Microsoft documents the NSG rule priority range as 100 to 4096, with lower numbers processed first and processing stopping after a match. It also documents default inbound rules including `AllowVNetInBound` at priority 65000 and `DenyAllInbound` at priority 65500, and states that default rules cannot be removed but can be overridden by higher-priority custom rules.",
+        "recommendation": "Reserve priority gaps such as 100, 200, 300, and 400 for major policy groups so emergency rules can be inserted without renumbering everything. For a temporary database block, use a clear rule name and an expiration ticket. Later, replace the broad deny with a more precise ASG-based allow followed by a deny that reflects the production access model."
+      },
+      "memoryTrick": "NSG priorities work like exam ranks: **100 beats 65000**. The shortcut is safe for ordering, but remember that the rule must still match the correct direction, protocol, source, destination, and port.",
+      "examTip": "Clue words are **no custom allow**, **can connect within the virtual network**, and **block except future ASG**. The hidden rule is the default `AllowVNetInBound`. Choose a valid custom deny priority before the default rules. Reject answers that delete defaults, use priorities outside 100-4096, or misunderstand that lower numbers have higher priority."
+    },
+    "sources": [
+      {
+        "title": "Azure network security groups overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.2.1-02",
+    "objective": "D4.2.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a VM named `vm-web-02` in subnet `snet-web`. NSG `nsg-web-subnet` is associated with the subnet and allows inbound TCP port 443 from the internet. NSG `nsg-web-nic` is associated with the VM network interface and has a custom inbound deny rule for TCP port 443 from the internet. A tester cannot reach the web site over HTTPS.\n\nYou need to explain why the traffic is blocked and identify the smallest NSG change that allows new inbound HTTPS connections.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Remove or override the deny rule in `nsg-web-nic`, because inbound traffic must be allowed by both the subnet NSG and the NIC NSG"
+      },
+      {
+        "id": "B",
+        "text": "Change only `nsg-web-subnet`, because subnet NSGs are ignored when a NIC NSG exists"
+      },
+      {
+        "id": "C",
+        "text": "Create an outbound allow rule on `nsg-web-subnet`, because HTTPS responses require a separate outbound rule"
+      },
+      {
+        "id": "D",
+        "text": "Move the allow rule to priority 65500, because default rules are evaluated before custom rules"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The VM uses a standard public IP or other internet-facing path that requires NSG permission. The question is about new inbound HTTPS connections; established flow behavior is outside the required fix.",
+    "sections": {
+      "correctAnswer": "**A. Remove or override the deny rule in `nsg-web-nic`, because inbound traffic must be allowed by both the subnet NSG and the NIC NSG**. For inbound traffic, Azure processes the subnet NSG first and then the NIC NSG when both are present; a deny at either scope blocks the new connection.",
+      "technical": "NSGs can be associated with subnets and with individual network interfaces. Microsoft documents a specific order for inbound traffic: Azure first processes the rules in the NSG associated with the subnet, if one exists, and then processes the rules in the NSG associated with the network interface, if one exists. In the example from the documentation, both scopes must allow TCP port 80 from the internet for the VM to receive the traffic. The same principle applies to TCP port 443 in this question.\n\nThe subnet NSG is already allowing inbound 443, so traffic reaches the next evaluation point. The NIC NSG then denies inbound 443. Since NSG rule processing stops when a rule matches, the deny wins at the NIC scope for new connections. The smallest change is to remove that NIC deny, narrow it so it no longer matches the required internet HTTPS traffic, or create a higher-priority allow rule at the NIC level if policy permits. Simply adding more allows at the subnet level cannot overcome a later NIC-level deny for inbound traffic.\n\nOutbound response traffic is not the missing piece. NSGs are stateful, so when inbound traffic is allowed over a port, Azure does not require a separate outbound rule just for response traffic over that connection. A separate outbound rule would matter for traffic initiated by the VM, not for the return side of an allowed inbound HTTPS session.\n\nMicrosoft recommends avoiding NSGs at both subnet and NIC levels when possible because overlapping scopes can create confusing conflicts. That is a recommendation, not an Azure prohibition. The exam distinction is that if both scopes are used, both must permit the inbound flow.",
+      "wrongOptions": {
+        "B": "Subnet NSGs are not ignored when a NIC NSG exists. For inbound traffic, the subnet NSG is evaluated first and the NIC NSG is evaluated afterward. Misconception: The more specific NIC association replaces the subnet association. Could be correct in a product where the most specific firewall policy overrides the parent, but Azure NSG processing uses both scopes when both are associated.",
+        "C": "For an allowed inbound connection, NSG statefulness means a separate outbound rule is not required for the response traffic. The current failure occurs before that because the NIC-level inbound rule denies TCP 443. Misconception: Firewalls always need mirror-image rules for replies. Could be correct when the VM initiates a new outbound connection that must be allowed by outbound rules.",
+        "D": "Custom rules are processed before default rules when they have valid priorities, and 65500 is the priority of the default `DenyAllInbound` rule, not the place to put a custom allow. Misconception: Higher numeric priority executes first. Could be correct only as a reference to the built-in final inbound deny, not as a custom fix."
+      },
+      "plainEnglish": "The request passes through two checkpoints. The subnet checkpoint says HTTPS is allowed, but the VM's own network-card checkpoint says HTTPS is denied. Getting permission from the first checkpoint is not enough. The request must pass both. To fix the web site, change the rule on the network-card NSG that is blocking port 443. You do not need a special response rule just because the browser expects a reply; Azure NSGs remember allowed connections and let the return packets come back.",
+      "analogy": "A visitor reaches a campus gate and a building door. The campus gate allows visitors for the web event, but the building door has a sign saying no web-event visitors may enter. The visitor stops at the building door even though the campus gate was friendly.\n\n| Analogy | Azure reality |\n|---|---|\n| Campus gate | Subnet NSG |\n| Building door | NIC NSG |\n| Web-event visitor | Internet HTTPS traffic |\n| Friendly first checkpoint | Subnet rule allowing TCP 443 |\n| Blocking second checkpoint | NIC rule denying TCP 443 |\n\n**Where the analogy breaks down:** Azure does not negotiate with guards. It evaluates rule tables in a defined order, creates flow records for allowed connections, and applies stateful behavior to connection responses.",
+      "jargon": [
+        {
+          "term": "Subnet NSG",
+          "definition": "An NSG associated with a subnet, affecting supported resources in that subnet."
+        },
+        {
+          "term": "NIC NSG",
+          "definition": "An NSG associated directly with a network interface attached to a VM."
+        },
+        {
+          "term": "Inbound traffic",
+          "definition": "Traffic entering a subnet or network interface from another source."
+        },
+        {
+          "term": "HTTPS",
+          "definition": "Encrypted web traffic typically using TCP port 443."
+        },
+        {
+          "term": "Internet service tag",
+          "definition": "An Azure tag used in NSG rules to represent public internet address space, with platform-specific semantics."
+        },
+        {
+          "term": "Stateful filtering",
+          "definition": "Firewall processing that remembers established flows so reply traffic does not require a separate mirror rule."
+        },
+        {
+          "term": "Override",
+          "definition": "Creating or changing a rule so that a higher-priority match produces the desired allow or deny result."
+        },
+        {
+          "term": "Standard public IP",
+          "definition": "An Azure public IP SKU that is secure by default and requires explicit NSG permission for inbound traffic to a VM path."
+        }
+      ],
+      "watchOut": "- Inbound order with both scopes is subnet NSG first, then NIC NSG.\n- A deny at either scope blocks the new inbound connection.\n- NSGs are stateful, so response traffic for an allowed connection does not require a separate outbound mirror rule.\n- Using both subnet and NIC NSGs is supported, but Microsoft recommends avoiding the overlap when possible to reduce confusing conflicts.",
+      "productionTip": {
+        "official": "Microsoft documents that inbound traffic is processed first by a subnet NSG and then by a NIC NSG when both exist, and that both must allow the traffic for it to reach the VM. It also documents that NSGs are stateful and that response traffic for an allowed flow does not need a separate opposite-direction rule.",
+        "recommendation": "Prefer one NSG association layer for most workloads, usually subnet-level rules combined with ASGs for application roles. If a NIC NSG is required for an exception, name the rule with the exception owner and review date. Use IP flow verify before and after the change so the ticket records the exact rule that blocked and then allowed TCP 443."
+      },
+      "memoryTrick": "Inbound with two NSGs is **subnet then NIC, and either can nix**. This is a memory aid; it does not replace checking the exact direction and priority of the matching rule.",
+      "examTip": "Clue words are **subnet NSG allows** and **NIC NSG denies**. The exam is testing association scope and processing order, not public IP routing. Choose the answer that fixes the later NIC-level inbound deny. Reject mirror outbound rules unless the VM is initiating a separate outbound connection."
+    },
+    "sources": [
+      {
+        "title": "How Network Security Groups Filter Network Traffic in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works"
+      },
+      {
+        "title": "Azure network security groups overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.2.1-03",
+    "objective": "D4.2.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You are simplifying NSG rules for a subnet that hosts build agents. The agents must reach Azure Storage over HTTPS and must also reach three partner CIDR ranges on ports 443 and 8443. The security team wants fewer rules but does not want administrators to manually maintain Azure Storage public IP ranges.\n\nWhich two statements should guide the design? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use a Storage service tag in the destination of the Azure Storage rule so Microsoft-managed Storage prefixes are represented by the tag"
+      },
+      {
+        "id": "B",
+        "text": "Use one augmented security rule for the partner CIDR ranges and destination ports if the rule stays within documented limits"
+      },
+      {
+        "id": "C",
+        "text": "Put `Storage`, `AzureCloud`, and all partner CIDR ranges into one destination field because augmented rules allow multiple service tags"
+      },
+      {
+        "id": "D",
+        "text": "Replace the Storage service tag with an application security group because ASGs represent Microsoft service IP prefixes"
+      },
+      {
+        "id": "E",
+        "text": "Use priority 4097 for the broad partner rule so all default outbound rules are evaluated first"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The build agents use public Azure Storage endpoints and partner public CIDR ranges. Private endpoints, service endpoints, Azure Firewall application rules, and DNS-based filtering are outside this NSG-focused question.",
+    "sections": {
+      "correctAnswer": "**A. Use a Storage service tag in the destination of the Azure Storage rule so Microsoft-managed Storage prefixes are represented by the tag** and **B. Use one augmented security rule for the partner CIDR ranges and destination ports if the rule stays within documented limits**. Service tags reduce manual maintenance of Azure service IP prefixes, while augmented rules can combine multiple explicit IP ranges and ports in one NSG rule.",
+      "technical": "A service tag represents a group of IP address prefixes from a given Azure service. Microsoft manages the prefixes and updates the tag as addresses change. That is exactly why a Storage service tag is preferable to copying Azure Storage IP ranges into NSG rules. Service tags can be used in network security group rules in place of specific IP addresses when creating access controls for Azure services. Some tags also support regional variants, but the exam question only requires the design principle: do not manually track Storage IP ranges when a suitable service tag exists.\n\nAugmented security rules solve a different problem. Microsoft documents that augmented rules allow multiple individual IP addresses and ranges in a single rule, and port ranges or comma-separated ports can reduce the number of security rules. Therefore one outbound partner rule can include the three partner CIDR ranges and ports `443,8443` if it stays within Azure limits and uses a supported Resource Manager NSG.\n\nThe important limitation is not to overgeneralize augmented rules. The NSG overview states that you cannot specify multiple service tags or application groups in a single rule. A rule can use a service tag, a CIDR, or an ASG according to the supported source and destination properties, but it cannot pack several service tags and ASGs into one field just because augmented rules exist.\n\n| Requirement | Best NSG construct |\n|---|---|\n| Azure Storage prefixes change over time | Storage service tag |\n| Three static partner networks | Augmented rule with multiple CIDRs |\n| Two destination ports | Comma-separated ports or ranges in the rule |\n| Multiple service tags in one field | Not supported |\n\nPriority still follows the standard range. Custom rules must use priorities from 100 through 4096, so 4097 is invalid regardless of design intent.",
+      "wrongOptions": {
+        "C": "Augmented rules can combine multiple explicit IP addresses and ranges, and multiple ports, but Microsoft says you cannot specify multiple service tags or application groups in a single rule. Misconception: Augmented means every field can contain every object type multiple times. Could be correct if the destinations were only explicit partner IP addresses and ranges, not multiple service tags.",
+        "D": "Application security groups group network interfaces for application structure; they do not represent Microsoft-managed public IP prefixes for Azure services. Misconception: ASGs are the replacement for all address lists. Could be correct when the destination is a set of VMs in the same virtual network represented by NIC membership, not Azure Storage public endpoints.",
+        "E": "Priority 4097 is outside the documented custom NSG priority range of 100 through 4096. Misconception: A priority just beyond the maximum can intentionally run after default outbound allows. Could be correct never for a custom NSG rule; use a valid priority and understand that default rules occupy much higher numeric priorities such as 65001 and 65500."
+      },
+      "plainEnglish": "Use the right shortcut for each kind of destination. Azure Storage is an Azure service whose public address list can change. A service tag is Microsoft's maintained label for that changing list, so administrators do not need to paste new Storage addresses into rules. The partners are different: they gave you fixed CIDR ranges and two ports. An augmented rule can group those explicit ranges and ports into one readable rule. Do not mix several service tags into one destination field, because that is not what augmented rules allow.",
+      "analogy": "A mailroom has two mailing lists. One is a Microsoft-maintained list of all Storage offices that changes over time. The other is a fixed list of three partner buildings and two delivery doors. Use the maintained directory for Microsoft offices and one combined route card for the fixed partners.\n\n| Analogy | Azure reality |\n|---|---|\n| Microsoft-maintained directory | Storage service tag |\n| Three partner buildings | Three CIDR ranges |\n| Delivery doors 443 and 8443 | Destination ports |\n| Combined partner route card | Augmented NSG rule |\n| Trying to staple many directories together | Unsupported multiple service tags in one rule field |\n\n**Where the analogy breaks down:** Service tags are IP-prefix abstractions used by Azure control planes, not human address books, and a service tag alone does not authenticate the service or inspect application data.",
+      "jargon": [
+        {
+          "term": "Service tag",
+          "definition": "A Microsoft-managed label representing IP address prefixes for an Azure service or platform grouping."
+        },
+        {
+          "term": "Storage service tag",
+          "definition": "A service tag representing Azure Storage IP ranges, with Microsoft maintaining the prefixes behind the tag."
+        },
+        {
+          "term": "Augmented security rule",
+          "definition": "An NSG rule style that can include multiple explicit IP addresses or ranges and multiple ports in one rule."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation for an IP range, such as `203.0.113.0/24`."
+        },
+        {
+          "term": "Destination port",
+          "definition": "The port on the endpoint that traffic is trying to reach."
+        },
+        {
+          "term": "AzureCloud",
+          "definition": "A broad service tag for Azure datacenter public IP addresses; it can be too broad for least-privilege designs."
+        },
+        {
+          "term": "Application security group",
+          "definition": "A grouping of Azure VM network interfaces used in NSG rules, not a managed list of Azure service public IP prefixes."
+        },
+        {
+          "term": "Resource Manager",
+          "definition": "Azure's modern deployment model; augmented rules are available for NSGs created through this model."
+        }
+      ],
+      "watchOut": "- A service tag simplifies IP-prefix maintenance; it does not prove user identity or encrypt traffic.\n- Augmented rules can combine explicit IP ranges and ports, but not multiple service tags or multiple ASGs in one rule field.\n- Custom NSG priorities still must be between 100 and 4096.\n- A very broad tag such as `AzureCloud` may include other Azure customers' addresses, so use the narrowest suitable tag.",
+      "productionTip": {
+        "official": "Microsoft documents that service tags represent groups of IP prefixes for Azure services and are automatically updated as addresses change. The NSG overview documents augmented security rules for combining multiple explicit IP addresses, ranges, and ports, while also stating that multiple service tags or application groups cannot be specified in a single rule.",
+        "recommendation": "Use service tags for Azure service destinations only when IP-based access is an acceptable control for the service, and pair them with service-native security such as private endpoints or identity when required. For partners, keep CIDR ownership documented and review augmented rules whenever a partner adds a range so the single convenient rule does not become an unreviewed dumping ground."
+      },
+      "memoryTrick": "**Tags for Azure services, augmented for explicit lists**. It is a useful exam shortcut, but it fails if a service tag is too broad for the security goal or if the explicit list exceeds documented rule limits.",
+      "examTip": "Clue words are **Azure Storage public IP ranges** and **three partner CIDR ranges on two ports**. Pick the service tag for the Microsoft-maintained service list and augmented rules for the fixed partner ranges. Reject any option that claims augmented rules allow multiple service tags, or that ASGs represent Azure service IP prefixes."
+    },
+    "sources": [
+      {
+        "title": "Azure network security groups overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+      },
+      {
+        "title": "Azure service tags overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview"
+      },
+      {
+        "title": "Azure Application Security Groups Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.2.1-04",
+    "objective": "D4.2.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You manage two virtual networks, `vnet-east` and `vnet-west`, that are peered. `vnet-east` contains web VMs whose NICs are members of an application security group named `asg-web-east`. `vnet-west` contains database VMs. An engineer wants one NSG rule with source `asg-web-east` and destination `asg-db-west` to allow TCP port 1433 across the peering. When they try to design the rule, they are unsure whether the ASG model supports it.\n\nWhat should you tell the engineer?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The rule is supported because virtual network peering makes both virtual networks count as one ASG boundary"
+      },
+      {
+        "id": "B",
+        "text": "The rule is not supported as designed; ASGs used as source and destination in one NSG rule must have their NICs in the same virtual network"
+      },
+      {
+        "id": "C",
+        "text": "The rule is supported only if the NSG is associated with both peered virtual networks"
+      },
+      {
+        "id": "D",
+        "text": "The rule is not needed because the `AzureLoadBalancer` default rule allows SQL traffic between peered virtual networks"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The question is specifically about using application security groups as NSG rule source and destination. Other designs, such as CIDR-based rules, separate ASGs per virtual network, or private endpoint patterns, may be valid but are not the ASG rule described.",
+    "sections": {
+      "correctAnswer": "**B. The rule is not supported as designed; ASGs used as source and destination in one NSG rule must have their NICs in the same virtual network**. Microsoft documents that all NICs assigned to an ASG must be in the same virtual network as the first NIC in that ASG, and that if a source and destination ASG are specified in one NSG rule, the NICs in both ASGs must exist in the same virtual network.",
+      "technical": "Application security groups let you write NSG rules in terms of application roles instead of individual IP addresses. A NIC can be a member of application security groups, and NSG rules that reference an ASG apply to NICs that are members of that ASG. This is useful for patterns such as `AsgLogic` to `AsgDb` inside one virtual network, because adding or removing VM NICs from the ASG changes which instances the rule applies to without editing IP addresses in the rule.\n\nThe boundary is the important exam detail. Microsoft documents two constraints. First, all network interfaces assigned to an ASG must exist in the same virtual network as the first network interface assigned to that ASG. You cannot add NICs from different virtual networks into one ASG. Second, if you specify an ASG as the source and another ASG as the destination in an NSG rule, the NICs in both application security groups must exist in the same virtual network. The documentation gives the cross-VNet example: if `AsgLogic` contains NICs from `VNet1` and `AsgDb` contains NICs from `VNet2`, it is impossible to assign them as source and destination in the same NSG rule.\n\nPeering does not erase that ASG constraint. Virtual network peering can provide network connectivity, but it does not merge the two virtual networks into one ASG membership boundary. The engineer can still secure the flow, but the design needs a different representation, such as explicit CIDR prefixes, separate rules scoped to each VNet's resources, or an architecture that places the ASG-referenced NICs in the same VNet.\n\nThe default NSG rules are not the solution. `AzureLoadBalancer` is an inbound default source tag for Azure load balancer probes and related load balancer traffic, not a blanket permission for SQL between peered VMs.",
+      "wrongOptions": {
+        "A": "Virtual network peering provides connectivity between virtual networks, but it does not make ASG membership and ASG-to-ASG rule constraints span the peered VNets as one boundary. Misconception: Peering merges virtual networks for every control-plane feature. Could be correct only in the loose sense that peering can allow IP connectivity, not ASG source-destination membership in one rule.",
+        "C": "An NSG is associated with subnets or network interfaces, not with two virtual networks as a shared peering-wide rule object. Associating NSGs more broadly would not remove the same-VNet ASG constraint. Misconception: Placing the NSG higher in the topology changes ASG eligibility. Could be correct when discussing applying similar rules to multiple subnets by associating an NSG where supported, but not for one ASG-to-ASG cross-VNet rule.",
+        "D": "The `AzureLoadBalancer` default inbound rule is for the AzureLoadBalancer service tag, not for general SQL traffic between peered virtual networks. Misconception: Default rules allow all Azure infrastructure traffic between all Azure resources. Could be correct when allowing Azure load balancer health probes that match that default rule."
+      },
+      "plainEnglish": "An application security group is a label for network cards inside one virtual network boundary. You can say, `web group may talk to database group,` when both groups' NICs are in the same virtual network. Peering is like building a road between two neighborhoods; it does not turn the neighborhoods into one neighborhood for ASG labels. For VMs in different peered virtual networks, use another NSG rule design, such as IP ranges, or place the resources that need ASG-to-ASG rules in the same virtual network.",
+      "analogy": "Two office campuses have a private shuttle between them. Each campus has colored employee badges that only the local security system understands. A rule saying `blue web badges may enter green database rooms` works inside one campus badge system, but not by combining badges from two separate campuses.\n\n| Analogy | Azure reality |\n|---|---|\n| Local badge color | ASG membership |\n| Campus | Virtual network |\n| Shuttle between campuses | Virtual network peering |\n| One badge-to-badge door rule | ASG as source and destination in one NSG rule |\n| Separate campus systems | Same-VNet constraint for ASG rule references |\n\n**Where the analogy breaks down:** Azure ASGs are attached to NICs and enforced through NSG rules, not plastic badges. Peering can carry actual packets even when ASG-to-ASG rule syntax is not valid for the cross-VNet grouping.",
+      "jargon": [
+        {
+          "term": "Application security group (ASG)",
+          "definition": "An Azure object that groups VM network interfaces so NSG rules can reference application roles instead of IP addresses."
+        },
+        {
+          "term": "Network interface",
+          "definition": "The Azure resource attached to a VM that has IP configuration and can be assigned to ASGs."
+        },
+        {
+          "term": "Virtual network",
+          "definition": "An isolated Azure private network containing subnets and private IP address space."
+        },
+        {
+          "term": "Virtual network peering",
+          "definition": "A connection between Azure virtual networks that enables private IP connectivity under peering rules."
+        },
+        {
+          "term": "Source",
+          "definition": "The traffic origin field in an NSG rule; it can use a supported value such as IP range, service tag, or ASG."
+        },
+        {
+          "term": "Destination",
+          "definition": "The traffic target field in an NSG rule; it can use a supported value such as IP range, service tag, or ASG."
+        },
+        {
+          "term": "TCP port 1433",
+          "definition": "A common SQL Server listener port used here as the database traffic port."
+        },
+        {
+          "term": "AzureLoadBalancer service tag",
+          "definition": "A default NSG source tag used for Azure load balancer traffic, not a general permission for all Azure VM communication."
+        }
+      ],
+      "watchOut": "- A NIC can belong to multiple ASGs, but ASG membership is constrained by virtual network.\n- If both source and destination in one NSG rule are ASGs, the NICs in both ASGs must be in the same virtual network.\n- Virtual network peering enables connectivity but does not merge ASG rule boundaries.\n- For cross-VNet flows, consider CIDR-based NSG rules or an architecture that keeps ASG-controlled tiers in one VNet.",
+      "productionTip": {
+        "official": "Microsoft documents that all network interfaces assigned to an application security group must exist in the same virtual network as the first NIC assigned to that ASG. It also states that when an ASG is specified as both source and destination in an NSG rule, the network interfaces in both ASGs must exist in the same virtual network.",
+        "recommendation": "Use ASGs for role-based rules inside a virtual network, especially for multi-tier applications where VM membership changes. For peered virtual networks, document the intended trust boundary and use explicit prefixes, subnet-level rules, or central firewall policy rather than forcing an ASG-to-ASG pattern that Azure does not support across VNets."
+      },
+      "memoryTrick": "ASG means **application group inside a VNet**, not a cross-peering universal label. The phrase is simplified because a subscription can contain many ASGs, but a single ASG rule relationship still has the same-VNet NIC constraint.",
+      "examTip": "Clue words are **two peered VNets** and **ASG as source and destination**. The tested limit is not whether peering permits packets; it is whether the NSG rule can reference ASGs whose NICs live in different virtual networks. Choose the answer that preserves the same-VNet constraint and reject options that treat peering as a control-plane merge."
+    },
+    "sources": [
+      {
+        "title": "Azure Application Security Groups Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/application-security-groups"
+      },
+      {
+        "title": "Azure network security groups overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

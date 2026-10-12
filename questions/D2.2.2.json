@@ -1,0 +1,776 @@
+[
+  {
+    "id": "D2.2.2-01",
+    "objective": "D2.2.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a standard general-purpose v2 storage account named `stdesign01`. The application team is comparing Azure Storage redundancy choices before moving production blobs into the account. The team asks which option keeps data writable during a single availability zone outage and also keeps a copy in another Azure region for a regional disaster scenario. Read access to the secondary region during normal operation is not required.\n\nWhich redundancy option should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Locally redundant storage (LRS)"
+      },
+      {
+        "id": "B",
+        "text": "Zone-redundant storage (ZRS)"
+      },
+      {
+        "id": "C",
+        "text": "Geo-redundant storage (GRS)"
+      },
+      {
+        "id": "D",
+        "text": "Geo-zone-redundant storage (GZRS)"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The account is a standard general-purpose v2 storage account in a region that supports availability zones, GZRS, and a supported secondary region. The requirement is storage account redundancy, not backup, object replication, or application-level replication.",
+    "sections": {
+      "correctAnswer": "**D. Geo-zone-redundant storage (GZRS)**. GZRS combines synchronous zone replication in the primary region with asynchronous replication to a secondary region, so it is the option in the list that addresses both the zone-outage and regional-disaster requirements without enabling read access to the secondary endpoint.",
+      "technical": "Azure Storage redundancy has two design dimensions in this scenario: how copies are kept inside the primary region, and whether another region receives a copy. LRS keeps multiple copies in one physical datacenter in the primary region. ZRS spreads copies synchronously across three or more availability zones in the primary region. GRS adds asynchronous replication to a secondary region, but the primary-region side uses locally redundant replication. GZRS uses ZRS in the primary region and then geo-replicates to a secondary region.\n\nFor the stated requirements, evaluate the outage path in this order:\n\n1. If a single node, rack, or drive fails, all Azure Storage redundancy options listed can protect data durability.\n2. If an entire availability zone becomes unavailable, ZRS and GZRS are designed to keep data accessible for reads and writes in the primary region. LRS is not designed for that zone-level loss.\n3. If the primary region has a region-wide outage, only the geo-redundant options keep a copy in a secondary region. Restoring write access after a primary-region outage still requires account failover.\n4. If read access to the secondary is required before failover, the read-access variants RA-GRS or RA-GZRS are needed. The prompt explicitly says that read access is not required.\n\nThe important exception is regional availability. GZRS requires a primary region that supports availability zones and a paired or otherwise supported secondary region for geo-replication. If the region or account type does not support GZRS, the administrator must choose a different region, account type, or design.",
+      "wrongOptions": {
+        "A": "LRS is the lowest-cost option and protects against drive, server, and rack failures inside one datacenter, but it does not survive the loss of that datacenter or a regional disaster by itself. Misconception: Three local copies are the same as three independent zones. Could be correct when data is easily rebuilt, cost is the overriding factor, or governance requires data to stay within one selected region.",
+        "B": "ZRS addresses the availability-zone part of the requirement but does not copy the account to a second region. Misconception: Zone redundancy and geo-redundancy are interchangeable disaster recovery terms. Could be correct when the requirement is to survive a zonal failure while keeping all replicas in the primary region.",
+        "C": "GRS sends data to a secondary region, but in the primary region it uses local replication rather than zone-redundant replication. Misconception: Any geo-redundant option automatically protects against an availability zone outage in the primary region. Could be correct when regional durability is needed and zone-level write availability in the primary region is not a requirement."
+      },
+      "plainEnglish": "Think of redundancy as choosing where Azure keeps extra copies. LRS keeps copies close together in one datacenter. ZRS spreads copies across separate buildings called availability zones in the same region. GRS keeps a local set of copies and also sends data to another region far away. GZRS does both of the important things here: it spreads copies across zones in the main region and also sends a copy to a second region. Because the team does not need to read from the second region during normal operation, the version without the RA prefix is enough.",
+      "analogy": "A company wants important paperwork protected against both a building outage and a city-wide disaster. Keeping three folders in one room is like LRS. Keeping folders in three separate buildings in the city is like ZRS. Keeping folders in one building and shipping copies to another city is like GRS. Keeping folders in three city buildings and shipping copies to another city is like GZRS.\n\n| Analogy | Azure reality |\n|---|---|\n| One room with copies | LRS in a single datacenter |\n| Three buildings in one city | ZRS across availability zones |\n| Another city copy | Geo-replication to a secondary region |\n| Three buildings plus another city | GZRS |\n\n**Where the analogy breaks down:** Azure uses synchronous and asynchronous storage replication, DNS endpoints, and account failover. Paper copies do not model write acknowledgments, RPO, or service endpoint behavior.",
+      "jargon": [
+        {
+          "term": "Standard general-purpose v2",
+          "definition": "The recommended standard Azure Storage account type for blobs, queues, tables, and Azure Files, with support for the full set of standard redundancy choices when available in the region."
+        },
+        {
+          "term": "Locally redundant storage (LRS)",
+          "definition": "A redundancy option that stores copies within a single physical datacenter in the primary region."
+        },
+        {
+          "term": "Zone-redundant storage (ZRS)",
+          "definition": "A redundancy option that synchronously copies data across three or more availability zones in the primary region."
+        },
+        {
+          "term": "Geo-redundant storage (GRS)",
+          "definition": "A redundancy option that keeps local copies in the primary region and asynchronously copies data to a secondary region."
+        },
+        {
+          "term": "Geo-zone-redundant storage (GZRS)",
+          "definition": "A redundancy option that uses ZRS in the primary region and asynchronously replicates data to a secondary region."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate location within an Azure region with independent power, cooling, and networking."
+        },
+        {
+          "term": "Secondary region",
+          "definition": "The Azure region that receives geo-replicated data from the storage account's primary region."
+        },
+        {
+          "term": "Account failover",
+          "definition": "A storage account disaster recovery action that promotes the secondary region so clients can read and write through the normal account endpoints after failover completes."
+        }
+      ],
+      "watchOut": "- GRS and GZRS protect data in another region, but write access after a primary-region outage requires failover.\n- RA-GRS and RA-GZRS add read access to the secondary; they are not required when the prompt says secondary reads are unnecessary.\n- ZRS is strong for a zone outage but does not by itself cover a full regional disaster.\n- Confirm that the chosen region and storage account type support GZRS before making it a design standard.",
+      "productionTip": {
+        "official": "Microsoft documents that GZRS copies data across three or more availability zones in the primary region and also replicates to a secondary geographic region. The redundancy article also states that the storage account redundancy setting is shared by all storage services in that account.",
+        "recommendation": "Separate workloads with different durability, latency, compliance, or cost requirements into different storage accounts. For production systems that need both zone resilience and regional disaster recovery, use GZRS or RA-GZRS where supported and test the application behavior during endpoint and failover events."
+      },
+      "memoryTrick": "Read the letters left to right: **GZRS** means **Geo** plus **Zone** redundant storage. This shortcut works for the naming pattern, but it does not tell you whether read access is enabled; that requires the separate RA prefix.",
+      "examTip": "The clue is the combination of **zone failure** and **region failure** without read access. Eliminate LRS because it is local only. Eliminate ZRS because it is not cross-region. Eliminate GRS because it does not use zone redundancy in the primary region. A harder version might add secondary read access, which would change the best answer from GZRS to RA-GZRS."
+    },
+    "sources": [
+      {
+        "title": "Data redundancy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+      },
+      {
+        "title": "Storage Account Overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.2-02",
+    "objective": "D2.2.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stcatalog` that hosts product images in Blob Storage. The account uses GRS. A web application must be able to continue reading images from the secondary region during a primary-region outage without waiting for an account failover. The developers plan to use URLs in the form `https://stcatalog-secondary.blob.core.windows.net/...` when the primary endpoint is unhealthy.\n\nWhat should you change?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep GRS because every geo-redundant account exposes a readable `-secondary` endpoint"
+      },
+      {
+        "id": "B",
+        "text": "Change the account to RA-GRS so the secondary endpoint is available for read requests"
+      },
+      {
+        "id": "C",
+        "text": "Change the account to ZRS so reads automatically move to another region"
+      },
+      {
+        "id": "D",
+        "text": "Keep GRS and initiate unplanned failover for every failed image read"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The workload is Blob Storage in a standard account, and reading eventually consistent data from a secondary region is acceptable during an outage. The question is about read availability before failover, not restoring write access.",
+    "sections": {
+      "correctAnswer": "**B. Change the account to RA-GRS so the secondary endpoint is available for read requests**. GRS geo-replicates the data, but the secondary copy is not directly readable until failover; RA-GRS adds read access through the `-secondary` endpoint.",
+      "technical": "GRS and RA-GRS both copy storage data asynchronously from the primary region to a secondary region. The difference tested here is endpoint access. With plain GRS, the secondary region contains a replica for durability, but users and applications cannot directly read or write that secondary copy unless failover occurs. With read-access geo-redundant storage, Azure permits read operations against secondary service endpoints. For Blob Storage, the secondary endpoint is formed by appending `-secondary` to the account name, such as `stcatalog-secondary.blob.core.windows.net`.\n\nThe request flow is:\n\n1. During normal operation, the application reads from the primary blob endpoint.\n2. If read failures indicate a primary-region issue, the app can redirect read requests to the RA-GRS secondary endpoint.\n3. The secondary endpoint is read-only. Update, create, and delete operations still require the primary endpoint unless an account failover promotes the secondary.\n4. Because geo-replication is asynchronous, the secondary endpoint can return stale data or miss a recent blob that has not replicated yet.\n\nThis is not a ZRS scenario. ZRS keeps data across availability zones in the same primary region and does not create a second-region endpoint. It is also not a reason to fail over for every failed read. Failover is an account-level disaster recovery operation used to restore write availability, not a per-request read-retry mechanism.",
+      "wrongOptions": {
+        "A": "GRS creates a secondary copy, but Microsoft documents that data in the secondary region is not available for direct read or write access unless failover occurs. Misconception: Geo-replication always means clients can read the replica. Could be correct only after an account failover has completed, or if the account had already been configured as RA-GRS.",
+        "C": "ZRS improves availability across zones inside the primary region and does not provide a secondary region or `-secondary` endpoint. Misconception: A zone is the same thing as a region. Could be correct when the requirement is to survive an availability zone outage while keeping data in one region.",
+        "D": "Failover restores normal endpoints to the secondary region, but using it for individual image-read failures is excessive and can involve data loss if unplanned. Misconception: Failover is the only way to use a secondary copy for reads. Could be correct when the primary storage endpoints are unavailable and the business needs restored write access in the secondary region."
+      },
+      "plainEnglish": "GRS is like keeping emergency copies in another city but locking the door until a formal disaster switch happens. RA-GRS keeps that emergency copy available for reading, even before the formal switch. The special address uses the same storage account name with `-secondary` added. That address is useful for images, documents, and other read-only operations during an outage, but it cannot accept new writes and it might be a little behind the primary copy.",
+      "analogy": "A publisher prints catalogs in Sydney and sends backup copies to Melbourne. With GRS, the Melbourne warehouse has boxes, but customers cannot browse them unless the company formally moves operations. With RA-GRS, the Melbourne warehouse has a reading room that customers can use during a Sydney outage.\n\n| Analogy | Azure reality |\n|---|---|\n| Sydney shop | Primary storage endpoint |\n| Melbourne warehouse | Secondary region copy |\n| Reading room | RA-GRS secondary endpoint |\n| Formal move of operations | Account failover |\n| Recent catalog missing in Melbourne | Asynchronous replication lag |\n\n**Where the analogy breaks down:** The real service uses DNS names, storage authentication, and eventual consistency rather than physical customers walking into a warehouse.",
+      "jargon": [
+        {
+          "term": "Blob Storage",
+          "definition": "Azure Storage service for storing objects such as images, documents, logs, and backups."
+        },
+        {
+          "term": "GRS",
+          "definition": "Geo-redundant storage, which replicates data to a secondary region but does not expose a readable secondary endpoint during normal operation."
+        },
+        {
+          "term": "RA-GRS",
+          "definition": "Read-access geo-redundant storage, which provides read access to asynchronously replicated data in the secondary region."
+        },
+        {
+          "term": "Secondary endpoint",
+          "definition": "The service URL for reading geo-replicated data in the secondary region when read-access geo-redundancy is enabled."
+        },
+        {
+          "term": "`-secondary`",
+          "definition": "The suffix added to the storage account name in a service endpoint, such as `account-secondary.blob.core.windows.net`, for secondary read access."
+        },
+        {
+          "term": "Account failover",
+          "definition": "A storage account operation that promotes the secondary region and repoints normal account endpoints after completion."
+        },
+        {
+          "term": "Eventually consistent",
+          "definition": "A replication model where the secondary copy catches up over time but may temporarily lag behind the primary copy."
+        },
+        {
+          "term": "Read-only",
+          "definition": "A mode that permits reads but not create, update, or delete operations against the secondary copy."
+        }
+      ],
+      "watchOut": "- The `-secondary` endpoint is useful only for read-access geo-redundant options.\n- RA-GRS does not make the secondary writable before account failover.\n- The same account keys apply to primary and secondary endpoints, so protect credentials carefully.\n- A 404 from the secondary can mean the object has not replicated yet, not necessarily that it never existed.",
+      "productionTip": {
+        "official": "Microsoft documents that RA-GRS and RA-GZRS permit read access to data in the secondary region, and that the secondary endpoint appends `-secondary` to the account name. The geo-redundant design guidance also notes that update requests cannot be redirected to secondary storage because the secondary is read-only.",
+        "recommendation": "Implement an application-level read-failover pattern deliberately. Log when reads switch to the secondary, show users that data might be stale, and keep write paths disabled or queued until the primary returns or an account failover is completed."
+      },
+      "memoryTrick": "The **RA** prefix means **Read Access**. This is a safe exam shortcut for secondary reads, but it does not promise fresh data or write access at the secondary endpoint.",
+      "examTip": "Look for the exact phrase **read from the secondary** or a URL containing `-secondary`. If the option lacks RA, it does not satisfy that requirement before failover. A harder question may include RA-GZRS and RA-GRS; then use the zone requirement, if any, to choose between them."
+    },
+    "sources": [
+      {
+        "title": "Data redundancy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+      },
+      {
+        "title": "Use geo-redundancy to design highly available applications",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/geo-redundant-design"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.2-03",
+    "objective": "D2.2.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You manage a storage account named `storders` that uses RA-GZRS. At 10:00 UTC, the primary region becomes unavailable. The operations team checks the account and sees a Last Sync Time of 09:52 UTC. The last confirmed order export was written at 09:58 UTC.\n\nHow should you interpret this information before initiating a customer-managed unplanned failover?",
+    "options": [
+      {
+        "id": "A",
+        "text": "All writes through 09:58 UTC are guaranteed in the secondary because the account uses RA-GZRS"
+      },
+      {
+        "id": "B",
+        "text": "Only data written before 09:52 UTC is guaranteed in the secondary; later writes might be lost"
+      },
+      {
+        "id": "C",
+        "text": "The Last Sync Time applies only to account metadata and not to blobs or hierarchical namespace metadata"
+      },
+      {
+        "id": "D",
+        "text": "The Last Sync Time proves that no data loss can occur if failover starts within eight minutes"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The storage account is geo-replicated and the primary region is unavailable. The team is evaluating a customer-managed unplanned failover, not a planned failover where both regions are available and replication can complete before DNS changes.",
+    "sections": {
+      "correctAnswer": "**B. Only data written before 09:52 UTC is guaranteed in the secondary; later writes might be lost**. Last Sync Time marks the latest time for which writes from the primary are guaranteed to have reached the secondary, so the 09:58 export is inside the potential data-loss window.",
+      "technical": "Geo-redundant storage copies data from the primary region to the secondary region asynchronously. Because the primary write can succeed before the secondary copy is complete, a primary-region outage can leave recent writes stranded in the unavailable region. Last Sync Time is the storage account property used to estimate that exposure.\n\nThe rule is precise: data and applicable hierarchical namespace metadata written before the Last Sync Time are available on the secondary. Data and metadata written after that time might not have been copied yet and might be lost if the primary region cannot be recovered. In this scenario, the Last Sync Time is 09:52 UTC. The order export at 09:58 UTC occurred six minutes after the guaranteed point, so it is not guaranteed to exist in the secondary region.\n\nThe decision path before unplanned failover is:\n\n1. Retrieve Last Sync Time, for example with Azure CLI using `--expand geoReplicationStats` and querying `geoReplicationStats.lastSyncTime`.\n2. Compare it with the application's own last successful write times.\n3. Identify any writes later than Last Sync Time as at risk.\n4. Decide whether restoring write access in the secondary is worth the possible loss and inconsistency.\n\nRA-GZRS helps with read availability and zone resilience in the primary region, but it does not remove asynchronous replication lag between regions. Planned failover differs because Azure waits for replication to complete before switching endpoints, provided both regions are available.",
+      "wrongOptions": {
+        "A": "RA-GZRS provides read access to the secondary and uses ZRS in the primary, but cross-region replication is still asynchronous. Misconception: The most resilient redundancy option eliminates replication lag. Could be correct for writes before 09:52 UTC in this scenario, not for the 09:58 export.",
+        "C": "Microsoft documents that Last Sync Time applies to data from the primary region and, for hierarchical namespace accounts, to metadata such as access control lists. Misconception: Last Sync Time is only a management-plane timestamp. Could be correct when discussing unrelated account properties such as the resource location value after failover.",
+        "D": "Starting failover quickly does not make post-sync writes appear in the secondary. The timestamp is a guaranteed-through point, not a countdown timer. Misconception: A small gap is automatically safe. Could be correct only if the application confirms that no important writes occurred after the Last Sync Time."
+      },
+      "plainEnglish": "Last Sync Time is the last moment that Azure can promise the backup region had caught up. If it says 09:52, anything saved before 09:52 should be in the backup region. Anything saved after 09:52 is uncertain. The 09:58 order export is after the safe point, so the team must assume it might be missing if they switch the account to the secondary region during the outage.",
+      "analogy": "A store sends transaction notebooks to an offsite vault every few minutes. The vault clerk says the last completed delivery contains records through 09:52. A sale recorded at 09:58 might still be in the store when the store floods.\n\n| Analogy | Azure reality |\n|---|---|\n| Store register | Primary region |\n| Offsite vault | Secondary region |\n| Last completed delivery time | Last Sync Time |\n| 09:58 sale | Write after the guaranteed sync point |\n| Moving business to the vault | Customer-managed unplanned failover |\n\n**Where the analogy breaks down:** Azure replication is continuous and service-managed, not a manual delivery. The timestamp is exposed through storage account geo-replication statistics rather than a human clerk.",
+      "jargon": [
+        {
+          "term": "RA-GZRS",
+          "definition": "Read-access geo-zone-redundant storage, which combines primary-region zone redundancy, secondary-region geo-replication, and read access to the secondary."
+        },
+        {
+          "term": "Last Sync Time",
+          "definition": "The most recent time at which data from the primary region is guaranteed to have been written to the secondary region."
+        },
+        {
+          "term": "Customer-managed unplanned failover",
+          "definition": "An account-level failover initiated by the customer during an outage, usually with possible data loss because replication may not be complete."
+        },
+        {
+          "term": "Recovery point objective (RPO)",
+          "definition": "The point in time to which data can be recovered after a failure; with asynchronous replication, recent writes can fall outside it."
+        },
+        {
+          "term": "Asynchronous replication",
+          "definition": "Replication where the primary write can complete before the secondary copy has been updated."
+        },
+        {
+          "term": "Hierarchical namespace",
+          "definition": "An Azure Data Lake Storage capability that adds file-system-like directories and access control metadata to Blob Storage."
+        },
+        {
+          "term": "UTC",
+          "definition": "Coordinated Universal Time, commonly used in Azure timestamps and logs."
+        },
+        {
+          "term": "GeoReplicationStats",
+          "definition": "Storage account information that includes geo-replication status values such as Last Sync Time."
+        }
+      ],
+      "watchOut": "- Last Sync Time is a guaranteed-through time, not a guarantee that newer writes are absent.\n- RA options allow secondary reads but do not make cross-region replication synchronous.\n- Unplanned failover can introduce both data loss and consistency issues.\n- Keep application write logs so the Last Sync Time can be compared with business events during an outage.",
+      "productionTip": {
+        "official": "Microsoft documents that Last Sync Time indicates the most recent time for which data from the primary is guaranteed to have been written to the secondary, and that data written after that time might be lost during customer-managed unplanned failover.",
+        "recommendation": "Build dashboards that show Last Sync Time beside application write timestamps, order numbers, or batch identifiers. During an incident, require an explicit business decision before failover when critical writes are later than the guaranteed sync point."
+      },
+      "memoryTrick": "Treat Last Sync Time as the **last safe line**. This is a simplification because some later writes may have replicated, but the exam answer should rely only on the time Azure guarantees.",
+      "examTip": "The date comparison is the whole question. Anything before Last Sync Time is safe in the secondary; anything after it is uncertain. A harder version may include hierarchical namespace metadata or ACLs, which follow the same Last Sync Time statement for HNS-enabled accounts."
+    },
+    "sources": [
+      {
+        "title": "Check the Last Sync Time property for a storage account",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/last-sync-time-get"
+      },
+      {
+        "title": "Azure storage disaster recovery planning and failover",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-disaster-recovery-guidance"
+      },
+      {
+        "title": "Data redundancy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.2-04",
+    "objective": "D2.2.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "A storage account uses GZRS. You are documenting the different results of customer-managed planned failover and customer-managed unplanned failover.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "A planned failover waits for replication to complete when both regions are available, so data loss is not expected during the planned failover process"
+      },
+      {
+        "id": "B",
+        "text": "After a customer-managed unplanned failover from GZRS, the account is converted to LRS in the new primary region"
+      },
+      {
+        "id": "C",
+        "text": "A planned failover from GZRS permanently removes geo-redundancy and leaves the account as LRS"
+      },
+      {
+        "id": "D",
+        "text": "An unplanned failover keeps the original primary region as the new secondary with all data preserved"
+      },
+      {
+        "id": "E",
+        "text": "Both planned and unplanned failover make the secondary endpoint writable while keeping the primary endpoint writable"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The account type and region support customer-managed failover for GZRS. The comparison is between customer-managed planned failover and customer-managed unplanned failover, not Microsoft-managed failover.",
+    "sections": {
+      "correctAnswer": "**A. A planned failover waits for replication to complete when both regions are available, so data loss is not expected during the planned failover process** and **B. After a customer-managed unplanned failover from GZRS, the account is converted to LRS in the new primary region**. Planned failover preserves geo-redundancy through a controlled region swap, while unplanned failover promotes the secondary and loses geo-redundancy until it is reconfigured.",
+      "technical": "Azure Storage supports planned and unplanned customer-managed failover for geo-redundant accounts, but the two operations are designed for different conditions. Planned failover is for disaster recovery testing, proactive preparation, or nonstorage outages when both primary and secondary storage endpoints are available. During planned failover, the storage account experiences temporary loss of read and write access, Azure lets replication complete, and then DNS entries are switched so the secondary becomes the new primary. Because replication must complete first, data loss is not expected as long as both regions remain available.\n\nCustomer-managed unplanned failover is for a primary storage endpoint outage. In that case, Azure cannot require the original primary to finish sending all writes. The original secondary becomes the new primary, and the copy in the original primary region is deleted. For GRS or GZRS accounts, the account becomes locally redundant in the new primary after unplanned failover. Geo-redundancy is lost and must be re-enabled later. For a GZRS starting point, the documented transition is GZRS to LRS after unplanned failover, then GRS after geo-redundancy is re-enabled, and then ZRS/GZRS states can be restored through the failback and reconfiguration process.\n\nThe evaluation order for exam questions is: identify planned versus unplanned, check whether both regions are available, decide whether data loss is expected, and then identify the resulting redundancy state. Do not confuse endpoint DNS switching with two active writable regions; Azure Storage account failover promotes one primary endpoint set.",
+      "wrongOptions": {
+        "C": "Planned failover does not permanently reduce a GZRS account to LRS. Microsoft documents that geo-redundancy is retained during planned failover, and after planned failback the account is restored to its original redundancy configuration. Misconception: Every failover behaves like an emergency failover. Could be correct for customer-managed unplanned failover, not planned failover.",
+        "D": "In an unplanned failover, the copy of the data in the original primary region is deleted, and that account copy does not simply become a preserved secondary. Misconception: Failover is always a clean two-way swap. Could be correct for planned failover, where the original primary is demoted to the new secondary after replication finishes.",
+        "E": "Azure Storage does not keep both regions writable for the same account during failover. The operation switches endpoints so the secondary becomes the primary after completion. Misconception: Geo-redundant storage is active-active for writes. Could be correct for a custom application design that writes to separate accounts in separate regions, but not for storage account redundancy failover."
+      },
+      "plainEnglish": "Planned failover is like a scheduled drill. Both sites are working, so Azure can finish copying everything, pause access briefly, and switch the main site. Unplanned failover is an emergency move during an outage. Azure promotes the backup region even though the broken region may still contain the newest changes. After that emergency move, the account is only locally redundant in the new main region until you turn geo-redundancy back on.",
+      "analogy": "A theater has a main stage and a backup stage. For a scheduled rehearsal move, the crew finishes moving every prop, closes both stages briefly, and opens the backup stage as the new main stage. During a fire, the crew opens the backup stage with whatever props had already arrived, and the damaged stage is abandoned.\n\n| Analogy | Azure reality |\n|---|---|\n| Scheduled rehearsal move | Customer-managed planned failover |\n| Fire response | Customer-managed unplanned failover |\n| Moving all props before opening | Replication completes before planned DNS switch |\n| Backup stage opens with available props | Secondary promoted with possible data loss |\n| Local-only setup after emergency | LRS after unplanned failover |\n\n**Where the analogy breaks down:** A theater can sometimes inspect damaged props later. Azure's documented unplanned failover deletes the original primary account copy after promoting the secondary.",
+      "jargon": [
+        {
+          "term": "GZRS",
+          "definition": "Geo-zone-redundant storage, using zone redundancy in the primary region plus asynchronous geo-replication to a secondary region."
+        },
+        {
+          "term": "Customer-managed planned failover",
+          "definition": "A customer-initiated failover used when both regions are available and replication can complete before endpoints are switched."
+        },
+        {
+          "term": "Customer-managed unplanned failover",
+          "definition": "A customer-initiated emergency failover during a primary endpoint outage, with expected data-loss risk."
+        },
+        {
+          "term": "DNS",
+          "definition": "Domain Name System, which resolves service endpoint names to network destinations; Azure updates storage endpoint DNS during failover."
+        },
+        {
+          "term": "LRS",
+          "definition": "Locally redundant storage, which stores copies within a single datacenter in the current primary region."
+        },
+        {
+          "term": "Failback",
+          "definition": "A later failover back to the original primary region after the original issue has been resolved and required replication considerations are handled."
+        },
+        {
+          "term": "Geo-redundancy",
+          "definition": "Replication of storage data to a secondary Azure region to protect against a regional disaster."
+        },
+        {
+          "term": "Endpoint",
+          "definition": "The service URL clients use to access blobs, files, queues, or tables in a storage account."
+        }
+      ],
+      "watchOut": "- Planned failover is not the same operational risk as unplanned failover.\n- Unplanned failover usually involves some data loss and can cause inconsistencies.\n- After unplanned failover, re-enabling geo-redundancy takes time and can incur replication charges.\n- Azure Files clients may need remounting or application restarts after a failover because file shares maintain stateful connections.",
+      "productionTip": {
+        "official": "Microsoft documents that planned failover completes replication before DNS entries are changed and that data loss is not expected when both regions remain available. Microsoft also documents that unplanned failover converts the account to LRS and loses geo-redundancy until it is manually reconfigured.",
+        "recommendation": "Practice planned failover for DR drills, but treat unplanned failover as an executive incident decision. Before unplanned failover, review Last Sync Time, application write logs, unsupported features, and the plan to re-enable geo-redundancy afterward."
+      },
+      "memoryTrick": "**Planned preserves, unplanned reduces.** Planned failover preserves geo-redundancy through a controlled swap; unplanned failover reduces the new primary to LRS. This phrase is simplified, so still check the original SKU and failback table.",
+      "examTip": "Multiple-answer questions often pair one statement about data loss with one statement about the resulting SKU. If the word is **planned**, look for replication completion and retained geo-redundancy. If the word is **unplanned**, look for possible data loss and LRS after failover."
+    },
+    "sources": [
+      {
+        "title": "Azure storage disaster recovery planning and failover",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-disaster-recovery-guidance"
+      },
+      {
+        "title": "How customer-managed planned failover works - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-failover-customer-managed-planned"
+      },
+      {
+        "title": "How Azure Storage account customer-managed unplanned failover works",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-failover-customer-managed-unplanned"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.2-05",
+    "objective": "D2.2.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You manage several standard general-purpose v2 storage accounts. You need to document which redundancy changes can be made directly by changing the redundancy setting and which changes require a zone-redundancy conversion or a two-step path.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Changing LRS to GRS can be done by updating the redundancy setting, but adding zone redundancy such as LRS to ZRS requires a conversion"
+      },
+      {
+        "id": "B",
+        "text": "Changing LRS directly to GZRS is supported as a single direct conversion from the Azure portal"
+      },
+      {
+        "id": "C",
+        "text": "Changing GRS directly to ZRS is not supported; use a two-step path such as GRS to LRS and then LRS to ZRS, or GRS to GZRS and then GZRS to ZRS"
+      },
+      {
+        "id": "D",
+        "text": "Changing ZRS to GRS is a direct one-step portal update because both names contain redundant storage"
+      },
+      {
+        "id": "E",
+        "text": "After an unplanned failover leaves an account as LRS, conversion to ZRS or GZRS is the supported way to add zone redundancy back"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The accounts are standard general-purpose v2 accounts without conflicting features such as unsupported protocols, archive-tier blockers, or in-progress migrations. Region support for the target redundancy option is assumed unless an option says otherwise.",
+    "sections": {
+      "correctAnswer": "**A. Changing LRS to GRS can be done by updating the redundancy setting, but adding zone redundancy such as LRS to ZRS requires a conversion** and **C. Changing GRS directly to ZRS is not supported; use a two-step path such as GRS to LRS and then LRS to ZRS, or GRS to GZRS and then GZRS to ZRS**. Azure separates geo/read-access changes from zone-redundancy conversions, and some cross-family changes require two steps.",
+      "technical": "Changing Azure Storage redundancy is easiest when you know which axis is moving. Geo-redundancy and read-access changes can often be made by changing the redundancy setting with the portal, PowerShell, or Azure CLI. Examples include LRS to GRS, GRS to LRS, ZRS to GZRS, and GZRS to ZRS. By contrast, adding or removing zone redundancy is a redundancy conversion. Examples include LRS to ZRS, ZRS to LRS, GRS to GZRS, and GZRS to GRS. A conversion has no data loss and no application downtime requirement for most accounts, but there is no SLA for completion and timing depends on account size and regional resources.\n\nSome target changes combine both axes. A direct LRS to GZRS change is not supported; Microsoft documents two-step paths, such as LRS to ZRS followed by ZRS to GZRS, or LRS to GRS followed by GRS to GZRS. Similarly, a direct GRS to ZRS change is not supported because it removes geo-redundancy and adds zone redundancy. The documented paths are GRS to GZRS followed by GZRS to ZRS, or GRS to LRS followed by LRS to ZRS. The FAQ notes that some two-step sequences require waiting at least 24 hours between conversions.\n\nLimitations still matter. Region support, storage account type, archive data, NFS settings, public endpoints for some NFS shares, boot diagnostics, failed-over accounts, and conflicting migrations can block or redirect the plan. Manual migration remains an option when conversion is unsupported or timing must be controlled.",
+      "wrongOptions": {
+        "B": "Microsoft documents that direct LRS to GZRS is not supported and requires two steps. Misconception: A more redundant target can always be selected directly. Could be correct if the current account were first moved through an approved intermediate state such as ZRS or GRS.",
+        "D": "ZRS to GRS is also not a direct single-step change; the documented options move through GZRS or LRS. Misconception: Similar abbreviations imply direct compatibility. Could be correct for ZRS to GZRS, which adds geo-redundancy while keeping zone redundancy.",
+        "E": "The migration article states that conversion to ZRS or GZRS for an LRS account resulting from a failover is not supported; manual migration is needed to add zone redundancy in that case. Misconception: All LRS accounts have the same conversion eligibility regardless of history. Could be correct for an ordinary eligible LRS account that did not result from an account failover."
+      },
+      "plainEnglish": "Think of storage redundancy changes as changing either the distant-copy setting or the zone-spread setting. Turning on a distant copy, such as LRS to GRS, is usually a normal setting change. Spreading data across zones, such as LRS to ZRS, is a conversion. If you are trying to change both ideas at once, such as LRS to GZRS or GRS to ZRS, Azure usually makes you do it in steps. Some accounts have blockers, so you must check eligibility before promising a date.",
+      "analogy": "A delivery company can add an out-of-town warehouse, or it can reorganize packages across three local warehouses. Adding the distant warehouse is one kind of change. Rebalancing across local warehouses is another. Trying to add distant warehousing and rebalance local warehousing in one move may require a staged project.\n\n| Analogy | Azure reality |\n|---|---|\n| One local warehouse | LRS |\n| Three local warehouses | ZRS |\n| Out-of-town copy | GRS |\n| Three local warehouses plus distant copy | GZRS |\n| Rebalancing local warehouses | Zone-redundancy conversion |\n\n**Where the analogy breaks down:** Azure conversion eligibility depends on account type, protocols, archived data, region support, and failover history. A shipping company analogy does not capture those service rules.",
+      "jargon": [
+        {
+          "term": "Redundancy setting",
+          "definition": "The storage account configuration that determines how Azure replicates the account's data."
+        },
+        {
+          "term": "Conversion",
+          "definition": "In this context, a process that changes the zone-redundancy aspect of a storage account, such as LRS to ZRS."
+        },
+        {
+          "term": "Manual migration",
+          "definition": "A migration approach where data is copied to a new storage account with the desired redundancy, often used when conversion is unsupported or timing must be controlled."
+        },
+        {
+          "term": "LRS",
+          "definition": "Locally redundant storage, which keeps copies in one datacenter in the primary region."
+        },
+        {
+          "term": "ZRS",
+          "definition": "Zone-redundant storage, which spreads data synchronously across availability zones in the primary region."
+        },
+        {
+          "term": "GRS",
+          "definition": "Geo-redundant storage, which uses local primary replication and asynchronous replication to a secondary region."
+        },
+        {
+          "term": "GZRS",
+          "definition": "Geo-zone-redundant storage, which combines primary-region ZRS with geo-replication."
+        },
+        {
+          "term": "SKU",
+          "definition": "The storage account stock keeping unit name, such as Standard_LRS or Standard_GZRS, used by management tools to represent redundancy and performance choices."
+        }
+      ],
+      "watchOut": "- Do not assume every source-to-target redundancy pair is a direct one-click change.\n- LRS to ZRS is a conversion, not just the same operation as LRS to GRS.\n- Direct LRS to GZRS and direct GRS to ZRS are not supported paths.\n- An LRS account created by unplanned failover has special restrictions for adding zone redundancy.\n- Manual migration can provide schedule control but may require application downtime.",
+      "productionTip": {
+        "official": "Microsoft documents three approaches for changing replication: add or remove geo-replication or read access, add or remove zone redundancy by conversion, or perform manual migration. The redundancy migration table and FAQ identify unsupported direct paths and two-step alternatives.",
+        "recommendation": "Create a change matrix in your runbook and validate each account for blockers before a maintenance announcement. Include archive-tier checks, protocol settings, region support, failover history, and a rollback plan for applications that cannot tolerate even brief pauses."
+      },
+      "memoryTrick": "Change one axis at a time: **geo is a setting, zones are a conversion**. This is a useful simplification, but always check the official table because some combinations require two steps or manual migration.",
+      "examTip": "Exam options often hide an unsupported direct path. When you see LRS to GZRS or GRS to ZRS, think **two steps**. When you see LRS to ZRS, think **conversion**. When you see LRS to GRS, think **redundancy setting update** plus possible geo-replication transfer time and cost."
+    },
+    "sources": [
+      {
+        "title": "Change how a storage account is replicated - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+      },
+      {
+        "title": "Storage redundancy change FAQs - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy-change-faq"
+      },
+      {
+        "title": "Azure storage disaster recovery planning and failover",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-disaster-recovery-guidance"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.2-06",
+    "objective": "D2.2.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You plan to create a premium block blob storage account for an analytics workload that requires consistently low storage latency. A manager asks you to configure the account as RA-GRS so the workload can read from a secondary region during an outage.\n\nWhat should you tell the manager?",
+    "options": [
+      {
+        "id": "A",
+        "text": "RA-GRS is supported for premium block blob accounts if hierarchical namespace is disabled"
+      },
+      {
+        "id": "B",
+        "text": "Premium block blob accounts support only LRS and ZRS redundancy options; use a standard general-purpose v2 account if RA-GRS is required"
+      },
+      {
+        "id": "C",
+        "text": "Premium block blob accounts support GZRS but not RA-GRS, so configure RA-GZRS instead"
+      },
+      {
+        "id": "D",
+        "text": "All premium storage accounts are automatically geo-redundant and do not need a redundancy setting"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The account being discussed is a premium block blob account, not a standard general-purpose v2 account. Regional support for ZRS is still subject to Azure region availability.",
+    "sections": {
+      "correctAnswer": "**B. Premium block blob accounts support only LRS and ZRS redundancy options; use a standard general-purpose v2 account if RA-GRS is required**. Microsoft lists premium block blob accounts with LRS and ZRS support, while geo-redundant and read-access geo-redundant options are for standard general-purpose v2 accounts.",
+      "technical": "Storage account type constrains the redundancy options that can be configured. Standard general-purpose v2 accounts are the flexible standard account type for Blob Storage, Data Lake Storage, Queue Storage, Table Storage, and Azure Files. They support LRS, ZRS, GRS, RA-GRS, GZRS, and RA-GZRS when the region and service support the option. Premium block blob accounts are different. They use SSD-backed premium performance for block blobs and append blobs, and Microsoft documents their redundancy support as LRS and ZRS, with ZRS varying by region.\n\nThat means the requirement in the prompt has a conflict. The workload wants premium block blob performance, but the manager also wants RA-GRS secondary read access. RA-GRS is a read-access geo-redundant configuration. It requires a supported standard account type; it is not a selectable redundancy option for premium block blob accounts. Disabling hierarchical namespace does not change the premium account redundancy matrix. Choosing RA-GZRS does not help either because premium block blob accounts do not support the geo-redundant options.\n\nThe design decision is to choose which requirement is non-negotiable. If low latency and premium block blob performance are mandatory, select LRS or ZRS in a supported region and design cross-region availability another way, such as application-level copy to another account. If read-access geo-redundancy is mandatory, use a standard general-purpose v2 account with RA-GRS or RA-GZRS as appropriate.",
+      "wrongOptions": {
+        "A": "Hierarchical namespace support is not the deciding factor for premium block blob RA-GRS support. The account type's redundancy options do not include RA-GRS. Misconception: Turning off a feature can unlock any redundancy SKU. Could be correct for other compatibility blockers, but not for adding RA-GRS to a premium block blob account.",
+        "C": "Premium block blob accounts are documented for LRS and ZRS, not GZRS or RA-GZRS. Misconception: If RA-GRS is unavailable, the newer-sounding RA-GZRS must be available. Could be correct for a standard general-purpose v2 account in a region that supports RA-GZRS.",
+        "D": "Premium accounts still have explicit redundancy choices, and they are not automatically geo-redundant. Misconception: Premium performance includes premium disaster recovery by default. Could be correct only as a business aspiration; technically, the account must be configured with a supported redundancy option."
+      },
+      "plainEnglish": "Premium block blob storage is like choosing a fast storage lane. It does not automatically include every disaster recovery feature. For that account type, Azure offers local redundancy and, where supported, zone redundancy. If the app must read from a second region using RA-GRS, it needs a standard general-purpose v2 storage account instead. The team may need to choose between the premium performance feature and built-in read access to a geo-replicated secondary copy.",
+      "analogy": "A courier offers a high-speed motorcycle service inside a city and a separate long-distance backup warehouse service. The motorcycle service is fast, but it does not include the long-distance warehouse reader. If you need customers to pick up from another city, you must buy the service tier that includes that feature.\n\n| Analogy | Azure reality |\n|---|---|\n| High-speed motorcycle service | Premium block blob account |\n| City-only protection | LRS or ZRS |\n| Other-city pickup counter | RA-GRS secondary read access |\n| Broader service tier | Standard general-purpose v2 |\n\n**Where the analogy breaks down:** Azure account types also differ by supported services, APIs, pricing, performance targets, and regional availability, not just delivery method.",
+      "jargon": [
+        {
+          "term": "Premium block blob account",
+          "definition": "A premium Azure Storage account type for block blobs and append blobs, intended for workloads needing high transaction rates or low storage latency."
+        },
+        {
+          "term": "SSD",
+          "definition": "Solid-state drive storage, used by premium performance storage accounts for low latency and high throughput."
+        },
+        {
+          "term": "Block blob",
+          "definition": "A Blob Storage object type optimized for storing files, media, backups, and other unstructured data as blocks."
+        },
+        {
+          "term": "RA-GRS",
+          "definition": "Read-access geo-redundant storage, a standard redundancy option that permits reads from the secondary region."
+        },
+        {
+          "term": "Standard general-purpose v2",
+          "definition": "The recommended standard account type for most Azure Storage scenarios, with broad service and redundancy support."
+        },
+        {
+          "term": "LRS",
+          "definition": "Locally redundant storage, with copies in one datacenter in the primary region."
+        },
+        {
+          "term": "ZRS",
+          "definition": "Zone-redundant storage, with synchronous copies across availability zones where supported."
+        },
+        {
+          "term": "Hierarchical namespace",
+          "definition": "A Data Lake Storage feature that organizes blobs in a file-system-like namespace and supports directory-level operations."
+        }
+      ],
+      "watchOut": "- Redundancy support is not identical across storage account types.\n- Premium performance does not imply geo-redundant or read-access geo-redundant support.\n- ZRS availability for premium accounts can vary by region.\n- If secondary-region reads are mandatory, confirm the account type before building on premium block blobs.",
+      "productionTip": {
+        "official": "Microsoft's storage account overview and redundancy tables list premium block blob accounts with LRS and ZRS redundancy, while standard general-purpose v2 accounts support the standard geo-redundant and read-access geo-redundant options when available.",
+        "recommendation": "Capture performance and disaster recovery requirements as separate acceptance criteria. If both premium latency and cross-region read continuity are required, prototype application-level replication to a second account and document the consistency, failover, and cost trade-offs."
+      },
+      "memoryTrick": "For premium block blobs, think **fast but not geo-built-in**: LRS or ZRS only. This rule of thumb is for the account type in the question; standard general-purpose v2 accounts have a broader redundancy menu.",
+      "examTip": "When an answer offers RA-GRS for a premium block blob account, check the account type matrix before thinking about endpoints. AZ-104 often tests whether you know that premium and standard storage accounts do not share the same redundancy options."
+    },
+    "sources": [
+      {
+        "title": "Storage Account Overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+      },
+      {
+        "title": "Data redundancy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+      },
+      {
+        "title": "Change how a storage account is replicated - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/redundancy-migration"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.2-07",
+    "objective": "D2.2.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Your company is creating a storage account in the Canada Central region and wants to use GRS. A solution architect asks whether the team can choose East US as the storage account's secondary region because most compute resources run there.\n\nWhat should you explain?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Yes. GRS lets administrators choose any Azure public region as the secondary region"
+      },
+      {
+        "id": "B",
+        "text": "No. For Azure Storage geo-redundancy, the secondary region is determined by the primary region and cannot be changed for the account"
+      },
+      {
+        "id": "C",
+        "text": "Yes. The secondary region can be changed after the first Last Sync Time value appears"
+      },
+      {
+        "id": "D",
+        "text": "No. GRS is supported only when the primary region has no paired region"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The question is about built-in Azure Storage geo-redundancy for a storage account, not a custom application architecture that copies data between two independently created storage accounts.",
+    "sections": {
+      "correctAnswer": "**B. No. For Azure Storage geo-redundancy, the secondary region is determined by the primary region and cannot be changed for the account**. Microsoft documents that when a storage account is created, the paired secondary region is determined from the selected primary region and cannot be changed.",
+      "technical": "Azure regions are independent locations, and some are associated with another region as a region pair. Some Azure services, including Azure Storage GRS in paired regions, use these pairings as part of geo-replication and geo-redundancy. The Azure regions list shows Canada Central paired with Canada East. Azure Storage documentation states that when you create a storage account, you choose the primary region; the paired secondary region is determined based on that primary region and cannot be changed.\n\nThe order of control is important:\n\n1. You choose the storage account's primary region, such as Canada Central.\n2. Azure Storage determines the secondary region for the built-in geo-redundant copy.\n3. The account's normal service endpoints keep the same names; failover changes DNS to point those endpoints at the promoted region.\n4. You cannot point that built-in GRS replica at an arbitrary compute region such as East US.\n\nThis does not prevent a broader architecture from using East US. You could deploy compute in East US, create another storage account in East US, or copy selected data there using tools or application logic. That design is separate from the storage account's built-in GRS secondary region. Also, not every Azure region has a paired region; the regions documentation identifies nonpaired regions with N/A. The exam distinction is that region-pair metadata and storage-account redundancy are service-defined, not user-selected per account.",
+      "wrongOptions": {
+        "A": "GRS does not let you choose any arbitrary public Azure region as the built-in secondary. Misconception: Geo-redundancy is the same as user-defined replication topology. Could be correct when designing application-level replication between separate storage accounts that you create in chosen regions.",
+        "C": "Last Sync Time helps estimate how far the secondary has caught up; it is not a control for changing the secondary region. Misconception: Replication status properties are configuration knobs. Could be correct when deciding whether to initiate unplanned failover, not when selecting a secondary location.",
+        "D": "GRS is not limited to regions without pairs. Canada Central has a paired region, Canada East, and paired-region behavior is part of many Azure geo-redundancy designs. Misconception: Nonpaired regions are the only regions that need geo-redundancy. Could be correct only if a specific service or region availability table said a target SKU was unsupported in a paired region, which is not the rule here."
+      },
+      "plainEnglish": "With built-in GRS, you pick where the storage account lives first. Azure then decides the backup region according to its regional design for that storage service. You do not get a drop-down to say, `Make East US the secondary for this Canada Central account.` If the business needs a copy in East US, build that separately by copying data to another storage account or by designing the application to write there.",
+      "analogy": "A bank branch sends its official disaster archive to a head-office-selected partner branch. The local manager can choose to open the main account in Canada Central, but cannot tell the archive truck to go to whichever city is convenient for the app team.\n\n| Analogy | Azure reality |\n|---|---|\n| Main branch | Primary storage region |\n| Partner archive branch | Service-determined secondary region |\n| Head office pairing rules | Azure region pairing and storage geo-replication design |\n| Separate courier shipment | Manual copy or application-level replication |\n\n**Where the analogy breaks down:** Azure Storage uses automated asynchronous replication and DNS endpoint behavior, not a physical truck schedule. Some Azure regions are nonpaired, and different Azure services can use different reliability models.",
+      "jargon": [
+        {
+          "term": "Canada Central",
+          "definition": "An Azure public cloud region in Toronto that the Azure regions list shows as paired with Canada East."
+        },
+        {
+          "term": "Canada East",
+          "definition": "An Azure public cloud region in Quebec that is listed as the paired region for Canada Central."
+        },
+        {
+          "term": "Region pair",
+          "definition": "An association between two Azure regions, usually in the same geography, used by some Azure services for geo-replication, updates, or disaster recovery design."
+        },
+        {
+          "term": "Nonpaired region",
+          "definition": "An Azure region whose paired-region entry is N/A in the regions list."
+        },
+        {
+          "term": "GRS",
+          "definition": "Geo-redundant storage, which asynchronously replicates storage data to a service-determined secondary region."
+        },
+        {
+          "term": "Primary region",
+          "definition": "The Azure region selected for the storage account's active storage endpoints during normal operation."
+        },
+        {
+          "term": "Secondary region",
+          "definition": "The region that receives the built-in geo-replicated copy for a geo-redundant storage account."
+        },
+        {
+          "term": "Application-level replication",
+          "definition": "A custom pattern where an application or copy tool writes or copies data to another account or region outside the storage account's built-in redundancy setting."
+        }
+      ],
+      "watchOut": "- Built-in Storage GRS secondary location is not a user-selected arbitrary region.\n- Region pairs do not automatically make your entire solution highly available; you still need a DR plan.\n- Some regions are nonpaired, and region/SKU support should be checked before selecting a location.\n- A separate account in East US is an architecture choice, not the same thing as changing the Canada Central account's GRS secondary.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure Storage determines the paired secondary region based on the storage account's primary region and that this secondary cannot be changed. The Azure regions list identifies paired regions and N/A entries for regions without a pair.",
+        "recommendation": "When compute and storage regional strategies differ, draw both maps: the platform-managed storage redundancy map and the application deployment map. If a business-selected recovery region is mandatory, plan separate accounts, data-copy tooling, identity, networking, and consistency checks instead of relying on GRS alone."
+      },
+      "memoryTrick": "For Storage GRS, you pick the **primary**, Azure picks the **secondary**. This is a simplification because some regions are nonpaired and service availability still needs checking, but it prevents the common wrong answer that you can choose any secondary.",
+      "examTip": "Watch for wording like **choose the secondary region**. Built-in Azure Storage redundancy does not work that way. If an option says to select an arbitrary paired or nonpaired secondary region for the account, rule it out unless the question is about manual migration or custom replication."
+    },
+    "sources": [
+      {
+        "title": "Data redundancy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+      },
+      {
+        "title": "List of Azure regions",
+        "url": "https://learn.microsoft.com/en-us/azure/reliability/regions-list"
+      },
+      {
+        "title": "Azure region pairs and nonpaired regions",
+        "url": "https://learn.microsoft.com/en-us/azure/reliability/regions-paired"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.2-08",
+    "objective": "D2.2.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a standard general-purpose v2 storage account that will store reference data for a customer portal. The business requirements are:\n\n- The account must remain readable and writable if one availability zone in the primary region fails.\n- The data must also be protected against a complete primary-region outage.\n- During a primary-region outage, the portal must continue to read reference data from the secondary region before any failover is completed.\n- You should choose the least expensive redundancy option that satisfies all three requirements.\n\nWhich redundancy option should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "ZRS"
+      },
+      {
+        "id": "B",
+        "text": "GRS"
+      },
+      {
+        "id": "C",
+        "text": "RA-GRS"
+      },
+      {
+        "id": "D",
+        "text": "RA-GZRS"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The account is in a region that supports availability zones and RA-GZRS for standard general-purpose v2 accounts. The reference data can tolerate eventually consistent reads from the secondary region during an outage.",
+    "sections": {
+      "correctAnswer": "**D. RA-GZRS**. The requirements need primary-region zone resilience, cross-region replication, and read access to the secondary region before failover; RA-GZRS is the least expensive listed option that includes all three capabilities.",
+      "technical": "This question layers three redundancy requirements, so the correct answer must satisfy all of them rather than just the most obvious one. The first requirement is continued read and write availability during a single availability zone failure in the primary region. That requires zone redundancy in the primary region: ZRS or GZRS/RA-GZRS. The second requirement is protection against a complete primary-region outage. That requires geo-replication: GRS, RA-GRS, GZRS, or RA-GZRS. The third requirement is read access from the secondary region before failover completes. That requires a read-access geo-redundant option: RA-GRS or RA-GZRS.\n\nIntersect those sets:\n\n| Requirement | Options that satisfy it |\n|---|---|\n| Zone failure with primary read/write availability | ZRS, GZRS, RA-GZRS |\n| Regional disaster protection | GRS, RA-GRS, GZRS, RA-GZRS |\n| Secondary reads before failover | RA-GRS, RA-GZRS |\n\nOnly RA-GZRS appears in all three rows. It uses ZRS in the primary region, asynchronously replicates data to a secondary region, and exposes read access to the secondary endpoint. The phrase least expensive does not make RA-GRS correct because RA-GRS lacks primary-region zone redundancy. Likewise, ZRS is less expensive than geo-zone redundancy in many scenarios, but it lacks a secondary region.\n\nCost still matters after choosing the capability set. LRS is lowest cost and least durable. Adding geo-redundancy can incur data transfer charges, and read-access geo-redundant options can cost more than their non-RA counterparts. The least expensive valid answer is the cheapest option that meets every requirement, not the cheapest option overall.",
+      "wrongOptions": {
+        "A": "ZRS handles the availability zone failure but does not replicate to a secondary region or expose a secondary read endpoint. Misconception: Same-region zone resilience is enough for regional disaster recovery. Could be correct when governance requires data to stay in one region or when the requirement stops at zonal resilience.",
+        "B": "GRS protects data in another region but does not provide read access to the secondary before failover and does not use zone redundancy in the primary region. Misconception: Geo-redundancy automatically includes both zone resilience and readable replicas. Could be correct when only regional durability is required and secondary reads are not needed before failover.",
+        "C": "RA-GRS allows reads from the secondary region but its primary-region replication is locally redundant rather than zone-redundant. Misconception: The RA prefix covers availability zones. Could be correct when the requirement is regional read continuity without a need to remain read/write during a primary-region zone outage."
+      },
+      "plainEnglish": "The business is asking for three things at once. It wants the main region to survive one zone failing. It wants a copy in another region. It also wants the website to read from that other region during an outage before a full switch happens. ZRS gives the first item. GRS gives the second. RA-GRS gives the second and third. RA-GZRS is the one that gives all three, so it is the cheapest correct answer among the choices even though it costs more than simpler options.",
+      "analogy": "A library needs three protections for a reference collection: copies in multiple buildings on campus, a disaster copy in another city, and a public reading room in that other city. ZRS gives multiple campus buildings. GRS ships a disaster copy to another city. RA-GRS opens the other-city reading room but keeps the campus copy in one building. RA-GZRS does all three.\n\n| Analogy | Azure reality |\n|---|---|\n| Multiple campus buildings | ZRS in the primary region |\n| Disaster copy in another city | Geo-replication to a secondary region |\n| Other-city reading room | Read-access secondary endpoint |\n| All three protections | RA-GZRS |\n\n**Where the analogy breaks down:** A library copy may be manually updated, while Azure Storage uses asynchronous geo-replication and can return eventually consistent data from the secondary endpoint.",
+      "jargon": [
+        {
+          "term": "RA-GZRS",
+          "definition": "Read-access geo-zone-redundant storage, combining ZRS in the primary region, geo-replication to a secondary region, and secondary read access."
+        },
+        {
+          "term": "ZRS",
+          "definition": "Zone-redundant storage, which synchronously writes copies across availability zones in the primary region."
+        },
+        {
+          "term": "GRS",
+          "definition": "Geo-redundant storage, which asynchronously replicates data to another region but does not provide secondary read access during normal operation."
+        },
+        {
+          "term": "RA-GRS",
+          "definition": "Read-access geo-redundant storage, which provides secondary reads but uses local redundancy in the primary region rather than zone redundancy."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate location inside an Azure region with independent power, cooling, and networking."
+        },
+        {
+          "term": "Secondary endpoint",
+          "definition": "The read-only service endpoint for a read-access geo-redundant account's secondary region."
+        },
+        {
+          "term": "Failover",
+          "definition": "An operation that promotes the secondary region and updates endpoint DNS so the account can be used from the new primary."
+        },
+        {
+          "term": "Least expensive",
+          "definition": "An exam phrase meaning choose the lowest-cost option that still satisfies every stated technical requirement."
+        }
+      ],
+      "watchOut": "- The cheapest valid option is not always the cheapest option in the list.\n- RA-GRS adds secondary reads but not primary-region zone redundancy.\n- GZRS without RA would not satisfy the requirement to read from secondary before failover.\n- Secondary reads can be stale because geo-replication is asynchronous.\n- Azure Files does not support RA-GRS or RA-GZRS, but this scenario is a general-purpose account storing reference data and not an Azure Files read-access design.",
+      "productionTip": {
+        "official": "Microsoft documents that RA-GZRS uses ZRS in the primary region, asynchronously replicates to a secondary region, and permits read access to the secondary. The redundancy documentation also notes that selecting a redundancy option involves tradeoffs between lower cost and higher availability.",
+        "recommendation": "Use RA-GZRS only for data where the added availability justifies the extra cost and complexity. For reference data, publish a staleness banner or version marker so users and support teams know when the portal is serving secondary-region data."
+      },
+      "memoryTrick": "For **zone + geo + read**, choose **RA-GZRS**: RA for secondary reads, G for another region, Z for zones. This mnemonic is a simplification because it does not cover regional SKU support or application consistency design.",
+      "examTip": "Break combined requirements into columns. If the prompt includes **zone failure**, **region failure**, and **read from secondary**, only RA-GZRS fits. The phrase **least expensive** should make you reject overbuilt features only after all hard requirements are met."
+    },
+    "sources": [
+      {
+        "title": "Data redundancy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+      },
+      {
+        "title": "Storage Account Overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+      },
+      {
+        "title": "Use geo-redundancy to design highly available applications",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/geo-redundant-design"
+      },
+      {
+        "title": "Storage redundancy change FAQs - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy-change-faq"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

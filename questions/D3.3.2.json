@@ -1,0 +1,700 @@
+[
+  {
+    "id": "D3.3.2-01",
+    "objective": "D3.3.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains a resource group named `rg-lab`. A developer wants to run a small web app container and a helper container that periodically checks the web app by using `http://localhost`. The two containers must be scheduled together, share the same exposed public IP address, and be deleted as one unit after the lab ends. The developer also says the images are Windows container images.\n\nWhat should you tell the developer?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create one Azure Container Instances container group, but use Linux container images because multi-container groups support Linux containers only"
+      },
+      {
+        "id": "B",
+        "text": "Create two separate Azure Container Instances container groups and use a public load balancer to make `localhost` work between them"
+      },
+      {
+        "id": "C",
+        "text": "Create one Windows container group with two containers because all container group features work the same on Linux and Windows"
+      },
+      {
+        "id": "D",
+        "text": "Deploy the helper as an Azure Automation runbook because Azure Container Instances cannot run sidecar-style containers"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The requirement is one co-scheduled Azure Container Instances container group, not AKS pods or Azure Container Apps revisions. The application can be rebuilt or republished as Linux container images.",
+    "sections": {
+      "correctAnswer": "**A. Create one Azure Container Instances container group, but use Linux container images because multi-container groups support Linux containers only**. A container group is the ACI top-level resource for containers that share a host, lifecycle, local network, and storage volumes; however, Microsoft documents multi-container groups as Linux-only.",
+      "technical": "In Azure Container Instances, the top-level resource is the **container group**. A container group can contain one or more container instances that are scheduled on the same host machine. Containers in that group share a lifecycle, allocated resources, a local network namespace, and any configured volumes. This is why the helper container can call the web app container by using `localhost`: inside the group, containers can reach each other on local ports even when those ports are not exposed externally.\n\nFor this scenario the evaluation order is:\n\n1. Identify whether the two processes need to be co-scheduled and share network/storage. They do, so a single container group is the ACI construct.\n2. Check the operating system support. Microsoft states that multi-container groups currently support only Linux containers. Windows container deployments in ACI are supported as single container instances, not multi-container groups.\n3. Expose only the ports that outside clients need on the group IP address. The helper can use the local network without a separate public port.\n4. Delete the container group when the lab is finished; the group lifecycle covers both containers.\n\nThe exception is that a single Windows container can still run in ACI. What fails is the combination of Windows plus multiple containers in one group. If the app must remain Windows-based and the helper must be a separate container, another platform such as AKS may be needed, but that is outside this objective's simple ACI provisioning focus.",
+      "wrongOptions": {
+        "B": "Two separate container groups do not share a local network namespace, so `localhost` in one group points back to that same group, not to the other group. Misconception: public networking can make two independent containers behave like co-scheduled containers. Could be correct when two applications are intentionally independent and communicate through public or private IP addresses rather than localhost.",
+        "C": "ACI supports Windows containers, but Microsoft documents multiple containers per container group as restricted to Linux containers. Misconception: because ACI has one API for Linux and Windows, every feature has identical OS support. Could be correct when the requirement is one Windows container instance without a sidecar.",
+        "D": "Sidecar-style designs are a documented use case for ACI multi-container groups, especially logging, monitoring, and helper processes. Misconception: ACI can run only a single foreground application and cannot co-locate supporting containers. Could be correct when the helper is not a containerized process and should run on an automation schedule outside the app lifecycle."
+      },
+      "plainEnglish": "Think of a container group as one small rented workshop. Every worker in that workshop starts and leaves together, can talk across the room, and can use the same storage shelves. That is exactly what the web container and helper container need. The helper does not need a public address to reach the web app because both are inside the same group and can use `localhost`. The catch is the operating system. Microsoft allows this multi-container workshop arrangement only for Linux containers in ACI. A Windows container can still run in ACI, but not as part of a multi-container group with a sidecar.",
+      "analogy": "Imagine a food truck with a cook and a cashier working in the same vehicle. They share the same counter, power supply, and opening hours. A customer sees one truck window, not two separate shops.\n\n| Analogy | Azure reality |\n|---|---|\n| Food truck | Container group |\n| Cook container | Main web app container |\n| Cashier or inspector | Helper sidecar container |\n| Same vehicle intercom | `localhost` between containers in the group |\n| One public serving window | One group public IP address and exposed ports |\n\n**Where the analogy breaks down:** ACI uses container images, network namespaces, DNS labels, and Azure resource lifecycle operations. The food truck image does not model the Linux-only limitation for multi-container groups.",
+      "jargon": [
+        {
+          "term": "Azure Container Instances (ACI)",
+          "definition": "A serverless Azure service for running containers without managing virtual machines or a Kubernetes cluster."
+        },
+        {
+          "term": "Container group",
+          "definition": "The top-level ACI resource that can schedule containers together on one host with shared lifecycle, local network, resources, and volumes."
+        },
+        {
+          "term": "Sidecar",
+          "definition": "A helper container that runs beside a main application container to provide supporting behavior such as logging, monitoring, or content refresh."
+        },
+        {
+          "term": "Localhost",
+          "definition": "The loopback address inside a network namespace. In an ACI container group, containers can reach each other through localhost on their listening ports."
+        },
+        {
+          "term": "Public IP address",
+          "definition": "An internet-routable address assigned to the container group when public access is configured."
+        },
+        {
+          "term": "Linux container image",
+          "definition": "A container image built to run with a Linux userspace and compatible Linux container runtime support."
+        },
+        {
+          "term": "Windows container image",
+          "definition": "A container image built from Windows base images and intended for Windows container runtime support."
+        },
+        {
+          "term": "Lifecycle",
+          "definition": "The creation, start, restart, stop, update, and delete behavior that applies to the container group as a unit."
+        }
+      ],
+      "watchOut": "- Multi-container ACI groups are Linux-only in the Microsoft documentation.\n- Containers in the same group can use `localhost`; separate groups cannot use localhost to reach each other.\n- The public IP address belongs to the group, not to each individual container.\n- Deleting the container group removes the co-scheduled containers together.\n- Do not assume Windows support for one ACI container means Windows support for every ACI feature.",
+      "productionTip": {
+        "official": "Microsoft documents a container group as containers scheduled on the same host that share lifecycle, local network, resources, and volumes. The same container group page states that multi-container groups currently support only Linux containers, while the overview lists multiple containers per group among features restricted to Linux.",
+        "recommendation": "Use a multi-container group when the helper is tightly coupled to the main container and should start, stop, and be deleted with it. Keep each container's exposed ports intentional, and rebuild Windows-only sidecars as Linux images only after confirming the application framework and dependencies support that move."
+      },
+      "memoryTrick": "For ACI sidecars, remember **same group, same trip, Linux ship**. It is a simplification because single Windows containers still run in ACI, but multi-container groups are the Linux-only part.",
+      "examTip": "Clue words are **same host**, **localhost**, **one public IP**, and **deleted as one unit**. Those point to a container group, not separate ACI deployments. The trap is the Windows image detail: a simple single Windows ACI container is supported, but a multi-container group requires Linux. A harder version may include an Azure Files mount or sidecar log collector; the shared group idea remains the same, but you must still check OS support."
+    },
+    "sources": [
+      {
+        "title": "Introduction to container groups - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-container-groups"
+      },
+      {
+        "title": "Serverless containers in Azure - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.2-02",
+    "objective": "D3.3.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure Container Instances deployment that runs a nightly image-processing command. The container writes results to an Azure file share and then exits. You want Azure to retry the container if the process exits with an error, but you do not want the container to restart repeatedly after a successful run.\n\nWhich restart policy should you specify?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`Always`, because it is the default restart policy for Azure Container Instances"
+      },
+      {
+        "id": "B",
+        "text": "`OnFailure`, because the container should rerun only after a nonzero exit code"
+      },
+      {
+        "id": "C",
+        "text": "`Never`, because the task writes output to persistent storage"
+      },
+      {
+        "id": "D",
+        "text": "No restart policy, because ACI automatically detects batch jobs from the command line"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The workload is a run-to-completion batch task. The container application returns exit code 0 when the job succeeds and a nonzero exit code when it fails.",
+    "sections": {
+      "correctAnswer": "**B. `OnFailure`, because the container should rerun only after a nonzero exit code**. `OnFailure` runs containers at least once and restarts them when the executed process fails, while a successful completion is not restarted like a service loop.",
+      "technical": "ACI restart policy is configured at the container group level when you create the group. Microsoft documents three settings: `Always`, `OnFailure`, and `Never`. `Always` is the default when you do not specify a policy, and it is suited to service-style containers that should keep running. `OnFailure` restarts containers only when the process terminates with a nonzero exit code. `Never` does not restart containers after a successful exit code 0; current documentation also notes that a nonzero exit might still be restarted by the platform while it attempts recovery.\n\nFor the nightly image-processing job, the desired sequence is:\n\n1. Start the container group on demand or by an external schedule.\n2. Run the image processor once.\n3. If the process succeeds and exits 0, leave the container state as terminated so billing for running compute stops.\n4. If the process fails with a nonzero exit code, let ACI restart the container to retry the task.\n\nThat sequence maps to `OnFailure`. The data destination, an Azure file share, is separate from the restart decision. Persistent output storage preserves results across container restarts or deletion, but it does not tell ACI which restart policy to choose. If you later need exactly-once semantics regardless of exit code, you must design idempotency or external job control instead of relying only on restart policy.",
+      "wrongOptions": {
+        "A": "`Always` is the default, but it would restart the container even after the image-processing command completes successfully. Misconception: the default policy is automatically the safest policy for every workload. Could be correct when the container hosts a web server or daemon that should stay running continuously.",
+        "C": "`Never` prevents a successful run from restarting, but it does not express the desired retry-on-failure behavior as directly as `OnFailure`. Misconception: writing to persistent storage is what controls ACI retries. Could be correct when a task must not retry automatically and an operator or scheduler handles any rerun.",
+        "D": "ACI does not infer a batch-job policy merely because the command exits; if omitted, the documented default is `Always`. Misconception: container platforms inspect application intent from the command line and choose lifecycle settings automatically. Could be correct only if another deployment template explicitly sets the restart policy outside the visible command."
+      },
+      "plainEnglish": "A restart policy tells Azure what to do after the program inside the container stops. For a website, stopping usually means something went wrong, so `Always` makes sense. For a nightly task, stopping can be normal: the work is done. You want one retry rule: try again when the program reports failure, but do not loop forever after success. `OnFailure` is that rule. It treats a nonzero exit code as a failed run and a zero exit code as a completed run.",
+      "analogy": "Picture a courier who must deliver one package. If the courier returns with a signed delivery receipt, the dispatcher does not send the same courier back out. If the courier returns with a failed-delivery code, the dispatcher sends another attempt.\n\n| Analogy | Azure reality |\n|---|---|\n| Courier route | Batch container run |\n| Signed receipt | Exit code 0 |\n| Failed-delivery code | Nonzero exit code |\n| Dispatcher retry rule | `OnFailure` restart policy |\n| Warehouse that stores parcels | Azure file share for output |\n\n**Where the analogy breaks down:** Containers may restart on the same group infrastructure, billing is measured by ACI runtime, and application idempotency matters if partial output was written before failure.",
+      "jargon": [
+        {
+          "term": "Restart policy",
+          "definition": "An ACI setting that controls whether containers in a group restart after the container process exits."
+        },
+        {
+          "term": "`Always`",
+          "definition": "The default ACI restart policy that always restarts containers in the group."
+        },
+        {
+          "term": "`OnFailure`",
+          "definition": "An ACI restart policy that restarts containers when the process terminates with a nonzero exit code."
+        },
+        {
+          "term": "`Never`",
+          "definition": "An ACI restart policy that does not restart containers after a successful zero exit code, though current documentation notes nonzero exits might still be restarted by the platform."
+        },
+        {
+          "term": "Exit code",
+          "definition": "A numeric result returned by a process; by convention 0 means success and nonzero means an error or failure."
+        },
+        {
+          "term": "Batch job",
+          "definition": "A workload that runs to completion rather than serving requests continuously."
+        },
+        {
+          "term": "Azure file share",
+          "definition": "A managed Azure Files share that can store files outside the lifetime of a container."
+        },
+        {
+          "term": "Terminated state",
+          "definition": "The state shown for a container whose process has completed when using policies such as `OnFailure` or `Never`."
+        }
+      ],
+      "watchOut": "- If you omit the restart policy, ACI applies `Always`.\n- `OnFailure` depends on the application returning meaningful exit codes.\n- Persistent storage does not choose a restart policy for you.\n- Design batch jobs to avoid corrupting output when a retry starts after a partial failure.\n- To change restart policy later, Microsoft lists it among properties that require deleting and recreating the group.",
+      "productionTip": {
+        "official": "Microsoft documents `Always`, `Never`, and `OnFailure` for container groups and states that `Always` is the default. The run-once task guidance explains that container instances are billed by the second and that stopped run-to-completion containers can leave logs available for inspection.",
+        "recommendation": "For production batch work, combine `OnFailure` with idempotent writes, durable output paths, and post-run status checks using `az container show` and `az container logs`. Do not hide failures by forcing the application to exit 0 unless another reliable monitor records the failure state."
+      },
+      "memoryTrick": "**OnFailure means one good finish is enough.** This shortcut assumes the program uses exit code 0 correctly; it fails when the application reports success even after losing data.",
+      "examTip": "The phrase **retry if the process exits with an error** is the giveaway for `OnFailure`. If you see **keep a web app running**, expect `Always`. If you see **run once and never automatically retry**, compare with `Never`. A harder question may mention the documented nuance that nonzero exits can still be restarted by the platform under `Never`, but `OnFailure` remains the intended retry policy for normal failed task handling."
+    },
+    "sources": [
+      {
+        "title": "Restart policy for run-once tasks - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-restart-policy"
+      },
+      {
+        "title": "Update container group - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-update"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.2-03",
+    "objective": "D3.3.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You have an Azure subscription with a virtual network named `vnet-prod`. You need to provision an Azure Container Instances container group for an internal API that will call a database in `vnet-prod`. The API must not be directly reachable from the internet. A teammate suggests assigning a public DNS name label so developers can browse to `api-prod.australiaeast.azurecontainer.io`.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Deploy the container group into a subnet delegated to Azure Container Instances to give it private virtual network connectivity"
+      },
+      {
+        "id": "B",
+        "text": "Use a public IP address and DNS name label because virtual network container groups still expose `label.region.azurecontainer.io`"
+      },
+      {
+        "id": "C",
+        "text": "Plan outbound connectivity through a NAT gateway when the container group is deployed into a virtual network"
+      },
+      {
+        "id": "D",
+        "text": "Use global virtual network peering if the database is in a different Azure region"
+      },
+      {
+        "id": "E",
+        "text": "Deploy the container group to any existing subnet that already contains virtual machines and network interfaces"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The database is reachable from the target virtual network or connected network. The question focuses on ACI virtual network deployment, not Application Gateway, Container Apps ingress, or AKS Services.",
+    "sections": {
+      "correctAnswer": "**A. Deploy the container group into a subnet delegated to Azure Container Instances to give it private virtual network connectivity** and **C. Plan outbound connectivity through a NAT gateway when the container group is deployed into a virtual network**. Microsoft documents VNet deployment for secure private communication and says NAT gateway is the supported outbound configuration for ACI container groups in a virtual network.",
+      "technical": "A public ACI deployment and a virtual network ACI deployment have different networking behavior. For an internet-facing container group, you can specify public IP settings, ports, and a DNS name label. Microsoft describes the resulting FQDN pattern as `customlabel.azureregion.azurecontainer.io`, such as a regional `azurecontainer.io` name. That is useful for a public lab or demo.\n\nFor an internal API, the better fit is deploying the container group into an Azure virtual network. The subnet must be delegated before provisioning, and the subnet used for container groups can contain only container groups. In the newer guidance, network profiles from older API versions are retired and should be ignored when using API version 2021-07-01 or later.\n\nThe order for the scenario is:\n\n1. Choose private placement because direct internet reachability is forbidden.\n2. Create or select a subnet appropriate for ACI and delegate it to Microsoft.ContainerInstance/containerGroups.\n3. Deploy the group with private IP settings or subnet IDs rather than a public DNS label.\n4. Configure NAT gateway for outbound connectivity from the VNet-deployed group if the container needs egress, because Microsoft states this is the only supported outbound configuration.\n\nImportant restrictions rule out the teammate's suggestion. Container groups deployed to a virtual network do not currently support exposing containers directly to the internet with a public IP address or FQDN. Global VNet peering is also listed as unsupported for these ACI virtual network scenarios.",
+      "wrongOptions": {
+        "B": "Microsoft lists public IP or DNS label exposure as unsupported for container groups deployed to a virtual network. Misconception: every ACI container group can always receive a regional `azurecontainer.io` FQDN. Could be correct for a public container group that is not deployed into a virtual network and is intended to receive internet traffic.",
+        "D": "The virtual network concepts article lists global virtual network peering as an unsupported networking scenario for ACI. Misconception: all Azure virtual network features apply unchanged to delegated ACI subnets. Could be correct for other Azure resources whose services support cross-region peering, but not as the ACI answer here.",
+        "E": "ACI requires a suitable delegated subnet, and Microsoft says the subnet used for container groups can contain only container groups. Misconception: delegation is only a tag and does not affect what else can live in the subnet. Could be correct when deploying a normal VM into a general-purpose subnet, not an ACI delegated subnet."
+      },
+      "plainEnglish": "A public ACI container is like a small kiosk on the street: you can give it a public address and a friendly name. A VNet-deployed ACI container is more like a room inside a private office building. It can talk privately to other rooms, such as a database, but it does not automatically get a public front door with an `azurecontainer.io` name. You also need to plan how it reaches the outside world when it must download updates or call external services. Microsoft says a NAT gateway is the supported way to provide that outbound path.",
+      "analogy": "A company has two ways to place a temporary service desk. One desk can sit in a public lobby with a sign visible from the street. The other can sit inside the staff-only area, where it can reach internal departments but needs an approved mailroom route for outbound packages.\n\n| Analogy | Azure reality |\n|---|---|\n| Public lobby desk | Public ACI container group |\n| Street sign | DNS name label and FQDN |\n| Staff-only area | Delegated virtual network subnet |\n| Internal department | Database in the virtual network |\n| Mailroom route | NAT gateway for outbound traffic |\n\n**Where the analogy breaks down:** Azure networking uses subnets, delegation, route behavior, DNS settings, and service-specific limitations rather than human building access rules.",
+      "jargon": [
+        {
+          "term": "Azure Virtual Network",
+          "definition": "An Azure networking service that provides private address spaces and connectivity for Azure resources."
+        },
+        {
+          "term": "Delegated subnet",
+          "definition": "A subnet assigned to a particular Azure service so that the service can deploy resources into it with required permissions and restrictions."
+        },
+        {
+          "term": "Public IP address",
+          "definition": "An IP address reachable from the internet when firewall and service settings permit access."
+        },
+        {
+          "term": "DNS name label",
+          "definition": "A label that can form an ACI public FQDN such as `label.region.azurecontainer.io` for public container groups."
+        },
+        {
+          "term": "FQDN",
+          "definition": "Fully qualified domain name; the complete DNS name used to reach a host or service."
+        },
+        {
+          "term": "NAT gateway",
+          "definition": "An Azure networking resource that provides scalable outbound internet connectivity for resources in a subnet."
+        },
+        {
+          "term": "Global virtual network peering",
+          "definition": "A virtual network peering connection between Azure regions; listed as unsupported in the ACI virtual network limitations."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A range of IP addresses within a virtual network used to place and isolate resources."
+        }
+      ],
+      "watchOut": "- Public DNS labels are for public ACI deployments, not VNet-deployed container groups.\n- The ACI subnet should be delegated and contain only container groups.\n- NAT gateway is the documented supported outbound path for ACI in a virtual network.\n- Smaller subnets can cause allocation problems; Microsoft recommends at least /24 for container group deployments.\n- DNS settings from the virtual network are not inherited automatically; set container DNS explicitly if needed.",
+      "productionTip": {
+        "official": "Microsoft documents that deploying container groups into a virtual network lets containers communicate securely with resources in that network. The virtual network concept page also states that public IP or DNS label exposure is unsupported for VNet-deployed groups and that NAT gateway is required for supported outbound connectivity.",
+        "recommendation": "Create a dedicated delegated subnet for ACI and document inbound, outbound, and name-resolution requirements before deployment. If developers need browser access, publish through an approved internal or external front end rather than trying to attach a public ACI FQDN to the private container group."
+      },
+      "memoryTrick": "**Public label or private subnet, not both on the same VNet group.** This is a simplified exam rule; production ingress can still be built with other Azure networking services around the private group.",
+      "examTip": "The words **must not be directly reachable from the internet** remove public IP and DNS label answers. The words **database in a virtual network** point toward a delegated subnet. Look for the extra outbound clue: VNet deployment requires NAT gateway for supported outbound connectivity. A harder item may give a YAML snippet with `ipAddress.type: Public` and `subnetIds` together; the correct fix is to align the network mode with private VNet deployment."
+    },
+    "sources": [
+      {
+        "title": "Deploy container group to Azure virtual network - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-vnet"
+      },
+      {
+        "title": "Scenarios to use a virtual network with Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-virtual-network-concepts"
+      },
+      {
+        "title": "Serverless containers in Azure - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.2-04",
+    "objective": "D3.3.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a private Azure Container Registry named `crprod.azurecr.io` that has a private endpoint. You need to provision an Azure Container Instances container group in a virtual network and pull the image `crprod.azurecr.io/api/worker:v4`. The security team does not want registry usernames or passwords in the container group definition.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable the ACR admin account and pass the admin username and password to `az container create`"
+      },
+      {
+        "id": "B",
+        "text": "Use a system-assigned managed identity for the ACR image pull because it is created automatically with the container group"
+      },
+      {
+        "id": "C",
+        "text": "Use a user-assigned managed identity, grant it `AcrPull` on the registry, and reference it for the image pull"
+      },
+      {
+        "id": "D",
+        "text": "Use a service principal with `AcrPull`, because service principal authentication is required for ACR private endpoint image pulls"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The registry is Azure Container Registry, not a self-hosted private registry. The container group is deployed to a virtual network that can reach the ACR private endpoint.",
+    "sections": {
+      "correctAnswer": "**C. Use a user-assigned managed identity, grant it `AcrPull` on the registry, and reference it for the image pull**. Microsoft documents managed identity authenticated pulls from ACR for ACI, and specifically says system-assigned identity is not supported for ACR image pulls; private endpoint ACR pulls require managed identity rather than service principal authentication.",
+      "technical": "ACI can pull images from public registries, from Azure Container Registry with credentials, and from ACR by using a managed identity. For a normal private ACR reachable publicly, a service principal or registry credentials can work. For an ACR configured with a private endpoint, the documented path is different: use ACI in a virtual network and authenticate the image pull with a managed identity.\n\nThe identity details matter. Microsoft states that ACI does not support **system-assigned managed identity-authenticated image pulls** with ACR. You must use a **user-assigned managed identity** for ACR image pulls regardless of the container group operating system. The managed identity's service principal needs a role assignment such as `AcrPull` scoped to the registry. Then the container group can include identity configuration and image registry credentials with the managed identity resource ID, or the equivalent Azure CLI parameters such as `--assign-identity` and `--acr-identity`.\n\nFor the private endpoint variant, another network rule applies: the ACR private endpoint must be on a different subnet than the subnet delegated to Azure Container Instances. ACI-delegated subnets can contain only container groups, so placing the registry private endpoint in the same delegated subnet causes deployment conflict. This makes option C the only answer that satisfies no stored password, private endpoint access, and ACI's managed identity support boundary.",
+      "wrongOptions": {
+        "A": "The ACR admin account uses static username and password credentials, which the scenario explicitly rejects. Misconception: the portal's easy admin account is a production-friendly answer whenever image pulls fail. Could be correct for a quick test from a registry without private endpoint restrictions, but not for a passwordless private endpoint design.",
+        "B": "Microsoft documents that ACI does not support system-assigned managed identity-authenticated image pulls with ACR. Misconception: every managed identity feature supports both system-assigned and user-assigned identities interchangeably. Could be correct for a different managed identity scenario inside the running container, not for authenticating the ACR pull.",
+        "D": "Microsoft states that service principal authentication cannot be used to pull images from an ACR with a private endpoint enabled; managed identity is required. Misconception: a service principal with `AcrPull` is always the preferred headless registry identity. Could be correct for pulling from a private ACR without private endpoint networking when credentials are acceptable."
+      },
+      "plainEnglish": "The container platform must download the image before the container can start. Because the registry is private and protected by a private endpoint, the platform needs a trusted Azure identity instead of a typed password. In this ACI feature, that trusted identity must be a user-assigned managed identity. You give that identity permission to pull from the registry, then tell the container group to use it for the image pull. A system-assigned identity may sound simpler, but Microsoft says it is not supported for this ACR image-pull use.",
+      "analogy": "Imagine a secure warehouse that gives access cards to delivery robots. The robot cannot use a sticky note with a shared password, and this warehouse does not accept temporary cards printed by the robot itself. It accepts a registered reusable badge that the warehouse manager has granted pickup permission.\n\n| Analogy | Azure reality |\n|---|---|\n| Secure warehouse | Private Azure Container Registry |\n| Pickup permission | `AcrPull` role assignment |\n| Registered reusable badge | User-assigned managed identity |\n| Sticky note password | Registry username/password or admin account |\n| Private driveway | ACR private endpoint reachable from the VNet |\n\n**Where the analogy breaks down:** Azure validates Microsoft Entra identities, role assignments, private endpoint DNS, and subnet delegation rather than physical badges and driveways.",
+      "jargon": [
+        {
+          "term": "Azure Container Registry (ACR)",
+          "definition": "Azure's managed container registry service for storing and distributing container images."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A network interface that exposes an Azure service privately inside a virtual network by using Azure Private Link."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An Azure-managed Microsoft Entra identity that applications or services can use without storing credentials in code."
+        },
+        {
+          "term": "User-assigned managed identity",
+          "definition": "A standalone managed identity resource that can be attached to one or more Azure resources and referenced explicitly."
+        },
+        {
+          "term": "System-assigned managed identity",
+          "definition": "A managed identity tied to one Azure resource's lifecycle; not supported by ACI for ACR image pulls according to the Learn article."
+        },
+        {
+          "term": "`AcrPull`",
+          "definition": "An Azure role that grants pull-only access to images in Azure Container Registry."
+        },
+        {
+          "term": "Service principal",
+          "definition": "An application identity in Microsoft Entra ID often used by automation or services."
+        },
+        {
+          "term": "`--acr-identity`",
+          "definition": "An Azure CLI parameter for specifying the identity with access to the container registry during ACI creation."
+        }
+      ],
+      "watchOut": "- Private endpoint-enabled ACR pulls require managed identity, not service principal authentication.\n- Use a user-assigned managed identity for ACI image pulls from ACR; system-assigned identity is not supported for that action.\n- Grant only `AcrPull` when the container group only needs to pull images.\n- Keep the ACR private endpoint on a different subnet than the ACI delegated subnet.\n- Non-ACR private registries without a public IP are not supported for ACI image pulls, even with VNet connectivity.",
+      "productionTip": {
+        "official": "Microsoft's ACI managed identity image-pull article states that ACI doesn't support system-assigned managed identity-authenticated image pulls with ACR and requires a user-assigned identity. It also states that service principal authentication cannot pull from a private endpoint-enabled ACR and that the ACR private endpoint must be on a different subnet than the ACI-delegated subnet.",
+        "recommendation": "Create one user-assigned identity per workload or trust boundary, assign `AcrPull` only at the registry or repository scope your governance allows, and rotate image tags through deployment automation rather than granting push rights to runtime identities."
+      },
+      "memoryTrick": "For private ACR with ACI, remember **User-assigned pulls, passwords stay away**. The mnemonic is narrow: it applies to ACI pulling from ACR, not every possible managed identity use inside a running container.",
+      "examTip": "The strongest clues are **private endpoint**, **no usernames or passwords**, and **ACI**. Eliminate the admin account because it is credential-based. Eliminate service principals for private endpoint ACR pulls. Eliminate system-assigned identity because ACI's ACR image-pull support requires user-assigned identity. A harder question may hide this in YAML under `imageRegistryCredentials.identity`; the identity value should be the user-assigned identity resource ID."
+    },
+    "sources": [
+      {
+        "title": "Deploy container image from Azure Container Registry using a managed identity - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/using-azure-container-registry-mi"
+      },
+      {
+        "title": "Deploy container image from Azure Container Registry using a service principal - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-using-azure-container-registry"
+      },
+      {
+        "title": "YAML reference for container group - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-reference-yaml"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.2-05",
+    "objective": "D3.3.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You need to create an Azure Container Instances container group from a YAML file. The application requires two settings: `LOG_LEVEL=Info` and a database password named `DB_PASSWORD`. Operators will query the container group properties in the Azure portal and by using Azure CLI during troubleshooting. The password value must not appear in those properties.\n\nHow should you define the two settings?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use `value` for both `LOG_LEVEL` and `DB_PASSWORD` because environment variables are hidden by default"
+      },
+      {
+        "id": "B",
+        "text": "Use `value` for `LOG_LEVEL` and `secureValue` for `DB_PASSWORD` in the container's environment variables"
+      },
+      {
+        "id": "C",
+        "text": "Put both settings in the container image so Azure never stores environment variables"
+      },
+      {
+        "id": "D",
+        "text": "Use a public DNS name label for `LOG_LEVEL` and a secret volume for `DB_PASSWORD` because ACI does not support secure environment variables"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The setting is needed as an environment variable by the process. The question compares regular and secure environment variables in ACI, not Azure Key Vault injection by application code.",
+    "sections": {
+      "correctAnswer": "**B. Use `value` for `LOG_LEVEL` and `secureValue` for `DB_PASSWORD` in the container's environment variables**. ACI supports normal environment variables for nonsecret configuration and secure values for sensitive variables; secure variable values are not shown in container properties viewed through portal or CLI.",
+      "technical": "ACI lets you provide dynamic container configuration as environment variables at creation time. With Azure CLI, regular variables can be supplied through `--environment-variables`; with YAML or ARM-style definitions, each variable can have a `name` and either a `value` or a `secureValue`. Microsoft documents secure values for both Windows and Linux containers.\n\nThe difference is visibility. A regular environment variable's name and value are visible in the container group's properties when queried. A secure environment variable's name is visible, but its value is not displayed in the Azure portal or Azure CLI property output. The value is available only from inside the container process. Therefore `LOG_LEVEL=Info` is appropriate as a regular `value`, while `DB_PASSWORD` should use `secureValue`.\n\nThe YAML pattern is:\n\n```yaml\nenvironmentVariables:\n- name: LOG_LEVEL\n  value: Info\n- name: DB_PASSWORD\n  secureValue: \"<password>\"\n```\n\nThis is different from a secret volume. A secret volume stores secret data as files in a mounted volume and is restricted to Linux containers. Secure environment variables are available for both Windows and Linux containers. Also, baking the password into the image is worse because anyone with image access may extract it and every password rotation requires rebuilding or republishing the image.",
+      "wrongOptions": {
+        "A": "Regular environment variable values are visible in container properties, so putting the database password in `value` exposes it to operators who can query the group. Misconception: all environment variables are automatically treated as secrets by Azure. Could be correct only for non-sensitive settings such as `LOG_LEVEL` or feature flags.",
+        "C": "Putting secrets in a container image creates a long-lived secret embedded in the artifact and makes rotation difficult. Misconception: if Azure does not store an environment variable, the secret disappears from operational risk. Could be correct for harmless defaults or application files that are not confidential.",
+        "D": "ACI does support secure environment variables, and a DNS name label has nothing to do with application configuration. Misconception: secrets in ACI must always be mounted as files rather than passed as protected variables. Could be correct when the application expects a secret file and the container is Linux, but not when it needs an environment variable."
+      },
+      "plainEnglish": "Some settings are safe to show, and some are not. `LOG_LEVEL=Info` only tells the app how much logging to produce, so it can be a normal environment variable. `DB_PASSWORD` is a secret. In ACI YAML, a normal setting uses `value`; a secret setting uses `secureValue`. Azure will still remember the secret well enough to give it to the container, but it will not print the secret value when an operator looks at the container group's properties.",
+      "analogy": "A theater production has a public call sheet and a locked envelope. The call sheet can say, \"lighting level: normal,\" because everyone may read it. The safe combination belongs in the locked envelope; stage staff know the envelope exists, but the combination is not printed on the notice board.\n\n| Analogy | Azure reality |\n|---|---|\n| Call sheet item | Regular environment variable `value` |\n| Locked envelope | Secure environment variable `secureValue` |\n| Lighting level | `LOG_LEVEL` |\n| Safe combination | `DB_PASSWORD` |\n| Notice board inspection | Portal or CLI property query |\n\n**Where the analogy breaks down:** The container can read the secure value at runtime, and Azure authorization still controls which people can create or modify the container group definition.",
+      "jargon": [
+        {
+          "term": "Environment variable",
+          "definition": "A name-value setting supplied to a process through its runtime environment."
+        },
+        {
+          "term": "`value`",
+          "definition": "The YAML or ARM property for a normal ACI environment variable value that can appear in container properties."
+        },
+        {
+          "term": "`secureValue`",
+          "definition": "The YAML or ARM property for a sensitive ACI environment variable whose value is hidden from container properties and available inside the container."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's command-line tool for creating and managing Azure resources."
+        },
+        {
+          "term": "YAML",
+          "definition": "A human-readable configuration format that ACI accepts for defining a container group through `az container create --file`."
+        },
+        {
+          "term": "Secret volume",
+          "definition": "An ACI volume type that stores secret values as files in a mounted volume and is restricted to Linux containers."
+        },
+        {
+          "term": "Container image",
+          "definition": "A packaged filesystem and metadata used to create a running container."
+        },
+        {
+          "term": "Container properties",
+          "definition": "The configuration and state fields returned by Azure for a container group or container instance."
+        }
+      ],
+      "watchOut": "- Secure environment variables hide values in Azure property output, but the running application can still read them.\n- Do not put secrets into container images to avoid environment variable handling.\n- Secret volumes are Linux-only, while secure environment variable values are documented for both Windows and Linux containers.\n- Use regular `value` for nonsecret knobs so troubleshooting remains clear.\n- Limit who can create or update container groups because those operators can still provide or replace secret inputs.",
+      "productionTip": {
+        "official": "Microsoft documents that ACI supports secure values for environment variables on both Windows and Linux containers. The environment variables article states that portal and CLI property views show only the secure variable's name, not its value, and that values can be accessed only from within the container.",
+        "recommendation": "Use `secureValue` for small runtime secrets when the application expects environment variables, and prefer managed identity plus a secret store for larger systems that need rotation, auditing, and centralized secret lifecycle. Keep nonsecret operational settings as regular values to make support work easier."
+      },
+      "memoryTrick": "**Config can be a value; credentials need a secureValue.** The rule is a simplification because some organizations require all secrets to be fetched at runtime from a dedicated vault.",
+      "examTip": "Look for words like **password**, **must not appear**, and **portal or CLI properties**. They point to `secureValue`, not a normal `value`. If the question says the app expects files under a mount path, compare with secret volumes; if it says environment variable and includes Windows support, secure environment variables become the clean ACI answer."
+    },
+    "sources": [
+      {
+        "title": "Set environment variables in container instance - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-environment-variables"
+      },
+      {
+        "title": "YAML reference for container group - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-reference-yaml"
+      },
+      {
+        "title": "Mount secret volume to container group - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-volume-secret"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.2-06",
+    "objective": "D3.3.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You are preparing an Azure Container Instances deployment for a Linux data-conversion utility. The main container must persist output files after the container group is deleted. A sidecar container must share temporary scratch files with the main container while the group is running. A teammate also asks whether these volume choices will work for Windows containers.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Mount an Azure file share for the output that must persist beyond the container group lifetime"
+      },
+      {
+        "id": "B",
+        "text": "Use an `emptyDir` volume for temporary scratch files shared between containers in the same group"
+      },
+      {
+        "id": "C",
+        "text": "Use an Azure file share mount for Windows containers because ACI supports Azure Files volume mounts equally on Linux and Windows"
+      },
+      {
+        "id": "D",
+        "text": "Use a secret volume for the output files because secret volumes are writable and persist after the group is deleted"
+      },
+      {
+        "id": "E",
+        "text": "Use a `gitRepo` volume for the output because it commits converted files back to the Git repository automatically"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The deployment uses Linux containers. The output must be file data, not only logs. The sidecar and main container are in the same ACI container group.",
+    "sections": {
+      "correctAnswer": "**A. Mount an Azure file share for the output that must persist beyond the container group lifetime** and **B. Use an `emptyDir` volume for temporary scratch files shared between containers in the same group**. Azure Files provides external persistent storage, while `emptyDir` provides a writable shared directory for containers in the group that is not persisted after the group stops.",
+      "technical": "ACI container groups are stateless by default. If a container restarts, crashes, or stops, local state can be lost. To preserve files beyond the container group lifetime, Microsoft documents mounting an Azure Files share as an external volume. The Azure Files mount requires the storage account name, share name, and storage account key in the standard examples, and the limitations state that Azure Files shares can be mounted only to Linux containers in ACI. The same page notes that Azure Storage does not support SMB mounting of a file share by using managed identity in this ACI volume scenario.\n\nFor temporary shared scratch data, `emptyDir` is a different volume type. It provides a writable directory accessible to each container in a container group, and containers can mount it at the same or different paths. Microsoft describes use cases such as scratch space, checkpointing during long-running tasks, and sidecar-retrieved data served by another container. The data is not persisted if the container group stops, and mounting `emptyDir` is also restricted to Linux containers.\n\nSecret volumes and gitRepo volumes serve other purposes. Secret volumes are read-only after deployment and backed by tmpfs. gitRepo volumes clone a repository into a volume during container creation; the documentation describes cloning, not committing generated output back to Git. The overview lists Azure Files, emptyDir, GitRepo, and secret volume mounting among features currently restricted to Linux containers.",
+      "wrongOptions": {
+        "C": "Microsoft lists volume mounting, including Azure Files, as restricted to Linux containers for ACI, and the Azure Files volume page says shares can only be mounted to Linux containers. Misconception: Azure Files is a Windows-friendly SMB service, so every Azure Files integration must work with Windows containers. Could be correct for Azure Files mounted from supported Windows virtual machines, not ACI Windows container groups.",
+        "D": "Secret volumes are intended for sensitive information, are read-only once deployed, and are backed by RAM rather than persistent external storage. Misconception: the word secret means durable protected storage for any important file. Could be correct when the container needs SSH keys or credentials as files on Linux.",
+        "E": "A gitRepo volume clones a repository into the container group at creation time; it is not a two-way Git synchronization or automatic commit mechanism. Misconception: mounting Git means application output is versioned and pushed back. Could be correct when the container needs read-only startup content from a public or authenticated Git repository."
+      },
+      "plainEnglish": "Use two different storage ideas. For files you must keep, put them somewhere outside the temporary container group, such as an Azure file share. When the group is deleted, the share still exists. For temporary work files shared between the main container and sidecar, use `emptyDir`; it is like a shared scratch folder that lives only as long as the group. These volume mounts are Linux features in ACI, so do not promise the same design for Windows containers.",
+      "analogy": "A film crew has a rented editing room. Finished footage goes to a company file cabinet that stays after the room rental ends. Sticky notes and draft cuts can sit on a shared desk while the room is in use, but the desk is cleared when the crew leaves.\n\n| Analogy | Azure reality |\n|---|---|\n| Company file cabinet | Azure file share |\n| Finished footage | Output files that must persist |\n| Shared desk | `emptyDir` volume |\n| Two editors using the desk | Main container and sidecar sharing scratch files |\n| Room rental ends | Container group stops or is deleted |\n\n**Where the analogy breaks down:** Azure Files uses storage accounts and SMB/CIFS behavior, while `emptyDir` has documented size and persistence characteristics tied to the container group environment.",
+      "jargon": [
+        {
+          "term": "Azure Files",
+          "definition": "An Azure Storage service that provides managed file shares accessible over SMB and other supported protocols."
+        },
+        {
+          "term": "Azure file share volume",
+          "definition": "An ACI volume backed by an Azure Files share for persisting file state outside the container group."
+        },
+        {
+          "term": "`emptyDir`",
+          "definition": "An ACI volume type that gives containers in a group a writable shared directory for temporary data."
+        },
+        {
+          "term": "Secret volume",
+          "definition": "An ACI volume type for sensitive data files; it is read-only after deployment and backed by tmpfs."
+        },
+        {
+          "term": "gitRepo volume",
+          "definition": "An ACI volume type that clones a Git repository into a mounted directory during container creation."
+        },
+        {
+          "term": "Sidecar container",
+          "definition": "A helper container that runs in the same group as a main application container."
+        },
+        {
+          "term": "SMB",
+          "definition": "Server Message Block, a network file-sharing protocol used by Azure Files."
+        },
+        {
+          "term": "tmpfs",
+          "definition": "A RAM-backed filesystem; ACI secret volumes are backed by tmpfs and are not written to nonvolatile storage."
+        }
+      ],
+      "watchOut": "- ACI containers are stateless unless you mount external storage.\n- Azure Files, emptyDir, secret, and gitRepo volume mounting are documented as Linux-only in ACI.\n- Azure file share mounts require the Linux container to run as root.\n- `emptyDir` is useful for scratch sharing but does not survive a stopped group.\n- Secret volumes are read-only after deployment; they are not a place for application output.",
+      "productionTip": {
+        "official": "Microsoft documents Azure Files as the way to persist state beyond the lifetime of a container and lists limitations including Linux-only mounts, root requirement, CIFS support, and no SMB mounting by managed identity. The emptyDir documentation describes a writable directory shared by containers in a group and states it is not persisted when the group stops.",
+        "recommendation": "Keep persistent output and temporary scratch paths clearly separated in the container image. For production, validate storage account firewall rules, delegated subnet service endpoints when needed, and least-privilege access to storage keys or secrets before relying on a file share mount."
+      },
+      "memoryTrick": "**Files to keep go to Files; scraps for now go to emptyDir.** This is a simplified rule for ACI Linux containers and does not cover databases, object storage, or application-level checkpoints.",
+      "examTip": "The words **persist after the group is deleted** point to Azure Files. The words **temporary scratch shared between containers** point to `emptyDir`. Watch for Windows in the question: ACI volume mounting is a Linux-only area in the current Learn pages. A harder item may mention secret volumes and secure environment variables together; choose the one that matches whether the application expects a file or an environment variable."
+    },
+    "sources": [
+      {
+        "title": "Mount Azure Files volume to container group - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-volume-azure-files"
+      },
+      {
+        "title": "Mount emptyDir volume to container group - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-volume-emptydir"
+      },
+      {
+        "title": "Mount secret volume to container group - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-volume-secret"
+      },
+      {
+        "title": "Mount gitRepo volume to container group - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-volume-gitrepo"
+      },
+      {
+        "title": "Serverless containers in Azure - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.2-07",
+    "objective": "D3.3.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A team at Tailspin Toys needs to run a simple containerized cleanup utility on demand. The utility usually runs for five minutes, writes status to standard output, and then exits. The team does not need Kubernetes APIs, traffic splitting, automatic scale rules, revisions, or built-in HTTPS ingress. They want the simplest Azure service and command-line workflow to provision the container and inspect its output.\n\nWhich approach should you recommend?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use Azure Container Instances with `az container create`, then inspect output with `az container logs` or stream startup output with `az container attach`"
+      },
+      {
+        "id": "B",
+        "text": "Use Azure Kubernetes Service because every containerized task needs Kubernetes node pools and Services"
+      },
+      {
+        "id": "C",
+        "text": "Use Azure Container Apps because ACI cannot run containers that exit after completing a task"
+      },
+      {
+        "id": "D",
+        "text": "Use App Service for Containers because it is the lowest-level Azure building block for a one-off container"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The workload is a single on-demand utility container. No requirement exists for orchestration, automatic app scaling, blue-green traffic control, or managed Kubernetes API access.",
+    "sections": {
+      "correctAnswer": "**A. Use Azure Container Instances with `az container create`, then inspect output with `az container logs` or stream startup output with `az container attach`**. Microsoft describes ACI as the fastest and simplest way to run isolated containers without managing VMs or adopting a higher-level orchestrator, and the CLI supports creating, viewing logs, attaching streams, and executing commands in running containers.",
+      "technical": "This scenario is about choosing the simplest provisioning path inside the ACI objective. ACI is designed for running isolated Linux or Windows containers in Azure without managing virtual machines or a Kubernetes cluster. The quickstart shows `az container create` as the basic command to provision a container group from an image, with options such as resource group, name, image, ports, DNS label, OS type, CPU, and memory. For a run-to-completion cleanup utility, you would normally combine that with an appropriate restart policy such as `OnFailure` or `Never`, depending on retry requirements.\n\nFor output inspection, Microsoft documents three useful CLI actions. `az container logs` retrieves the application log output sent by the container. `az container attach` attaches local standard output and standard error streams and provides diagnostic information during startup before streaming logs. `az container exec` can run a command in a currently running container, which is useful for development and troubleshooting; for multi-container groups, you specify `--container-name`. The exec documentation also notes a restriction: ACI currently supports launching a single process with `az container exec`, so command chaining such as `sh -c \"echo FOO && echo BAR\"` is not supported in that exec operation.\n\nAzure Container Apps and AKS are real Azure container services, but their extra features are not requested here. Microsoft's comparison page calls ACI a lower-level building block, while Container Apps adds application concepts such as scale, certificates, revisions, and environments. AKS provides managed Kubernetes with direct Kubernetes API access and cluster concepts. The shortest correct path for this simple task is ACI plus the ACI CLI commands.",
+      "wrongOptions": {
+        "B": "AKS is a managed Kubernetes service, but the scenario explicitly does not need Kubernetes APIs, node pools, or orchestration features. Misconception: a container image automatically implies Kubernetes. Could be correct when the workload needs Kubernetes-native scheduling, cluster-wide policy, custom controllers, or many coordinated services.",
+        "C": "Container Apps is powerful for serverless microservices, jobs, revisions, ingress, and scale rules, but ACI can run task containers that complete and then stop. Misconception: ACI is only for always-running containers. Could be correct when the team needs Container Apps features such as KEDA-based scaling, built-in revisions, Dapr, or managed ingress.",
+        "D": "App Service is optimized for managed web apps and web APIs, not the lowest-level one-off container building block in this comparison. Misconception: any managed hosting service for containers is equally suited to short-lived utility work. Could be correct when hosting a long-running web application that benefits from App Service's web app platform features."
+      },
+      "plainEnglish": "The team has a small job: start one container, let it do work, read what it printed, and finish. ACI is the straightforward Azure tool for that. It is like asking Azure to run a container directly rather than first building a whole container platform around it. Kubernetes and Container Apps are useful when you need more application management, scaling, routing, or orchestration. This team said they do not need those things, so the simplest answer is `az container create` and then `az container logs` or `az container attach` to view output.",
+      "analogy": "If you need to move one box across town, you can rent a van for an hour. You do not need to build a train network or hire a logistics platform. After the delivery, you read the driver's receipt to confirm what happened.\n\n| Analogy | Azure reality |\n|---|---|\n| Hourly rented van | Azure Container Instances |\n| One box delivery | Short-lived cleanup utility |\n| Build a train network | Create an AKS cluster for unnecessary orchestration |\n| Logistics platform | Container Apps features such as revisions and scale rules |\n| Driver receipt | `az container logs` or streamed output |\n\n**Where the analogy breaks down:** ACI still has Azure resource settings such as identity, networking, restart policy, CPU, memory, and storage that must be configured correctly for the workload.",
+      "jargon": [
+        {
+          "term": "Azure Container Instances",
+          "definition": "An Azure service for running containers directly without managing virtual machines or adopting a higher-level orchestrator."
+        },
+        {
+          "term": "`az container create`",
+          "definition": "The Azure CLI command used to create an ACI container group."
+        },
+        {
+          "term": "`az container logs`",
+          "definition": "The Azure CLI command that retrieves log output from a container in a container group."
+        },
+        {
+          "term": "`az container attach`",
+          "definition": "The Azure CLI command that attaches standard output and standard error streams and shows startup diagnostic information."
+        },
+        {
+          "term": "`az container exec`",
+          "definition": "The Azure CLI command that executes a single command process inside a running container."
+        },
+        {
+          "term": "Azure Container Apps",
+          "definition": "A serverless container application platform with features such as ingress, revisions, environments, Dapr, KEDA-based scaling, and jobs."
+        },
+        {
+          "term": "Azure Kubernetes Service (AKS)",
+          "definition": "Azure's managed Kubernetes service that provides Kubernetes clusters, APIs, nodes, and orchestration capabilities."
+        },
+        {
+          "term": "Standard output",
+          "definition": "The normal text output stream a command-line program writes, often collected by container logging."
+        }
+      ],
+      "watchOut": "- ACI is suitable for simple isolated containers and run-once tasks, but it does not provide Container Apps revisions or AKS Kubernetes APIs.\n- Use `az container logs` after the container has produced output; use `az container attach` when startup streaming helps.\n- Use `az container exec` only for a running container and remember it launches a single process.\n- Choose restart policy intentionally for a task that exits.\n- If the requirement changes to automatic scale, microservice ingress, or Kubernetes control, revisit Container Apps or AKS.",
+      "productionTip": {
+        "official": "Microsoft's ACI overview describes the service as a fast and simple way to run Linux or Windows containers without managing VMs or adopting a higher-level service. The logs and events article directs troubleshooting to `az container logs` and `az container attach`, and the exec article documents `az container exec` for commands in running containers.",
+        "recommendation": "For small operational utilities, keep the ACI definition in YAML or infrastructure-as-code so the command is reproducible. Capture logs before deleting short-lived groups, tag the resource for ownership, and move to Container Apps jobs or AKS only when the missing higher-level capabilities become explicit requirements."
+      },
+      "memoryTrick": "**One container, one quick job: ACI first.** This is only a starting rule; it stops applying when the scenario asks for orchestrated scale, revisions, service discovery, or direct Kubernetes API control.",
+      "examTip": "The clues **simple**, **on demand**, **five minutes**, and **does not need Kubernetes APIs or scale rules** are designed to make ACI more attractive than AKS or Container Apps. The CLI verbs are also exam-friendly: create to provision, logs to read output, attach to stream, exec to troubleshoot a running container. A harder version may add a public FQDN or VNet requirement; then you must combine the service choice with the networking rules from the ACI docs."
+    },
+    "sources": [
+      {
+        "title": "Serverless containers in Azure - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview"
+      },
+      {
+        "title": "Quickstart - Deploy Docker container to container instance - Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-quickstart"
+      },
+      {
+        "title": "Get container instance logs & events - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-get-logs"
+      },
+      {
+        "title": "Execute commands in running container instance - Azure Container Instances",
+        "url": "https://learn.microsoft.com/en-us/azure/container-instances/container-instances-exec"
+      },
+      {
+        "title": "Comparing Container Apps with other Azure container options",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/compare-options"
+      },
+      {
+        "title": "Azure Container Apps overview",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+      },
+      {
+        "title": "What is Azure Kubernetes Service (AKS)?",
+        "url": "https://learn.microsoft.com/en-us/azure/aks/what-is-aks"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

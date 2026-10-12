@@ -1,0 +1,367 @@
+[
+  {
+    "id": "D4.1.3-01",
+    "objective": "D4.1.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains the resources shown in the table.\n\n| Resource | Current public IP plan | Requirement |\n|---|---|---|\n| `vm-web-01` | No public IP yet | Internet users must reach HTTPS through a network security group rule |\n| `lb-edge-01` | New public frontend planned | Must support availability-zone-aware design |\n| `pip-old-01` | Basic SKU public IP | Still used by a legacy test VM |\n\nYou need to choose the public IP SKU for new deployments and identify what to do with the legacy Basic SKU resource.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create new Standard SKU public IP addresses and plan to upgrade or replace existing Basic SKU public IPs because Basic SKU public IPs were retired on September 30, 2025"
+      },
+      {
+        "id": "B",
+        "text": "Create new Basic SKU public IP addresses because Basic is open by default and therefore requires fewer network security group changes"
+      },
+      {
+        "id": "C",
+        "text": "Use Basic SKU for virtual machines and Standard SKU only for public load balancers, because SKUs can be mixed on the same backend resources"
+      },
+      {
+        "id": "D",
+        "text": "Create Standard v2 public IP addresses for all resources because Standard v2 public IPs can be used with every Azure networking service"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The question is about Azure Resource Manager public IP address resources in October 2026, not classic deployment resources. The target services support Standard SKU public IP addresses unless the option states otherwise.",
+    "sections": {
+      "correctAnswer": "**A. Create new Standard SKU public IP addresses and plan to upgrade or replace existing Basic SKU public IPs because Basic SKU public IPs were retired on September 30, 2025**. Microsoft documents Standard as the current SKU family for new public IP functionality and notes the retirement date for Basic SKU public IPs.",
+      "technical": "Public IP SKU affects allocation, security posture, zone support, routing preference support, and the kinds of resources that can be associated with the address. Microsoft documents Basic and Standard SKU public IP addresses, but the same page contains an important current-state warning: Basic SKU public IPs were retired on September 30, 2025. For an AZ-104 answer in 2026, a design that deliberately creates new Basic public IP resources is not the safe exam answer.\n\nThe useful comparison is not just old versus new. Standard public IPs use static allocation, support availability-zone choices in supported regions, are secure by default when used as a frontend, and support features such as Internet routing preference for specific resource types. Basic public IPs historically allowed dynamic IPv4 allocation and were open by default, but those traits are not a reason to keep building on a retired SKU. Microsoft also warns that Basic and Standard resources cannot be mixed on the same backend relationship; for example, matching SKUs are required for load balancer and public IP resources.\n\nStandard v2 also needs care. The public IP documentation says Standard v2 IPs can only be used with the Standard v2 NAT Gateway product at this time and cannot be used with any other product or component. Therefore, Standard v1 is the broadly applicable Standard choice for many AZ-104 scenarios unless the question explicitly names Standard v2 NAT Gateway.\n\nOrder of reasoning for this item:\n\n1. Identify whether the question is asking for a new design or a legacy migration.\n2. Treat Basic SKU as retired and avoid selecting it for new work.\n3. Use Standard SKU for current public IP scenarios, then configure NSGs or the service firewall model intentionally.\n4. Do not choose Standard v2 as a universal replacement because its documented support is currently narrow.",
+      "wrongOptions": {
+        "B": "Basic being historically open by default is a liability, not a current design advantage, and the SKU has a documented retirement date. Misconception: fewer initial security restrictions means a better Azure Administrator exam answer. Could be correct when analyzing why an old Basic deployment behaved differently before retirement, but not for a 2026 new deployment.",
+        "C": "Microsoft documents that you cannot mix Basic and Standard SKU resources in the same load-balancer-related design, and new designs should consider Standard SKU resources. Misconception: public IP SKU is only a label on the address and does not affect associated services. Could be correct only as a loose inventory statement where separate resources are not associated with each other.",
+        "D": "Standard v2 public IPs are not a universal replacement. Microsoft says Standard v2 IPs can only be used with the Standard v2 NAT Gateway product at this time. Misconception: the highest version number must be the broadly supported exam answer. Could be correct when the scenario specifically deploys Standard v2 NAT Gateway and asks for that supported address type."
+      },
+      "plainEnglish": "A public IP address is the public-facing number that lets internet systems reach an Azure resource or lets the resource have a known outbound identity. Azure used to offer a Basic version and a Standard version. In 2026, Basic is the old retired path, so you should not pick it for new resources just because it once had simpler defaults. Standard is the normal answer because it supports current features and the more deliberate security model. Think of Standard v2 separately: it sounds newer, but Microsoft currently limits it to Standard v2 NAT Gateway, so it is not a blanket answer for every VM, load balancer, or firewall.",
+      "analogy": "Imagine a building access-card system. The retired card type still appears in old records, but the security office no longer wants new doors built around it. The current card type works with modern door controllers and zone-aware building plans, but a special v2 card fits only one new garage gate system.\n\n| Analogy | Azure reality |\n|---|---|\n| Retired access card | Basic SKU public IP |\n| Current card | Standard SKU public IP |\n| Door controller compatibility | Matching public IP and service SKU requirements |\n| Zone-aware building plan | Availability zone support for Standard IPs |\n| Special garage-only v2 card | Standard v2 public IP for Standard v2 NAT Gateway |\n\n**Where the analogy breaks down:** Azure public IPs are software-defined resources with allocation, routing, and security properties. A physical card does not model static address assignment, NSG enforcement, or internet routing behavior.",
+      "jargon": [
+        {
+          "term": "Public IP address",
+          "definition": "An Azure resource that gives an Azure service a public internet-reachable address or a public outbound identity."
+        },
+        {
+          "term": "SKU",
+          "definition": "A stock-keeping unit or product tier that determines public IP capabilities such as allocation method, security model, and feature support."
+        },
+        {
+          "term": "Basic SKU",
+          "definition": "The legacy public IP SKU that Microsoft documents as retired on September 30, 2025."
+        },
+        {
+          "term": "Standard SKU",
+          "definition": "The current broadly used public IP SKU family that supports static allocation and zone-related features."
+        },
+        {
+          "term": "Standard v2",
+          "definition": "A newer public IP SKU that Microsoft documents as usable only with Standard v2 NAT Gateway at this time."
+        },
+        {
+          "term": "Network security group",
+          "definition": "An Azure filtering resource that contains inbound and outbound security rules for network traffic."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate datacenter zone within a supported Azure region."
+        },
+        {
+          "term": "Frontend",
+          "definition": "The public-facing address configuration used by services such as public load balancers or application gateways."
+        }
+      ],
+      "watchOut": "- Basic SKU public IP retirement is a date-sensitive fact; do not rely on older tutorials that still create Basic addresses.\n- Standard public IPs are secure by default when used as a frontend, so inbound access normally requires an explicit rule or service configuration.\n- Standard v2 public IP does not mean universally compatible with all Standard-capable resources.\n- Matching SKU requirements matter when a public IP is tied to a load balancer design.",
+      "productionTip": {
+        "official": "Microsoft documents Basic SKU public IP retirement, Standard SKU capabilities, the secure-by-default model, and the restriction that Standard v2 public IPs are currently only for Standard v2 NAT Gateway. The same public IP article warns not to mix Basic and Standard SKU resources in the same load-balancing relationship.",
+        "recommendation": "Inventory any remaining Basic public IPs, map their associated resources, and replace them with Standard designs during a controlled maintenance window. For least exposure, combine Standard public IPs with explicit NSG rules, service-specific firewall settings, and documented ownership for each internet-facing endpoint."
+      },
+      "memoryTrick": "For 2026 exam thinking, remember **Basic is backward-looking, Standard is the normal road, v2 is not everywhere**. This shortcut fails if a question explicitly asks about a supported Standard v2 NAT Gateway scenario.",
+      "examTip": "The clue words are **new deployments**, **legacy Basic**, and **availability-zone-aware**. Eliminate options that intentionally create Basic resources or assume Standard v2 works with all services. A harder version may include an old Basic public IP on a VM and ask for a migration plan; the correct direction is still to move to a supported Standard design rather than preserve Basic because it seems easier."
+    },
+    "sources": [
+      {
+        "title": "Public IP addresses in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/public-ip-addresses"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.3-02",
+    "objective": "D4.1.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You administer a subscription for Litware. A virtual machine named `vm-sftp-01` is used by external partners. Partner firewalls allow traffic only from a documented source IP, and public DNS has an `A` record that points to the VM's public endpoint.\n\nThe VM will be stopped outside business hours to reduce compute cost. You need to minimize the chance that the partner firewall rules and DNS record must be changed after the VM is stopped and started.\n\nWhich public IP assignment should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A dynamic public IPv4 address, because the address is selected only when the VM needs it"
+      },
+      {
+        "id": "B",
+        "text": "A static public IP address, because the address is allocated when the public IP resource is created and remains until the resource is deleted"
+      },
+      {
+        "id": "C",
+        "text": "No public IP address on the VM, because Azure default outbound access gives the VM a stable partner-facing address"
+      },
+      {
+        "id": "D",
+        "text": "A dynamic IPv6 public IP address, because IPv6 dynamic addresses are not released when a VM is stopped"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The partner connection depends on a public IP address that is directly assigned to a public IP resource associated with the VM NIC. The question does not use Azure Bastion, NAT Gateway, Azure Firewall, or a load balancer frontend.",
+    "sections": {
+      "correctAnswer": "**B. A static public IP address, because the address is allocated when the public IP resource is created and remains until the resource is deleted**. Static allocation is the documented choice when DNS records, firewall allowlists, or IP-based trust must not change after stop/start operations.",
+      "technical": "Azure public IP addresses support static and dynamic assignment, but the effect is operationally important. With dynamic assignment, the address is not assigned to the public IP resource at creation time. Azure assigns it when the public IP is associated with a resource, and the address can be released when the resource is stopped or deleted. Microsoft specifically notes that if you do not want the IP address to change, you set the allocation method to static.\n\nStatic assignment works differently. Azure assigns the public IP address when the public IP address resource is created. You still cannot choose the exact address from Microsoft's regional pool for a normal public IP resource, but once Azure assigns it, the address remains associated with that public IP resource until the resource is deleted. That behavior matches partner firewall allowlists and public DNS `A` records because both external systems point to a known value.\n\nSKU influences what assignment choices exist. Standard public IPv4 and Standard public IPv6 are static in the documented table. Basic IPv4 historically allowed dynamic or static, and Basic IPv6 was dynamic, but Basic public IPs are retired. For current AZ-104 design, do not select a dynamic Basic answer simply to save effort.\n\nThe evaluation order in the scenario is:\n\n1. The partner firewall rule depends on a stable public source or destination address.\n2. The DNS record also depends on a value that should not change.\n3. Stopping a VM can release a dynamically allocated public IP address.\n4. A static public IP resource is therefore required for the stable endpoint.",
+      "wrongOptions": {
+        "A": "Dynamic assignment is exactly the risk described in the scenario because the public IP address can be released when the resource is stopped or deleted. Misconception: using an address only while the VM runs is cheaper or simpler for a partner-facing service. Could be correct for a throwaway lab VM where nobody depends on the address value.",
+        "C": "Default outbound access is not a dedicated configurable public IP resource, and the scenario needs an inbound partner endpoint plus a stable DNS target. Misconception: any Azure-provided outbound address is suitable for partner allowlists and public DNS. Could be correct only for limited outbound-only testing where no stable or documented public address is required.",
+        "D": "The public IP documentation lists Basic IPv6 dynamic allocation, but the question needs a stable endpoint and Basic public IPs are retired. Dynamic IPv6 does not become a stable stop/start answer. Misconception: IPv6 changes the basic static-versus-dynamic rule. Could be correct when a resource explicitly supports dynamic IPv6 and address stability is not needed."
+      },
+      "plainEnglish": "The partner firewall and the DNS record are like two address books outside Azure. If Azure changes the VM's public address, those address books become wrong. A dynamic address is convenient for resources that do not care what number they receive, but it can be released when the VM stops or is removed. A static address is reserved on the public IP resource, so it is the right fit when people, certificates, firewall rules, or DNS names depend on the number staying the same.",
+      "analogy": "Think about a shop that prints its phone number on signs and gives it to delivery companies. A temporary hotel-room phone number would be awkward because it might change whenever the shop closes for a holiday. A leased business phone number is better because callers keep using the same number.\n\n| Analogy | Azure reality |\n|---|---|\n| Printed shop phone number | Public DNS `A` record |\n| Delivery company contact list | Partner firewall allowlist |\n| Temporary room phone | Dynamic public IP address |\n| Leased business number | Static public IP resource |\n\n**Where the analogy breaks down:** Azure assigns IP addresses from regional pools and validates network flows through NICs, NSGs, and service frontends. A phone number analogy does not show packet routing or address allocation timing.",
+      "jargon": [
+        {
+          "term": "Static public IP",
+          "definition": "A public IP address allocated when the Azure public IP resource is created and retained until that resource is deleted."
+        },
+        {
+          "term": "Dynamic public IP",
+          "definition": "A public IP address assigned later, such as when associated with a resource, and subject to release when the resource is stopped or deleted."
+        },
+        {
+          "term": "DNS A record",
+          "definition": "A DNS record that maps a host name to an IPv4 address."
+        },
+        {
+          "term": "Allowlist",
+          "definition": "A security list that permits traffic only to or from approved addresses or identities."
+        },
+        {
+          "term": "NIC",
+          "definition": "A network interface card resource that connects an Azure VM to a virtual network."
+        },
+        {
+          "term": "Default outbound access",
+          "definition": "An Azure mechanism that can provide outbound connectivity for some VMs without assigning a configurable public IP resource."
+        },
+        {
+          "term": "Partner firewall",
+          "definition": "A firewall outside your Azure subscription that permits traffic based on the partner's security rules."
+        },
+        {
+          "term": "IPv6",
+          "definition": "The newer internet protocol address format, separate from IPv4 addressing."
+        }
+      ],
+      "watchOut": "- Dynamic public IP assignment is a common exam trap when a scenario mentions DNS records or firewall allowlists.\n- Static allocation does not let you type any arbitrary public address; Azure assigns one from the regional pool.\n- Standard public IP resources are static, which often answers modern design questions automatically.\n- Default outbound access is not a substitute for a named, owned public IP resource.",
+      "productionTip": {
+        "official": "Microsoft documents that dynamic public IP addresses are released when the resource is stopped or deleted, and that static public IP addresses are assigned at resource creation and released only when the resource is deleted. The documentation lists stable-address scenarios such as firewall rules and DNS name resolution.",
+        "recommendation": "Use a Standard static public IP or a stable frontend service for partner-facing endpoints, then document the owner and purpose of the address. Avoid publishing raw VM addresses when an application gateway, load balancer, firewall, or private connectivity pattern would give better operational control."
+      },
+      "memoryTrick": "If someone outside Azure writes the address down, make it **static**. This is a simplification because a frontend service may be better than a VM-level public IP, but the allocation rule remains the same.",
+      "examTip": "Clue words are **partner firewalls**, **DNS A record**, and **stopped outside business hours**. Those phrases point to static allocation. A harder version may hide the dependency by saying a TLS certificate, monitoring probe, or third-party allowlist uses the address; all of those still make dynamic allocation risky."
+    },
+    "sources": [
+      {
+        "title": "Public IP addresses in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/public-ip-addresses"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.3-03",
+    "objective": "D4.1.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are deploying internet-facing resources in `australiaeast`, which supports availability zones. The design includes these requirements:\n\n- `appgw-prod` must use a public IP that can survive a single zone failure when the regional zone platform supports it.\n- `vm-diag-01` must deliberately place its public endpoint in zone 2 because the testing team is validating zonal behavior.\n- The availability zone selection must not be changed after creation by an update operation.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use a zone-redundant Standard public IP for `appgw-prod` in the zonal region"
+      },
+      {
+        "id": "B",
+        "text": "Use a Basic public IP for `appgw-prod` because Basic public IPs are automatically zone-redundant after retirement"
+      },
+      {
+        "id": "C",
+        "text": "Create a zonal Standard public IP in zone 2 for `vm-diag-01`"
+      },
+      {
+        "id": "D",
+        "text": "Change the public IP's zone setting later if the testing team decides to move from zone 2 to zone 3"
+      },
+      {
+        "id": "E",
+        "text": "Use a non-zonal public IP in a region with availability zones to guarantee the IP shares fate with one selected zone"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The chosen Azure region has three live availability zones and supports the requested resource types. The question is about the public IP resource's zone property, not the full application's end-to-end resiliency.",
+    "sections": {
+      "correctAnswer": "**A. Use a zone-redundant Standard public IP for `appgw-prod` in the zonal region** and **C. Create a zonal Standard public IP in zone 2 for `vm-diag-01`**. Microsoft documents Standard public IPs as supporting zonal and zone-redundant choices, while Basic public IPs do not support availability zones and a public IP's zone cannot be changed after creation.",
+      "technical": "Availability zone configuration for public IP addresses is a property you choose when creating the public IP resource. In regions that support availability zones, Standard public IPs can be created as zonal or zone-redundant. A zone-redundant IP is created across multiple zones in a region and can survive a single zone failure. A zonal IP is tied to a specific zone and shares fate with that zone.\n\nThe scenario has two different intentions. `appgw-prod` needs regional zone resilience for the public endpoint, so the correct public IP posture is zone-redundant Standard. `vm-diag-01` is not trying to maximize availability; it is deliberately testing zone-specific behavior, so a zonal Standard public IP in zone 2 matches the request. Both answers depend on using Standard rather than Basic because Basic public IPs have no zone support.\n\nThe immutability of the zone setting is also tested. Microsoft documents that once a public IP address is created, its availability zone cannot be changed. If you need a different zone placement, the practical pattern is to create a replacement public IP with the desired zone setting and move the consuming resource in a supported way.\n\nA subtle current detail is that formerly Standard non-zonal IPs are now zone-redundant in all regions that support availability zones, and IPs shown as zones 1, 2, 3 or with no zones are equivalently zone-redundant. That does not make Basic zonal, and it does not let you mutate a zonal choice after creation.",
+      "wrongOptions": {
+        "B": "Basic public IPs do not support availability zones, and retirement did not turn them into zone-redundant resources. Misconception: retirement automatically upgrades the technical behavior of old Basic resources. Could be correct never for new zone-resilient public IP design; it might appear only in an old inventory that still needs remediation.",
+        "D": "The public IP documentation states that once a public IP address is created, its availability zone cannot be changed. Misconception: zone is just a tag-like setting that can be edited after deployment. Could be correct for settings that Azure explicitly allows you to update, but not for the public IP zone selection.",
+        "E": "A non-zonal public IP does not express deliberate affinity to one selected availability zone. In current zonal regions, formerly Standard non-zonal IPs are treated as zone-redundant, not as zone 1, 2, or 3. Misconception: omitting a zone means Azure secretly chooses one fixed zone for you. Could be correct only in a region without availability zones where every public IP is non-zonal by necessity."
+      },
+      "plainEnglish": "Availability zones are separate datacenter zones inside a region. A zone-redundant public IP is designed so the public endpoint is not tied to just one zone. A zonal public IP intentionally belongs to one zone, which is useful for tests or for an architecture that aligns resources zone by zone. You choose this when creating the address. You should not plan to edit the same public IP later to move it to a different zone; create the right address from the beginning or replace it carefully.",
+      "analogy": "Picture a company with three reception desks in three separate buildings. A zone-redundant phone line rings through the reception system even if one building has a problem. A zonal phone line is installed only at building 2 because the facilities team wants to test that building.\n\n| Analogy | Azure reality |\n|---|---|\n| Three buildings | Three availability zones |\n| Shared resilient phone line | Zone-redundant Standard public IP |\n| Building 2-only phone | Zonal Standard public IP in zone 2 |\n| Rewiring after installation | Replacing rather than editing the zone setting |\n\n**Where the analogy breaks down:** Azure zone-redundant networking is provided by platform control planes and regional networking infrastructure, not by a literal phone system that rings desks.",
+      "jargon": [
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate zone inside a supported Azure region."
+        },
+        {
+          "term": "Zone-redundant",
+          "definition": "A deployment choice that spans multiple zones and can survive a single zone failure for the protected resource."
+        },
+        {
+          "term": "Zonal",
+          "definition": "A deployment choice that pins the resource to one specific availability zone."
+        },
+        {
+          "term": "Non-zonal",
+          "definition": "A public IP state used in regions without availability zones, and historically shown for some Standard IPs now treated as zone-redundant in zonal regions."
+        },
+        {
+          "term": "Standard public IP",
+          "definition": "A public IP SKU that supports availability-zone choices in supported regions."
+        },
+        {
+          "term": "Basic public IP",
+          "definition": "A legacy retired public IP SKU that does not support availability zones."
+        },
+        {
+          "term": "Shares fate",
+          "definition": "A design phrase meaning one resource can be affected by the same zone health event as another resource."
+        },
+        {
+          "term": "Application Gateway",
+          "definition": "An Azure Layer 7 load-balancing service that can use a public frontend IP."
+        }
+      ],
+      "watchOut": "- Zone-redundant is for resilience; zonal is for intentional zone placement.\n- Basic public IPs do not gain zone support because they were retired.\n- The availability zone setting cannot be changed on an existing public IP.\n- In supported regions, Standard non-zonal display can be equivalent to zone-redundant, which is different from being pinned to one zone.",
+      "productionTip": {
+        "official": "Microsoft documents that Standard public IPs can be non-zonal, zonal, or zone-redundant, while Basic public IPs don't have zones. It also documents that a zone-redundant IP can survive any single zone failure and that a public IP address cannot change its availability zone after creation.",
+        "recommendation": "Decide the zone model before deployment and encode it in infrastructure-as-code parameters. For production ingress, prefer zone-redundant public frontends where the dependent service supports the pattern; use zonal public IPs only when the application architecture intentionally aligns resources to specific zones."
+      },
+      "memoryTrick": "**ZR rides across zones; zonal sits in one seat.** This is a simplification because the application behind the address must also be designed for resilience.",
+      "examTip": "Clue words are **survive a single zone failure**, **deliberately place**, and **must not be changed after creation**. Select zone-redundant for the resilient endpoint and zonal for the zone-2 test. A harder question may show an existing zonal public IP and ask how to move zones; expect a replacement workflow, not an edit."
+    },
+    "sources": [
+      {
+        "title": "Public IP addresses in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/public-ip-addresses"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.3-04",
+    "objective": "D4.1.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Woodgrove Bank is deploying a new outbound architecture for payment-processing virtual machines. External payment partners require one firewall rule that allows a small contiguous range of Azure public addresses. The network team also wants to reduce internet egress cost for a public endpoint where the service can tolerate ISP-network routing rather than carrying traffic on Microsoft's global network for most of the path.\n\nYou need to design the public IP resources without depending on unverified address values or unsupported routing choices.\n\nWhich design should you choose?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a public IP address prefix, create Standard static public IPs from that prefix for the outbound resources, and use Internet routing preference only on supported IPv4 zone-redundant Standard public IP scenarios"
+      },
+      {
+        "id": "B",
+        "text": "Ask Azure to reserve a custom list of unrelated public IP addresses, then attach any Basic dynamic public IPs that happen to match the partner firewall rule"
+      },
+      {
+        "id": "C",
+        "text": "Create a public IP prefix and change its CIDR size later if the partners request twice as many addresses"
+      },
+      {
+        "id": "D",
+        "text": "Use Internet routing preference on an IPv6 Basic public IP because Internet routing preference is independent of SKU and IP version"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The design uses Microsoft-owned public IP prefixes, not Bring Your Own IP custom IP prefixes. The partner allowlist is for Azure public IPs assigned to supported Azure Resource Manager resources in the same region and subscription as the prefix.",
+    "sections": {
+      "correctAnswer": "**A. Create a public IP address prefix, create Standard static public IPs from that prefix for the outbound resources, and use Internet routing preference only on supported IPv4 zone-redundant Standard public IP scenarios**. Public IP prefixes reserve a known contiguous range, and routing preference has documented SKU, IP-version, and resource limitations.",
+      "technical": "A public IP address prefix is a reserved range of Azure public IP addresses in a region and subscription. Microsoft documents prefix sizes of /28, /29, /30, and /31 for IPv4, with equivalent IPv6 sizes, when using Microsoft-owned prefixes. After the prefix exists, you create individual public IP addresses from the prefix. Those individual addresses can be assigned to supported resources that accept Standard SKU public IPs. This fits an allowlist requirement because the partner can allow the whole contiguous prefix instead of tracking unrelated single addresses.\n\nThe limitations matter. You cannot specify the exact set of IP addresses for a Microsoft-owned prefix; Azure assigns the range based on region and requested size. The prefix size cannot be modified after creation. Public IP addresses created from the range must exist in the same Azure region and subscription as the prefix, and only static Standard public IP addresses can be assigned from the prefix's range.\n\nRouting preference is a separate public IP feature. By default, Azure routes traffic by using the Microsoft global network. Internet routing preference minimizes travel on the Microsoft network and uses the ISP network for more of the path. Microsoft documents that you choose routing preference when creating a public IP address and that you cannot change a public IP routing preference after creation. The current limitations state that Internet routing preference works only with zone-redundant Standard SKU public IP addresses, supports only IPv4, and is available only for listed resource types.\n\nSo the design must combine two careful choices: use a public IP prefix for a known range, and apply Internet routing preference only where its documented constraints are satisfied.",
+      "wrongOptions": {
+        "B": "Microsoft says you can't specify the set of IP addresses for a Microsoft-owned public IP prefix, and dynamic Basic public IPs do not provide a planned contiguous allowlist range. Misconception: Azure administrators can shop for arbitrary public addresses inside a region. Could be correct only with a different BYOIP custom prefix conversation, which this scenario explicitly excludes.",
+        "C": "The public IP prefix size cannot be modified after the prefix has been created. Misconception: a prefix behaves like a subnet that can always be resized later. Could be correct if you delete and recreate a new prefix during a planned migration, but that is not changing the existing prefix size.",
+        "D": "Internet routing preference is limited; Microsoft documents that it works only with zone-redundant Standard SKU public IP addresses and currently supports only IPv4. Misconception: routing preference is an independent toggle available on every public IP. Could be correct when the public IP is a supported IPv4 zone-redundant Standard address attached to a supported resource."
+      },
+      "plainEnglish": "A public IP prefix is like reserving a short block of consecutive street addresses from Azure. You can then give individual addresses from that block to resources, and a partner can allow the whole block in one firewall rule. You do not get to hand-pick the exact numbers, and you must choose the size carefully because the size is fixed after creation. Routing preference answers a different question: how traffic travels between Azure and the internet. The cheaper ISP-network path is available only for certain public IP designs, so you must not assume it works for Basic, IPv6, NAT Gateway, or every service.",
+      "analogy": "A courier company asks Woodgrove for a small consecutive set of loading-bay numbers. Reserving a public IP prefix is like leasing bays 20 through 23 as a block. Routing preference is like choosing whether trucks stay on the company's private highway longer or exit earlier to public roads.\n\n| Analogy | Azure reality |\n|---|---|\n| Consecutive loading bays | Public IP address prefix |\n| One bay assigned to one truck route | Public IP created from the prefix |\n| Private highway | Microsoft global network routing |\n| Earlier exit to public roads | Internet routing preference |\n| Lease size chosen up front | Prefix size fixed after creation |\n\n**Where the analogy breaks down:** Azure routing preference is implemented through internet routing policy and BGP announcements, not a human dispatcher choosing roads for each packet.",
+      "jargon": [
+        {
+          "term": "Public IP address prefix",
+          "definition": "A reserved contiguous range of public IP addresses in an Azure region and subscription."
+        },
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as /28, that describes the size of an IP range."
+        },
+        {
+          "term": "Standard static public IP",
+          "definition": "A Standard SKU public IP address allocated at creation and retained until the resource is deleted."
+        },
+        {
+          "term": "Routing preference",
+          "definition": "An Azure choice that controls whether internet traffic uses the Microsoft global network or ISP network routing for more of the path."
+        },
+        {
+          "term": "Microsoft global network",
+          "definition": "Microsoft's private wide-area network used by default for Azure service traffic whenever possible."
+        },
+        {
+          "term": "Internet routing",
+          "definition": "The routing preference that minimizes time on Microsoft's network and uses transit ISP networks for more of the route."
+        },
+        {
+          "term": "Allowlist",
+          "definition": "A list of permitted IP ranges or identities in a firewall or partner security system."
+        },
+        {
+          "term": "BYOIP",
+          "definition": "Bring Your Own IP, a separate pattern where an organization brings a custom IP prefix rather than using Microsoft-owned ranges."
+        }
+      ],
+      "watchOut": "- A public IP prefix reserves a range, but Azure chooses the actual Microsoft-owned range.\n- Prefix size is a creation-time decision and cannot be edited later.\n- Only static Standard public IPs can be assigned from a public IP prefix range.\n- Internet routing preference is not supported for every SKU, IP version, or resource type, and the choice cannot be changed after creation.",
+      "productionTip": {
+        "official": "Microsoft documents public IP prefixes as reserved ranges with fixed sizes, same-region and same-subscription assignment rules, and Standard static public IP usage. Microsoft also documents routing preference choices, the default Microsoft global network path, Internet routing limitations, and the rule that routing preference cannot be changed after public IP creation.",
+        "recommendation": "Pick prefix size from a capacity forecast rather than today's exact VM count, and document which partner controls allow the range. Use Internet routing preference only after latency, compliance, and supported-resource checks; lower egress cost should not silently override application performance or resilience requirements."
+      },
+      "memoryTrick": "**Prefix is the address block; preference is the road choice.** This is a simplification because both decisions have service-specific constraints and must be made before dependent resources are wired to them.",
+      "examTip": "Clue words are **contiguous range**, **one firewall rule**, **reduce egress cost**, and **supported routing choices**. Choose the answer that respects both feature boundaries. A harder version may ask whether a NAT Gateway public IP can use Internet routing preference; the fetched routing-preference page lists NAT gateways as unsupported for that option."
+    },
+    "sources": [
+      {
+        "title": "Azure Public IP address prefix",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/public-ip-address-prefix"
+      },
+      {
+        "title": "Routing preference in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/routing-preference-overview"
+      },
+      {
+        "title": "Public IP addresses in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/public-ip-addresses"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

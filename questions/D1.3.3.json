@@ -1,0 +1,965 @@
+[
+  {
+    "id": "D1.3.3-01",
+    "objective": "D1.3.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription named `Sub1`. `Sub1` contains a resource group named `rg-prod` that has the tag `CostCenter = 4100`. The resource group contains a virtual machine named `vm1` that has no tags.\n\nThe finance team expects the `CostCenter` tag to appear directly on `vm1` without manually editing every existing and future resource.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Do nothing because resources automatically inherit tags from their resource group"
+      },
+      {
+        "id": "B",
+        "text": "Assign the built-in **Inherit a tag from the resource group** Azure Policy definition and create a remediation task for existing resources"
+      },
+      {
+        "id": "C",
+        "text": "Move `vm1` to a new resource group that has the `CostCenter` tag"
+      },
+      {
+        "id": "D",
+        "text": "Apply the `CostCenter` tag to the subscription and wait for resource group inheritance"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The target resource types support Azure Resource Manager unless the question explicitly discusses unsupported resource types. No custom policy exemption or deny assignment changes the described behavior. The requirement is to write resource metadata, not only enrich cost usage records.",
+    "sections": {
+      "correctAnswer": "**B. Assign the built-in **Inherit a tag from the resource group** Azure Policy definition and create a remediation task for existing resources**. Resources do not inherit tags from a resource group or subscription by default, so a policy plus remediation is needed to write the tag to existing resource metadata.",
+      "technical": "Azure tags are separate metadata collections at each taggable scope. A resource group tag is stored on the resource group object. A virtual machine tag is stored on the virtual machine object. Microsoft documents that resources don't inherit tags that you apply to a resource group or subscription.\n\nThe correct process is:\n\n1. Keep `CostCenter = 4100` on `rg-prod` as the source value.\n2. Assign a tag policy at a scope that contains `vm1`.\n3. Use a built-in inheritance policy when resources should receive the parent resource group's value.\n4. Create a remediation task so existing resources that are already non-compliant are updated.\n\nThis is different from Cost Management tag inheritance. Cost Management can apply parent tags to usage records for reporting, but those inherited values are not written to the resource itself. The scenario asks for the tag to appear directly on `vm1`, so Azure Policy is the correct governance feature.",
+      "wrongOptions": {
+        "A": "Doing nothing is wrong because Azure resources do not inherit tags from a resource group by default. Misconception: A resource group tag works like a folder label that is copied to all items inside. Could be correct when only the resource group object itself needs to be labeled.",
+        "C": "Moving the virtual machine does not copy resource group tags and adds unrelated operational risk. Misconception: Changing the container causes the container's metadata to copy to resources. Could be correct when the real goal is lifecycle or access reorganization, not tag inheritance.",
+        "D": "A subscription tag is also not automatically copied to resources. Misconception: Tag inheritance behaves like Azure RBAC inheritance. Could be correct when the requirement is to tag the subscription itself or to use Cost Management tag inheritance for usage records."
+      },
+      "plainEnglish": "Think of the resource group as a box and the virtual machine as an item inside the box. A label on the outside of the box helps people identify the box, but it does not print the same label on every item inside. If a cleanup script, inventory report, or finance tool reads the item itself, the item still has no label.\n\nAzure Policy can work like an automated label maker. You tell it to copy a selected resource group tag to matching resources. For old items, remediation is the step that goes back and applies the label after the policy is assigned.",
+      "analogy": "A library shelf has a sign that says **History**. The books on the shelf do not automatically have History printed on their covers. If the library wants each book labeled, it needs a process to label the books.\n\n| Analogy | Azure reality |\n|---|---|\n| Shelf sign | Resource group tag |\n| Book | Azure resource |\n| Book label | Resource tag |\n| Labeling process | Azure Policy tag definition |\n| Checking old books | Remediation task |\n\n**Where the analogy breaks down:** Azure Policy evaluates API requests and compliance state, and remediation uses a managed identity with permissions. A library label process has no RBAC or resource-provider behavior.",
+      "jargon": [
+        {
+          "term": "Azure tag",
+          "definition": "A key-value metadata pair, such as `Environment = Production`, that can be applied to supported Azure resources, resource groups, and subscriptions."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical Azure container that holds related resources for an application or lifecycle."
+        },
+        {
+          "term": "Subscription",
+          "definition": "An Azure management and billing boundary that contains resource groups and resources."
+        },
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates resources against rules and can audit, deny, append, or modify resources."
+        },
+        {
+          "term": "Modify effect",
+          "definition": "An Azure Policy effect that can add, update, or remove tags or supported properties during create or update requests and can remediate existing resources."
+        },
+        {
+          "term": "Remediation task",
+          "definition": "An Azure Policy operation that updates existing non-compliant resources when the policy effect supports remediation."
+        },
+        {
+          "term": "Usage record",
+          "definition": "A billing data row that represents resource usage or a charge used by Cost Management."
+        }
+      ],
+      "watchOut": "- Resource group and subscription tags are not inherited by resources by default.\n- Cost Management inherited tags affect usage records, not the resource's tag collection.\n- Existing resources usually need remediation after a modify policy is assigned.\n- The target resource type must support tags.\n- Always verify that the parent resource group has the correct source tag value before remediation.",
+      "productionTip": {
+        "official": "Microsoft documents that resources don't inherit tags from resource groups or subscriptions, and the tag policy page lists built-in policies such as **Inherit a tag from the resource group** that can remediate existing resources by using the modify effect.",
+        "recommendation": "Use resource group tags as a source of truth only when deployment templates or Azure Policy copy the required values to resources. Keep the mandatory tag set small, document the source of each tag, and monitor policy compliance after remediation."
+      },
+      "memoryTrick": "A parent tag is a sign on the room, not a sticker on every object. This is a simplification because Cost Management can separately inherit tags for cost usage records.",
+      "examTip": "Clue words are **resource group has the tag**, **resource has no tags**, and **appear directly**. Choose Azure Policy remediation, not automatic inheritance. A harder version may ask whether Cost Management tag inheritance satisfies a resource metadata requirement; it does not."
+    },
+    "sources": [
+      {
+        "title": "Use tags to organize your Azure resources and management hierarchy",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+      },
+      {
+        "title": "Policy definitions for tagging resources",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies"
+      },
+      {
+        "title": "Azure Policy definitions modify effect",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effect-modify"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.3-02",
+    "objective": "D1.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A resource group named `rg-app` has the tag `Environment = Production`. Some resources in `rg-app` already have `Environment = Test`; other resources have no `Environment` tag.\n\nNew and existing resources in `rg-app` must have `Environment = Production`, even when a different value is already present. You want to use a built-in Azure Policy definition.\n\nWhich policy definition should you assign?",
+    "options": [
+      {
+        "id": "A",
+        "text": "**Inherit a tag from the resource group**"
+      },
+      {
+        "id": "B",
+        "text": "**Inherit a tag from the resource group if missing**"
+      },
+      {
+        "id": "C",
+        "text": "**Require a tag on resources**"
+      },
+      {
+        "id": "D",
+        "text": "**Append a tag and its value from the resource group**"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The target resource types support Azure Resource Manager unless the question explicitly discusses unsupported resource types. No custom policy exemption or deny assignment changes the described behavior.",
+    "sections": {
+      "correctAnswer": "**A. **Inherit a tag from the resource group****. This built-in modify policy adds or replaces the specified tag and value from the parent resource group, so existing `Environment = Test` values can be changed to `Environment = Production`.",
+      "technical": "The important phrase is **even when a different value is already present**. The built-in tag policies have similar names but different behavior.\n\n| Built-in policy | Behavior |\n|---|---|\n| `Inherit a tag from the resource group` | Adds or replaces the tag with the value from the parent resource group |\n| `Inherit a tag from the resource group if missing` | Adds the tag only when it is absent |\n| `Require a tag on resources` | Denies requests that lack the tag; it does not copy a value |\n| Append inheritance policy | Appends when missing and is less useful for remediation than modify |\n\nIf a resource already has `Environment = Test`, a missing-only policy leaves it unchanged. A deny policy can prevent non-compliant future deployments, but it does not update existing resources to match the resource group. The add-or-replace inherit policy is the built-in that makes the parent value win. Existing resources still require remediation because normal compliance evaluation marks them non-compliant rather than silently rewriting them without a remediation task.",
+      "wrongOptions": {
+        "B": "The **if missing** policy preserves a different existing value, so `Environment = Test` would remain. Misconception: All inheritance policies overwrite old values. Could be correct when application teams are allowed to keep local values and you only want to fill blank tags.",
+        "C": "A require policy enforces that a tag exists but does not copy the resource group value or repair old resources by replacement. Misconception: Deny policies repair resources. Could be correct when bad new deployments should fail until the deployer supplies the required tag.",
+        "D": "Append is not the best answer because it adds only when missing and does not provide the same modify remediation behavior. Misconception: Append and modify are interchangeable for tag governance. Could be correct for a simple create-time fill-in scenario where existing resources and replacement are not required."
+      },
+      "plainEnglish": "Some label rules only fill in blanks. That is not enough here because a wrong label must be changed too. You need the rule that copies the resource group's value and replaces old values. After assigning the rule, you still need remediation for resources that already existed before the rule.",
+      "analogy": "A school changes every classroom door label to match the building's official safety zone. Some doors have no label, and some have an old label. A helper who labels only blank doors is not enough; you need a helper who replaces old labels too.\n\n| Analogy | Azure reality |\n|---|---|\n| Building label | Resource group tag |\n| Door label | Resource tag |\n| Blank-only helper | `if missing` policy |\n| Replace-old-label helper | Add-or-replace inherit policy |\n| Revisiting old doors | Remediation |\n\n**Where the analogy breaks down:** Azure Policy uses effects, policy assignment scope, managed identities, and resource-provider APIs, not a human helper with stickers.",
+      "jargon": [
+        {
+          "term": "Azure tag",
+          "definition": "A key-value metadata pair, such as `Environment = Production`, that can be applied to supported Azure resources, resource groups, and subscriptions."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical Azure container that holds related resources for an application or lifecycle."
+        },
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates resources against rules and can audit, deny, append, or modify resources."
+        },
+        {
+          "term": "Modify effect",
+          "definition": "An Azure Policy effect that can add, update, or remove tags or supported properties during create or update requests and can remediate existing resources."
+        },
+        {
+          "term": "Remediation task",
+          "definition": "An Azure Policy operation that updates existing non-compliant resources when the policy effect supports remediation."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "An Azure service namespace, such as `Microsoft.Compute`, that owns resource types and API behavior."
+        }
+      ],
+      "watchOut": "- **Inherit a tag from the resource group** is different from **if missing**.\n- Replacement can overwrite team-specific values, so use it only for mandatory corporate tags.\n- Existing resources require remediation.\n- Deny blocks bad requests but does not copy parent values.\n- Append is older and less flexible for tag remediation than modify.",
+      "productionTip": {
+        "official": "The tag policy documentation lists both resource group inherit definitions. The non-missing version adds or replaces the specified tag and value from the parent resource group; the **if missing** version adds only when the tag is absent.",
+        "recommendation": "Before using replacement policies, decide which source owns each tag value. Use `if missing` for optional defaults and add-or-replace only when the central parent value is authoritative."
+      },
+      "memoryTrick": "`If missing` fills blanks; add-or-replace fixes blanks and wrong answers. This is a simplification because scope, tag support, and remediation permissions can still affect the final result.",
+      "examTip": "Clue words are **different value is already present**. That rules out missing-only and append choices. A harder version may provide a table of resources and ask which values survive under each policy."
+    },
+    "sources": [
+      {
+        "title": "Policy definitions for tagging resources",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies"
+      },
+      {
+        "title": "Azure Policy definitions modify effect",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effect-modify"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.3-03",
+    "objective": "D1.3.3",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You assign an Azure Policy definition that uses the `modify` effect to add the tag `CostCenter = 2200` to resources in a subscription. The assignment is created today. Several existing resources are reported as non-compliant because they do not have the tag.\n\nYou need the existing resources to be updated by the policy. Which two requirements must be met? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "The policy assignment must have a managed identity that can perform the required remediation operations"
+      },
+      {
+        "id": "B",
+        "text": "A remediation task must be created for the existing non-compliant resources"
+      },
+      {
+        "id": "C",
+        "text": "The resource group must be deleted and recreated so the policy can evaluate it"
+      },
+      {
+        "id": "D",
+        "text": "The policy must use the `deny` effect before remediation can run"
+      },
+      {
+        "id": "E",
+        "text": "The tag must be added manually to the subscription object first"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The target resource types support Azure Resource Manager unless the question explicitly discusses unsupported resource types. No custom policy exemption or deny assignment changes the described behavior.",
+    "sections": {
+      "correctAnswer": "**A. The policy assignment must have a managed identity that can perform the required remediation operations** and **B. A remediation task must be created for the existing non-compliant resources**. Modify can alter create or update requests, while existing resources are fixed through remediation that uses the assignment identity.",
+      "technical": "The `modify` effect has two moments of behavior. During a create or update request, Azure Policy evaluates before the resource provider processes the request. If the rule matches, the modify operation can add, replace, or remove supported tags in the request content.\n\nExisting resources are different. When a policy definition with modify is run during an evaluation cycle, it does not directly change existing resources. Instead, it marks matching resources as non-compliant. To fix them, you create a remediation task.\n\nThe remediation task needs an identity that has permission to make the required write operations. Modify policy definitions include `roleDefinitionIds` in their details to describe the roles needed for remediation. The assignment's managed identity must receive those permissions at the correct scope. Deny is not required, and deleting the resource group is unrelated.",
+      "wrongOptions": {
+        "C": "Deleting and recreating resources is unnecessary and risky. Misconception: Policy can affect only newly created resources. Could be correct for an unrelated immutable setting that truly requires redeployment, not for tag remediation.",
+        "D": "The deny effect blocks non-compliant requests; it is not required for modify remediation and does not repair existing resources. Misconception: Enforcement always starts with deny. Could be correct when you want to prevent future untagged deployments instead of adding tags.",
+        "E": "Adding a tag to the subscription is not required when the policy supplies a fixed value such as `CostCenter = 2200`. Misconception: Every remediation copies from a parent tag. Could be correct when the policy is specifically designed to inherit from the subscription."
+      },
+      "plainEnglish": "Assigning a policy is like hiring an inspector. The inspector can find old resources that are missing a label, but the inspector also needs permission and a work order to fix them. The managed identity is the permission path. The remediation task is the work order for old resources.",
+      "analogy": "A city passes a rule that every building must show an emergency contact sign. Inspectors can mark missing signs, but a work crew needs legal authority and a work order to install signs on old buildings.\n\n| Analogy | Azure reality |\n|---|---|\n| City rule | Azure Policy definition |\n| Inspector finding old missing signs | Compliance evaluation |\n| Authorized crew | Managed identity with RBAC |\n| Work order | Remediation task |\n| Installing signs | Updating resource tags |\n\n**Where the analogy breaks down:** Azure has policy aliases, role definition IDs, API versions, and skipped modification rules. A city crew does not model those details.",
+      "jargon": [
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates resources against rules and can audit, deny, append, or modify resources."
+        },
+        {
+          "term": "Modify effect",
+          "definition": "An Azure Policy effect that can add, update, or remove tags or supported properties during create or update requests and can remediate existing resources."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An Azure-managed identity used by a service or policy assignment to authenticate without stored credentials."
+        },
+        {
+          "term": "Remediation task",
+          "definition": "An Azure Policy operation that updates existing non-compliant resources when the policy effect supports remediation."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure management-plane operations."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where an assignment or operation applies, such as subscription, resource group, or resource."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "An Azure service namespace, such as `Microsoft.Compute`, that owns resource types and API behavior."
+        }
+      ],
+      "watchOut": "- Modify evaluates before create or update requests reach the resource provider.\n- Existing resources are marked non-compliant until remediated.\n- The assignment identity needs the role permissions listed by the policy definition.\n- Deny and modify solve different problems.\n- Modification can be skipped when the target field or resource type is not applicable.",
+      "productionTip": {
+        "official": "Microsoft documents that modify can add, update, or remove tags during creation or update, and existing non-compliant resources can be remediated with a remediation task. Modify assignments require a managed identity to perform remediation.",
+        "recommendation": "Create tag policy assignments with managed identities from the start. Grant only the required remediation roles, run remediation in controlled batches for large estates, and review remediation failures instead of assuming all resources were fixed."
+      },
+      "memoryTrick": "Modify handles the front door; remediation walks through the existing house. This is a simplification because modify can be skipped for unsupported fields, API versions, or missing permissions.",
+      "examTip": "Clue words are **existing resources**, **non-compliant**, and **updated by the policy**. Pick the identity plus remediation pair. A harder version may ask why modification was skipped for a resource-provider API version."
+    },
+    "sources": [
+      {
+        "title": "Azure Policy definitions modify effect",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/policy/concepts/effect-modify"
+      },
+      {
+        "title": "Policy definitions for tagging resources",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.3-04",
+    "objective": "D1.3.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are designing a tag standard for a new Azure landing zone. The standard will be enforced across subscriptions that contain storage accounts, virtual machines, Azure Automation accounts, Azure DNS zones, and other Azure Resource Manager resources.\n\nWhich three statements about Azure tag limits and restrictions are correct? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Most resources, resource groups, and subscriptions can have a maximum of 50 tag name-value pairs"
+      },
+      {
+        "id": "B",
+        "text": "A tag name can contain any character if it is enclosed in backticks"
+      },
+      {
+        "id": "C",
+        "text": "Tag names are limited to 512 characters, except storage accounts where the tag name limit is 128 characters"
+      },
+      {
+        "id": "D",
+        "text": "All Azure resource types support exactly 50 tags"
+      },
+      {
+        "id": "E",
+        "text": "Some Azure resources support only 15 tags or have extra tag-name restrictions"
+      },
+      {
+        "id": "F",
+        "text": "Tag values can be 1,024 characters for Azure Resource Manager resources"
+      }
+    ],
+    "correct": [
+      "A",
+      "C",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The target resource types support Azure Resource Manager unless the question explicitly discusses unsupported resource types. No custom policy exemption or deny assignment changes the described behavior.",
+    "sections": {
+      "correctAnswer": "**A. Most resources, resource groups, and subscriptions can have a maximum of 50 tag name-value pairs**, **C. Tag names are limited to 512 characters, except storage accounts where the tag name limit is 128 characters**, and **E. Some Azure resources support only 15 tags or have extra tag-name restrictions**. The general limit has documented exceptions.",
+      "technical": "Azure tags are small pieces of metadata, not unlimited documents. Microsoft documents a general maximum of 50 tag name-value pairs per resource, resource group, or subscription. Tag names have a 512-character limit and tag values have a 256-character limit. Storage accounts are an exception: tag names have a 128-character limit while values still have a 256-character limit.\n\nTag names also have character restrictions. They can't contain `<`, `>`, `%`, `&`, `\\`, `?`, or `/`. Some services add more restrictions. Azure DNS zones don't support spaces or parentheses in tags or a tag that starts with a number. Traffic Manager doesn't support spaces, `#`, or `:` in the tag name and the name can't start with a number. Azure Front Door doesn't support `#` or `:`.\n\nSupport is not identical across all resource types. The documentation lists resources that only support 15 tags, including Azure Automation, Azure Content Delivery Network, Azure Public DNS, Azure Private DNS, and Azure Log Analytics saved search. A landing-zone tag standard with too many mandatory tags can fail on these exceptions.",
+      "wrongOptions": {
+        "B": "Backticks can help a shell parse text, but they do not remove Azure service-side tag character restrictions. Misconception: Escaping a value changes Azure validation rules. Could be correct only for a command-line quoting problem with an otherwise valid tag name.",
+        "D": "Not every Azure resource supports exactly 50 tags; some do not support tags, and some support only 15. Misconception: The general maximum is universal. Could be correct as a rough limit for many common tag-supporting resources, but not as a governance rule.",
+        "F": "The documented tag value limit is 256 characters, not 1,024. Misconception: Tags are suitable for long notes or configuration blobs. Could be correct for a different property in another service, not Azure Resource Manager tag values."
+      },
+      "plainEnglish": "A tag is a small label. Azure allows useful labels, but not an unlimited number of huge labels with any characters you want. A good company tag standard should be short, simple, and compatible with the services you actually deploy.\n\n In everyday terms, design the tag list so it works on the smallest and strictest resources, not only on the generous ones. A short standard with simple letters and numbers is easier to enforce than a long list full of punctuation.",
+      "analogy": "Airport baggage labels have size limits and scanner rules. Most bags can have several labels, but small or unusual cargo may accept fewer labels, and some symbols confuse scanners.\n\n| Analogy | Azure reality |\n|---|---|\n| Baggage label | Azure tag |\n| Number of labels | Tag count limit |\n| Label size | Name and value length limits |\n| Scanner-rejected symbols | Unsupported tag-name characters |\n| Special cargo | Resource-specific tag exceptions |\n\n**Where the analogy breaks down:** Azure validation happens through Azure Resource Manager and resource providers, and tags may or may not appear in cost reports. Baggage labels do not model those provider-specific rules.",
+      "jargon": [
+        {
+          "term": "Azure tag",
+          "definition": "A key-value metadata pair, such as `Environment = Production`, that can be applied to supported Azure resources, resource groups, and subscriptions."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical Azure container that holds related resources for an application or lifecycle."
+        },
+        {
+          "term": "Subscription",
+          "definition": "An Azure management and billing boundary that contains resource groups and resources."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "An Azure service namespace, such as `Microsoft.Compute`, that owns resource types and API behavior."
+        },
+        {
+          "term": "Tag support",
+          "definition": "Whether a resource type has a tag property and whether that tag is passed to cost reports."
+        },
+        {
+          "term": "Cost Analysis",
+          "definition": "A Microsoft Cost Management experience for viewing, grouping, and filtering Azure costs."
+        }
+      ],
+      "watchOut": "- The 50-tag limit is common but not universal.\n- Tag values are limited to 256 characters.\n- Storage account tag names are limited to 128 characters.\n- Avoid punctuation in tag names because provider-specific restrictions exist.\n- Check tag support before making many mandatory tags.",
+      "productionTip": {
+        "official": "Microsoft documents the 50-tag general limit, 512-character tag-name limit, 256-character tag-value limit, storage account tag-name exception, prohibited characters, and resource-specific exceptions including resources that support only 15 tags.",
+        "recommendation": "Keep mandatory tags few, short, and alphanumeric. Test your tag standard against resource types in the landing zone before enforcing deny policies, and make optional tags workload-specific rather than global."
+      },
+      "memoryTrick": "Tags are sticky notes, not notebooks. This is a simplification because a tag value can contain a JSON string, but it still counts as one tag and is subject to the value length limit.",
+      "examTip": "Clue words are **limits**, **storage accounts**, and **some resources**. Correct answers include documented exceptions, not absolute statements. A harder version may ask why a DNS tag with spaces failed while a VM tag worked."
+    },
+    "sources": [
+      {
+        "title": "Use tags to organize your Azure resources and management hierarchy",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+      },
+      {
+        "title": "Tag support for resources",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.3-05",
+    "objective": "D1.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A governance analyst named Mina must update tags on resources across a subscription by using Azure PowerShell and REST API automation. Mina must not receive permission to start, stop, delete, or reconfigure the resources.\n\nWhich built-in Azure role should you assign to Mina at the subscription scope?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Reader"
+      },
+      {
+        "id": "B",
+        "text": "Contributor"
+      },
+      {
+        "id": "C",
+        "text": "Tag Contributor"
+      },
+      {
+        "id": "D",
+        "text": "Cost Management Contributor"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The target resource types support Azure Resource Manager unless the question explicitly discusses unsupported resource types. No custom policy exemption or deny assignment changes the described behavior.",
+    "sections": {
+      "correctAnswer": "**C. Tag Contributor**. The Tag Contributor role lets a principal manage tags on entities without providing access to manage the entities themselves, and it includes `Microsoft.Resources/tags/*` permissions.",
+      "technical": "Azure RBAC permissions are action-based. Managing a resource's configuration is different from managing the resource's tag collection. Microsoft documents two ways to get tag access: write access to the `Microsoft.Resources/tags` resource type, or write access to the resource itself.\n\n`Tag Contributor` is the least-privilege built-in role for this scenario. The built-in role description says it lets you manage tags on entities without providing access to the entities themselves. Its actions include `Microsoft.Resources/tags/*`. The tag documentation states that this access lets you tag resources even if you don't have access to the resource itself and supports tag operations through Azure PowerShell and REST API.\n\n`Contributor` would also work technically, but it is too broad because it can manage resources. `Reader` cannot write tags. `Cost Management Contributor` is for Cost Management operations, not general resource tag updates. Scope matters: subscription scope covers resources in the subscription; resource group scope would be narrower.\n\nFor exam purposes, focus on the permission boundary. A user with Tag Contributor can affect governance metadata and reporting inputs, so the role is not harmless, but it still does not grant the broad resource management operations that Contributor grants. This is the least-privilege distinction being tested.",
+      "wrongOptions": {
+        "A": "Reader lacks tag write permissions. Misconception: Tags are descriptive metadata that any viewer can change. Could be correct when Mina only needs to audit existing tags.",
+        "B": "Contributor is too broad because it can manage resources, not only tags. Misconception: Resource write access is required to change tags. Could be correct when Mina must also create, update, or delete the resources.",
+        "D": "Cost Management Contributor does not grant general `Microsoft.Resources/tags/*` permissions. Misconception: Tags used in cost reports must be managed through a cost role. Could be correct when editing Cost Management settings such as budgets or tag inheritance."
+      },
+      "plainEnglish": "Mina needs permission to change labels, not permission to operate the machines. Tag Contributor is the role for the label job. Reader is too weak, and Contributor is too strong.\n\n In everyday terms, give Mina the badge for the label cabinet, not the badge for the server room. She can correct reporting labels across the subscription, but she cannot change the running services just because she can edit their tags.",
+      "analogy": "A museum hires someone to update labels on exhibits. They should replace labels but not move exhibits, repair them, or sell them.\n\n| Analogy | Azure reality |\n|---|---|\n| Exhibit | Azure resource |\n| Exhibit label | Tag |\n| Label updater badge | Tag Contributor |\n| Operations badge | Contributor |\n| Visitor badge | Reader |\n\n**Where the analogy breaks down:** Azure permissions are exact API actions evaluated at scopes. A museum badge does not represent actions such as `Microsoft.Resources/tags/*`.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure management-plane operations."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where an assignment or operation applies, such as subscription, resource group, or resource."
+        },
+        {
+          "term": "Tag Contributor",
+          "definition": "A built-in Azure RBAC role that manages tags on entities without granting permission to manage the entities themselves."
+        },
+        {
+          "term": "Azure PowerShell",
+          "definition": "PowerShell modules for managing Azure resources, including the `Az.Resources` module."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "An Azure service namespace, such as `Microsoft.Compute`, that owns resource types and API behavior."
+        },
+        {
+          "term": "Azure tag",
+          "definition": "A key-value metadata pair, such as `Environment = Production`, that can be applied to supported Azure resources, resource groups, and subscriptions."
+        }
+      ],
+      "watchOut": "- Tag Contributor is for tags, not resource configuration.\n- Contributor can update tags but overgrants resource management.\n- Reader cannot write tags.\n- Assign the role at the smallest scope that contains the resources.\n- Automation still needs authentication and should be monitored.",
+      "productionTip": {
+        "official": "Microsoft documents that Tag Contributor grants access to manage tags on entities without providing access to manage the entities themselves, and the role definition includes `Microsoft.Resources/tags/*`.",
+        "recommendation": "Use a dedicated tagging automation identity or group with Tag Contributor at the narrowest practical scope. Avoid using Contributor for tagging jobs, and monitor tag changes because they affect reporting and governance."
+      },
+      "memoryTrick": "Tag Contributor changes labels, not machines. This is a simplification because the built-in role includes some additional read and support-related actions listed in the role definition.",
+      "examTip": "Clue words are **update tags**, **must not reconfigure resources**, and **PowerShell and REST API**. Choose Tag Contributor over Contributor. A harder version may test whether a resource group-scope assignment covers another resource group; it does not."
+    },
+    "sources": [
+      {
+        "title": "Use tags to organize your Azure resources and management hierarchy",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+      },
+      {
+        "title": "Azure built-in roles for Management and governance",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/management-and-governance#tag-contributor"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.3-06",
+    "objective": "D1.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A storage account has the following tags.\n\n| Tag name | Value |\n|---|---|\n| `CostCenter` | `1001` |\n| `Environment` | `Test` |\n| `Owner` | `TeamA` |\n\nYou need to update the storage account by using Azure CLI so that `Environment` becomes `Production` and the other existing tags remain unchanged.\n\nWhich command should you run?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`az tag update --resource-id <resource-id> --operation merge --tags Environment=Production`"
+      },
+      {
+        "id": "B",
+        "text": "`az tag update --resource-id <resource-id> --operation replace --tags Environment=Production`"
+      },
+      {
+        "id": "C",
+        "text": "`az tag create --resource-id <resource-id> --tags Environment=Production`"
+      },
+      {
+        "id": "D",
+        "text": "`az tag delete --resource-id <resource-id> --name Environment`"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The target resource types support Azure Resource Manager unless the question explicitly discusses unsupported resource types. No custom policy exemption or deny assignment changes the described behavior. `<resource-id>` is the full resource ID of the storage account.",
+    "sections": {
+      "correctAnswer": "**A. `az tag update --resource-id <resource-id> --operation merge --tags Environment=Production`**. Merge updates the specified existing tag value and keeps other tags unchanged.",
+      "technical": "The Azure CLI `az tag update` command supports `Merge`, `Replace`, and `Delete`.\n\n| Operation | Result |\n|---|---|\n| `Merge` | Adds new tags and updates values for existing tag names while preserving other tags |\n| `Replace` | Replaces the entire tag set with the supplied tags |\n| `Delete` | Selectively deletes tags based on supplied names or name/value pairs |\n\nThe requirement is to change only `Environment` and keep `CostCenter` and `Owner`, so merge is the safe operation.\n\n`az tag create --resource-id` is easy to misread. The documentation says it creates or updates the entire set of tags and acts like tag initialization, leaving only the supplied tags after execution. `replace` would have the same dangerous result if only one tag is supplied. `az tag delete --resource-id` deletes the entire set of tags on the resource, even if `--name` is also supplied.\n\nThe same conceptual operations exist in Azure PowerShell through `Update-AzTag -Operation Merge`, `Replace`, or `Delete`. The command family is designed for tag patching, while desired-state deployments or complete replacement should supply every tag that must remain.",
+      "wrongOptions": {
+        "B": "Replace would remove `CostCenter` and `Owner` because the supplied tag set contains only `Environment`. Misconception: Replace means replace only the named tag. Could be correct when you intentionally supply the complete desired tag set.",
+        "C": "`az tag create --resource-id` acts like initializing the complete tag set, so missing old tags are removed. Misconception: Create means add one more tag. Could be correct when setting a complete tag collection from scratch.",
+        "D": "`az tag delete --resource-id` deletes tags and does not set `Environment = Production`; with a resource ID it deletes the entire tag set. Misconception: Deleting and recreating is the normal way to change a tag value. Could be correct when removing all tags from the resource."
+      },
+      "plainEnglish": "Use merge when you want to edit one label and keep the rest. Use replace when you want the supplied list to become the whole final label sheet. In this question, the words **other existing tags remain unchanged** point directly to merge.\n\n In everyday terms, imagine editing a spreadsheet row. Merge changes the cell you named and leaves the other cells alone. Replace creates a new row from only the cells you supplied, which is dangerous when you did not include every existing tag.",
+      "analogy": "A contact card has department, environment, and owner fields. Editing just the environment field should not erase the other fields.\n\n| Analogy | Azure reality |\n|---|---|\n| Contact card | Resource tag set |\n| Edit one field | `merge` |\n| Replace whole card | `replace` or `az tag create --resource-id` |\n| Remove fields | `delete` |\n\n**Where the analogy breaks down:** Azure commands use resource IDs, permissions, and API operations. A paper card does not enforce tag count limits or command-specific behavior.",
+      "jargon": [
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's cross-platform command-line tool for Azure, invoked with `az` commands."
+        },
+        {
+          "term": "Azure tag",
+          "definition": "A key-value metadata pair, such as `Environment = Production`, that can be applied to supported Azure resources, resource groups, and subscriptions."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "An Azure service namespace, such as `Microsoft.Compute`, that owns resource types and API behavior."
+        },
+        {
+          "term": "Azure PowerShell",
+          "definition": "PowerShell modules for managing Azure resources, including the `Az.Resources` module."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where an assignment or operation applies, such as subscription, resource group, or resource."
+        },
+        {
+          "term": "Tag support",
+          "definition": "Whether a resource type has a tag property and whether that tag is passed to cost reports."
+        }
+      ],
+      "watchOut": "- `merge` preserves tags that are not mentioned.\n- `replace` can accidentally remove tags.\n- `az tag create --resource-id` leaves only the supplied tags.\n- `az tag delete --resource-id` deletes the whole tag set.\n- Test bulk tag scripts on one non-production resource first.",
+      "productionTip": {
+        "official": "The Azure CLI documentation defines `az tag update` operations: merge adds new tags and updates existing values, replace replaces the entire tag set, and delete selectively deletes supplied tags. The PowerShell `Update-AzTag` documentation describes the same Merge, Replace, and Delete operations.",
+        "recommendation": "Prefer merge for incremental automation. Reserve replace for desired-state workflows that pass the complete tag dictionary, and use code review for tag scripts because small command differences can remove reporting metadata."
+      },
+      "memoryTrick": "Merge edits a line; replace rewrites the page. This is a simplification because delete can be selective with `az tag update --operation delete`, while `az tag delete --resource-id` removes the whole set.",
+      "examTip": "Clue words are **other existing tags remain unchanged**. That maps to merge. A harder version may ask for the PowerShell equivalent: `Update-AzTag -Operation Merge` with a hashtable.  In the exam, watch for commands that sound additive but operate on the whole tag set; Microsoft often tests the difference between `tag create`, `update merge`, and `update replace`."
+    },
+    "sources": [
+      {
+        "title": "az tag",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/tag?view=azure-cli-latest"
+      },
+      {
+        "title": "Update-AzTag",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.resources/update-aztag?view=azps-16.3.0"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.3-07",
+    "objective": "D1.3.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Litware uses Microsoft Cost Management to allocate Azure charges by application. Many resources are missing the `App` tag, but the resource groups and subscriptions are tagged correctly. Litware wants Cost Analysis to group new usage data by those inherited tags without changing the actual resource tags.\n\nWhat should Litware enable?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The **Tag inheritance** setting in Cost Management at the supported billing or subscription scope"
+      },
+      {
+        "id": "B",
+        "text": "The Azure Policy **Inherit a tag from the resource group** definition with immediate remediation"
+      },
+      {
+        "id": "C",
+        "text": "A management group tag named `App`"
+      },
+      {
+        "id": "D",
+        "text": "The `cm-resource-parent` tag on every resource group"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The target resource types support Azure Resource Manager unless the question explicitly discusses unsupported resource types. No custom policy exemption or deny assignment changes the described behavior. Litware has a supported Cost Management tag inheritance scope.",
+    "sections": {
+      "correctAnswer": "**A. The **Tag inheritance** setting in Cost Management at the supported billing or subscription scope**. Cost Management tag inheritance applies parent tags to child resource usage records for reporting and does not change the resource tags.",
+      "technical": "Cost Management tag inheritance and Azure Policy tag inheritance solve different problems. Azure Policy writes metadata onto resources. Cost Management tag inheritance enriches usage records for cost reporting. Microsoft states that inherited Cost Management tags are applied to child resource usage records and not to the resources themselves.\n\nSupported billing account types include Enterprise Agreement, Microsoft Customer Agreement, and Microsoft Partner Agreement with Azure plan subscriptions. Tag inheritance can also be enabled at subscription scope. At subscription scope, subscription and resource group tags can be applied to child resource usage records. Updates can take about 8-24 hours and apply to current-month usage data.\n\nCost Analysis can group by tag, but cost data has special categories when tags are missing or unavailable. This setting is therefore appropriate when the goal is reporting without changing resource metadata. If administrators need the `App` tag visible on the resource's Tags blade, Azure Policy would be the better feature.",
+      "wrongOptions": {
+        "B": "Azure Policy would change resource metadata, contrary to the requirement not to change actual resource tags. Misconception: All tag inheritance should use Azure Policy. Could be correct when inventory, cleanup, or operations require resource-level tags.",
+        "C": "Management groups cannot be tagged, and a management group tag would not enable Cost Management tag inheritance. Misconception: Every Azure hierarchy level supports tags. Could be correct for assigning governance controls such as policy at management group scope, not for tags.",
+        "D": "`cm-resource-parent` is a special cost grouping tag for related resources, not the general setting that inherits subscription and resource group tags into usage records. Misconception: Any Cost Management tag feature is tag inheritance. Could be correct when grouping child resource costs under a parent resource is the specific goal."
+      },
+      "plainEnglish": "Litware wants to label the bill, not the resource. Cost Management tag inheritance copies parent tag information into the cost data so reports can group charges. If someone opens the resource in the portal, the inherited reporting tag is not written there.",
+      "analogy": "Accounting receives receipts from projects. Some receipts are missing the project name, but the folders are labeled. Accounting can copy the folder label into the spreadsheet without writing on the original receipts.\n\n| Analogy | Azure reality |\n|---|---|\n| Receipt | Usage record |\n| Folder label | Subscription or resource group tag |\n| Accounting spreadsheet | Cost Management data |\n| Writing on the receipt | Azure Policy updating resource tags |\n| Totals by project | Cost Analysis grouped by tag |\n\n**Where the analogy breaks down:** Cost Management has supported billing scopes, conflict choices, and timing delays. A spreadsheet analogy does not model Azure billing pipelines.",
+      "jargon": [
+        {
+          "term": "Cost Analysis",
+          "definition": "A Microsoft Cost Management experience for viewing, grouping, and filtering Azure costs."
+        },
+        {
+          "term": "Usage record",
+          "definition": "A billing data row that represents resource usage or a charge used by Cost Management."
+        },
+        {
+          "term": "Azure tag",
+          "definition": "A key-value metadata pair, such as `Environment = Production`, that can be applied to supported Azure resources, resource groups, and subscriptions."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical Azure container that holds related resources for an application or lifecycle."
+        },
+        {
+          "term": "Subscription",
+          "definition": "An Azure management and billing boundary that contains resource groups and resources."
+        },
+        {
+          "term": "Management group",
+          "definition": "An Azure governance container above subscriptions; Azure tags are not applied to management groups."
+        }
+      ],
+      "watchOut": "- Cost Management inherited tags are for usage records, not resource metadata.\n- Supported scopes depend on billing account type and permissions.\n- Updates can take hours to appear.\n- Existing resource tags can conflict with inherited tags, and Cost Management has settings for which wins.\n- Some charges can still show tag limitations.",
+      "productionTip": {
+        "official": "Microsoft documents that Cost Management tag inheritance applies billing, subscription, and resource group tags to child resource usage records, not resources themselves. The Cost Analysis documentation explains grouping costs by tag.",
+        "recommendation": "Use Cost Management tag inheritance for reporting gaps and Azure Policy for metadata compliance. Document which feature is used, validate reports after the 8-24 hour delay, and decide which tag value wins when resource and inherited values conflict."
+      },
+      "memoryTrick": "Cost inheritance labels the bill, not the resource. This is a simplification because reporting behavior can depend on billing scope, current-month timing, and conflicts with resource tags.",
+      "examTip": "Clue words are **Cost Analysis**, **usage data**, and **without changing actual resource tags**. Choose Cost Management tag inheritance. A harder version may ask which billing account types support the setting."
+    },
+    "sources": [
+      {
+        "title": "Group and allocate costs using tag inheritance",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/enable-tag-inheritance"
+      },
+      {
+        "title": "Group and filter options in Cost Analysis and Budgets",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/group-filter"
+      },
+      {
+        "title": "Use tags to organize your Azure resources and management hierarchy",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.3-08",
+    "objective": "D1.3.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "A developer wants to add the following tags to an Azure web app.\n\n| Tag name | Value |\n|---|---|\n| `Environment` | `Production` |\n| `Owner` | `WebTeam` |\n| `SqlPassword` | `P@ssw0rd-For-App` |\n\nYou need to follow Microsoft's documented guidance for Azure tags.\n\nWhat should you tell the developer?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add all three tags because tag values are encrypted and hidden from cost reports"
+      },
+      {
+        "id": "B",
+        "text": "Add only the non-sensitive tags and store the password in a secret store such as Azure Key Vault"
+      },
+      {
+        "id": "C",
+        "text": "Add the password tag only at the resource group scope so it is not visible on the web app"
+      },
+      {
+        "id": "D",
+        "text": "Store the password in the tag name and leave the tag value empty"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The target resource types support Azure Resource Manager unless the question explicitly discusses unsupported resource types. No custom policy exemption or deny assignment changes the described behavior. The password is a real secret.",
+    "sections": {
+      "correctAnswer": "**B. Add only the non-sensitive tags and store the password in a secret store such as Azure Key Vault**. Microsoft warns that tags are stored as plain text and sensitive values can be exposed through reports, commands, deployment histories, exported templates, and monitoring logs.",
+      "technical": "Tags are governance metadata, not a secret-management feature. The Azure tag documentation warns that tags are stored as plain text and should not contain sensitive values. Microsoft lists multiple exposure paths, including cost reports, commands that return existing tag definitions, deployment histories, exported templates, and monitoring logs.\n\n`Environment = Production` and `Owner = WebTeam` are normal non-sensitive labels. `SqlPassword = P@ssw0rd-For-App` is a credential. It should be stored in a service designed for secrets, such as Azure Key Vault, or another approved secret store.\n\nChanging scope does not make a tag secret. Resource group and subscription tags are also metadata. Putting the secret in the tag name is no safer than putting it in the value because tag names are visible and subject to tag-name restrictions. Platform encryption at rest is not the same as treating a field as a protected secret in management APIs and reports.\n\nThis guidance applies regardless of whether the tag is placed on the resource, resource group, or subscription. All of those are management metadata surfaces. A secret store is different because it is designed for secret-specific access, auditing, and rotation workflows.",
+      "wrongOptions": {
+        "A": "Tags can appear in cost reports and other outputs, and Microsoft warns they are plain text. Misconception: Platform encryption makes tags safe for secrets. Could be correct only for non-sensitive tags such as `Environment` and `Owner`.",
+        "C": "A resource group tag is still plain-text metadata and can be exposed. Misconception: Parent-scope tags are private from resource users and reports. Could be correct for a non-sensitive resource group classification tag.",
+        "D": "A secret in the tag name is still visible metadata and may violate tag-name restrictions. Misconception: Only tag values are exposed. Could be correct only when the tag name itself is non-sensitive, such as `Environment`."
+      },
+      "plainEnglish": "A tag is like a sticky note. Sticky notes are useful for owner, environment, and cost center. They are a bad place for passwords because many tools and reports can read them. Keep secrets in a lockbox, not on labels.\n\n In everyday terms, assume every tag might be copied into a spreadsheet, audit export, command output, or troubleshooting log. If the value would be unsafe in an email to administrators, it is unsafe as a tag.",
+      "analogy": "Writing a door access code on a room label is unsafe. The room label helps maintenance, but the code belongs in a secure lockbox.\n\n| Analogy | Azure reality |\n|---|---|\n| Room label | Azure tag |\n| Room owner | Non-sensitive tag |\n| Door code | Password or secret |\n| Secure lockbox | Azure Key Vault or another secret store |\n| Maintenance report | Cost report, exported template, or log |\n\n**Where the analogy breaks down:** Azure has RBAC and encrypted platform storage, but tags are still management metadata rather than secret objects with secret-specific access and rotation semantics.",
+      "jargon": [
+        {
+          "term": "Azure tag",
+          "definition": "A key-value metadata pair, such as `Environment = Production`, that can be applied to supported Azure resources, resource groups, and subscriptions."
+        },
+        {
+          "term": "Plain text",
+          "definition": "Readable text that is not treated as a protected secret value in reporting and management outputs."
+        },
+        {
+          "term": "Cost Analysis",
+          "definition": "A Microsoft Cost Management experience for viewing, grouping, and filtering Azure costs."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical Azure container that holds related resources for an application or lifecycle."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure management-plane operations."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where an assignment or operation applies, such as subscription, resource group, or resource."
+        }
+      ],
+      "watchOut": "- Never store passwords, tokens, keys, or connection strings in tags.\n- Moving a sensitive value to the tag name does not protect it.\n- Resource group and subscription tags are also metadata.\n- Tags can appear in reports, templates, commands, and logs.\n- Use a real secret store for credentials.",
+      "productionTip": {
+        "official": "Microsoft's tag documentation explicitly warns that tags are stored as plain text and sensitive values could be exposed through cost reports, commands returning tag definitions, deployment histories, exported templates, and monitoring logs.",
+        "recommendation": "Adopt a tag standard that bans secrets and personal data. Add automated checks for suspicious tag names such as password, secret, token, or key, and route applications to approved secret-management services."
+      },
+      "memoryTrick": "Tags are labels, not locks. This is a simplification because access controls still apply to management data, but tags should be assumed visible to many administrators and reporting tools.",
+      "examTip": "Clue words are `SqlPassword` and **documented guidance**. Any answer that stores the secret in a tag is wrong. A harder version may hide the secret in a token-like value under a harmless tag name.  In the exam, Microsoft usually expects the security answer even when a tag is convenient for searching. Convenience never makes a password safe to place in metadata."
+    },
+    "sources": [
+      {
+        "title": "Use tags to organize your Azure resources and management hierarchy",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.3-09",
+    "objective": "D1.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A resource has the tag `Environment = Production`. An administrator runs an update operation that specifies the tag name as `environment` and sets the value to `production`.\n\nAfter the operation, what should you expect about tag matching and cost/reporting values?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Azure treats `Environment` and `environment` as two unrelated tag names, and both tags must exist"
+      },
+      {
+        "id": "B",
+        "text": "Azure tag-name operations are case-insensitive, but tag values are case-sensitive, so the value can change from `Production` to `production`"
+      },
+      {
+        "id": "C",
+        "text": "Azure ignores changes where only the value casing changes"
+      },
+      {
+        "id": "D",
+        "text": "Azure automatically normalizes both tag names and values to lowercase"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The target resource types support Azure Resource Manager unless the question explicitly discusses unsupported resource types. No custom policy exemption or deny assignment changes the described behavior.",
+    "sections": {
+      "correctAnswer": "**B. Azure tag-name operations are case-insensitive, but tag values are case-sensitive, so the value can change from `Production` to `production`**. Azure matches tag names regardless of casing, while values keep case-sensitive meaning.",
+      "technical": "Azure tag names and tag values do not use the same casing rule. Microsoft documents that tag names are case-insensitive for operations. If a resource has `Environment` and an operation refers to `environment`, Azure treats the name as the same tag for retrieving or updating. The resource provider might still preserve or display a particular casing for the name, and cost reports might show that casing.\n\nTag values are case-sensitive. `Production`, `production`, and `PRODUCTION` can be distinct values in reports and filters. If automation changes the value to lowercase, Cost Analysis grouped by tag value can show a different group or split costs from other resources.\n\nThe practical rule is: do not encode meaning in tag-name casing, but do standardize tag-value casing. Use policy or deployment validation to keep values such as `Production`, `Test`, and `Development` consistent.\n\nThis behavior also affects policy and automation design. If a policy checks for an allowed value, the allowed values should match the exact casing your organization uses. If scripts accept user input, normalize the value before writing the tag.",
+      "wrongOptions": {
+        "A": "Tag-name operations are case-insensitive, so those names are not reliable separate keys. Misconception: Tag keys behave like case-sensitive dictionary keys. Could be correct in another system where metadata keys are case-sensitive, not for Azure tag operations.",
+        "C": "A casing-only value change can matter because tag values are case-sensitive. Misconception: Azure normalizes values like tag names. Could be correct only if custom automation ignores casing before sending an update.",
+        "D": "Azure does not automatically lowercase both names and values. Misconception: Cloud metadata text is always normalized. Could be correct only as an internal convention implemented by your own scripts."
+      },
+      "plainEnglish": "The tag name is like a search box that ignores uppercase and lowercase. The value is exact text. `Production` and `production` might look the same to a human, but reports can treat them differently.\n\n In everyday terms, the label name is forgiving about capitals, but the label content is not. Make the category values boring and consistent, because reports cannot always know that humans meant two differently cased words to be the same.",
+      "analogy": "A store lets employees find the field named **Color** even if they type **color**. But the value inside the field can be **Blue** or **blue**, and reports may group those separately.\n\n| Analogy | Azure reality |\n|---|---|\n| Field name | Tag name |\n| Finding `Color` by typing `color` | Case-insensitive tag-name operation |\n| `Blue` versus `blue` | Case-sensitive tag values |\n| Sales report by value | Cost or inventory report grouped by tag value |\n\n**Where the analogy breaks down:** Azure resource providers may preserve tag-name casing differently, and Cost Management has its own data refresh timing.",
+      "jargon": [
+        {
+          "term": "Azure tag",
+          "definition": "A key-value metadata pair, such as `Environment = Production`, that can be applied to supported Azure resources, resource groups, and subscriptions."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "An Azure service namespace, such as `Microsoft.Compute`, that owns resource types and API behavior."
+        },
+        {
+          "term": "Cost Analysis",
+          "definition": "A Microsoft Cost Management experience for viewing, grouping, and filtering Azure costs."
+        },
+        {
+          "term": "Tag support",
+          "definition": "Whether a resource type has a tag property and whether that tag is passed to cost reports."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where an assignment or operation applies, such as subscription, resource group, or resource."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical Azure container that holds related resources for an application or lifecycle."
+        }
+      ],
+      "watchOut": "- Do not create separate governance meanings using tag-name casing.\n- Standardize tag values exactly.\n- Cost reports may display provider-preserved tag-name casing.\n- Value casing mistakes can split reports.\n- Azure Policy can help enforce allowed values.",
+      "productionTip": {
+        "official": "Microsoft documents that tag names are case-insensitive for operations and that tag values are case-sensitive. It also notes that a resource provider might keep the tag-name casing you provide and that you may see that casing in cost reports.",
+        "recommendation": "Publish an allowed-values list and normalize values in deployment pipelines before calling Azure. For important cost tags, use policy to deny or remediate unexpected value variants such as `Prod`, `prod`, and `Production`."
+      },
+      "memoryTrick": "Keys ignore case; values keep case. This is a simplification because displayed key casing can still vary by resource provider and reporting output.",
+      "examTip": "Clue words are **tag name as lowercase** and **value lowercase**. The tested distinction is tag-name matching versus tag-value comparison. A harder version may ask why Cost Analysis shows separate `Production` and `production` groups."
+    },
+    "sources": [
+      {
+        "title": "Use tags to organize your Azure resources and management hierarchy",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.3-10",
+    "objective": "D1.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You create a resource group named `rg-lab` for temporary training resources. You add the tag `ExpiresOn = 2026-12-31` to `rg-lab`. You then deploy a virtual machine named `vm-lab1` into the resource group.\n\nAn automation job deletes only resources whose own tag collection includes `ExpiresOn`. The job must delete `vm-lab1` when the date passes. You want to minimize manual tagging.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "No action is needed because `vm-lab1` inherits the resource group's `ExpiresOn` tag by default"
+      },
+      {
+        "id": "B",
+        "text": "Tag `vm-lab1` directly or use Azure Policy to copy the resource group's `ExpiresOn` tag to resources"
+      },
+      {
+        "id": "C",
+        "text": "Tag the management group that contains the subscription with `ExpiresOn`"
+      },
+      {
+        "id": "D",
+        "text": "Move the virtual machine to a different region in the same resource group"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The target resource types support Azure Resource Manager unless the question explicitly discusses unsupported resource types. No custom policy exemption or deny assignment changes the described behavior. The cleanup automation checks resource-level tags only.",
+    "sections": {
+      "correctAnswer": "**B. Tag `vm-lab1` directly or use Azure Policy to copy the resource group's `ExpiresOn` tag to resources**. Resource group tags do not automatically become resource tags, and the job reads the resource's own tag collection.",
+      "technical": "A resource group tag and a resource tag are separate. You can tag the resource group object, and you can tag a virtual machine inside it, but Azure does not copy the resource group tag to the virtual machine by default.\n\nThe automation job's rule is explicit: it deletes only resources whose own tag collection includes `ExpiresOn`. Therefore the virtual machine must have its own `ExpiresOn` tag. You can apply that tag during deployment, edit the resource directly, or use Azure Policy to inherit the tag from the resource group. If the VM already exists, a modify policy also needs remediation.\n\nManagement groups are not a solution because the Azure tagging documentation says tags apply to resources, resource groups, and subscriptions but not management groups. Region changes are unrelated to tag metadata. The broader lesson is to tag the scope that the automation or report actually reads.",
+      "wrongOptions": {
+        "A": "Resources do not inherit resource group tags by default, so the job will not see `ExpiresOn` on `vm-lab1`. Misconception: Resource groups behave like folders whose labels appear on all files. Could be correct only if the automation was written to inspect parent resource group tags.",
+        "C": "Management groups cannot be tagged, and a management-group label would not satisfy a resource-level tag filter. Misconception: Every Azure hierarchy level supports tags. Could be correct for assigning supported governance settings, such as policy, at management group scope.",
+        "D": "Region does not affect tag inheritance or the resource's tag collection. Misconception: Resource group metadata changes based on resource location. Could be correct only for a separate region-compliance requirement."
+      },
+      "plainEnglish": "The cleanup job looks at each resource's own labels. It does not read the label on the box unless someone programmed it to. Put the label directly on the virtual machine or use policy to copy it there.\n\n In everyday terms, the job is not reading the box label; it is reading the label attached to each item. Either label each item during deployment or use policy as the automatic label copier before the cleanup date arrives.",
+      "analogy": "A storage bin has a sticker saying 'Recycle after December 31.' An item inside the bin does not automatically get the sticker. If the recycling robot checks item stickers only, the item will be missed unless it is labeled too.\n\n| Analogy | Azure reality |\n|---|---|\n| Storage bin | Resource group |\n| Sticker on bin | Resource group tag |\n| Item in bin | Virtual machine |\n| Sticker on item | Resource-level tag |\n| Recycling robot | Cleanup automation |\n| Automatic sticker copier | Azure Policy |\n\n**Where the analogy breaks down:** Azure automation could be rewritten to query parent tags, and Azure Policy remediation has identity, permission, and timing requirements.",
+      "jargon": [
+        {
+          "term": "Azure tag",
+          "definition": "A key-value metadata pair, such as `Environment = Production`, that can be applied to supported Azure resources, resource groups, and subscriptions."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical Azure container that holds related resources for an application or lifecycle."
+        },
+        {
+          "term": "Management group",
+          "definition": "An Azure governance container above subscriptions; Azure tags are not applied to management groups."
+        },
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates resources against rules and can audit, deny, append, or modify resources."
+        },
+        {
+          "term": "Remediation task",
+          "definition": "An Azure Policy operation that updates existing non-compliant resources when the policy effect supports remediation."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where an assignment or operation applies, such as subscription, resource group, or resource."
+        }
+      ],
+      "watchOut": "- Know whether automation reads resource, resource group, subscription, or usage-record tags.\n- Resource group tags are not inherited resource tags.\n- Management groups are not tag targets.\n- Existing resources may need remediation when using policy.\n- Test deletion automation with a dry run before deleting resources.",
+      "productionTip": {
+        "official": "Microsoft documents that tags can be applied to resources, resource groups, and subscriptions, but not management groups. It also documents that resources don't inherit tags from resource groups or subscriptions and points to tag policies for applying parent tags.",
+        "recommendation": "For temporary environments, set lifecycle tags in deployment templates and use Azure Policy as a safety net. Log the resources selected for deletion before enabling destructive cleanup."
+      },
+      "memoryTrick": "Tag the thing the robot reads. This is a simplification because you could alternatively change the robot to read parent resource group tags, but the scenario says it reads resource tags.",
+      "examTip": "Clue words are **resource group's tag** and **own tag collection**. The test is resource group tags versus resource tags. A harder version may combine this with Cost Management tag inheritance, which still would not satisfy a resource metadata cleanup job."
+    },
+    "sources": [
+      {
+        "title": "Use tags to organize your Azure resources and management hierarchy",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-resources"
+      },
+      {
+        "title": "Policy definitions for tagging resources",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-policies"
+      },
+      {
+        "title": "Use the Azure portal and Azure Resource Manager to Manage Resource Groups",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal"
+      },
+      {
+        "title": "Manage resources - Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resources-portal"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.3-11",
+    "objective": "D1.3.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You are reviewing Cost Analysis for a subscription. You group costs by the tag key `Department`. Some charges appear as **Tags not supported**, some appear as **Tags not available**, and some appear as **Untagged**.\n\nWhich interpretation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "All three labels mean the same thing: the resource owner forgot to add the `Department` tag"
+      },
+      {
+        "id": "B",
+        "text": "**Tags not supported** means the charge cannot be tagged, **Tags not available** means the service does not include tags in usage data, and **Untagged** means the tag was not specified on the resource for remaining cases"
+      },
+      {
+        "id": "C",
+        "text": "**Tags not available** means the user lacks Reader access to the resource tags"
+      },
+      {
+        "id": "D",
+        "text": "**Untagged** means the resource is in a resource group that has no tags, even if the resource has `Department`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The target resource types support Azure Resource Manager unless the question explicitly discusses unsupported resource types. No custom policy exemption or deny assignment changes the described behavior. The view is Microsoft Cost Management Cost Analysis grouped by a tag.",
+    "sections": {
+      "correctAnswer": "**B. **Tags not supported** means the charge cannot be tagged, **Tags not available** means the service does not include tags in usage data, and **Untagged** means the tag was not specified on the resource for remaining cases**. Cost Analysis distinguishes different reasons a charge is not grouped under a tag value.",
+      "technical": "Cost Analysis grouping by tag is based on billing and usage data. Microsoft documents the meanings of several labels:\n\n| Cost Analysis label | Meaning |\n|---|---|\n| **Tags not supported** | Purchases, tenant resources not associated with subscriptions, subscription resources not deployed to a resource group, and classic resources cannot be tagged |\n| **Tags not available** | Services do not include tags in usage data |\n| **Untagged** | Remaining cases where tags are not specified on a resource |\n\nThese labels require different fixes. If a resource is truly **Untagged**, deployment standards or Azure Policy might help. If tags are **not available** in usage data, writing tags to the resource may not cause cost records to include them. If tags are **not supported**, the charge category cannot be tagged in the usual way. The tag support reference separately lists whether each resource type supports tags and whether tags appear in cost reports. Cost Management tag inheritance can help reporting in supported scopes, but it still does not change actual resources.",
+      "wrongOptions": {
+        "A": "The labels distinguish different technical causes, not just forgotten tags. Misconception: Every missing cost tag is an operator mistake. Could be correct only for the **Untagged** subset when a resource should have had the tag.",
+        "C": "The label describes usage data availability, not the current user's Reader access. Misconception: Cost Analysis labels are permission errors. Could be correct for a separate portal access problem, not for **Tags not available** in tag grouping.",
+        "D": "Untagged refers to the relevant tag not being specified on a resource in remaining cases, not specifically to parent resource group tags. Misconception: Cost tag grouping automatically falls back to resource group tags. Could be correct only when Cost Management tag inheritance is enabled and configured to use parent tags."
+      },
+      "plainEnglish": "Do not treat every blank tag report line the same. Sometimes the resource needs a tag. Sometimes the service does not send tag data into billing. Sometimes the charge cannot be tagged at all. The report labels tell you which kind of problem you are looking at.",
+      "analogy": "A payroll report has three missing-department categories: people outside the department system, systems that did not send department data, and employees whose department field is blank.\n\n| Analogy | Azure reality |\n|---|---|\n| Outside the department system | **Tags not supported** |\n| System did not send data | **Tags not available** |\n| Blank employee field | **Untagged** |\n| Payroll report | Cost Analysis |\n| HR support matrix | Tag support reference |\n\n**Where the analogy breaks down:** Azure charges include purchases, classic resources, tenant resources, resource providers, and usage records. Payroll categories do not model Cost Management tag inheritance.",
+      "jargon": [
+        {
+          "term": "Cost Analysis",
+          "definition": "A Microsoft Cost Management experience for viewing, grouping, and filtering Azure costs."
+        },
+        {
+          "term": "Usage record",
+          "definition": "A billing data row that represents resource usage or a charge used by Cost Management."
+        },
+        {
+          "term": "Tag support",
+          "definition": "Whether a resource type has a tag property and whether that tag is passed to cost reports."
+        },
+        {
+          "term": "Azure tag",
+          "definition": "A key-value metadata pair, such as `Environment = Production`, that can be applied to supported Azure resources, resource groups, and subscriptions."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "An Azure service namespace, such as `Microsoft.Compute`, that owns resource types and API behavior."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical Azure container that holds related resources for an application or lifecycle."
+        },
+        {
+          "term": "Subscription",
+          "definition": "An Azure management and billing boundary that contains resource groups and resources."
+        }
+      ],
+      "watchOut": "- A resource type can support tags but not pass tags to cost reports.\n- **Untagged** is not the same as **Tags not available**.\n- Purchases and non-resource charges may not behave like deployed resources.\n- Cost Management tag inheritance can improve reporting but does not write resource tags.\n- Check the tag support table before promising exact cost allocation.",
+      "productionTip": {
+        "official": "Microsoft's Cost Management group/filter documentation defines **Tags not supported**, **Tags not available**, and **Untagged** when grouping by tag. The tag support page lists both resource tag support and whether tags appear in cost reports.",
+        "recommendation": "When investigating unallocated costs, classify missing-tag categories separately. Fix true untagged resources with policy or deployment standards, and handle unsupported or unavailable categories with Cost Management inheritance, allocation rules, or documented exceptions."
+      },
+      "memoryTrick": "Not every blank in a cost tag report is the same blank. This is a simplification because exact labels can depend on charge type, offer, and selected scope.",
+      "examTip": "Clue words are the three Cost Analysis labels. The tested distinction is cost-report tag availability, not resource-tag editing. A harder version may ask whether Azure Policy remediation fixes **Tags not available**; it may not."
+    },
+    "sources": [
+      {
+        "title": "Group and filter options in Cost Analysis and Budgets",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/group-filter"
+      },
+      {
+        "title": "Tag support for resources",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/tag-support"
+      },
+      {
+        "title": "Group and allocate costs using tag inheritance",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/enable-tag-inheritance"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

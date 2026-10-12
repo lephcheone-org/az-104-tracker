@@ -1,0 +1,683 @@
+[
+  {
+    "id": "D3.1.2-01",
+    "objective": "D3.1.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You support a Contoso ARM template that deploys a storage account for lab virtual machines. The template currently hard-codes the replication setting in the resource. The operations team wants the same template to be reusable for dev, test, and production while blocking unsupported replication strings during validation. If a deployment does not provide a value, it should use locally redundant storage.\n\nExisting fragment:\n\n```json\n{\n  \"parameters\": {\n    \"location\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\"\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Storage/storageAccounts\",\n      \"apiVersion\": \"2025-06-01\",\n      \"name\": \"[format('st{0}', uniqueString(resourceGroup().id))]\",\n      \"location\": \"[parameters('location')]\",\n      \"sku\": {\n        \"name\": \"Standard_LRS\"\n      },\n      \"kind\": \"StorageV2\",\n      \"properties\": {}\n    }\n  ]\n}\n```\n\nWhich change meets the requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add a `storageSku` parameter with `type`, `allowedValues`, and `defaultValue`, then set `sku.name` to `[parameters('storageSku')]`."
+      },
+      {
+        "id": "B",
+        "text": "Replace `\"Standard_LRS\"` with `[variables('storageSku')]`, but do not add a parameter because variables are supplied at deployment time."
+      },
+      {
+        "id": "C",
+        "text": "Add `allowedValues` directly under the storage account resource because resource properties validate parameter choices."
+      },
+      {
+        "id": "D",
+        "text": "Create a parameter file only, place `storageSku` in the file, and leave the template unchanged."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The template is a resource-group ARM JSON template using the 2019-04-01 deployment template schema and a current Microsoft.Storage/storageAccounts resource shape. The team only needs to choose among documented storage account SKU names shown in the resource reference, not create custom replication options.",
+    "sections": {
+      "correctAnswer": "**A. Add a `storageSku` parameter with `type`, `allowedValues`, and `defaultValue`, then set `sku.name` to `[parameters('storageSku')]`**. A parameter lets deployment callers supply the value, `allowedValues` constrains acceptable strings during validation, and `defaultValue` supplies `Standard_LRS` when no override is given.",
+      "technical": "ARM template parameters are resolved before Resource Manager starts deployment operations. That timing is why they are the correct tool for a value that changes per environment. The parameter declaration should live in the template's top-level `parameters` object, and the storage account resource should use the deployment function syntax `[parameters('storageSku')]` where the SKU name is required.\n\nA suitable replacement is:\n\n```json\n{\n  \"parameters\": {\n    \"storageSku\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"Standard_LRS\",\n      \"allowedValues\": [\n        \"Standard_LRS\",\n        \"Standard_GRS\",\n        \"Standard_ZRS\"\n      ]\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Storage/storageAccounts\",\n      \"apiVersion\": \"2025-06-01\",\n      \"sku\": {\n        \"name\": \"[parameters('storageSku')]\"\n      },\n      \"kind\": \"StorageV2\"\n    }\n  ]\n}\n```\n\nThe order is important. First, Resource Manager reads the template and supplied parameter values. Second, it validates constraints such as `allowedValues`. Third, if no value is supplied, it uses `defaultValue`. Fourth, wherever the parameter is referenced, it substitutes the resolved value into the resource definition. The storage account resource reference shows `sku` as an object with a `name` property, so the expression belongs on `sku.name`, not beside `sku` or inside unrelated `properties`. A parameter file can later provide a different allowed value, but the reusable contract must be declared in the template.",
+      "wrongOptions": {
+        "B": "A variable is computed inside the template; it is not an input supplied by the deployment caller. Misconception: variables and parameters both accept deployment-time values. Could be correct when the value is derived from other inputs, such as building a storage name from a prefix and `uniqueString()`, but not when operators must choose the SKU per environment.",
+        "C": "`allowedValues` is a parameter constraint, not a child property of the storage account resource. Placing it under the resource would not create a valid SKU selection contract. Misconception: resource properties can declare their own ad hoc validation lists. Could be correct only for real resource-provider properties that are documented in the resource type schema.",
+        "D": "A parameter file cannot change a hard-coded resource property if the template never defines or references that parameter. Misconception: any value in a parameter file can override any matching-looking string in the template. Could be correct after the template already contains a `storageSku` parameter and the storage account uses `[parameters('storageSku')]`."
+      },
+      "plainEnglish": "The old template has the replication choice typed directly into the storage account. That is like printing one size on every order form. To let each environment choose a size, the form needs a field. In an ARM template, that field is a parameter. `allowedValues` is the list of choices the form accepts, and `defaultValue` is the answer used when nobody fills in the field. The storage account then reads from the field by using `[parameters('storageSku')]`.",
+      "analogy": "Imagine a cafeteria menu that always prints \"small coffee\" on every receipt. Contoso wants customers to choose small, medium, or large, but use small if they say nothing. The cashier adds a menu choice with approved sizes and a default size, then the receipt pulls from that choice.\n\n| Analogy | Azure reality |\n|---|---|\n| Menu choice | ARM parameter |\n| Approved sizes | `allowedValues` array |\n| Size used when blank | `defaultValue` |\n| Receipt coffee size | Storage account `sku.name` |\n\n**Where the analogy breaks down:** Resource Manager validates a JSON document and resource-provider schema; it is not a person deciding whether a menu item sounds reasonable.",
+      "jargon": [
+        {
+          "term": "ARM template",
+          "definition": "A JSON document that Azure Resource Manager uses to deploy and configure Azure resources declaratively."
+        },
+        {
+          "term": "Parameter",
+          "definition": "A named template input whose value is resolved before deployment operations start."
+        },
+        {
+          "term": "`allowedValues`",
+          "definition": "A parameter constraint listing the exact values that are valid for that parameter."
+        },
+        {
+          "term": "`defaultValue`",
+          "definition": "The value Resource Manager uses for a parameter when the deployment does not supply one."
+        },
+        {
+          "term": "Storage account",
+          "definition": "An Azure resource that provides storage services such as blobs, files, queues, and tables."
+        },
+        {
+          "term": "SKU",
+          "definition": "The stock-keeping unit or service tier choice for a resource, such as a storage replication option."
+        },
+        {
+          "term": "`Standard_LRS`",
+          "definition": "A standard storage account SKU name for locally redundant storage."
+        },
+        {
+          "term": "`parameters()`",
+          "definition": "An ARM template function that returns the resolved value of a named parameter."
+        }
+      ],
+      "watchOut": "- Do not put `allowedValues` on a resource; it belongs in the parameter declaration.\n- `defaultValue` does not remove the need to set `type`.\n- Parameter files are useful only for parameters that the template defines.\n- Keep the allowed list aligned with the resource provider property that consumes the value.",
+      "productionTip": {
+        "official": "Microsoft documents that parameters can define `allowedValues` and `defaultValue`, and that Resource Manager replaces parameter references with resolved values before deployment operations begin. The storage account resource reference documents `sku.name` as the property that receives values such as `Standard_LRS`.",
+        "recommendation": "For production templates, parameterize values that legitimately vary by environment and keep policy-sensitive choices narrow. Name the parameter after the resource property intent, add metadata descriptions when humans use the portal, and avoid exposing every possible SKU if your organization supports only a few."
+      },
+      "memoryTrick": "If people choose it, make it a **parameter**; if the template calculates it, make it a **variable**. This is a simplification because some parameters also have calculated defaults, but it works for deciding where environment input belongs.",
+      "examTip": "Clue words are **hard-coded**, **reusable**, **allowed values**, and **default**. The exam is testing the difference between a deployment input and an internal helper value. Rule out answers that rely only on a parameter file or invent validation on the resource. A harder version may combine a parameterized SKU with Azure Policy; the template still needs the parameter, while policy is a separate governance layer."
+    },
+    "sources": [
+      {
+        "title": "Parameters in templates - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+      },
+      {
+        "title": "Template functions - deployment - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-deployment"
+      },
+      {
+        "title": "Microsoft.Storage/storageAccounts 2025-06-01",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.storage/2025-06-01/storageaccounts"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.2-02",
+    "objective": "D3.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Fabrikam has an ARM template that repeats the same storage account name expression in the resource name and in an output. A reviewer asks you to simplify the template while still allowing the caller to choose the short environment code.\n\nCurrent fragment:\n\n```json\n{\n  \"parameters\": {\n    \"envCode\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"dev\"\n    }\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Storage/storageAccounts\",\n      \"apiVersion\": \"2025-06-01\",\n      \"name\": \"[concat('st', parameters('envCode'), uniqueString(resourceGroup().id))]\",\n      \"location\": \"[resourceGroup().location]\",\n      \"sku\": { \"name\": \"Standard_LRS\" },\n      \"kind\": \"StorageV2\",\n      \"properties\": {}\n    }\n  ],\n  \"outputs\": {\n    \"accountName\": {\n      \"type\": \"string\",\n      \"value\": \"[concat('st', parameters('envCode'), uniqueString(resourceGroup().id))]\"\n    }\n  }\n}\n```\n\nWhich modification should you make?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Replace both expressions with `[parameters('storageName')]` and set its default value to `[variables('storageName')]`."
+      },
+      {
+        "id": "B",
+        "text": "Add a variable named `storageName` with the `concat` expression, then use `[variables('storageName')]` for the resource name and output value while keeping `[parameters('envCode')]` inside the variable."
+      },
+      {
+        "id": "C",
+        "text": "Add `reference()` to the variables section so the storage account name is read from Azure after deployment."
+      },
+      {
+        "id": "D",
+        "text": "Move the `concat` expression to the parameter file because parameter files can evaluate template functions."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The purpose is to modify an existing ARM JSON template for maintainability, not convert it to Bicep. The name expression remains valid for the organization's naming policy and is short enough for storage account naming after `uniqueString()` is appended.",
+    "sections": {
+      "correctAnswer": "**B. Add a variable named `storageName` with the `concat` expression, then use `[variables('storageName')]` for the resource name and output value while keeping `[parameters('envCode')]` inside the variable**. Variables are designed for repeated calculated expressions, and the `variables()` function is the documented way to reuse them.",
+      "technical": "Variables in ARM templates simplify expressions that are used more than once. They are resolved before deployment operations, just as parameters are, but their role is different. A parameter accepts caller input. A variable stores a value or expression inside the template so the author can avoid repeating complex logic.\n\nA clean modification is:\n\n```json\n{\n  \"parameters\": {\n    \"envCode\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"dev\"\n    }\n  },\n  \"variables\": {\n    \"storageName\": \"[concat('st', parameters('envCode'), uniqueString(resourceGroup().id))]\"\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Storage/storageAccounts\",\n      \"apiVersion\": \"2025-06-01\",\n      \"name\": \"[variables('storageName')]\",\n      \"location\": \"[resourceGroup().location]\",\n      \"sku\": { \"name\": \"Standard_LRS\" },\n      \"kind\": \"StorageV2\",\n      \"properties\": {}\n    }\n  ],\n  \"outputs\": {\n    \"accountName\": {\n      \"type\": \"string\",\n      \"value\": \"[variables('storageName')]\"\n    }\n  }\n}\n```\n\nResource Manager first resolves `envCode`, then resolves the variable expression that uses that parameter, and then substitutes the variable value wherever `[variables('storageName')]` appears. Microsoft documents that variable types are inferred from their resolved values and that template functions can construct variable values. A key boundary is runtime state: `reference()` and `list*()` functions cannot be used in variable declarations because they retrieve resource state during deployment rather than predeployment values.",
+      "wrongOptions": {
+        "A": "A parameter default cannot reference a variable, and a storage name chosen entirely as a parameter would make the caller provide or accept a value rather than centralize the expression. Misconception: parameters and variables can reference each other in any direction. Could be correct when the name must be entirely caller-supplied and the default is a literal or allowed parameter expression.",
+        "C": "Microsoft documents that `reference()` and `list*()` are not allowed in variable declarations because variables are resolved before runtime resource state is available. Misconception: a variable can read a resource after it exists. Could be correct in a resource property or output where a runtime resource property must be read.",
+        "D": "ARM parameter files hold parameter values; they do not evaluate template expressions like `concat()` or `uniqueString()`. Misconception: a parameter file is a second template. Could be correct for supplying the `envCode` value, but not for calculating and reusing the storage account name expression."
+      },
+      "plainEnglish": "Fabrikam has copied the same formula in two places. If the formula ever changes, someone might update one copy and miss the other. A variable is a named scratchpad inside the template. The template can say, \"calculate the storage name once and call it `storageName`.\" The environment code remains a parameter because people choose it when they deploy. The variable uses that chosen value and the template reuses the finished name.",
+      "analogy": "A chef writes a sauce recipe in two different parts of a cookbook. An editor moves the sauce recipe to one named note and tells both dishes to use that note. Diners can still choose mild or spicy, but the sauce instructions stay in one place.\n\n| Analogy | Azure reality |\n|---|---|\n| Diner's mild or spicy choice | `envCode` parameter |\n| Named sauce note | `storageName` variable |\n| Dishes using the sauce | Resource name and output value |\n| Cookbook editing | Template modification |\n\n**Where the analogy breaks down:** ARM functions have evaluation-time restrictions; a cookbook note can mention anything, but a variable cannot call `reference()` to read runtime state.",
+      "jargon": [
+        {
+          "term": "Variable",
+          "definition": "A named value or expression declared inside an ARM template and reused with the `variables()` function."
+        },
+        {
+          "term": "`variables()`",
+          "definition": "An ARM deployment function that returns the resolved value of a template variable."
+        },
+        {
+          "term": "`parameters()`",
+          "definition": "An ARM deployment function that returns a caller-supplied or defaulted parameter value."
+        },
+        {
+          "term": "`concat()`",
+          "definition": "An ARM string function that joins values into a single string."
+        },
+        {
+          "term": "`uniqueString()`",
+          "definition": "An ARM function that creates a deterministic hash-like string from input values, often used for resource names."
+        },
+        {
+          "term": "`resourceGroup()`",
+          "definition": "A scope function that returns information about the current resource group, such as its ID and location."
+        },
+        {
+          "term": "Output",
+          "definition": "A value returned by a successful deployment for scripts, operators, or linked templates to consume."
+        },
+        {
+          "term": "Runtime state",
+          "definition": "Information from resources during or after deployment, such as generated endpoints or keys."
+        }
+      ],
+      "watchOut": "- Variables are not supplied on the command line; parameters are.\n- Variables can use parameters, but parameter defaults cannot use variables.\n- Do not use `reference()` or `listKeys()` in variable declarations.\n- Reusing a variable improves consistency but does not by itself validate storage account naming rules.",
+      "productionTip": {
+        "official": "Microsoft documents variables as a way to simplify templates by defining complicated expressions once and using `variables('name')` where needed. The variables article also states that `reference` and `list` functions cannot be used in variable declarations because they require runtime resource state.",
+        "recommendation": "Create variables for repeated expressions that are purely derived from deployment-scope values. Give them intent-focused names such as `storageName` rather than implementation names, and keep caller-controlled choices as parameters so release pipelines can vary environments without editing the template."
+      },
+      "memoryTrick": "Parameters are **prompts**; variables are **calculations**. This rule of thumb fails when a parameter has a calculated default, but it correctly separates caller input from reusable internal expressions in this scenario.",
+      "examTip": "The clue is repeated expression plus environment input. Choose the answer that preserves the parameter for the chosen code and introduces a variable for reuse. Eliminate any answer that asks a parameter file to run functions or a variable to call `reference()`. A harder item may ask you to combine object parameters with variables, but the same caller-input versus template-calculation split still applies."
+    },
+    "sources": [
+      {
+        "title": "Variables in templates - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/variables"
+      },
+      {
+        "title": "Parameters in templates - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+      },
+      {
+        "title": "Template functions - deployment - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-deployment"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.2-03",
+    "objective": "D3.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank has an ARM template that creates a virtual network with a subnet and then creates a network interface in that subnet. Intermittently, deployments fail because the network interface starts before the virtual network resource is ready. You need to modify the NIC resource so Resource Manager deploys it after the virtual network.\n\nExisting NIC fragment:\n\n```json\n{\n  \"type\": \"Microsoft.Network/networkInterfaces\",\n  \"apiVersion\": \"2025-01-01\",\n  \"name\": \"[parameters('nicName')]\",\n  \"location\": \"[parameters('location')]\",\n  \"properties\": {\n    \"ipConfigurations\": [\n      {\n        \"name\": \"ipconfig1\",\n        \"properties\": {\n          \"privateIPAllocationMethod\": \"Dynamic\",\n          \"subnet\": {\n            \"id\": \"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), 'default')]\"\n          }\n        }\n      }\n    ]\n  }\n}\n```\n\nWhich change should you add to the NIC resource?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add `\"dependsOn\": [\"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), 'default')]\"]` inside the `subnet` object."
+      },
+      {
+        "id": "B",
+        "text": "Add `\"dependsOn\": [\"[parameters('location')]\"]` because the location must be resolved before network resources deploy."
+      },
+      {
+        "id": "C",
+        "text": "Add `\"dependsOn\": [\"[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]\"]` at the same level as `name`, `location`, and `properties`."
+      },
+      {
+        "id": "D",
+        "text": "Remove the subnet `id`; ARM infers the dependency from the name `default` without needing a resource ID."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The virtual network and network interface are deployed in the same ARM template and the subnet is declared inside the virtual network resource, not as a separate top-level child resource. The template uses the classic resources array syntax rather than languageVersion 2.0 symbolic names.",
+    "sections": {
+      "correctAnswer": "**C. Add `\"dependsOn\": [\"[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]\"]` at the same level as `name`, `location`, and `properties`**. `dependsOn` is a top-level resource element, and the documented network interface example depends on the virtual network resource by resource ID.",
+      "technical": "Resource Manager deploys independent resources in parallel. When one resource must exist before another, the template author defines a dependency. The `dependsOn` element belongs on a resource object and is a JSON array of strings. Each string can be a resource name or resource ID. Microsoft shows a network interface depending on a virtual network with an expression like `[resourceId('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]`.\n\nThe NIC modification is:\n\n```json\n{\n  \"type\": \"Microsoft.Network/networkInterfaces\",\n  \"apiVersion\": \"2025-01-01\",\n  \"name\": \"[parameters('nicName')]\",\n  \"location\": \"[parameters('location')]\",\n  \"dependsOn\": [\n    \"[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]\"\n  ],\n  \"properties\": {\n    \"ipConfigurations\": [\n      {\n        \"name\": \"ipconfig1\",\n        \"properties\": {\n          \"privateIPAllocationMethod\": \"Dynamic\",\n          \"subnet\": {\n            \"id\": \"[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), 'default')]\"\n          }\n        }\n      }\n    ]\n  }\n}\n```\n\nThe subnet ID remains necessary because the NIC property expects the subnet resource ID. But using `resourceId()` in that property does not necessarily create an implicit dependency; Microsoft specifically explains that implicit dependencies come from `reference` or `list` functions, and if a resource ID is passed into those functions, the implicit dependency is not created. For this direct ID property, add `dependsOn` to control order. Avoid unnecessary dependencies elsewhere because they reduce parallelism.",
+      "wrongOptions": {
+        "A": "`dependsOn` is not a property of the nested `subnet` reference object; it belongs on the resource being deployed. Misconception: dependencies can be placed beside the property that uses the other resource. Could be correct if the subnet were a separate top-level child resource and another resource needed to depend on that child, but the placement here is still wrong.",
+        "B": "The location parameter is not a deployable resource and cannot be used as a resource dependency. Parameter values are resolved before deployment, but they do not create ordering between resources. Misconception: every expression used by a resource belongs in `dependsOn`. Could be correct only as a normal property value for `location`, not as a dependency target.",
+        "D": "The network interface needs a subnet ID in its IP configuration, and removing it would not teach Resource Manager the deployment order. Misconception: ARM infers relationships from matching names. Could be correct only in a different resource type whose schema allows an omitted property and supplies a default, which is not the NIC subnet reference shown."
+      },
+      "plainEnglish": "The NIC is like a network card that must plug into a network. Azure may try to build things at the same time to go faster. If the card is created before the network exists, the deployment can fail. `dependsOn` is the instruction that says, \"Do not start this NIC until that virtual network is created.\" The subnet ID still tells the NIC which subnet to use; `dependsOn` tells Azure when to create the NIC.",
+      "analogy": "A builder is installing electrical outlets in a new office. The outlet plan names the circuit, but the electrician still must wait until the wall frame is in place. The construction schedule adds a dependency so outlet installation happens after framing.\n\n| Analogy | Azure reality |\n|---|---|\n| Wall frame | Virtual network resource |\n| Office circuit label | Subnet resource ID |\n| Electrical outlet | Network interface |\n| Construction schedule dependency | ARM `dependsOn` |\n\n**Where the analogy breaks down:** Azure dependencies are deployment-time instructions only; after deployment, the resource does not retain a visible list of the template's `dependsOn` relationships.",
+      "jargon": [
+        {
+          "term": "Network interface (NIC)",
+          "definition": "An Azure network resource that connects a virtual machine or similar resource to a virtual network subnet."
+        },
+        {
+          "term": "Virtual network (VNet)",
+          "definition": "An Azure networking boundary that contains subnets and private address spaces."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A subdivision of a virtual network address space used to place network interfaces and other resources."
+        },
+        {
+          "term": "`dependsOn`",
+          "definition": "An ARM template resource element that declares explicit deployment order dependencies."
+        },
+        {
+          "term": "`resourceId()`",
+          "definition": "An ARM resource function that builds a fully qualified resource ID for a resource type and name."
+        },
+        {
+          "term": "Implicit dependency",
+          "definition": "A dependency inferred by Resource Manager from functions such as `reference()` or `list*()` used with resource names."
+        },
+        {
+          "term": "Parallel deployment",
+          "definition": "Resource Manager's behavior of deploying unrelated resources at the same time when no dependency blocks them."
+        },
+        {
+          "term": "IP configuration",
+          "definition": "A NIC setting that defines private IP allocation and the subnet connection."
+        }
+      ],
+      "watchOut": "- `dependsOn` is placed on the resource object, not inside a nested property.\n- Referencing a resource ID in a property is not the same as declaring deployment order.\n- Only add dependencies you need; extra dependencies slow deployments.\n- Child resources do not always create automatic deployment dependencies on their parents.",
+      "productionTip": {
+        "official": "Microsoft documents that Resource Manager deploys nondependent resources in parallel and that `dependsOn` defines explicit dependencies as an array of resource names or IDs. The same documentation includes a network interface example that depends on a virtual network using `resourceId('Microsoft.Network/virtualNetworks', ...)`.",
+        "recommendation": "When editing production templates, add the narrowest dependency that fixes creation order and then run a what-if or validation deployment. Keep the subnet resource ID expression for clarity, but do not add broad dependencies on every networking resource unless the NIC actually needs them ready."
+      },
+      "memoryTrick": "A resource ID says **where to point**; `dependsOn` says **when to start**. This simplification fails for some `reference()` expressions that create implicit dependencies, but it is reliable for a plain subnet ID property.",
+      "examTip": "Look for intermittent ordering failures and resources in the same template. The right answer usually adds `dependsOn` to the dependent resource, not to the referenced property. A harder version may use languageVersion 2.0 symbolic names; then the dependency can name the symbolic resource, but the placement and purpose are unchanged."
+    },
+    "sources": [
+      {
+        "title": "Set deployment order for resources - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/resource-dependency"
+      },
+      {
+        "title": "Template functions - resources - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-resource"
+      },
+      {
+        "title": "Microsoft.Network/networkInterfaces 2025-01-01",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/2025-01-01/networkinterfaces"
+      },
+      {
+        "title": "Microsoft.Network/virtualNetworks 2025-01-01",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/2025-01-01/virtualnetworks"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.2-04",
+    "objective": "D3.1.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Litware needs to modify an ARM template that currently deploys one storage account for build artifacts. The build team wants the template to deploy a caller-specified number of storage accounts. The names must be unique in Azure and must remain deterministic for the same resource group and index.\n\nCurrent resource fragment:\n\n```json\n{\n  \"type\": \"Microsoft.Storage/storageAccounts\",\n  \"apiVersion\": \"2025-06-01\",\n  \"name\": \"[format('stbuild{0}', uniqueString(resourceGroup().id))]\",\n  \"location\": \"[parameters('location')]\",\n  \"sku\": { \"name\": \"Standard_LRS\" },\n  \"kind\": \"StorageV2\",\n  \"properties\": {}\n}\n```\n\nWhich two changes should you make? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add a `copy` object to the storage account resource with a loop name and `count` set to `[parameters('accountCount')]`."
+      },
+      {
+        "id": "B",
+        "text": "Change the name to include `copyIndex()` and a stable uniqueness expression, such as `[format('stb{0}{1}', copyIndex(), uniqueString(resourceGroup().id))]`."
+      },
+      {
+        "id": "C",
+        "text": "Set `copy.count` to `[reference(parameters('accountCount')).value]` so the count is evaluated after resources exist."
+      },
+      {
+        "id": "D",
+        "text": "Use the same storage account name for every iteration because the `copy` loop automatically appends an index to resource names."
+      },
+      {
+        "id": "E",
+        "text": "Move the storage account into a nested child resource because `copy` is supported only for child resources."
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The template deploys storage accounts at resource-group scope and uses supported Azure CLI, PowerShell, or REST API versions for ARM deployments. The requested count is within ARM copy limits and the generated storage names satisfy the organization's length and character rules.",
+    "sections": {
+      "correctAnswer": "**A. Add a `copy` object to the storage account resource with a loop name and `count` set to `[parameters('accountCount')]`** and **B. Change the name to include `copyIndex()` and a stable uniqueness expression, such as `[format('stb{0}{1}', copyIndex(), uniqueString(resourceGroup().id))]`**. The `copy` element repeats the resource, and `copyIndex()` makes each repeated resource name distinct while `uniqueString(resourceGroup().id)` keeps names deterministic for the scope.",
+      "technical": "Resource iteration is the ARM template feature for deploying multiple instances of a resource type without duplicating JSON. The `copy` element is added to the resource being repeated. It requires a loop `name` and a `count` expression. Microsoft documents that `copyIndex()` returns the current zero-based iteration number, which you can include in names or properties.\n\nA focused modification is:\n\n```json\n{\n  \"parameters\": {\n    \"accountCount\": {\n      \"type\": \"int\",\n      \"defaultValue\": 3,\n      \"minValue\": 1,\n      \"maxValue\": 10\n    },\n    \"location\": {\n      \"type\": \"string\",\n      \"defaultValue\": \"[resourceGroup().location]\"\n    }\n  },\n  \"resources\": [\n    {\n      \"copy\": {\n        \"name\": \"artifactStorageCopy\",\n        \"count\": \"[parameters('accountCount')]\"\n      },\n      \"type\": \"Microsoft.Storage/storageAccounts\",\n      \"apiVersion\": \"2025-06-01\",\n      \"name\": \"[format('stb{0}{1}', copyIndex(), uniqueString(resourceGroup().id))]\",\n      \"location\": \"[parameters('location')]\",\n      \"sku\": { \"name\": \"Standard_LRS\" },\n      \"kind\": \"StorageV2\",\n      \"properties\": {}\n    }\n  ]\n}\n```\n\nResource Manager must know the number of iterations before it deploys the repeated resources, so the count should come from a parameter, literal, or other predeployment expression. The count cannot be a runtime lookup. The default mode is parallel, although serial mode and batch size can be used when order or throttling matters. The documented maximum count is 800, and zero count is supported only with recent deployment clients and API versions. Storage account names must be globally unique, so relying on the loop alone is not enough; the name expression itself must vary by index and include a uniqueness component.",
+      "wrongOptions": {
+        "C": "`reference()` reads runtime resource state and is not appropriate for deciding `copy.count`; the loop count must be known before the repeated resources are deployed. Misconception: deployment counts can be discovered after deployment begins. Could be correct when reading a deployed resource property in an output or resource property, not for controlling the number of loop iterations.",
+        "D": "A resource copy loop does not automatically append an index to the resource name. If the name expression is identical for every iteration, the template attempts duplicate resource names. Misconception: the loop engine silently fixes names. Could be correct only if the repeated resource type allowed identical names under different parents and the name expression included those parents, which this top-level storage account does not.",
+        "E": "Top-level resources can use resource copy loops. Microsoft specifically shows repeated storage accounts in the resources section. Misconception: iteration belongs only to nested child declarations. Could be correct in the opposite direction for certain child-resource iteration scenarios, where the child must be moved to top level to use `copy`."
+      },
+      "plainEnglish": "The template needs a loop. `copy` tells Azure how many times to repeat the storage account resource. A loop is not enough by itself, because each storage account still needs its own name. `copyIndex()` gives the current loop number: 0, 1, 2, and so on. Adding that number and a stable unique string to the name keeps the names different without changing randomly between deployments.",
+      "analogy": "A label printer is asked to print storage labels for several boxes. Setting the number of labels is one step. Printing the same label text on every box would still cause confusion, so the label design includes the box number and a branch code.\n\n| Analogy | Azure reality |\n|---|---|\n| Number of labels | `copy.count` |\n| Box number | `copyIndex()` |\n| Branch code | `uniqueString(resourceGroup().id)` |\n| Label text | Storage account name |\n\n**Where the analogy breaks down:** Azure storage account names are globally checked service names, not just local stickers, and ARM may deploy loop iterations in parallel by default.",
+      "jargon": [
+        {
+          "term": "Resource iteration",
+          "definition": "The ARM template pattern of deploying multiple instances of a resource by using a `copy` loop."
+        },
+        {
+          "term": "`copy` element",
+          "definition": "A resource-level JSON object with a loop name, count, and optional mode settings for repeated deployment."
+        },
+        {
+          "term": "`copyIndex()`",
+          "definition": "An ARM function that returns the current zero-based loop iteration number."
+        },
+        {
+          "term": "Deterministic",
+          "definition": "Producing the same output when the same inputs are used, such as the same resource group ID and index."
+        },
+        {
+          "term": "`uniqueString()`",
+          "definition": "An ARM function that returns a deterministic unique string based on the supplied arguments."
+        },
+        {
+          "term": "Parallel mode",
+          "definition": "The default copy behavior where Resource Manager creates iterations concurrently when dependencies allow."
+        },
+        {
+          "term": "Serial mode",
+          "definition": "A copy setting that deploys loop iterations in batches instead of all eligible instances at once."
+        },
+        {
+          "term": "Storage account name",
+          "definition": "The DNS-style name of an Azure Storage account, which must be unique across Azure."
+        }
+      ],
+      "watchOut": "- `copy` repeats the resource; it does not invent valid unique names.\n- `copyIndex()` starts at zero unless an offset is supplied.\n- Keep storage account names lowercase and short enough after adding unique text.\n- Be careful with complete mode deployments when reducing a copy count because resources no longer in the resolved template can be deleted.",
+      "productionTip": {
+        "official": "Microsoft documents the `copy` element for resource iteration, the `count` property for the number of iterations, and `copyIndex()` as the zero-based current iteration. The copy documentation also states that the count cannot exceed 800 and describes serial and parallel deployment modes.",
+        "recommendation": "Put reasonable `minValue` and `maxValue` constraints on count parameters so a pipeline mistake does not request hundreds of accounts. Use a naming variable if the same generated name is needed in outputs, role assignments, or child resources, and test both increasing and decreasing counts before using complete mode."
+      },
+      "memoryTrick": "For loops remember **count plus changing name**. This is a simplification because other properties may also need `copyIndex()`, but storage accounts immediately expose the naming problem.",
+      "examTip": "Clue words are **deploy N resources** and **unique names**. Select one answer that adds `copy` and another that uses `copyIndex()` in the name. Reject answers that use runtime functions for the count or assume the loop appends names automatically. A harder version may ask about depending on looped resources; then you must decide between depending on an individual indexed resource or the whole loop."
+    },
+    "sources": [
+      {
+        "title": "Deploy multiple instances of resources - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/copy-resources"
+      },
+      {
+        "title": "Parameters in templates - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+      },
+      {
+        "title": "Microsoft.Storage/storageAccounts 2025-06-01",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.storage/2025-06-01/storageaccounts"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.2-05",
+    "objective": "D3.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Adatum deploys a public IP address with an ARM template and a later pipeline step needs the fully qualified domain name generated for that public IP address. The current template deploys the resource successfully but returns no deployment output.\n\nExisting fragment:\n\n```json\n{\n  \"variables\": {\n    \"publicIpName\": \"pip-app01\"\n  },\n  \"resources\": [\n    {\n      \"type\": \"Microsoft.Network/publicIPAddresses\",\n      \"apiVersion\": \"2025-01-01\",\n      \"name\": \"[variables('publicIpName')]\",\n      \"location\": \"[resourceGroup().location]\",\n      \"sku\": { \"name\": \"Standard\" },\n      \"properties\": {\n        \"publicIPAllocationMethod\": \"Static\",\n        \"dnsSettings\": {\n          \"domainNameLabel\": \"[format('adatum-{0}', uniqueString(resourceGroup().id))]\"\n        }\n      }\n    }\n  ]\n}\n```\n\nWhich `outputs` section should you add?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`\"outputs\": { \"fqdn\": { \"type\": \"securestring\", \"value\": \"[listKeys(variables('publicIpName'), '2025-01-01').fqdn]\" } }`"
+      },
+      {
+        "id": "B",
+        "text": "`\"outputs\": { \"fqdn\": { \"type\": \"string\", \"value\": \"[parameters('dnsSettings.fqdn')]\" } }`"
+      },
+      {
+        "id": "C",
+        "text": "`\"outputs\": { \"fqdn\": { \"type\": \"string\", \"value\": \"[variables('publicIpName').dnsSettings.fqdn]\" } }`"
+      },
+      {
+        "id": "D",
+        "text": "`\"outputs\": { \"fqdn\": { \"type\": \"string\", \"value\": \"[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))).dnsSettings.fqdn]\" } }`"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The public IP resource has DNS settings that cause the platform to return an `fqdn` property after deployment. The pipeline needs a nonsecret deployment output and the resource is deployed in the same template rather than an unrelated existing deployment.",
+    "sections": {
+      "correctAnswer": "**D. `\"outputs\": { \"fqdn\": { \"type\": \"string\", \"value\": \"[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))).dnsSettings.fqdn]\" } }`**. Outputs return deployment values, and Microsoft documents `reference(...).dnsSettings.fqdn` as the pattern for returning a public IP address FQDN.",
+      "technical": "The `outputs` section is a top-level template section used to return values after a deployment succeeds. Each output has a name, type, and value expression. Microsoft documents a direct example that returns the fully qualified domain name for a public IP address by calling `reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))).dnsSettings.fqdn`.\n\nThe added section is:\n\n```json\n{\n  \"outputs\": {\n    \"fqdn\": {\n      \"type\": \"string\",\n      \"value\": \"[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))).dnsSettings.fqdn]\"\n    }\n  }\n}\n```\n\n`resourceId()` builds the resource ID for the public IP address in the current resource group. `reference()` retrieves the runtime representation of that deployed resource, and `.dnsSettings.fqdn` selects the returned property. Because `reference()` reads runtime state, it is valid in an output value. Resource Manager returns output values in the deployment result, and tools such as Azure CLI can query `properties.outputs.<name>.value`.\n\nThe scope and safety rules matter. Outputs are stored in deployment history, so sensitive values should not be exposed there. An FQDN is not a secret in this scenario. Also, the outputs article notes that `reference()` cannot be used in the outputs section of a nested template; for nested-template scenarios, convert to a linked template or output from the correct deployment level.",
+      "wrongOptions": {
+        "A": "`listKeys()` is for list operations supported by certain resource types, not for reading a public IP FQDN, and `securestring` is not needed for a DNS name. Misconception: every runtime resource property is retrieved with a `list*` function. Could be correct when returning, or better using internally, a supported list operation such as storage keys, although secrets should not be output.",
+        "B": "The FQDN is generated as a resource property, not supplied as a template parameter named `dnsSettings.fqdn`. Misconception: output expressions can read arbitrary dotted parameter names. Could be correct if the template actually declared a parameter and the pipeline only needed to echo that input, not a generated property.",
+        "C": "`variables('publicIpName')` is a string containing the resource name; it is not an object with `dnsSettings`. Misconception: a resource name variable behaves like the resource itself. Could be correct only if the variable were an object you created with a `dnsSettings` property, but that still would not read the deployed public IP result."
+      },
+      "plainEnglish": "The pipeline needs a value Azure creates during deployment. The template already knows the public IP resource's name, but the FQDN appears as a property of the deployed public IP. The output should ask Azure for the deployed resource using `reference()`, then pick the `dnsSettings.fqdn` property. The output type is a normal string because a public DNS name is not a password.",
+      "analogy": "A hotel reservation form records a guest's name, but the room number is assigned when check-in finishes. If another system needs the room number, the front desk must look up the completed reservation and return the assigned room.\n\n| Analogy | Azure reality |\n|---|---|\n| Guest name | Public IP resource name |\n| Completed reservation lookup | `reference()` |\n| Assigned room number | Generated FQDN property |\n| Printed receipt | Deployment output |\n\n**Where the analogy breaks down:** Azure outputs are stored as deployment metadata, so secret values need special caution that a normal hotel receipt analogy does not capture.",
+      "jargon": [
+        {
+          "term": "Output",
+          "definition": "A named value returned by an ARM deployment after deployment evaluation succeeds."
+        },
+        {
+          "term": "`reference()`",
+          "definition": "An ARM resource function that retrieves runtime properties for a resource or deployment."
+        },
+        {
+          "term": "`resourceId()`",
+          "definition": "An ARM resource function that builds the Azure resource ID for a type and name at the current scope."
+        },
+        {
+          "term": "Fully qualified domain name (FQDN)",
+          "definition": "A complete DNS name, such as a name under Azure's public IP DNS suffix."
+        },
+        {
+          "term": "Public IP address",
+          "definition": "An Azure Network resource that provides an externally reachable IP address and can have DNS settings."
+        },
+        {
+          "term": "Deployment history",
+          "definition": "The record Azure keeps for deployments, including parameter and output metadata."
+        },
+        {
+          "term": "`listKeys()`",
+          "definition": "A resource function that calls a provider's supported key-listing operation; it is not a generic property reader."
+        },
+        {
+          "term": "Pipeline",
+          "definition": "An automated sequence of build, release, or deployment steps."
+        }
+      ],
+      "watchOut": "- Use `reference()` for deployed properties, not `parameters()` or plain variables.\n- Do not output passwords, keys, or secrets because outputs are retained in deployment history.\n- If a property name contains a hyphen, use bracket notation rather than dot notation.\n- Nested templates have special restrictions for `reference()` in outputs.",
+      "productionTip": {
+        "official": "Microsoft documents outputs as the way to return values from deployed resources and shows a public IP address FQDN output using `reference(resourceId(...)).dnsSettings.fqdn`. The resource functions documentation describes `reference` as a function for deriving values from runtime resources.",
+        "recommendation": "Return only the values automation actually needs, and give outputs stable names so pipelines can query them reliably. For sensitive data, pass references or use Key Vault patterns rather than emitting the secret value as a deployment output."
+      },
+      "memoryTrick": "To report something Azure creates, **reference the resource, then output the property**. This shortcut is safe for ordinary properties, but it is not a license to print secrets into deployment history.",
+      "examTip": "The clues are **later pipeline step**, **generated FQDN**, and **returns no deployment output**. Choose the answer with a top-level output and `reference()`. Reject `listKeys()` unless the resource provider operation really lists keys. A harder version may use a linked template output, where the parent reads `reference('deploymentName').outputs.name.value` instead of a direct resource property."
+    },
+    "sources": [
+      {
+        "title": "Outputs in templates - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/outputs"
+      },
+      {
+        "title": "Template functions - resources - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-resource"
+      },
+      {
+        "title": "Set deployment order for resources - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/resource-dependency"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.2-06",
+    "objective": "D3.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Tailspin Toys has a template that deploys a SQL server. The administrator password is currently stored in plain text in `prod.parameters.json`. Security requires you to modify the deployment so the template treats the password as sensitive and the parameter file retrieves it from Azure Key Vault during deployment.\n\nCurrent template and parameter fragments:\n\nTemplate `azuredeploy.json`:\n\n```json\n{\n  \"parameters\": {\n    \"administratorLogin\": { \"type\": \"string\" },\n    \"administratorLoginPassword\": { \"type\": \"string\" }\n  }\n}\n```\n\nParameter file `prod.parameters.json`:\n\n```json\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"administratorLogin\": { \"value\": \"sqladminuser\" },\n    \"administratorLoginPassword\": { \"value\": \"P@ssw0rd-PlainText\" }\n  }\n}\n```\n\nWhich change meets the requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep the template parameter type as `string`, but rename the parameter file property from `value` to `secureValue`."
+      },
+      {
+        "id": "B",
+        "text": "Put `[reference(resourceId('Microsoft.KeyVault/vaults', 'kv-prod')).secrets.sqlPassword]` directly in the template parameter default."
+      },
+      {
+        "id": "C",
+        "text": "Change the template parameter type to `securestring` and replace the password value in the parameter file with a `reference` object that contains the Key Vault resource ID and `secretName`."
+      },
+      {
+        "id": "D",
+        "text": "Store the password in a variable because variables are not saved to deployment history."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The Key Vault secret already exists, the vault is enabled for template deployment, and the deploying principal has the required `Microsoft.KeyVault/vaults/deploy/action` permission. The question is about passing a secure parameter value during an ARM template deployment, not installing a certificate on a virtual machine.",
+    "sections": {
+      "correctAnswer": "**C. Change the template parameter type to `securestring` and replace the password value in the parameter file with a `reference` object that contains the Key Vault resource ID and `secretName`**. Microsoft documents secure string parameters for sensitive values and Key Vault references in parameter files for retrieving secrets during deployment without storing the secret text in the file.",
+      "technical": "Sensitive deployment inputs need two related changes. First, the template parameter should be declared as `securestring` so the parameter value is not logged or saved to deployment history as a normal string. Second, the parameter file should stop carrying the password as plain text. Microsoft documents a parameter-file `reference` object with a `keyVault.id` and `secretName`; during deployment, Resource Manager retrieves the secret value and passes it to the matching secure parameter.\n\nThe modified fragments are:\n\nTemplate `azuredeploy.json` after the change:\n\n```json\n{\n  \"parameters\": {\n    \"administratorLogin\": { \"type\": \"string\" },\n    \"administratorLoginPassword\": { \"type\": \"securestring\" }\n  }\n}\n```\n\nParameter file `prod.parameters.json` after the change:\n\n```json\n{\n  \"$schema\": \"https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#\",\n  \"contentVersion\": \"1.0.0.0\",\n  \"parameters\": {\n    \"administratorLogin\": { \"value\": \"sqladminuser\" },\n    \"administratorLoginPassword\": {\n      \"reference\": {\n        \"keyVault\": {\n          \"id\": \"/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-sec/providers/Microsoft.KeyVault/vaults/kv-prod\"\n        },\n        \"secretName\": \"sql-admin-password\"\n      }\n    }\n  }\n}\n```\n\nThe operational order is: the deployer submits the template and parameter file, Resource Manager sees the Key Vault reference, checks that the deployment principal has deployment access to the vault, retrieves the secret, and supplies it as the secure parameter. The Key Vault ID is a static resource ID in the parameter file. Template expressions are not allowed in parameter files, so a dynamic vault ID requires a linked-template pattern rather than inline parameter-file functions.",
+      "wrongOptions": {
+        "A": "`secureValue` is not the documented parameter-file property for ARM deployments. The file uses either `value` for ordinary parameter values or `reference` for Key Vault secret retrieval. Misconception: changing a JSON property name makes the value secure. Could be correct only in a different tool with its own schema, not in ARM deployment parameter files.",
+        "B": "Parameter defaults cannot call `reference()` because parameters are resolved before runtime resource state is available, and Key Vault secret references for this pattern belong in the parameter file. Misconception: the template can look up any secret directly in a parameter default. Could be correct in a linked-template design that passes a dynamically generated vault ID to a nested deployment parameter, but not as shown.",
+        "D": "Variables are resolved and used inside the template; they are not a secure secret store. Putting a password in a variable still places the secret text in source control or deployment content. Misconception: variables hide values from deployment history. Could be correct for nonsecret calculated values, such as names or tags, never for administrator passwords."
+      },
+      "plainEnglish": "The password should not be typed in the parameter file. The template should say, \"this input is a secret string.\" The parameter file should say, \"get this value from this Key Vault secret.\" Azure Resource Manager then retrieves the secret during deployment. The person reading the JSON file sees the vault and secret name, not the password itself.",
+      "analogy": "A payroll form should not print an employee's bank PIN. Instead, the form has a protected field and points payroll staff to an approved vault record. The payroll system fetches the PIN only when authorized processing happens.\n\n| Analogy | Azure reality |\n|---|---|\n| Protected form field | `securestring` parameter |\n| Vault record pointer | Parameter-file Key Vault reference |\n| Payroll authorization check | `Microsoft.KeyVault/vaults/deploy/action` permission |\n| Printed PIN in a folder | Plain-text parameter value |\n\n**Where the analogy breaks down:** Azure uses resource IDs, deployment permissions, and service-side secret retrieval rather than a human clerk opening a safe.",
+      "jargon": [
+        {
+          "term": "`securestring`",
+          "definition": "An ARM parameter type for sensitive string values that should not be logged or saved as ordinary deployment data."
+        },
+        {
+          "term": "Azure Key Vault",
+          "definition": "An Azure service for storing and controlling access to secrets, keys, and certificates."
+        },
+        {
+          "term": "Parameter file",
+          "definition": "A JSON file that supplies values for parameters declared in an ARM template."
+        },
+        {
+          "term": "`deploymentParameters` schema",
+          "definition": "The JSON schema URL used by ARM parameter files, such as the 2019-04-01 deploymentParameters schema."
+        },
+        {
+          "term": "Key Vault reference",
+          "definition": "A parameter-file `reference` object that identifies a vault and secret for Resource Manager to retrieve during deployment."
+        },
+        {
+          "term": "`secretName`",
+          "definition": "The name of the Key Vault secret that should be read for the parameter value."
+        },
+        {
+          "term": "`Microsoft.KeyVault/vaults/deploy/action`",
+          "definition": "The permission checked by Resource Manager before a deployment can retrieve a Key Vault secret."
+        },
+        {
+          "term": "Deployment history",
+          "definition": "Azure deployment metadata where ordinary parameters and outputs can be visible after deployment."
+        }
+      ],
+      "watchOut": "- A secure parameter type protects deployment handling; it does not encrypt a plain-text value committed to a repository.\n- The parameter file Key Vault reference uses a static vault resource ID.\n- The vault must be enabled for template deployment.\n- The deployer needs deployment access to the secret, but not necessarily broad secret management rights.",
+      "productionTip": {
+        "official": "Microsoft documents secure parameters as not saved to deployment history and not logged. The Key Vault parameter article states that a parameter file can reference a secret by key vault resource ID and secret name, and that the deployer must have `Microsoft.KeyVault/vaults/deploy/action` permission.",
+        "recommendation": "Keep passwords out of repositories entirely, rotate any secret that was previously stored in plain text, and grant the narrow deployment permission at the smallest practical scope. In release pipelines, separate the right to deploy templates from the right to list or edit Key Vault secrets."
+      },
+      "memoryTrick": "For passwords: **secure type in the template, vault reference in the parameter file**. This is a simplification because dynamic vault IDs need linked deployments, but it captures the static production parameter-file pattern.",
+      "examTip": "Clue words are **plain text**, **secure parameter**, and **Key Vault reference**. Pick the answer that changes both the template type and the parameter file value shape. Reject invented fields like `secureValue` and any answer that puts `reference()` in a parameter default. A harder version may ask what permission is required; look for `Microsoft.KeyVault/vaults/deploy/action`."
+    },
+    "sources": [
+      {
+        "title": "Parameters in templates - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+      },
+      {
+        "title": "Create parameter file - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameter-files"
+      },
+      {
+        "title": "Key Vault secret with template - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/key-vault-parameter"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.2-07",
+    "objective": "D3.1.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Northwind Traders is updating an old ARM template for a storage account. The existing resource uses an older storage API shape and the team now wants the template to use a current resource API version and configure the blob access tier during deployment.\n\nExisting fragment:\n\n```json\n{\n  \"type\": \"Microsoft.Storage/storageAccounts\",\n  \"apiVersion\": \"2015-06-15\",\n  \"name\": \"[parameters('storageAccountName')]\",\n  \"location\": \"[parameters('location')]\",\n  \"properties\": {\n    \"accountType\": \"Standard_LRS\"\n  }\n}\n```\n\nWhich replacement correctly updates the API version and property names for the current storage account resource shape?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```json\n{\n  \"type\": \"Microsoft.Storage/storageAccounts\",\n  \"apiVersion\": \"2025-06-01\",\n  \"name\": \"[parameters('storageAccountName')]\",\n  \"location\": \"[parameters('location')]\",\n  \"properties\": {\n    \"accountType\": \"Standard_LRS\",\n    \"accessTier\": \"Hot\"\n  }\n}\n```"
+      },
+      {
+        "id": "B",
+        "text": "```json\n{\n  \"type\": \"Microsoft.Storage/storageAccounts\",\n  \"apiVersion\": \"2025-06-01\",\n  \"name\": \"[parameters('storageAccountName')]\",\n  \"location\": \"[parameters('location')]\",\n  \"sku\": { \"name\": \"Standard_LRS\" },\n  \"kind\": \"StorageV2\",\n  \"properties\": {\n    \"accessTier\": \"Hot\"\n  }\n}\n```"
+      },
+      {
+        "id": "C",
+        "text": "```json\n{\n  \"type\": \"Microsoft.Storage/storageAccounts\",\n  \"apiVersion\": \"2015-06-15\",\n  \"name\": \"[parameters('storageAccountName')]\",\n  \"location\": \"[parameters('location')]\",\n  \"sku\": { \"name\": \"Standard_LRS\" },\n  \"kind\": \"StorageV2\",\n  \"properties\": {\n    \"accessTier\": \"Hot\"\n  }\n}\n```"
+      },
+      {
+        "id": "D",
+        "text": "```json\n{\n  \"type\": \"Microsoft.Storage/storageAccounts\",\n  \"apiVersion\": \"2025-06-01\",\n  \"name\": \"[parameters('storageAccountName')]\",\n  \"location\": \"[parameters('location')]\",\n  \"skuName\": \"Standard_LRS\",\n  \"kindName\": \"StorageV2\",\n  \"properties\": {\n    \"defaultAccessTier\": \"Hot\"\n  }\n}\n```"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The intended result is a general-purpose v2 storage account with hot access tier for Blob Storage data. The question is about modifying the storage account resource declaration, not about lifecycle management rules or changing access tiers after deployment.",
+    "sections": {
+      "correctAnswer": "**B. The replacement that uses `apiVersion` `2025-06-01`, a top-level `sku` object with `name`, top-level `kind` set to `StorageV2`, and `properties.accessTier` set to `Hot`**. The current Microsoft.Storage/storageAccounts schema uses `sku.name` and `kind`; `accountType` is the older 2015-era property shape.",
+      "technical": "ARM resource API versions are not just dates for documentation. They select the resource provider schema that Resource Manager validates and sends to the provider. When you update a resource to a newer API version, you must also use the property names for that version. For Microsoft.Storage/storageAccounts in the current reference, the account SKU is represented by a top-level `sku` object whose `name` property contains values such as `Standard_LRS`. The account kind is a separate top-level `kind` property, and blob access tier is represented as `properties.accessTier`.\n\nThe replacement should be:\n\n```json\n{\n  \"type\": \"Microsoft.Storage/storageAccounts\",\n  \"apiVersion\": \"2025-06-01\",\n  \"name\": \"[parameters('storageAccountName')]\",\n  \"location\": \"[parameters('location')]\",\n  \"sku\": {\n    \"name\": \"Standard_LRS\"\n  },\n  \"kind\": \"StorageV2\",\n  \"properties\": {\n    \"accessTier\": \"Hot\"\n  }\n}\n```\n\nThe deployment engine first parses the resource type and API version, then validates the body against that version's schema. It does not translate arbitrary older properties to newer names. Keeping `accountType` while claiming a 2025 API version mixes two models. The reverse is also unsafe: putting newer properties under an older API version asks the old schema to accept fields it was not designed for. Use the versioned resource reference when modifying existing templates, especially for resources that have evolved over many API versions.",
+      "wrongOptions": {
+        "A": "This option updates the API date but keeps `accountType` inside `properties`. The current storage account resource shape uses `sku.name` at the top level, so the old property name is not the correct way to set the SKU. Misconception: changing `apiVersion` alone modernizes the resource body. Could be correct only for the older API version that documented `accountType` for that shape.",
+        "C": "This option uses modern-looking `sku`, `kind`, and `accessTier` properties but leaves the resource on the 2015 API version. The schema version and body need to match. Misconception: property names are independent of API version. Could be correct after changing the API version to a version that documents those properties.",
+        "D": "`skuName`, `kindName`, and `defaultAccessTier` are not the documented property names for the storage account resource declaration. Misconception: ARM accepts friendly flattened aliases for nested resource properties. Could be correct only in a separate tool or module that transforms its own input into valid ARM JSON, not in the ARM template resource itself."
+      },
+      "plainEnglish": "The old template speaks an older version of the storage account language. In the newer language, the storage SKU is not written as `properties.accountType`. It is written as a `sku` object with a `name`. The account type, such as StorageV2, is written in `kind`. The hot or cool blob tier is written under `properties.accessTier`. Updating only the date without updating the words is like putting a new cover on an old instruction manual.",
+      "analogy": "A company updates an expense form. The old form had one box named \"account type.\" The new form has separate boxes for \"pricing plan,\" \"account kind,\" and \"filing tier.\" You must fill in the boxes that exist on the new form, not paste the old answer into a removed box.\n\n| Analogy | Azure reality |\n|---|---|\n| Form edition date | Resource `apiVersion` |\n| Pricing plan box | `sku.name` |\n| Account kind box | `kind` |\n| Filing tier box | `properties.accessTier` |\n\n**Where the analogy breaks down:** Azure schemas are machine-validated contracts with resource provider behavior behind them, not paper forms that a person might interpret flexibly.",
+      "jargon": [
+        {
+          "term": "API version",
+          "definition": "The version of a resource provider contract used for validating and deploying a resource type in an ARM template."
+        },
+        {
+          "term": "Resource provider schema",
+          "definition": "The documented set of properties and allowed shapes for a resource type at a specific API version."
+        },
+        {
+          "term": "`sku`",
+          "definition": "A top-level storage account object whose `name` property selects a SKU such as `Standard_LRS`."
+        },
+        {
+          "term": "`kind`",
+          "definition": "A top-level storage account property that identifies the account kind, such as `StorageV2`."
+        },
+        {
+          "term": "`accessTier`",
+          "definition": "A storage account property for the default blob access tier, such as `Hot` or `Cool` when supported."
+        },
+        {
+          "term": "`accountType`",
+          "definition": "An older storage account property shape used in earlier API versions to represent the storage account type."
+        },
+        {
+          "term": "General-purpose v2",
+          "definition": "A modern storage account kind represented in templates as `StorageV2`."
+        },
+        {
+          "term": "ARM JSON",
+          "definition": "The JSON syntax used by Azure Resource Manager templates to describe resources declaratively."
+        }
+      ],
+      "watchOut": "- Do not update an `apiVersion` without checking the matching property schema.\n- Resource property names are case-sensitive JSON names in the template body.\n- Older snippets found in existing templates may use old API shapes that should not be mixed with newer versions.\n- Validate the template after edits because schema errors appear before any resource is created.",
+      "productionTip": {
+        "official": "Microsoft publishes versioned resource references for Microsoft.Storage/storageAccounts. The current storage account reference shows a top-level `sku` object with `name`, a top-level `kind`, and an `accessTier` property under `properties`; the older 2015-06-15 reference is a different versioned schema.",
+        "recommendation": "When modernizing ARM templates, upgrade one resource type at a time and compare the exact versioned reference before editing. Keep the reason for the API version in code review notes, and prefer small validation deployments or what-if checks before applying a broad template refresh to production."
+      },
+      "memoryTrick": "Date and shape travel together: **new API, new property map**. This is a simplification because some properties stay stable across versions, but never assume that an old body is valid under a newer date.",
+      "examTip": "Clue words are **old template**, **current API version**, and **property names**. The right answer changes both the API version and the storage account body shape. Rule out options that modernize only the date or only the properties. A harder exam item may include a change log and ask which property was added or removed for a specific resource provider version."
+    },
+    "sources": [
+      {
+        "title": "Microsoft.Storage/storageAccounts 2025-06-01",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.storage/2025-06-01/storageaccounts"
+      },
+      {
+        "title": "Microsoft.Storage/storageAccounts 2015-06-15",
+        "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.storage/2015-06-15/storageaccounts"
+      },
+      {
+        "title": "Parameters in templates - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

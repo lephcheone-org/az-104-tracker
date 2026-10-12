@@ -1,0 +1,676 @@
+[
+  {
+    "id": "D3.3.3-01",
+    "objective": "D3.3.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription used by Litware for a small order-processing platform. The platform will run three Azure Container Apps: `orders-api`, `payments-api`, and `worker`. The apps must be able to use the same virtual network boundary, write platform logs to one Log Analytics workspace, and use Dapr service invocation between related services. The security team also wants test services isolated from production services.\n\nWhat should you create first for the production services?",
+    "options": [
+      {
+        "id": "A",
+        "text": "One Azure Container Instance container group for each production service"
+      },
+      {
+        "id": "B",
+        "text": "One Azure Container Apps environment for the related production apps"
+      },
+      {
+        "id": "C",
+        "text": "One Azure Kubernetes Service node pool for each container app"
+      },
+      {
+        "id": "D",
+        "text": "One Azure Container Apps environment for production and test combined"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The services are related production microservices and can share an Azure Container Apps environment. The question is about provisioning Azure Container Apps, not designing a full enterprise landing zone.",
+    "sections": {
+      "correctAnswer": "**B. One Azure Container Apps environment for the related production apps**. A Container Apps environment is the secure boundary around one or more container apps and jobs; apps in the same environment share the virtual network boundary and logging destination, which matches the production grouping requirement.",
+      "technical": "An Azure Container Apps environment is created before the container apps that live inside it. Microsoft describes the environment as a secure boundary around one or more container apps and jobs. The environment is where the platform runtime handles shared concerns such as networking, logging, scale operations, failover procedures, OS upgrades, and resource balancing.\n\nThe scope is important:\n\n| Design item | Where it belongs |\n|---|---|\n| Related production services | Same Container Apps environment |\n| Test services that must be isolated from production | Separate environment |\n| Environment virtual network boundary | The environment, not each app alone |\n| Common Log Analytics destination | The environment logging configuration |\n| Dapr service invocation between apps | Best suited to apps in the same environment |\n\nWhen multiple container apps are in the same environment, they share the same virtual network and write logs to the same logging destination. The environment can be created with a generated virtual network with limited network capabilities or with an existing virtual network when you need finer control. If Dapr is enabled for the apps, a single environment is also the natural boundary for related Dapr-enabled services and shared Dapr configuration.\n\nThe order is therefore: create the production Container Apps environment, configure networking and logging for that environment, and then create the production container apps inside it. Use a different environment for test when the requirement says production and test must be isolated. Do not create separate environments for every tiny service unless isolation, noncommunication, or separate lifecycle control is the real requirement.",
+      "wrongOptions": {
+        "A": "Azure Container Instances can run containers, but it does not provide the Container Apps environment boundary, shared Container Apps logging model, Dapr integration, revisions, or app-level ingress experience being tested here. Misconception: Any Azure service that runs a container is interchangeable. Could be correct when you need a simple single container or lower-level building block and do not need Container Apps environment capabilities.",
+        "C": "Azure Kubernetes Service node pools are part of AKS cluster capacity planning, not the first resource you create for Azure Container Apps. Container Apps is powered by Kubernetes-style technology but does not expose direct Kubernetes API or node-pool management as the normal provisioning model. Misconception: All microservices on Azure containers require you to manage AKS nodes. Could be correct when the team needs direct Kubernetes control plane access.",
+        "D": "Putting production and test into the same environment conflicts with the stated isolation requirement. Microsoft recommends multiple environments when applications must be isolated by team or usage, such as test versus production. Misconception: Fewer environments are always safer or cheaper. Could be correct when the apps are related, have the same trust boundary, and intentionally share networking, logging, Dapr configuration, and lifecycle expectations."
+      },
+      "plainEnglish": "Before you create individual Azure Container Apps, you create a larger container neighborhood called an environment. Apps inside that neighborhood share some important city services: the same network fence, the same place for logs, and shared platform features. That is useful for related production services because the order API, payment API, and worker belong to one production system. Test apps should not be placed in that same neighborhood when the business asks for production isolation. In simple terms, make one production neighborhood for the production services and keep a separate neighborhood for test.",
+      "analogy": "Think of a business park that contains several buildings. The business park has one perimeter road, one security gate, and one central monitoring office. The order building, payment building, and worker building can live in the same park because they are part of the same production business. A training copy of the business should use a different park if it must be isolated.\n\n| Analogy | Azure reality |\n|---|---|\n| Business park | Container Apps environment |\n| Buildings | Container apps |\n| Perimeter road and gate | Environment virtual network boundary |\n| Monitoring office | Log Analytics destination |\n| Staff using shared internal services | Related apps using Dapr or internal communication |\n\n**Where the analogy breaks down:** Azure networking, Dapr sidecars, revision management, and managed platform operations are software controls, not physical roads or guards. A separate environment is a technical isolation boundary, not a guarantee that every governance concern is solved automatically.",
+      "jargon": [
+        {
+          "term": "Azure Container Apps",
+          "definition": "A serverless Azure platform for running containerized apps, microservices, jobs, APIs, and background processing without managing the underlying servers or Kubernetes cluster."
+        },
+        {
+          "term": "Container Apps environment",
+          "definition": "A secure boundary around one or more container apps and jobs. It supplies shared networking, logging, and platform management for apps inside it."
+        },
+        {
+          "term": "Virtual network",
+          "definition": "An Azure network boundary used to control private IP addressing, routing, and connectivity for resources."
+        },
+        {
+          "term": "Log Analytics workspace",
+          "definition": "An Azure Monitor workspace used to collect and query logs, including Container Apps environment logs."
+        },
+        {
+          "term": "Dapr",
+          "definition": "Distributed Application Runtime, a set of APIs and sidecars that help microservices communicate and use building blocks such as service invocation and pub/sub."
+        },
+        {
+          "term": "Service invocation",
+          "definition": "A Dapr capability that lets one service call another by using Dapr-managed communication rather than hard-coding all service locations."
+        },
+        {
+          "term": "Azure Container Instances",
+          "definition": "An Azure service for running individual container groups on demand, without the broader Container Apps application features."
+        },
+        {
+          "term": "Azure Kubernetes Service",
+          "definition": "Azure's managed Kubernetes service for teams that need Kubernetes API access and cluster-level control."
+        }
+      ],
+      "watchOut": "- An environment is not just a folder for apps; it is the shared runtime, network, and logging boundary.\n- Apps in the same environment share a virtual network and log destination, so do not mix production and test when the requirement says to isolate them.\n- A single environment is useful for related services, but multiple environments are appropriate for separation by team, stage, or noncommunication needs.\n- Container Apps does not require creating AKS node pools for normal provisioning.",
+      "productionTip": {
+        "official": "Microsoft documents a Container Apps environment as a secure boundary around container apps and jobs. The same documentation states that multiple apps in one environment share the same virtual network and logging destination, and that multiple environments are appropriate when apps must be isolated by usage such as test and production.",
+        "recommendation": "For real deployments, define environment boundaries before creating apps. Group services by trust boundary and lifecycle, use a separate environment for production versus test, attach a controlled virtual network when you need private routing, and give platform operators only the permissions needed to manage that environment."
+      },
+      "memoryTrick": "Remember **environment before app**: the environment is the fenced yard, and apps are the containers placed inside. This is a simplification because some app settings remain app-specific, but the shared boundary starts at the environment.",
+      "examTip": "Clue words are **same virtual network**, **same logging destination**, **related services**, and **isolate test from production**. Choose a Container Apps environment for the related production apps, then create the apps inside it. Rule out ACI when the question asks for Container Apps environment features, and rule out AKS when no direct Kubernetes API or cluster control is required. A harder version may ask whether to create one environment per app; the best answer depends on isolation and shared-boundary requirements, not the number of containers."
+    },
+    "sources": [
+      {
+        "title": "Azure Container Apps environments",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+      },
+      {
+        "title": "Microservice APIs Powered by Dapr",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/dapr-overview"
+      },
+      {
+        "title": "Comparing Container Apps with other Azure container options",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/compare-options"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.3-02",
+    "objective": "D3.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You deploy a container app named `catalog-api` in an Azure Container Apps environment. The container listens on port `8080`. Users on the internet must be able to call the API over HTTPS. A second app named `pricing-worker` should not accept any inbound requests at all; it only processes messages that it reads itself from a queue.\n\nWhich configuration should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable internal HTTP ingress on `catalog-api` with target port `80`; enable external TCP ingress on `pricing-worker`"
+      },
+      {
+        "id": "B",
+        "text": "Disable ingress on `catalog-api`; enable internal HTTP ingress on `pricing-worker` with target port `8080`"
+      },
+      {
+        "id": "C",
+        "text": "Enable external HTTP ingress on `catalog-api` with target port `8080`; leave ingress disabled on `pricing-worker`"
+      },
+      {
+        "id": "D",
+        "text": "Enable external TCP ingress on both apps and use exposed port `443` for each app"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The Container Apps environment has a public inbound endpoint. The API speaks HTTP, not a custom raw TCP protocol. The worker does not need inbound callbacks from other apps.",
+    "sections": {
+      "correctAnswer": "**C. Enable external HTTP ingress on `catalog-api` with target port `8080`; leave ingress disabled on `pricing-worker`**. External HTTP ingress publishes the API at the environment boundary and routes traffic to the container's listening port, while disabling ingress means the worker has no inbound Container Apps endpoint.",
+      "technical": "Ingress in Azure Container Apps is the application-wide setting that controls inbound traffic to a container app. You choose whether to enable ingress, whether it is external or internal, the protocol style, and the target port. The target port is the port where the container process listens inside the app. For HTTP ingress, the application endpoint is exposed through standard HTTP and HTTPS handling, while traffic is forwarded to the target port.\n\nFor `catalog-api`, the facts line up this way:\n\n1. Internet users must call it, so app ingress visibility must be external in an external environment.\n2. The app is an API over HTTPS, so HTTP ingress is the right ingress type.\n3. The container listens on `8080`, so `targetPort` should be `8080`.\n\nFor `pricing-worker`, the key phrase is **should not accept any inbound requests at all**. Do not give it internal ingress merely because it is in the same environment, and do not use TCP ingress unless a TCP listener must be reached. Leaving ingress disabled removes the Container Apps inbound endpoint for that app. The worker can still make outbound calls or read from its queue by using its own credentials and network path; disabling ingress only blocks inbound traffic through Container Apps ingress.\n\nThe order to evaluate an ingress exam item is: first decide whether inbound traffic is needed, then decide who should reach it, then choose HTTP versus TCP, then set the target port that matches the container. Extra details such as custom domains, IP restrictions, and authentication can refine the design, but they do not change the basic answer here.",
+      "wrongOptions": {
+        "A": "Internal ingress would limit `catalog-api` to the environment rather than publishing it for internet users, and the target port would be wrong because the container listens on `8080`, not `80`. Giving the worker external TCP ingress contradicts the no-inbound requirement. Misconception: Internal and external only describe protocol security, or target port should always be 80. Could be correct when only other apps in the environment should call a service that really listens on port 80.",
+        "B": "Disabling ingress on the public API prevents inbound client calls, while enabling ingress on the worker creates an inbound path that the scenario explicitly rejects. Misconception: Background workers need internal ingress to read from queues. Could be correct when a worker also exposes an internal administrative or callback endpoint, but that endpoint is not described here.",
+        "D": "TCP ingress is for TCP-based protocols other than HTTP or HTTPS, and using exposed port `443` for external TCP ingress is not the normal HTTP ingress model. The option also exposes the worker even though no inbound traffic is required. Misconception: HTTPS means you must choose TCP and manually expose 443. Could be correct when an app speaks a non-HTTP TCP protocol and the environment and port rules allow that design."
+      },
+      "plainEnglish": "Ingress is the front door of a container app. The catalog API needs a front door because people on the internet must call it. The door should lead to the room where the program is actually listening, which is port 8080. The pricing worker does not need a front door because it goes out and reads work from a queue. If you create a front door for the worker, you make it reachable when the requirement says no inbound requests should be accepted.",
+      "analogy": "Imagine two rooms in an office suite. The customer service room must have a public reception desk, and the sign should direct visitors to the actual room number. The filing room only pulls forms from an inbox and should not have a visitor counter.\n\n| Analogy | Azure reality |\n|---|---|\n| Public reception desk | External ingress |\n| Employees-only hallway desk | Internal ingress |\n| Room number where staff answer | Target port |\n| No visitor counter | Ingress disabled |\n| Phone protocol used by visitors | HTTP or TCP ingress choice |\n\n**Where the analogy breaks down:** Azure ingress can add HTTPS termination, domain names, traffic splitting, and environment-level routing. A physical desk does not model target-port forwarding or the distinction between Container Apps internal visibility and virtual network accessibility.",
+      "jargon": [
+        {
+          "term": "Ingress",
+          "definition": "The Azure Container Apps setting that allows inbound traffic to reach a container app and controls routing rules for that traffic."
+        },
+        {
+          "term": "External ingress",
+          "definition": "Ingress that exposes an app at the environment boundary. In an external environment that can mean public internet reachability."
+        },
+        {
+          "term": "Internal ingress",
+          "definition": "Ingress that keeps the app reachable only from within the same Container Apps environment unless additional routing is configured."
+        },
+        {
+          "term": "Target port",
+          "definition": "The port on which the container process listens for incoming requests inside the container app."
+        },
+        {
+          "term": "HTTP ingress",
+          "definition": "Container Apps ingress for HTTP-based traffic, including HTTPS endpoints, HTTP/1.1, HTTP/2, WebSocket, and gRPC support."
+        },
+        {
+          "term": "TCP ingress",
+          "definition": "Container Apps ingress for non-HTTP TCP protocols, with separate exposed-port behavior."
+        },
+        {
+          "term": "HTTPS",
+          "definition": "HTTP protected with TLS encryption. Container Apps HTTP ingress exposes HTTPS endpoints and terminates TLS at ingress."
+        },
+        {
+          "term": "Worker",
+          "definition": "A background process that performs work such as reading messages from a queue instead of serving inbound web requests."
+        }
+      ],
+      "watchOut": "- Do not enable ingress just because an app runs in Container Apps; workers that pull work often need no inbound endpoint.\n- The target port is the container's listening port, not automatically port 80 or 443.\n- External ingress on an internal environment is not internet exposure, because the environment itself has no public endpoint.\n- TCP ingress is not the answer merely because users connect securely; HTTP ingress already provides HTTPS endpoints for HTTP apps.",
+      "productionTip": {
+        "official": "Microsoft documents external and internal ingress, HTTP and TCP ingress types, target ports, and the ability to disable ingress. The ingress how-to states that ingress is an application-wide setting and that disabling it can be done through the portal, CLI, or by omitting the ingress configuration in ARM.",
+        "recommendation": "Give inbound access only to apps that need it. For a public API, set HTTP ingress to the exact listening port and then add authentication, IP restrictions, or a front door layer if the risk calls for it. For pull-based workers, keep ingress disabled and monitor outbound dependency access instead."
+      },
+      "memoryTrick": "Use **Need, Reach, Protocol, Port**: decide whether inbound access is needed, who can reach it, whether it is HTTP or TCP, and which container port listens. The shortcut fails if environment-level routing changes reachability.",
+      "examTip": "Clue words are **internet users**, **container listens on 8080**, and **should not accept inbound requests**. Choose external HTTP ingress with target port 8080 for the API and no ingress for the worker. Be suspicious of options that expose both apps, use port 80 because it looks familiar, or pick TCP just because HTTPS is mentioned. A tougher variant may place the environment behind an internal load balancer; then external app ingress publishes to that internal boundary, not to the public internet."
+    },
+    "sources": [
+      {
+        "title": "Ingress in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/ingress-overview"
+      },
+      {
+        "title": "Configure Ingress for your app in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/ingress-how-to"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.3-03",
+    "objective": "D3.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank runs a container app named `loan-api`. Version 1 is serving production traffic. The team wants to deploy version 2, send 10 percent of inbound traffic to version 2 for a short validation period, and keep version 1 active so traffic can be moved back quickly if a bug is found.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep single revision mode and update the container image; Container Apps will edit the existing revision in place"
+      },
+      {
+        "id": "B",
+        "text": "Use multiple revision mode and configure traffic splitting between the old and new active revisions"
+      },
+      {
+        "id": "C",
+        "text": "Disable ingress while deploying version 2, then enable ingress again after all replicas start"
+      },
+      {
+        "id": "D",
+        "text": "Create a second Container Apps environment because traffic splitting only works across environments"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. `loan-api` has ingress enabled. The team wants blue-green or canary style validation for one container app, not a separate disaster recovery environment.",
+    "sections": {
+      "correctAnswer": "**B. Use multiple revision mode and configure traffic splitting between the old and new active revisions**. Revisions are immutable snapshots; multiple revision mode lets more than one revision stay active and lets you assign percentages of ingress traffic to them.",
+      "technical": "Azure Container Apps uses revisions to represent versions of a container app. A revision is an immutable snapshot: after the revision is established, you do not edit that revision in place. Changes under the app template, such as container image and scale-rule settings, are revision-scope changes and create a new revision. Some configuration changes, such as ingress rules, are application-scope changes and apply across revisions without creating a new revision.\n\nRevision mode controls how many revisions can be active at the same time. In single revision mode, which is the default, Container Apps provisions the new revision and shifts traffic from the old revision after the new revision is ready. That behavior is helpful for simple zero-downtime updates, but it does not give you a long validation period with a 90/10 split.\n\nMultiple revision mode is built for this scenario. You can have version 1 and version 2 active at the same time, configure traffic splitting so version 1 receives 90 percent and version 2 receives 10 percent, and then adjust the weights. If a bug appears, traffic can be returned to version 1 without rebuilding the old container image. If version 2 is healthy, increase the weight for version 2 until it receives all traffic and later deactivate the old revision.\n\nThe sequence is: switch or create the app in multiple revision mode, deploy the version 2 image to create a new revision, keep both revisions active, and set ingress traffic weights. Labels can also help direct testers to a specific revision URL, but the percentage split for user traffic is the deciding feature here.",
+      "wrongOptions": {
+        "A": "Revisions are immutable, so Container Apps does not edit the existing revision in place. Single revision mode can perform a zero-downtime replacement, but it is not the mode for keeping both versions active with a 10 percent split. Misconception: Updating a container image mutates the running version. Could be correct when a simple all-at-once replacement is sufficient and no canary traffic split is required.",
+        "C": "Disabling ingress would interrupt inbound availability instead of gradually validating the new version. It also does not preserve two active revisions with percentages. Misconception: Deployment safety comes from blocking all traffic during rollout. Could be correct for a planned maintenance window on an app where downtime is acceptable, not for a traffic-split rollout.",
+        "D": "Traffic splitting is a Container Apps ingress feature between active revisions of the same app; it does not require a second environment. Misconception: Blue-green always means two complete environments. Could be correct when the requirement is full environmental isolation, separate networking, or a parallel production stack rather than revision-level release management."
+      },
+      "plainEnglish": "A revision is like a frozen copy of how the app looked at one release. Version 1 stays as one frozen copy. When you deploy version 2, Azure makes a second frozen copy. If you want some users to try version 2 while most users still use version 1, you need a setting that allows two copies to run at the same time. That is multiple revision mode. Then traffic splitting is the dial that says how much traffic goes to each copy.",
+      "analogy": "Picture a bank with two teller systems. The old teller system is still serving most customers. A new teller system opens at one counter, and the lobby manager sends one in ten customers there while watching for problems. If the new counter fails, customers are redirected to the old counters.\n\n| Analogy | Azure reality |\n|---|---|\n| Old teller system | Version 1 revision |\n| New teller system | Version 2 revision |\n| Lobby manager's routing decision | Traffic splitting rule |\n| Both counters open | Multiple active revisions |\n| Closing the new counter | Deactivating or sending zero traffic to a revision |\n\n**Where the analogy breaks down:** Azure routing is percentage-based ingress behavior, not a human counting customers. Health probes, replica counts, and revision readiness also affect when traffic can safely move.",
+      "jargon": [
+        {
+          "term": "Revision",
+          "definition": "An immutable snapshot of a container app version created when revision-scope settings change."
+        },
+        {
+          "term": "Single revision mode",
+          "definition": "The default mode where one revision is active for traffic after the new revision is ready and the old revision is deprovisioned."
+        },
+        {
+          "term": "Multiple revision mode",
+          "definition": "A mode that allows multiple active revisions so operators can split traffic, test versions, and decide when to deactivate old revisions."
+        },
+        {
+          "term": "Traffic splitting",
+          "definition": "A Container Apps ingress setting that distributes inbound traffic between active revisions by percentage."
+        },
+        {
+          "term": "Blue-green deployment",
+          "definition": "A release approach where an existing stable version and a new version run side by side while traffic is moved deliberately."
+        },
+        {
+          "term": "Canary",
+          "definition": "A small exposure of a new version to a limited share of traffic before a broad rollout."
+        },
+        {
+          "term": "Application-scope change",
+          "definition": "A change to container app configuration that applies to all revisions and does not create a new revision, such as ingress configuration."
+        },
+        {
+          "term": "Revision-scope change",
+          "definition": "A change under the app template, such as image or container settings, that creates a new revision."
+        }
+      ],
+      "watchOut": "- Revisions are immutable; do not look for an edit-in-place answer.\n- Single revision mode is the default and is useful, but it does not provide manual percentage splitting between two active versions.\n- Traffic splitting needs ingress because it controls inbound traffic distribution.\n- Application-scope changes such as ingress settings can affect all revisions, while template changes create a new revision.",
+      "productionTip": {
+        "official": "Microsoft documents revisions as immutable, versioned snapshots. It also documents single and multiple revision modes, traffic splitting between active revisions, and blue-green or A/B testing as use cases for multiple revisions.",
+        "recommendation": "Use multiple revision mode deliberately and clean up old active revisions after a rollout. Keep image tags unique, record which revision maps to which build, and combine a small traffic percentage with logs and health signals before promoting a new banking workload to all users."
+      },
+      "memoryTrick": "For release testing, remember **multiple means movable percentages**. This is a simplification because labels and readiness checks also matter, but the percentage split requires multiple active revisions.",
+      "examTip": "Clue words are **10 percent**, **keep version 1 active**, and **move back quickly**. Those clues point to multiple revision mode with traffic splitting. Rule out options that edit a revision, stop ingress, or create a whole new environment without a requirement for environmental isolation. A harder question might ask which change creates a revision; image changes do, while changing traffic weights does not."
+    },
+    "sources": [
+      {
+        "title": "Update and deploy changes in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/revisions"
+      },
+      {
+        "title": "Ingress in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/ingress-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.3-04",
+    "objective": "D3.3.3",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You create a container app named `claims-api`. The app needs a database password at run time. Security policy says the value must be stored in Azure Key Vault and must not be copied into the container image or typed directly into an environment variable. You enable a user-assigned managed identity for the app.\n\nWhich two actions should you perform? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Grant the managed identity access to read the Key Vault secret, such as by assigning Key Vault Secrets User at the appropriate scope"
+      },
+      {
+        "id": "B",
+        "text": "Store the password in the Dockerfile as an `ENV` instruction so every replica receives it"
+      },
+      {
+        "id": "C",
+        "text": "Add the secret value directly to the container app's plain environment variable value"
+      },
+      {
+        "id": "D",
+        "text": "Define a Container Apps secret that references the Key Vault secret URI and the managed identity, then reference that secret from an environment variable"
+      },
+      {
+        "id": "E",
+        "text": "Create a new revision for every password read because Key Vault references are revision names"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The Key Vault and container app are in supported configurations, and the app uses a user-assigned identity that can be granted Azure RBAC permissions. The question is about providing a run-time secret, not building the image.",
+    "sections": {
+      "correctAnswer": "**A. Grant the managed identity access to read the Key Vault secret, such as by assigning Key Vault Secrets User at the appropriate scope** and **D. Define a Container Apps secret that references the Key Vault secret URI and the managed identity, then reference that secret from an environment variable**. Key Vault references require a managed identity with permission to the vault secret, and container environment variables use `secretRef` to consume the Container Apps secret.",
+      "technical": "Azure Container Apps secrets are defined at the application level, outside any single revision. A secret can contain a direct value or a reference to a secret stored in Azure Key Vault. To use a Key Vault reference, Container Apps must know which Key Vault secret URI to read and which managed identity it should use for that read. Microsoft documents that you must enable managed identity on the container app and grant that identity access to the Key Vault secrets.\n\nThe provisioning chain is:\n\n1. Create or select the Key Vault secret.\n2. Enable a system-assigned or user-assigned managed identity on the container app.\n3. Grant the identity permission to read the secret, for example by using the Key Vault Secrets User role when Azure RBAC is used.\n4. Define a Container Apps secret whose value is a Key Vault reference and whose identity points to the managed identity.\n5. Reference that Container Apps secret from the container's environment variable by using a secret reference.\n\nSecrets are not embedded into the container image, and they should not be typed into a plain environment variable. The environment variable receives the value through the secret reference at run time. Adding, removing, or changing secrets does not itself generate a new revision, but existing revisions do not automatically pick up every secret change; depending on the change, you may deploy a new revision or restart an existing revision. Key Vault references can also reference either a specific secret version or the latest version. If a version is not specified, Container Apps retrieves newer versions within the documented interval and restarts active revisions that reference the secret in an environment variable.",
+      "wrongOptions": {
+        "B": "A Dockerfile `ENV` value would bake sensitive data into the image metadata and distribution path, which violates the policy and creates a secret-rotation problem. Misconception: Environment variables are safe no matter where they are defined. Could be correct only for nonsecret configuration such as a feature flag or log level that is safe to store in source and images.",
+        "C": "A plain environment variable stores the sensitive value directly in the app configuration instead of using a secret or Key Vault reference. Misconception: The application cannot tell the difference, so operational security does not matter. Could be correct for harmless nonsecret values, but not for a database password.",
+        "E": "A Key Vault reference is not a revision name, and password reads do not require a new revision each time. Secret changes have their own behavior; some updates require restart or a new revision to be recognized by running containers. Misconception: Every secret access in Container Apps is modeled as a new deployment. Could be correct when you intentionally deploy a new app version that also changes revision-scope settings."
+      },
+      "plainEnglish": "The password should live in Key Vault, which is the locked cabinet. The container app should not know the password as a typed setting or have it baked into the container image. Instead, give the app an Azure identity, give that identity permission to open the correct cabinet drawer, and configure Container Apps with a secret that points to the Key Vault secret. Then the app's environment variable points to the Container Apps secret by name, not to the raw password text.",
+      "analogy": "A hospital system needs a medicine-room code. The code should not be printed on every nurse's badge. Instead, the hospital gives a nurse an ID card, grants that card access to the medicine room, and stores a note saying which cabinet the nurse may open.\n\n| Analogy | Azure reality |\n|---|---|\n| Medicine-room code | Database password |\n| Hospital ID card | Managed identity |\n| Cabinet access permission | Key Vault role assignment |\n| Note pointing to the cabinet | Container Apps Key Vault secret reference |\n| Nurse reading the code at work | Container using an environment variable secret reference |\n\n**Where the analogy breaks down:** Azure uses Microsoft Entra tokens, Key Vault authorization, and Container Apps configuration. The identity is not a person, and the secret may be refreshed according to documented service behavior.",
+      "jargon": [
+        {
+          "term": "Azure Key Vault",
+          "definition": "An Azure service for storing and controlling access to secrets, keys, and certificates."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An identity from Microsoft Entra ID managed by Azure that lets an app access protected resources without storing credentials."
+        },
+        {
+          "term": "User-assigned managed identity",
+          "definition": "A standalone managed identity resource that can be assigned to one or more Azure resources and remains until explicitly deleted."
+        },
+        {
+          "term": "Container Apps secret",
+          "definition": "An application-level secured value in Container Apps that can be referenced by revisions, environment variables, and some rules."
+        },
+        {
+          "term": "Key Vault reference",
+          "definition": "A Container Apps secret definition that points to a Key Vault secret URI and uses a managed identity to retrieve the value."
+        },
+        {
+          "term": "Environment variable",
+          "definition": "A name/value setting exposed to a running container process; in Container Apps it can use `secretRef` for sensitive values."
+        },
+        {
+          "term": "Key Vault Secrets User",
+          "definition": "An Azure built-in role that allows reading secret contents from Key Vault when assigned at an appropriate scope."
+        },
+        {
+          "term": "Dockerfile",
+          "definition": "A file of image build instructions. It should not contain production passwords or other secret values."
+        }
+      ],
+      "watchOut": "- A managed identity must be enabled on the container app and authorized in Key Vault; merely creating the identity is not enough.\n- Secret values do not belong in Dockerfiles, image tags, source code, or plain environment variables.\n- Adding or changing a Container Apps secret does not automatically create a new revision.\n- A deleted secret should not be removed while active revisions still reference it.",
+      "productionTip": {
+        "official": "Microsoft documents that Container Apps secrets are application-scoped, can be direct values or Key Vault references, and can be referenced from environment variables. The Key Vault reference guidance requires managed identity and access to Key Vault secrets, with Key Vault Secrets User listed for Azure RBAC access.",
+        "recommendation": "Use user-assigned identities for reusable production access patterns, scope Key Vault permission to only the needed vault or secret, avoid wildcard operational roles that can list secrets unless necessary, and test rotation behavior with a noncritical secret before relying on it for database credentials."
+      },
+      "memoryTrick": "Think **identity reads vault, app reads secretRef**. This shortcut is safe for the exam, but remember that running revisions may need a restart or new revision depending on how the secret changes.",
+      "examTip": "Clue words are **Key Vault**, **managed identity**, and **not copied into the image or typed directly**. Select the answer that grants the identity permission and the answer that creates a Key Vault-backed Container Apps secret referenced by the environment variable. Reject anything that places the password in a Dockerfile or plain setting. A more difficult version may ask about rotation; check whether a specific Key Vault version is used and whether running revisions must restart."
+    },
+    "sources": [
+      {
+        "title": "Manage secrets in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/manage-secrets"
+      },
+      {
+        "title": "Managed identities in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/managed-identity"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.3-05",
+    "objective": "D3.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Fabrikam stores the image for a container app in a private Azure Container Registry named `fabregistry`. Administrators disabled registry admin credentials. You need the container app to pull `fabregistry.azurecr.io/api:v2` without storing a registry username or password in the app configuration.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable anonymous pull access on the Azure Container Registry"
+      },
+      {
+        "id": "B",
+        "text": "Store the registry password as a Container Apps secret and reference it from `passwordSecretRef`"
+      },
+      {
+        "id": "C",
+        "text": "Assign a managed identity to the container app, grant it `acrpull` on the registry, and configure the registry entry to use that identity"
+      },
+      {
+        "id": "D",
+        "text": "Switch the app to internal ingress so the registry trusts the request"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The registry is Azure Container Registry, and managed identity authentication is supported for the app. The image is private and should remain private.",
+    "sections": {
+      "correctAnswer": "**C. Assign a managed identity to the container app, grant it `acrpull` on the registry, and configure the registry entry to use that identity**. Container Apps can pull from private Azure Container Registry by using a system-assigned or user-assigned managed identity instead of a username and password.",
+      "technical": "Azure Container Apps can use images from public or private registries. For private registries, one option is to store credentials in the app configuration. The requirement explicitly rejects a username and password, so the better fit is managed identity authentication to Azure Container Registry.\n\nMicrosoft documents two identity choices for image pull: a system-assigned identity tied to the app, or a user-assigned identity that exists as a separate Azure resource and can be shared. The identity must be enabled on the container app and must have permission to pull from the registry. In Azure RBAC terms, that usually means assigning the `acrpull` role at the registry scope. Then the Container Apps registry configuration uses the identity rather than `username` and `passwordSecretRef`. In ARM-style configuration, a user-assigned identity is represented by its resource ID, while a system-assigned identity can be represented by `system` in the registry identity field.\n\nThe deployment flow is:\n\n1. Create or choose a managed identity.\n2. Assign the identity to the container app.\n3. Grant `acrpull` on the Azure Container Registry to that identity.\n4. Configure the app's registry entry for `fabregistry.azurecr.io` to use the identity.\n5. Deploy the revision that uses `fabregistry.azurecr.io/api:v2`.\n\nContainer Apps checks for a new version of the image when a container starts. The image pull setting is separate from ingress. Ingress controls inbound application traffic; it does not authenticate to a private registry. Keeping the registry private and using RBAC on a managed identity satisfies least-credential handling better than enabling broad public or anonymous image access.",
+      "wrongOptions": {
+        "A": "Anonymous pull would make the private image broadly retrievable and defeats the requirement to keep a private registry protected. Misconception: Removing authentication from the registry is the easiest way to avoid passwords. Could be correct only for deliberately public images that contain no private code or sensitive dependencies and where anonymous access is an approved design.",
+        "B": "A password stored as a Container Apps secret can be used for some private registry scenarios, but the requirement says not to store a username or password in app configuration. Misconception: A secret is always equivalent to identity-based authentication. Could be correct when the registry does not support managed identity and credential storage is accepted by policy.",
+        "D": "Ingress is unrelated to pulling images from Azure Container Registry. Internal ingress changes who can call the running app; it does not grant the app permission to retrieve an image. Misconception: Network exposure settings also control registry authentication. Could be correct when you need to restrict inbound clients to the environment or virtual network, not to authenticate image pulls."
+      },
+      "plainEnglish": "The app needs to download a private container image. Instead of giving the app a registry username and password, give the app an Azure identity and tell the registry that this identity is allowed to pull images. Then tell Container Apps to use that identity when it contacts the registry. This is like using a building access badge rather than sharing the master key in a text file.",
+      "analogy": "A warehouse stores private machine parts. Rather than writing the warehouse door code on every delivery form, Fabrikam gives the delivery robot a badge. The warehouse system is told that the badge can pick up parts, and the robot shows the badge when it arrives.\n\n| Analogy | Azure reality |\n|---|---|\n| Private warehouse | Azure Container Registry |\n| Machine part | Container image |\n| Delivery robot | Container Apps platform pulling the image |\n| Badge | Managed identity |\n| Permission to pick up parts | `acrpull` role assignment |\n\n**Where the analogy breaks down:** Azure validates Microsoft Entra identity tokens and RBAC assignments. The image pull happens during container start, not as a person walking to a warehouse counter.",
+      "jargon": [
+        {
+          "term": "Azure Container Registry",
+          "definition": "A managed Azure registry service for storing and serving container images and related artifacts."
+        },
+        {
+          "term": "Private registry",
+          "definition": "A container registry that requires authentication before clients can pull images."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An Azure-managed Microsoft Entra identity that a resource can use to access other protected Azure resources."
+        },
+        {
+          "term": "System-assigned identity",
+          "definition": "A managed identity created with and tied to one Azure resource; it is deleted when that resource is deleted."
+        },
+        {
+          "term": "User-assigned identity",
+          "definition": "A separately created managed identity that can be assigned to multiple Azure resources."
+        },
+        {
+          "term": "`acrpull`",
+          "definition": "An Azure Container Registry role that grants permission to pull images from a registry."
+        },
+        {
+          "term": "Registry entry",
+          "definition": "The Container Apps configuration that tells the platform which registry server to use and how to authenticate to it."
+        },
+        {
+          "term": "`passwordSecretRef`",
+          "definition": "A Container Apps registry configuration field that points to a secret containing a registry password when credential-based authentication is used."
+        }
+      ],
+      "watchOut": "- Managed identity for image pull still needs a role assignment on the registry. Assigning the identity to the app alone is incomplete.\n- Ingress choices do not fix image pull authorization failures.\n- Password secrets may work technically, but they fail requirements that ban stored registry credentials.\n- For user-assigned identities, use the identity resource ID in configuration; for system-assigned identity, Container Apps supports the system identity value.",
+      "productionTip": {
+        "official": "Microsoft documents that Container Apps can pull from private Azure Container Registry repositories by using user-assigned or system-assigned managed identities, and that the identity needs the `acrpull` role. The containers documentation also shows registry configuration using an identity instead of username and password.",
+        "recommendation": "Prefer user-assigned managed identity for repeatable infrastructure deployments and preauthorization to ACR. Scope `acrpull` to the registry or a narrower supported scope, keep image tags unique rather than relying on `latest`, and monitor failed revisions for image pull errors after RBAC or firewall changes."
+      },
+      "memoryTrick": "For private ACR pulls, remember **identity plus acrpull plus registry identity setting**. The mnemonic omits network-firewall details, so still check registry network restrictions in production.",
+      "examTip": "Clue words are **private Azure Container Registry**, **admin credentials disabled**, and **without storing username or password**. Pick managed identity with `acrpull`. Reject options about ingress or anonymous access because they solve different problems. A harder variant may ask whether to use system-assigned or user-assigned identity; user-assigned is often preferred when you need preauthorization or reuse, while both are documented for image pulls."
+    },
+    "sources": [
+      {
+        "title": "Azure Container Apps image pull from Azure Container Registry with managed identity",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/managed-identity-image-pull"
+      },
+      {
+        "title": "Containers in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/containers"
+      },
+      {
+        "title": "Managed identities in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/managed-identity"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.3-06",
+    "objective": "D3.3.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Adatum has a container image that generates monthly finance reports and then exits. The process must run at midnight UTC on the first day of every month. It should not run as a continuously available HTTP service, and it does not need an inbound endpoint.\n\nWhich Azure Container Apps resource should you create?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A container app with external HTTP ingress and one minimum replica"
+      },
+      {
+        "id": "B",
+        "text": "A Container Apps job with a Schedule trigger and a cron expression"
+      },
+      {
+        "id": "C",
+        "text": "A Container Apps job with a Manual trigger that an administrator starts whenever users browse to the app URL"
+      },
+      {
+        "id": "D",
+        "text": "An Azure Kubernetes Service cluster so the container can complete and stop"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The report generator is a finite task that can run from a container image and stop when complete. The monthly schedule is based on UTC, matching the documented Container Apps jobs schedule behavior.",
+    "sections": {
+      "correctAnswer": "**B. A Container Apps job with a Schedule trigger and a cron expression**. Container Apps jobs are designed for finite containerized tasks that start, run, and stop; scheduled jobs use cron expressions evaluated in UTC.",
+      "technical": "Azure Container Apps has two compute resource types: apps and jobs. A container app is a continuously running service pattern. If a container in an app fails, the platform restarts it. Apps fit HTTP APIs, web apps, and background services that continuously process input. A job is different: it defines a task that runs for a finite duration and stops when the execution finishes.\n\nThis question describes a finite monthly report process. It has no inbound HTTP requirement, no public endpoint requirement, and no continuous processing requirement. Microsoft lists scheduled report generation as a job scenario, and Container Apps jobs support three trigger types:\n\n| Trigger type | Use case |\n|---|---|\n| Manual | Start on demand through portal, CLI, or API |\n| Schedule | Start at times defined by a five-field cron expression |\n| Event | Start in response to events such as queue messages |\n\nFor midnight UTC on the first day of every month, the schedule uses a cron expression such as `0 0 1 * *`. The job execution starts from the job definition, runs the configured container image, and then stops. You can configure execution properties such as timeout, retry limit, parallelism, and completion count, but those details are not the core exam distinction here. The important provision choice is job rather than app.\n\nContainer apps and jobs can run in the same Container Apps environment, which means they can share environment-level networking and logging capabilities. That does not mean every task should be an always-on app. Pick jobs when the work has a natural beginning and end.",
+      "wrongOptions": {
+        "A": "A continuously running HTTP app with an inbound endpoint is the opposite of a monthly finite report generator. It also adds a minimum running replica that is unnecessary for the stated schedule. Misconception: Every container in Container Apps must be an app with ingress. Could be correct for a web API or site that must answer user requests throughout the month.",
+        "C": "A manual job is started on demand, not automatically on a monthly schedule. The option also mentions users browsing to an app URL, but jobs are not continuously serving HTTP endpoints. Misconception: Manual means scheduled by people through normal website traffic. Could be correct for a one-time migration or ad hoc report run started by an operator or API.",
+        "D": "AKS can run batch workloads, but it is not required merely because the container exits. Azure Container Apps jobs directly support finite tasks and schedules without managing a Kubernetes cluster. Misconception: Containers that stop need Kubernetes job objects in a full cluster. Could be correct when the team requires Kubernetes APIs, custom controllers, or cluster-level scheduling features beyond Container Apps jobs."
+      },
+      "plainEnglish": "This container is not a website. It is more like a monthly chore: start, make the report, finish, and stop. Azure Container Apps has a resource type for that pattern called a job. Because the chore happens on a calendar, use a scheduled job. A normal container app is better for something that should stay available, such as an API that answers requests all day.",
+      "analogy": "A store has two kinds of workers. The cashier is present whenever the store is open, but the accountant comes in once a month, prepares reports, and leaves. You would not keep the accountant standing at a public counter all month just because both people work for the same store.\n\n| Analogy | Azure reality |\n|---|---|\n| Cashier at a counter | Continuously running container app |\n| Monthly accountant task | Scheduled Container Apps job |\n| Calendar appointment | Cron expression |\n| Accountant leaves after finishing | Job execution stops |\n| Store building | Container Apps environment |\n\n**Where the analogy breaks down:** Azure can run many replicas and retry failed executions. A person following a calendar does not model container exit codes, retry limits, or event-driven job executions.",
+      "jargon": [
+        {
+          "term": "Container app",
+          "definition": "An Azure Container Apps resource for services that run continuously, such as HTTP APIs, web apps, or always-processing background services."
+        },
+        {
+          "term": "Container Apps job",
+          "definition": "A Container Apps resource for finite tasks that start, run to completion, and stop."
+        },
+        {
+          "term": "Job execution",
+          "definition": "A single run of a job, started manually, on a schedule, or by an event trigger."
+        },
+        {
+          "term": "Schedule trigger",
+          "definition": "A job trigger type that starts executions according to a cron expression."
+        },
+        {
+          "term": "Cron expression",
+          "definition": "A compact schedule format with fields for minute, hour, day of month, month, and day of week."
+        },
+        {
+          "term": "UTC",
+          "definition": "Coordinated Universal Time, the time basis documented for scheduled Container Apps job cron expressions."
+        },
+        {
+          "term": "Ingress",
+          "definition": "Inbound routing to a container app. The report job does not need an inbound endpoint."
+        },
+        {
+          "term": "Replica",
+          "definition": "A running instance of a container app or job execution container."
+        }
+      ],
+      "watchOut": "- Jobs are for finite tasks; apps are for continuously running services.\n- Scheduled Container Apps jobs use five-field cron expressions evaluated in UTC.\n- Not every background process should be an app with ingress.\n- Event-driven jobs and continuously processing apps can both react to queues, but jobs create executions that finish, while apps keep replicas running to process input.",
+      "productionTip": {
+        "official": "Microsoft documents Container Apps jobs for containerized tasks that run for a finite duration and stop. The jobs documentation lists manual, schedule, and event trigger types, and states that scheduled job cron expressions are evaluated in Coordinated Universal Time.",
+        "recommendation": "Use a scheduled job for monthly reporting, set timeouts and retry limits that match the finance process, and send logs to the shared environment logging destination. Keep ingress disabled, store any report credentials as secrets or Key Vault references, and alert on failed job executions."
+      },
+      "memoryTrick": "If the container's work has an **end**, think **job**; if clients need it **always answering**, think **app**. This rule of thumb does not replace checking event and retry requirements.",
+      "examTip": "Clue words are **generates monthly reports**, **then exits**, **midnight UTC**, and **no inbound endpoint**. Those clues point to a scheduled job. Rule out answers that create external ingress or require an administrator to click each month. A harder question may compare an event-driven job with a continuously processing app; use jobs when each execution performs a bounded unit of work and stops."
+    },
+    "sources": [
+      {
+        "title": "Jobs in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/jobs"
+      },
+      {
+        "title": "Azure Container Apps environments",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/environment"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.3.3-07",
+    "objective": "D3.3.3",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Tailspin Toys is choosing a host for a new containerized microservices solution. The team wants managed serverless operations, built-in service discovery and traffic splitting, optional Dapr APIs for service invocation and pub/sub, and the ability for most services on the Consumption profile to scale to zero when idle. The team does not need direct Kubernetes API access.\n\nWhich two choices best match these requirements? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use Azure Container Apps rather than Azure Kubernetes Service when direct Kubernetes control plane access is not required"
+      },
+      {
+        "id": "B",
+        "text": "Use Azure Container Instances as the primary platform because it provides built-in revisions, certificates, environments, and traffic splitting"
+      },
+      {
+        "id": "C",
+        "text": "Use Azure App Service because it is the Container Apps environment type that provides Dapr sidecars"
+      },
+      {
+        "id": "D",
+        "text": "Use a Dedicated workload profile for every service because Dedicated profiles are the only profiles that support serverless scale to zero"
+      },
+      {
+        "id": "E",
+        "text": "Place suitable services on the Container Apps Consumption profile when pay-per-use serverless scaling and optional scale-to-zero behavior are desired"
+      }
+    ],
+    "correct": [
+      "A",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The application can run as Linux-based container images supported by Azure Container Apps. The phrase scale to zero is used at the platform-selection level; detailed scale-rule configuration is outside this objective.",
+    "sections": {
+      "correctAnswer": "**A. Use Azure Container Apps rather than Azure Kubernetes Service when direct Kubernetes control plane access is not required** and **E. Place suitable services on the Container Apps Consumption profile when pay-per-use serverless scaling and optional scale-to-zero behavior are desired**. Microsoft positions Container Apps for serverless microservices and jobs, while the Consumption profile provides serverless per-replica billing and can scale idle apps to zero when the app design supports it.",
+      "technical": "Azure offers several container hosting choices. Azure Container Apps is optimized for serverless microservices and jobs based on containers. It includes application-level features such as environments, service discovery, traffic splitting, revisions, ingress, jobs, secrets, Log Analytics integration, and optional Dapr APIs. It is powered by Kubernetes and open-source technologies such as Dapr, KEDA, and Envoy, but it does not provide direct access to the Kubernetes APIs. If the team needs direct Kubernetes control plane access or native Kubernetes APIs, Azure Kubernetes Service is the better fit. The scenario says that access is not required, so Container Apps matches the management preference.\n\nWorkload profile choice is the second part. In Azure Container Apps, a workload profile determines the compute and memory resources available to apps deployed in an environment. Microsoft documents Consumption, Dedicated, and Flexible profile types. Consumption profiles use a serverless architecture, automatically scale in and out on demand, and optionally scale to zero when idle. Billing is based on the resources running apps use. Dedicated profiles run on reserved compute resources in a dedicated pool and are generally better for steady workloads, larger sizes, or predictable reserved capacity. The Flexible profile is documented as preview and does not scale to zero, so it should not be chosen as the exam answer for a GA scale-to-zero requirement.\n\nDapr is a high-level microservices capability, not a separate hosting product. Container Apps can enable managed Dapr APIs through a sidecar for service invocation, pub/sub, state, bindings, actors, secrets, and configuration within supported boundaries. That strengthens the Container Apps choice when the app needs microservice building blocks without AKS management.",
+      "wrongOptions": {
+        "B": "Azure Container Instances is a lower-level container building block and does not provide the Container Apps application concepts listed in the option, such as revisions, environments, built-in scale, certificates, and traffic splitting. Misconception: ACI is the serverless microservices platform because it starts containers on demand. Could be correct for a simple isolated container group that does not need application-level orchestration features.",
+        "C": "Azure App Service is a fully managed web app platform, but it is not a Container Apps environment type and it is not the service that provides Container Apps Dapr sidecar integration. Misconception: All Azure web/container hosting services share the same microservice features. Could be correct when the workload is primarily a web app or web API best suited to App Service features.",
+        "D": "Dedicated workload profiles use reserved compute resources and are not the only profiles for scale to zero. Microsoft documents Consumption profiles as serverless and optionally scaling to zero when idle. Misconception: Dedicated means more capable in every serverless feature. Could be correct for steady workloads that benefit from reserved capacity, larger resource profiles, or predictable dedicated compute."
+      },
+      "plainEnglish": "The team wants a managed place to run many container services without running a Kubernetes cluster themselves. Azure Container Apps is built for that style. It gives useful app features such as revisions and traffic splitting, and it can use Dapr to help services talk to each other. For services that do not need reserved machines running all the time, the Consumption profile is the pay-for-what-runs choice and can scale idle apps down to zero when the app's scale setup allows it.",
+      "analogy": "Suppose Tailspin needs a food court, not an empty plot of land. Azure Container Apps is like renting a managed food court where signs, counters, shared utilities, and customer routing already exist. AKS is closer to leasing the whole mall operations system, and ACI is closer to renting a single pop-up booth.\n\n| Analogy | Azure reality |\n|---|---|\n| Managed food court | Azure Container Apps |\n| Whole mall operations system | Azure Kubernetes Service |\n| Pop-up booth | Azure Container Instances |\n| Shared customer routing | Ingress, service discovery, and traffic splitting |\n| Pay for open stalls | Consumption profile billing and optional scale to zero |\n| Food court messenger service | Dapr service invocation or pub/sub |\n\n**Where the analogy breaks down:** Cloud services have precise feature boundaries, preview states, regional limits, and identity controls. A food court cannot represent Dapr sidecar ports, KEDA-driven scaling, or the lack of direct Kubernetes API access.",
+      "jargon": [
+        {
+          "term": "Azure Container Apps",
+          "definition": "A serverless platform for running containerized applications, microservices, APIs, jobs, and event-driven processing without managing infrastructure."
+        },
+        {
+          "term": "Azure Kubernetes Service",
+          "definition": "Azure's managed Kubernetes platform for teams that need Kubernetes APIs, cluster configuration, and workload control."
+        },
+        {
+          "term": "Azure Container Instances",
+          "definition": "A service for running individual container groups on demand, with fewer application-level platform features than Container Apps."
+        },
+        {
+          "term": "Azure App Service",
+          "definition": "A managed hosting service optimized for web apps and web APIs, including code and container deployments."
+        },
+        {
+          "term": "Workload profile",
+          "definition": "A Container Apps environment profile that determines available compute, memory, isolation, scaling behavior, and billing style."
+        },
+        {
+          "term": "Consumption profile",
+          "definition": "The serverless Container Apps profile that bills based on running app resources and can scale idle suitable apps to zero."
+        },
+        {
+          "term": "Dedicated profile",
+          "definition": "A Container Apps workload profile using reserved compute resources in a dedicated pool, often suited to steady or larger workloads."
+        },
+        {
+          "term": "Scale to zero",
+          "definition": "A serverless behavior where an idle app can have zero running replicas until traffic or events require work."
+        },
+        {
+          "term": "Dapr",
+          "definition": "Distributed Application Runtime, available in Container Apps as managed APIs and sidecars for microservice building blocks."
+        }
+      ],
+      "watchOut": "- Container Apps is Kubernetes-based, but it does not expose direct Kubernetes API control; choose AKS when that control is required.\n- ACI is not the same as Container Apps and lacks many app platform concepts such as revisions and traffic splitting.\n- Consumption and Dedicated workload profiles solve different cost and capacity problems.\n- Flexible profile is documented as preview and unable to scale to zero, so do not use it as a GA scale-to-zero answer.\n- Dapr is optional; enabling it is a design choice for microservice APIs, not a requirement for every app.",
+      "productionTip": {
+        "official": "Microsoft documents Container Apps as a serverless platform for APIs, event-driven processing, jobs, and microservices. The comparison guidance says Container Apps is appropriate when teams want Kubernetes-style applications without direct Kubernetes API access. The workload profile documentation states that Consumption profiles use a serverless architecture and optionally scale idle apps to zero.",
+        "recommendation": "Start candidate microservices on the Consumption profile when bursty traffic and idle periods dominate, then move steady or resource-heavy services to Dedicated profiles when measurements justify reserved capacity. Enable Dapr only for services that benefit from its building blocks, and keep AKS for workloads needing native Kubernetes APIs or cluster extensions."
+      },
+      "memoryTrick": "Use **ACA for app features, AKS for Kubernetes control, ACI for a container building block**. This shortcut is useful for AZ-104 selection questions, but always check networking, scale, and operations requirements before deciding.",
+      "examTip": "Clue words are **managed serverless**, **microservices**, **Dapr**, **traffic splitting**, **scale to zero**, and **does not need direct Kubernetes API access**. Those point to Azure Container Apps on the Consumption profile for suitable services. Distractors often claim ACI has Container Apps features or that Dedicated is required for serverless behavior. A harder version may mention CPU or memory scaling rules; the exam distinction here is platform and workload profile, not detailed scaler configuration."
+    },
+    "sources": [
+      {
+        "title": "Azure Container Apps overview",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/overview"
+      },
+      {
+        "title": "Comparing Container Apps with other Azure container options",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/compare-options"
+      },
+      {
+        "title": "Workload profiles in Azure Container Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/workload-profiles-overview"
+      },
+      {
+        "title": "Microservice APIs Powered by Dapr",
+        "url": "https://learn.microsoft.com/en-us/azure/container-apps/dapr-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

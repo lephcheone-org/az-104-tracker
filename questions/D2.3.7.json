@@ -1,0 +1,790 @@
+[
+  {
+    "id": "D2.3.7-01",
+    "objective": "D2.3.7",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a general-purpose v2 storage account named `stcontent` that contains block blobs for a publishing workflow. Blob versioning is enabled. A developer uploads `drafts/article1.md`, updates its content twice by using `Put Blob`, then changes its metadata. The developer also stages a block by using `Put Block` but does not commit the block list.\n\nWhich statement describes the resulting versions?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Only the first upload creates a version, because later overwrites update the same current blob."
+      },
+      {
+        "id": "B",
+        "text": "Every storage API call creates a previous version, including `Put Block` before commit."
+      },
+      {
+        "id": "C",
+        "text": "The first upload creates the current version, the two overwrites and metadata update each create new versions, and the uncommitted `Put Block` does not create a version."
+      },
+      {
+        "id": "D",
+        "text": "Version IDs are assigned only to previous versions, so the current blob has no version ID."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The blob is a block blob in a storage account where blob versioning is already enabled. The staged block is not committed with `Put Block List`.",
+    "sections": {
+      "correctAnswer": "**C. The first upload creates the current version, the two overwrites and metadata update each create new versions, and the uncommitted `Put Block` does not create a version.** Blob versioning automatically records a new version for the initial create and for supported write or metadata changes. A staged block by itself is one documented exception, because the committed blob is not changed until `Put Block List`.",
+      "technical": "Blob versioning works at the blob service level after you enable it on the storage account. A version captures the blob's state at a point in time, and each version has a unique version ID. Microsoft describes the version ID value as the timestamp when the blob was updated.\n\nFor this scenario, process the operations in order:\n\n1. The first `Put Blob` creates `drafts/article1.md`. That first state is the current version and receives a version ID.\n2. The first overwrite changes an existing blob. The old current version becomes a previous version, and Azure Storage creates a new current version for the changed content.\n3. The second overwrite repeats the same pattern, moving the former current state to previous and creating another current version.\n4. `Set Blob Metadata` is a write operation that can also create a new version because metadata is part of the blob state.\n5. `Put Block` stages data for a block blob but does not by itself commit a new blob state. For block blobs, the version is created when a write such as `Put Blob`, `Copy Blob`, `Set Blob Metadata`, or `Put Block List` changes the committed blob.\n\nThe current version is just the newest version. Earlier states are previous versions. If you read or delete without specifying a version ID, the operation targets the current version. If you include a version ID, the operation targets that exact historical version.",
+      "wrongOptions": {
+        "A": "Overwrites do not simply replace the same tracked object when versioning is enabled. The older current version is preserved and a new current version appears. Misconception: versioning records only the initial upload. Could be correct when blob versioning is disabled and no snapshot or soft-delete mechanism captures prior data.",
+        "B": "The wording is too broad because `Put Block` alone is listed as an exception for block blobs. A version appears when the staged blocks are committed with `Put Block List`, not merely when a block is uploaded to the uncommitted block list. Misconception: every low-level API call changes the visible blob. Could be correct for supported write operations such as `Put Blob`, `Copy Blob`, and `Set Blob Metadata`.",
+        "D": "The current blob can have a version ID. Microsoft states that a version ID can identify either the current version or a previous version. Misconception: version IDs are only archive labels for old states. Could be correct for a blob that existed before versioning was enabled and has not yet been modified after enablement."
+      },
+      "plainEnglish": "Blob versioning is like Azure keeping a dated copy every time the visible blob is changed in a supported way. The visible copy is called the current version. Older copies are previous versions. In this example, the upload creates the first visible copy, the two full overwrites each create a newer visible copy, and the metadata update also counts as a change. Uploading one uncommitted block is different: it is like placing a replacement page on a workbench without binding it into the document, so Azure has not yet changed the actual blob.",
+      "analogy": "Imagine a publishing desk that stamps a dated archive copy whenever an editor files a completed manuscript change. A draft upload, two complete rewrites, and a metadata note each get a dated archive trail. Dropping a loose paragraph on the desk does not become an official edition until someone binds it into the manuscript.\n\n| Analogy | Azure reality |\n|---|---|\n| Official manuscript edition | Blob version |\n| Most recent manuscript | Current version |\n| Older stamped copies | Previous versions |\n| Loose paragraph not bound | Uncommitted `Put Block` |\n| Date stamp | Version ID timestamp |\n\n**Where the analogy breaks down:** Azure uses REST operations and service-generated identifiers rather than people stamping paper, and some blob types have their own operation-specific exceptions.",
+      "jargon": [
+        {
+          "term": "Blob versioning",
+          "definition": "An Azure Blob Storage feature that automatically maintains previous blob versions when supported write or delete operations occur."
+        },
+        {
+          "term": "Block blob",
+          "definition": "A blob type optimized for text and binary data, assembled from blocks and commonly used for documents, images, and application files."
+        },
+        {
+          "term": "Current version",
+          "definition": "The latest state of a blob. Operations without a version ID generally act on this state."
+        },
+        {
+          "term": "Previous version",
+          "definition": "An earlier state of a blob that remains addressable by version ID after a later write or delete."
+        },
+        {
+          "term": "Version ID",
+          "definition": "A unique identifier for a blob version; Microsoft describes its value as the timestamp when the blob was updated."
+        },
+        {
+          "term": "`Put Blob`",
+          "definition": "A Blob service operation that creates a new blob or replaces the contents of an existing blob."
+        },
+        {
+          "term": "`Put Block`",
+          "definition": "A Blob service operation that stages an individual block for a block blob without committing the final blob state."
+        },
+        {
+          "term": "`Put Block List`",
+          "definition": "A Blob service operation that commits staged blocks into a block blob and can create a new version when versioning is enabled."
+        },
+        {
+          "term": "`Set Blob Metadata`",
+          "definition": "A Blob service operation that writes user-defined metadata on a blob and can create a new version."
+        }
+      ],
+      "watchOut": "- Do not reduce versioning to content-only changes; metadata writes can create versions too.\n- `Put Block` is a trap because it stages data without updating the committed blob.\n- A current version and a previous version can both be addressed by version ID.\n- A blob created before versioning was enabled may lack a version ID until it is modified.",
+      "productionTip": {
+        "official": "Microsoft documents that write operations create new versions when versioning is enabled, with specific exceptions such as `Put Block` for block blobs. The service returns an `x-ms-version-id` header for write operations that create a current version.",
+        "recommendation": "Log the version ID returned after critical writes so that recovery does not depend on guessing timestamps later. For overwrite-heavy applications, test which SDK calls issue `Put Blob` versus block-level operations so you can estimate both protection and cost."
+      },
+      "memoryTrick": "Think **commit, not just contact**: a committed blob change gets a version, while an uncommitted staged block does not. This rule is a shortcut, so still check the operation list for page and append blob exceptions.",
+      "examTip": "Clue words include `Put Blob`, metadata, and uncommitted `Put Block`. Choose the option that recognizes automatic version creation but preserves the documented exception. A harder item might swap in append blobs or page blobs, where only selected operations create versions and snapshots might be needed for other changes."
+    },
+    "sources": [
+      {
+        "title": "Blob Versioning in Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      },
+      {
+        "title": "Enable and manage blob versioning",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-enable"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.7-02",
+    "objective": "D2.3.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank stores daily reconciliation files as block blobs in a container named `recon`. Blob versioning is enabled, but blob soft delete is not enabled. An operator deletes `recon/2026-10-05.csv` without specifying a version ID. The finance team later asks you to make the last good version visible again at the same blob name.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Run `Undelete Blob`; it will promote the deleted current version automatically."
+      },
+      {
+        "id": "B",
+        "text": "List the previous versions, choose the required version ID, and copy that version over `recon/2026-10-05.csv`."
+      },
+      {
+        "id": "C",
+        "text": "Disable versioning and then re-enable it so that Azure Storage recreates the current version."
+      },
+      {
+        "id": "D",
+        "text": "Delete all previous versions except the newest one; the remaining version becomes current."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Blob versioning is enabled. Blob soft delete is not enabled, so the recovery path is based on existing previous versions rather than soft-deleted objects.",
+    "sections": {
+      "correctAnswer": "**B. List the previous versions, choose the required version ID, and copy that version over `recon/2026-10-05.csv`.** Deleting a versioned blob without a version ID changes the current version into a previous version and leaves no current version. Restoring visibility at the base name requires copying a previous version to create a new current version.",
+      "technical": "A delete operation behaves differently when blob versioning is enabled. If the request does not include a version ID, Azure Storage targets the current version. The current version is converted into a previous version, and the blob no longer has a current version. Existing previous versions remain.\n\nThat means the name `recon/2026-10-05.csv` has historical versions but no active base blob after the delete. To recover, first list versions for the blob. In the portal, the Versions tab shows version IDs; in Azure CLI, `az storage blob list --include v` can include version information. Then use a copy operation with the selected previous version as the source and the original blob name as the destination. The copy creates a new current version whose content matches the selected historical version.\n\nSoft delete changes parts of the recovery story, but it does not change promotion mechanics. Microsoft documents that `Undelete Blob` restores soft-deleted versions during retention, but it does not promote a version to become current. To make a previous version current, use `Copy Blob`.\n\nThe order is therefore: identify, select, copy. Do not expect deleting other versions or toggling account settings to create a current blob.",
+      "wrongOptions": {
+        "A": "`Undelete Blob` is not the right first answer here because blob soft delete is not enabled in the scenario. Even when soft-deleted versions are restored, Microsoft states that undelete does not promote any version to current. Misconception: undelete and promote are the same recovery step. Could be correct when restoring soft-deleted versions during the soft-delete retention period before copying the desired version.",
+        "C": "Disabling and re-enabling versioning does not reconstruct a current blob from history. Existing versions persist, and new versions are not created while versioning is disabled. Misconception: the account setting replays version history. Could be correct only as an administrative change when you intentionally want to stop or resume future version creation.",
+        "D": "Deleting versions removes recovery points; it does not elevate the last remaining historical version into the current base blob. Misconception: the newest surviving previous version automatically fills the empty current slot. Could be correct when the requirement is to reduce stored versions after a separate recovery has already been completed."
+      },
+      "plainEnglish": "After the operator deleted the blob, Azure did not erase all history. It moved the visible copy into the history list and left the visible place empty. To put a file back at the original name, choose one historical copy and copy it back to the normal name. That new copy becomes the visible current blob. Just restoring deleted items, changing the versioning switch, or deleting older history does not put a file back in the normal location.",
+      "analogy": "Picture a filing cabinet where the front folder is the current file and the archive drawer holds dated copies. Deleting the front folder places it into the archive drawer and leaves the front slot empty. To serve today's finance process, you photocopy the right archived sheet and place the copy back in the front slot.\n\n| Analogy | Azure reality |\n|---|---|\n| Front folder | Current blob version |\n| Archive drawer | Previous versions |\n| Date on archived sheet | Version ID |\n| Photocopy into front slot | Copy previous version to base blob |\n| Empty front slot | No current version after delete |\n\n**Where the analogy breaks down:** Azure's copy can be asynchronous and must be authorized; paper folders do not have REST headers, version IDs, or access permissions.",
+      "jargon": [
+        {
+          "term": "Delete without version ID",
+          "definition": "A delete request that targets the current version of a versioned blob rather than a specific historical version."
+        },
+        {
+          "term": "Current version",
+          "definition": "The active blob state addressed when a request omits a version ID."
+        },
+        {
+          "term": "Previous version",
+          "definition": "A preserved historical state of a blob, addressable by its version ID."
+        },
+        {
+          "term": "Version ID",
+          "definition": "The unique timestamp-based identifier used to read, copy, or delete a specific blob version."
+        },
+        {
+          "term": "`Copy Blob`",
+          "definition": "A Blob service operation that copies a source blob, snapshot, or version to a destination blob."
+        },
+        {
+          "term": "`Undelete Blob`",
+          "definition": "A Blob service operation that restores soft-deleted blobs, snapshots, or versions during a retention period."
+        },
+        {
+          "term": "Blob soft delete",
+          "definition": "A protection feature that keeps deleted blobs, snapshots, or versions recoverable for a configured retention period."
+        },
+        {
+          "term": "Base blob",
+          "definition": "The regular blob URI without a version or snapshot query parameter; it represents the current blob when one exists."
+        }
+      ],
+      "watchOut": "- A deleted versioned blob can have previous versions but no current version.\n- Copying a previous version is the promotion action.\n- `Undelete Blob` restores soft-deleted items, but it does not select one version as current.\n- Do not delete history until you have confirmed the recovered current blob.",
+      "productionTip": {
+        "official": "Microsoft documents that deleting a versioned blob without a version ID makes the current version a previous version and leaves no current version. The same documentation says a previous version is promoted by copying it to a new current version.",
+        "recommendation": "Before recovery, capture the target version ID and retain the surrounding versions until business owners verify the restored file. For regulated data, record who approved the selected version because multiple historical states can exist."
+      },
+      "memoryTrick": "Deleted current means **history remains, front door is empty**. Restore the front door by copying a chosen historical version, not by pruning the history list.",
+      "examTip": "Look for the phrase **without specifying a version ID**. That phrase means the current version is affected. The answer must mention selecting a previous version and copying it to the base blob. A harder question may add soft delete; then you might undelete first, but copying is still required to make a version current."
+    },
+    "sources": [
+      {
+        "title": "Blob Versioning in Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      },
+      {
+        "title": "Soft Delete for Blobs to Recover Data",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.7-03",
+    "objective": "D2.3.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Fabrikam has an application that manually creates a blob snapshot before each monthly pricing update. The storage team enables blob versioning on the account to protect against accidental overwrites and deletes without changing application code. They want to reduce duplicate protection and operational complexity for block blobs.\n\nWhat should you recommend?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep creating snapshots because versioning only protects against deletes, not overwrites."
+      },
+      {
+        "id": "B",
+        "text": "Replace versioning with snapshots because snapshots are automatic when a blob changes."
+      },
+      {
+        "id": "C",
+        "text": "Use snapshots and versions together for every block blob because Microsoft recommends the combination for extra protection."
+      },
+      {
+        "id": "D",
+        "text": "Update the application to stop taking routine block blob snapshots after versioning is enabled, unless it needs deliberate checkpoint snapshots."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The workload uses block blobs. The goal is automatic protection from overwrites and deletes, not a special business checkpoint that must be manually named and controlled.",
+    "sections": {
+      "correctAnswer": "**D. Update the application to stop taking routine block blob snapshots after versioning is enabled, unless it needs deliberate checkpoint snapshots.** Versions are automatic and system-managed on supported write and delete operations. Snapshots are manual point-in-time copies; Microsoft says snapshots add no extra protection for block blobs once versioning is enabled and can increase cost and complexity.",
+      "technical": "Blob versions and blob snapshots look similar because both preserve an earlier blob state. The creation model is the important distinction. Versioning is enabled at the storage account and automatically creates versions when supported writes or deletes occur. A snapshot is explicitly created by an application or operator with the Snapshot Blob operation.\n\nFor overwrite and delete protection on block blobs, versioning is the broader automatic mechanism. It captures changes continuously without requiring the application to remember to snapshot before each update. A snapshot still has a valid use: a deliberate checkpoint, such as a known-good copy before a planned release. That checkpoint can be useful when you want a human-readable operation trail or when a write pattern is not captured by versioning for a particular blob type or API.\n\nHowever, Microsoft specifically recommends that applications stop taking snapshots of block blobs after blob versioning is enabled. The documentation says versions capture and preserve all block blob updates and deletions, and snapshots do not add protection in that situation. Combining both routinely can create more objects to list, manage, secure, and pay for.\n\nOne extra wrinkle: if you do take a snapshot of a versioned blob, Azure creates a snapshot and a new version. That is allowed, but it is not the default recommendation for routine block blob protection.",
+      "wrongOptions": {
+        "A": "Blob versioning protects against overwrites as well as deletes for supported operations. Misconception: versioning is a delete-only recycle bin. Could be correct when discussing a separate feature such as container soft delete, which targets container deletion rather than overwrite history.",
+        "B": "Snapshots are manual, not automatic. You or an application must create them at chosen points. Misconception: snapshots and versions differ only in their names. Could be correct when versioning is unavailable and the application intentionally takes snapshots before important changes.",
+        "C": "Using both for every block blob is not Microsoft's recommendation after enabling versioning. It can add cost and complexity without extra block blob protection. Misconception: two similar protection features are always better than one. Could be correct for a narrow deliberate checkpoint requirement that versioning alone does not express operationally."
+      },
+      "plainEnglish": "A snapshot is like pressing a save-copy button yourself. Versioning is like Azure pressing that button automatically whenever the blob is changed or deleted in the supported ways. If the reason for snapshots was simply \"make sure we have the old file before an update,\" versioning already does that for block blobs. Keeping the old snapshot job running can leave you with two sets of historical objects to understand and pay for. Keep manual snapshots only when the business really wants a named checkpoint.",
+      "analogy": "A chef can either photograph a cake before each decoration step or install a camera that automatically records every approved change. If the automatic camera reliably captures the routine changes, the chef does not need a separate photo for every step unless a special event needs a labeled picture.\n\n| Analogy | Azure reality |\n|---|---|\n| Automatic camera | Blob versioning |\n| Manual photograph | Blob snapshot |\n| Current cake | Current blob version |\n| Special event photo | Deliberate checkpoint snapshot |\n| Extra photo albums | Extra objects, listing work, and cost |\n\n**Where the analogy breaks down:** Azure versions and snapshots are addressable storage objects with permissions and billing rules, not images in a casual album.",
+      "jargon": [
+        {
+          "term": "Blob snapshot",
+          "definition": "A read-only copy of a blob taken manually at a specific point in time."
+        },
+        {
+          "term": "Blob version",
+          "definition": "A system-managed blob state created automatically by versioning on supported writes and deletes."
+        },
+        {
+          "term": "Snapshot Blob operation",
+          "definition": "The Blob service operation used to create a manual snapshot."
+        },
+        {
+          "term": "Block blob",
+          "definition": "A blob type commonly used for files and binary objects, and the primary target for blob versioning protection."
+        },
+        {
+          "term": "Point-in-time copy",
+          "definition": "A preserved representation of an object as it existed at a specific moment."
+        },
+        {
+          "term": "Operational complexity",
+          "definition": "The extra work needed to list, secure, lifecycle, explain, and recover from multiple protection object types."
+        },
+        {
+          "term": "Supported write operation",
+          "definition": "A Blob service write action that versioning captures, such as `Put Blob`, `Copy Blob`, `Set Blob Metadata`, or committed block list changes."
+        }
+      ],
+      "watchOut": "- Versioning is automatic; snapshots are manual.\n- Snapshots still exist as a feature after versioning is enabled, but routine use may be unnecessary for block blobs.\n- Creating a snapshot of a versioned blob can create both a snapshot and a new version.\n- Some page blob and append blob changes are not captured by versioning, so read the exception list before generalizing.",
+      "productionTip": {
+        "official": "Microsoft documents versions as automatic and snapshots as manual. The versioning article states that after enabling blob versioning, applications should stop taking snapshots of block blobs because snapshots do not provide extra protection for block blob data in that configuration.",
+        "recommendation": "Inventory existing snapshot jobs before enabling versioning. Disable routine snapshot schedules only after you confirm the blobs, APIs, lifecycle rules, and recovery runbooks are ready for version-based restore."
+      },
+      "memoryTrick": "Versions are **automatic history**; snapshots are **chosen checkpoints**. That phrase is simplified because some blob types and write APIs still need special handling.",
+      "examTip": "If the question says the app manually snapshots before every update and versioning is now enabled, expect an answer about stopping routine block blob snapshots. A tougher exam item may mention page blobs or append operations; then snapshots might still be relevant because not every operation creates a version."
+    },
+    "sources": [
+      {
+        "title": "Blob Versioning in Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      },
+      {
+        "title": "Blob snapshots",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/snapshots-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.7-04",
+    "objective": "D2.3.7",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Litware is preparing a standard general-purpose v2 storage account for point-in-time restore of block blobs. The account does not use a hierarchical namespace. Before enabling point-in-time restore, you must enable the required data protection features.\n\nWhich three features are prerequisites? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Blob soft delete"
+      },
+      {
+        "id": "B",
+        "text": "Container soft delete"
+      },
+      {
+        "id": "C",
+        "text": "Blob versioning"
+      },
+      {
+        "id": "D",
+        "text": "Change feed"
+      },
+      {
+        "id": "E",
+        "text": "Object replication"
+      },
+      {
+        "id": "F",
+        "text": "Version-level immutability support"
+      }
+    ],
+    "correct": [
+      "A",
+      "C",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The account is a standard-performance general-purpose v2 account, and the restore scope is block blobs in hot or cool tiers. The question asks only for point-in-time restore prerequisites.",
+    "sections": {
+      "correctAnswer": "**A. Blob soft delete**, **C. Blob versioning**, and **D. Change feed** are required before point-in-time restore can be enabled. Microsoft describes point-in-time restore as building on those three features so block blob changes can be tracked and reverted within the configured retention window.",
+      "technical": "Point-in-time restore, often shortened to PITR, is not a standalone switch. It depends on three lower-level features that must already be enabled: blob soft delete, blob versioning, and change feed. Blob soft delete keeps deleted blob objects recoverable for a retention period. Blob versioning preserves prior states of blobs as writes and deletes occur. Change feed records change events that allow Azure Storage to analyze what happened between the requested restore time and the present.\n\nThe practical enablement order is to configure those prerequisites first, then enable point-in-time restore and choose its retention period. Microsoft also states that the PITR retention period must be at least one day less than the retention period configured for soft delete. The restore point must be inside the configured retention window.\n\nThe account shape matters. PITR supports block blobs in standard general-purpose v2 accounts and is not currently supported for accounts that have a hierarchical namespace. It also restores hot and cool data, not archived block blobs.\n\nObject replication has its own relationship with versioning: it requires blob versioning on source and destination accounts and change feed on the source account. That fact is useful for storage design, but object replication is not a prerequisite for PITR.",
+      "wrongOptions": {
+        "B": "Container soft delete is recommended for protecting deleted containers, but it is not one of the three prerequisite features for point-in-time restore. Misconception: any soft-delete feature satisfies the PITR prerequisite list. Could be correct when the requirement is to recover an accidentally deleted container and its contents.",
+        "E": "Object replication copies block blobs asynchronously to another account, but PITR does not require an object replication policy. Misconception: restore to an earlier time must depend on a second account copy. Could be correct when designing regional read copies or replication between source and destination accounts.",
+        "F": "Version-level immutability protects blob versions from modification or deletion for retention or legal-hold purposes, but it is not a PITR prerequisite. Misconception: because immutability uses versions, PITR must require WORM support. Could be correct when the goal is compliance retention for specific versions rather than account-level restore to an earlier time."
+      },
+      "plainEnglish": "Point-in-time restore needs three pieces of evidence to rewind data. Soft delete keeps deleted blobs available long enough to bring them back. Versioning keeps older states when files are changed. Change feed records the sequence of changes so Azure can work out what must be reversed. Container soft delete is helpful for deleted containers, but PITR is about block blob changes. Object replication is a different feature for copying data elsewhere. Immutability is for making data non-erasable, not for enabling rewind.",
+      "analogy": "Think of PITR as rewinding a shared notebook. You need the old pages, a bin that has not thrown away removed pages, and an activity log of edits. Without those inputs, the rewind cannot know which pages to restore.\n\n| Analogy | Azure reality |\n|---|---|\n| Old pages | Blob versions |\n| Bin holding removed pages | Blob soft delete |\n| Activity log | Change feed |\n| Rewind request | Point-in-time restore operation |\n| Separate photocopy office | Object replication, not a PITR prerequisite |\n\n**Where the analogy breaks down:** PITR works through Azure Storage service operations and retention windows, and it can block data operations in the restored range while the restore runs.",
+      "jargon": [
+        {
+          "term": "Point-in-time restore",
+          "definition": "A Blob Storage feature that reverts block blob data in selected ranges to an earlier UTC time within a retention period."
+        },
+        {
+          "term": "Blob soft delete",
+          "definition": "A feature that retains deleted blobs, snapshots, or versions for a configured period so they can be restored."
+        },
+        {
+          "term": "Blob versioning",
+          "definition": "A feature that automatically preserves previous blob states after supported writes and deletes."
+        },
+        {
+          "term": "Change feed",
+          "definition": "An Azure Blob Storage log of changes to blobs and blob metadata in a storage account."
+        },
+        {
+          "term": "General-purpose v2 storage account",
+          "definition": "A modern Azure Storage account type that supports blobs, files, queues, and tables and is required in standard performance tier for PITR."
+        },
+        {
+          "term": "Hierarchical namespace",
+          "definition": "The Azure Data Lake Storage Gen2 namespace capability that organizes objects as directories and is not supported by PITR."
+        },
+        {
+          "term": "Object replication",
+          "definition": "A feature that asynchronously copies block blobs from a source account to a destination account."
+        },
+        {
+          "term": "Version-level immutability",
+          "definition": "WORM protection that can be applied to blob versions after version-level support and blob versioning are enabled."
+        }
+      ],
+      "watchOut": "- PITR requires blob soft delete, not merely container soft delete.\n- PITR retention must be shorter than the blob soft delete and change feed retention periods.\n- PITR is for block blobs, not append blobs, page blobs, containers, or account deletion.\n- Hierarchical namespace accounts are outside PITR support.",
+      "productionTip": {
+        "official": "Microsoft documents blob soft delete, change feed, and blob versioning as prerequisites before enabling point-in-time restore. The PITR overview also lists support boundaries such as standard general-purpose v2 accounts and no hierarchical namespace support.",
+        "recommendation": "Set retention periods from recovery objectives before enabling the feature. Then run a small scoped restore test in a non-production account so operations staff understand restore ranges, blocked operations, and the status-check process."
+      },
+      "memoryTrick": "PITR needs **SVC**: Soft delete, Versions, Change feed. The mnemonic is limited because it does not describe account type, tier, retention, or hierarchical namespace restrictions.",
+      "examTip": "The phrase **before enabling point-in-time restore** should trigger the exact prerequisite trio. Do not be distracted by object replication, which has overlapping dependencies but serves a different purpose. A harder version may ask for the retention relationship; PITR must be at least one day shorter than soft delete."
+    },
+    "sources": [
+      {
+        "title": "Point-in-time restore for block blobs",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/point-in-time-restore-overview"
+      },
+      {
+        "title": "Blob Versioning in Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      },
+      {
+        "title": "Object replication overview",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.7-05",
+    "objective": "D2.3.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Adatum enables blob versioning for a container that receives a new copy of each report every hour. After two weeks, storage capacity and blob listing latency increase. The team must keep the current reports, but old versions older than 30 days do not need to be retained.\n\nWhich configuration should you use to control cost while preserving the current blobs?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Disable blob versioning; existing previous versions are automatically removed after 30 days."
+      },
+      {
+        "id": "B",
+        "text": "Create a lifecycle management rule with a `version` delete action that removes previous versions after the required age."
+      },
+      {
+        "id": "C",
+        "text": "Delete each current blob every 30 days so all versions under that name are released."
+      },
+      {
+        "id": "D",
+        "text": "Move current blobs to the archive tier because version storage is free after the base blob is archived."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The workload uses blobs supported by lifecycle management delete actions, and old previous versions are not under an immutability policy or legal hold that prevents deletion.",
+    "sections": {
+      "correctAnswer": "**B. Create a lifecycle management rule with a `version` delete action that removes previous versions after the required age.** Microsoft documents that blob versions persist until explicitly deleted and can increase storage charges. Lifecycle management can delete previous versions based on age while leaving current versions governed separately.",
+      "technical": "Blob versioning changes the economics of overwrite-heavy workloads. A delete or overwrite no longer necessarily releases all data. Previous versions remain and continue to incur storage charges until they are explicitly deleted. Microsoft also warns that a large number of versions per blob can increase listing latency and recommends keeping fewer than 1,000 versions per blob.\n\nLifecycle management is the service-side mechanism for age-based cleanup. A policy can operate on current versions, previous versions, and snapshots. In the policy JSON, the `version` element refers to previous versions, while `baseBlob` refers to the current version. For this requirement, use a rule similar to this pattern:\n\n```json\n{\n  \"actions\": {\n    \"version\": {\n      \"delete\": { \"daysAfterCreationGreaterThan\": 30 }\n    }\n  },\n  \"filters\": {\n    \"blobTypes\": [ \"blockBlob\" ]\n  }\n}\n```\n\nThis targets historical versions after the age threshold. It does not delete the current blob unless you also configure a `baseBlob` delete action. Lifecycle policy changes can take time to go into effect, so this is not an instant cleanup button. If blob soft delete is enabled, a lifecycle delete can place objects into a soft-deleted state until retention expires.\n\nBe cautious with tiering. Explicitly setting a tier on a version can change billing so that the full content length is charged in that tier, depending on the scenario.",
+      "wrongOptions": {
+        "A": "Disabling versioning stops creation of new versions, but Microsoft states that existing versions persist and can still be read, listed, or deleted by version ID. Misconception: turning off the feature cleans up accumulated history. Could be correct when the business decision is to stop future version capture after a separate retention cleanup plan exists.",
+        "C": "Deleting current blobs does not safely preserve the current reports and, with versioning enabled, deleting the current version turns it into a previous version rather than removing all stored history. Misconception: deleting the visible blob always frees every historical byte. Could be correct only when the business requirement is to remove a blob and all versions are explicitly deleted as part of a controlled purge.",
+        "D": "Moving the current blob to archive does not make previous versions free. Version billing has specific rules, and explicitly setting tiers can cause full-content-length charges for versions or snapshots. Misconception: archive tier on the base blob erases version storage cost. Could be correct when access patterns justify archiving current data and lifecycle rules also handle older versions."
+      },
+      "plainEnglish": "Versioning keeps older copies. If a report is overwritten every hour, the pile of old copies grows quickly. The right cost control is not to turn the switch off and hope Azure cleans the pile, because it will not. Instead, create an automatic cleanup rule that says old historical copies can be deleted after 30 days. That lets the current report remain available while the history has a defined retention period.",
+      "analogy": "A warehouse keeps the latest report binder on the front shelf and older binders in a back room. The problem is the back room filling up. The solution is a records rule that shreds back-room binders after 30 days, not a rule that throws away the front-shelf binder.\n\n| Analogy | Azure reality |\n|---|---|\n| Front-shelf binder | Current blob version |\n| Back-room binders | Previous blob versions |\n| Records shredding schedule | Lifecycle management delete rule |\n| Storage rent | Capacity charges for retained versions |\n| Crowded aisle | Listing latency with many versions |\n\n**Where the analogy breaks down:** Azure charges at block and tier levels, and lifecycle policy execution is asynchronous rather than a person shredding files at midnight exactly.",
+      "jargon": [
+        {
+          "term": "Lifecycle management",
+          "definition": "An Azure Blob Storage policy system that moves or deletes blobs, versions, and snapshots based on rules and conditions."
+        },
+        {
+          "term": "`version` action",
+          "definition": "The lifecycle policy element that applies to previous blob versions rather than the current base blob."
+        },
+        {
+          "term": "`baseBlob` action",
+          "definition": "The lifecycle policy element that applies to the current version of a blob."
+        },
+        {
+          "term": "Previous version",
+          "definition": "A historical blob state retained after a later write or delete operation."
+        },
+        {
+          "term": "Capacity charge",
+          "definition": "The storage cost associated with data retained in Azure Storage."
+        },
+        {
+          "term": "Listing latency",
+          "definition": "The time required to enumerate blobs or versions; many versions can make listing slower."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "An offline access tier for rarely accessed blob data that has retrieval latency and billing considerations."
+        },
+        {
+          "term": "Soft-deleted state",
+          "definition": "A temporary recoverable state for deleted blobs, snapshots, or versions when blob soft delete is enabled."
+        }
+      ],
+      "watchOut": "- Disabling versioning does not remove existing versions.\n- Deleting a current blob with versioning enabled can create more history rather than reclaiming space.\n- Keep previous-version and current-version lifecycle actions separate.\n- Policy changes can take time to start, so plan cleanup before version counts become extreme.",
+      "productionTip": {
+        "official": "Microsoft documents that versioning can add storage charges, recommends lifecycle management or Storage Actions to delete old versions, and shows lifecycle policies that delete previous versions by age through the `version` element.",
+        "recommendation": "Set retention by data classification rather than one account-wide guess. Monitor version counts and capacity by container, and separate overwrite-heavy workloads that do not require versioning into a different storage account where possible."
+      },
+      "memoryTrick": "For version cost, clean the **history shelf**, not the **front shelf**. The phrase is simplified because soft delete, immutability, and explicit tier settings can alter the final cleanup timing and billing.",
+      "examTip": "Clue words are **old versions**, **current reports must stay**, and **minimize cost**. The answer should target lifecycle management for previous versions, not current blobs. A harder question may include snapshots too; then the lifecycle rule must include snapshot cleanup as well as previous-version cleanup."
+    },
+    "sources": [
+      {
+        "title": "Blob Versioning in Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      },
+      {
+        "title": "Azure Blob Storage lifecycle management overview",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-overview"
+      },
+      {
+        "title": "Azure Blob Storage lifecycle management policy structure",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-structure"
+      },
+      {
+        "title": "Lifecycle management policies that delete blobs",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-delete"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.7-06",
+    "objective": "D2.3.7",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "A data engineering team uses Azure Data Lake Storage Gen2 in a storage account that has a hierarchical namespace enabled. They ask you to enable blob versioning so accidental overwrites of files in the lake can be restored from previous versions.\n\nWhat should you tell them?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable blob versioning; hierarchical namespace affects only Azure Files, not Blob Storage."
+      },
+      {
+        "id": "B",
+        "text": "Enable object replication first; it makes blob versioning available for hierarchical namespace accounts."
+      },
+      {
+        "id": "C",
+        "text": "Blob versioning is not currently supported for hierarchical namespace accounts, so use supported alternatives such as snapshots where applicable, soft delete, backup, or a separate flat-namespace account for workloads that need versioning."
+      },
+      {
+        "id": "D",
+        "text": "Turn on version-level immutability; it replaces versioning in Data Lake Storage Gen2 accounts."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The storage account already has the hierarchical namespace capability enabled for Azure Data Lake Storage Gen2. The question asks about blob versioning support, not a custom application-level versioning scheme.",
+    "sections": {
+      "correctAnswer": "**C. Blob versioning is not currently supported for hierarchical namespace accounts, so use supported alternatives such as snapshots where applicable, soft delete, backup, or a separate flat-namespace account for workloads that need versioning.** Microsoft lists blob versioning as unsupported when hierarchical namespace is enabled and says versioning is not supported for blobs uploaded by Data Lake Storage APIs.",
+      "technical": "Hierarchical namespace, or HNS, is the account capability used by Azure Data Lake Storage Gen2. It changes namespace behavior for analytics workloads, but it also affects feature support. The Blob Storage feature support table marks blob versioning as not supported for standard general-purpose v2 accounts when HNS is enabled. The versioning overview repeats the limitation and states that storage accounts with a hierarchical namespace enabled for Data Lake Storage are not currently supported.\n\nThe correct design response is not to force the setting. Instead, choose a protection mechanism that is supported for the workload. Blob soft delete and container soft delete have support in HNS accounts according to the feature matrix. Snapshots can be considered as a deliberate point-in-time method where supported and appropriate, although snapshots are not the same as automatic versioning. For workloads that truly require automatic blob versioning, place those blobs in an account without HNS, such as a flat-namespace general-purpose v2 or supported premium block blob account.\n\nThis distinction also matters for related features. Object replication and point-in-time restore depend on blob versioning and are not supported for HNS accounts in the feature matrix. Enabling one of those features cannot unlock versioning for a lake account.",
+      "wrongOptions": {
+        "A": "Hierarchical namespace directly affects Blob Storage feature support. The official table marks blob versioning as unsupported when HNS is enabled. Misconception: HNS is unrelated to blob data protection features. Could be correct for features in the support table that remain fully supported after enabling HNS, such as basic Blob Storage APIs.",
+        "B": "Object replication does not make versioning available for HNS accounts. Object replication itself requires versioning and is also listed as unsupported with HNS. Misconception: a dependent feature can enable its prerequisite. Could be correct in a flat-namespace account where you enable versioning and change feed before configuring object replication.",
+        "D": "Version-level immutability depends on blob versioning and is not a substitute for it in HNS accounts. Misconception: WORM protection and version history are interchangeable. Could be correct in a supported flat-namespace account where version-level WORM is enabled for compliance retention."
+      },
+      "plainEnglish": "The team is asking for a feature that the lake account type does not support today. A hierarchical namespace makes the account work like a data lake with directories, but not every Blob Storage data protection feature is available in that mode. You should not promise automatic blob versions there. Instead, use protection features that the account supports, or store files that need automatic version history in a separate account where blob versioning is supported.",
+      "analogy": "A workshop has two rooms: one is arranged for assembly-line analytics with labeled aisles, and the other is arranged for document archiving. The automatic version-stamping machine only fits in the archive-style room. You can still add other safety practices in the analytics room, but that exact machine cannot be installed there.\n\n| Analogy | Azure reality |\n|---|---|\n| Analytics room with aisles | HNS-enabled Data Lake Storage Gen2 account |\n| Version-stamping machine | Blob versioning |\n| Other safety practices | Soft delete, backups, supported snapshots, or custom copies |\n| Archive-style room | Flat-namespace storage account |\n| Installation constraint | Feature support limitation |\n\n**Where the analogy breaks down:** Azure support is determined by service capabilities and API behavior, not by physical room layout.",
+      "jargon": [
+        {
+          "term": "Hierarchical namespace (HNS)",
+          "definition": "A storage account capability that provides directory semantics for Azure Data Lake Storage Gen2 workloads."
+        },
+        {
+          "term": "Azure Data Lake Storage Gen2",
+          "definition": "Azure Storage functionality for analytics workloads that uses a hierarchical namespace on a storage account."
+        },
+        {
+          "term": "Flat namespace",
+          "definition": "A Blob Storage namespace without HNS, where blob names are strings rather than true directory objects."
+        },
+        {
+          "term": "Blob versioning",
+          "definition": "Automatic preservation of previous blob states after supported writes and deletes."
+        },
+        {
+          "term": "Feature support matrix",
+          "definition": "Microsoft documentation that lists whether Blob Storage features are supported for account capabilities such as HNS, NFS, or SFTP."
+        },
+        {
+          "term": "Blob soft delete",
+          "definition": "A feature that keeps deleted blobs, snapshots, or versions recoverable for a retention period."
+        },
+        {
+          "term": "Object replication",
+          "definition": "A feature that copies block blobs asynchronously to another storage account and requires blob versioning."
+        },
+        {
+          "term": "Point-in-time restore",
+          "definition": "A feature that restores ranges of block blobs to an earlier state and depends on versioning, soft delete, and change feed."
+        }
+      ],
+      "watchOut": "- HNS support must be checked before promising Blob Storage data protection features.\n- Object replication and PITR are also unavailable in HNS accounts because they depend on unsupported versioning behavior.\n- Soft delete is not the same as automatic versioning, even when it helps recover deleted data.\n- Moving data to a flat-namespace account can affect analytics paths and access patterns, so design deliberately.",
+      "productionTip": {
+        "official": "Microsoft's Blob Storage feature support table shows blob versioning as not supported when hierarchical namespace is enabled. The versioning overview also says accounts enabled for Data Lake Storage aren't currently supported for blob versioning.",
+        "recommendation": "Classify data lake zones by recovery need. Use supported lake protections for analytics files, and place overwrite-heavy business documents that need automatic version history in a separate storage account designed for Blob Storage data protection."
+      },
+      "memoryTrick": "HNS means **lake lanes**, not automatic blob version lanes. The shortcut helps for the exam, but always check the current feature support table because Azure feature support changes over time.",
+      "examTip": "The clue is **hierarchical namespace enabled**. Immediately rule out answers that casually enable blob versioning, object replication, PITR, or version-level WORM. A harder version may ask for a supported alternative; match the alternative to the risk, such as soft delete for deletes or a separate flat-namespace account for automatic versions."
+    },
+    "sources": [
+      {
+        "title": "Blob Storage feature support in Azure storage accounts",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-feature-support-in-storage-accounts"
+      },
+      {
+        "title": "Blob Versioning in Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      },
+      {
+        "title": "Data protection overview",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/data-protection-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.7-07",
+    "objective": "D2.3.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Tailspin Toys enabled blob versioning for a storage account last quarter. The team now wants to stop creating new versions for a high-churn container, but auditors still need access to versions that already exist. The account also has an object replication policy configured.\n\nWhat should you do first, and what happens to existing versions after versioning is disabled?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Disable versioning immediately; all existing versions become snapshots that cannot be read by version ID."
+      },
+      {
+        "id": "B",
+        "text": "Delete the lifecycle management policy first; disabling versioning then deletes previous versions that match the policy."
+      },
+      {
+        "id": "C",
+        "text": "Change the account access tier to cool; versioning is automatically paused but historical versions remain hidden."
+      },
+      {
+        "id": "D",
+        "text": "Delete the object replication policy first; after versioning is disabled, existing versions persist and can still be listed, read, or deleted by version ID."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The object replication policy is active on the storage account. The requirement is to stop future version creation while retaining access to already-created versions.",
+    "sections": {
+      "correctAnswer": "**D. Delete the object replication policy first; after versioning is disabled, existing versions persist and can still be listed, read, or deleted by version ID.** Microsoft states that object replication relies on blob versioning, so replication policies must be deleted before versioning can be disabled. Turning versioning off does not delete existing blobs, versions, or snapshots.",
+      "technical": "Disabling blob versioning changes future behavior; it is not a cleanup operation. After the setting is turned off, modifications to the current version create a blob that is not a version, and later updates overwrite data without saving the previous state. Existing versions remain as previous versions. Microsoft documents that you can still read, delete, and list versions by version ID after versioning is disabled.\n\nThe object replication policy adds a prerequisite step. Object replication requires blob versioning. The versioning documentation says that if object replication policies are in effect, you cannot disable blob versioning for the account until you delete those policies. The object replication overview repeats that you must delete object replication policies before disabling versioning.\n\nThe sequence is therefore:\n\n1. Confirm replication no longer needs to run or replace it with another design.\n2. Delete the object replication policy that depends on versioning.\n3. Disable blob versioning on the storage account.\n4. Keep or clean up existing previous versions according to retention requirements, using version ID operations or lifecycle management.\n\nA subtle scope issue is that blob versioning is enabled at the storage account, not just one container. If only one high-churn container is the problem, the cleaner design may be to move that workload to a separate account where versioning is disabled.",
+      "wrongOptions": {
+        "A": "Existing versions do not become snapshots, and they remain addressable by version ID. Also, the active object replication policy blocks disabling versioning. Misconception: versions and snapshots are interchangeable storage objects. Could be correct only for a manual snapshot strategy, not for the behavior of disabling versioning.",
+        "B": "Lifecycle management policies are not the blocker named in the versioning documentation. Disabling versioning also does not automatically delete previous versions that match a lifecycle policy. Misconception: lifecycle policy state controls whether versioning can be turned off. Could be correct when you intentionally adjust cleanup rules before changing future version capture.",
+        "C": "Changing the account access tier is not how you pause blob versioning. Existing versions are not merely hidden by access tier changes. Misconception: storage tier settings govern data protection features. Could be correct when optimizing capacity cost for objects that are appropriate for cool tier, not when disabling version creation."
+      },
+      "plainEnglish": "Turning versioning off is like telling Azure, \"stop making new historical copies from now on.\" It does not throw away the old historical copies. Auditors can still access existing versions if they have the identifiers and permissions. But object replication depends on versioning, so Azure will not let you turn versioning off while that replication policy is still attached. Remove the replication policy first, then disable versioning, then manage old versions separately.",
+      "analogy": "A toy factory has a camera that records every packaging change and also feeds a remote quality-control office. You cannot unplug the camera while the remote feed contract still depends on it. After you end the remote feed and stop the camera, yesterday's recordings remain in the archive until someone deletes them under the records policy.\n\n| Analogy | Azure reality |\n|---|---|\n| Change-recording camera | Blob versioning |\n| Remote quality-control feed | Object replication policy |\n| Archived recordings | Existing previous versions |\n| Unplugging camera | Disabling versioning |\n| Records policy | Lifecycle or manual version cleanup |\n\n**Where the analogy breaks down:** Azure object replication copies block blob changes asynchronously and uses versioning metadata; it is not a live video stream.",
+      "jargon": [
+        {
+          "term": "Disable blob versioning",
+          "definition": "Turn off automatic creation of new blob versions for future supported writes and deletes on the storage account."
+        },
+        {
+          "term": "Object replication policy",
+          "definition": "A configuration that asynchronously copies block blobs from a source account to a destination account and depends on versioning."
+        },
+        {
+          "term": "Version ID",
+          "definition": "The identifier used to address a specific blob version for read, delete, or list operations."
+        },
+        {
+          "term": "Lifecycle management",
+          "definition": "A policy system for moving or deleting current blobs, previous versions, or snapshots based on conditions."
+        },
+        {
+          "term": "High-churn container",
+          "definition": "A container whose blobs are overwritten frequently, potentially creating many versions and extra cost."
+        },
+        {
+          "term": "Storage account scope",
+          "definition": "The level at which blob versioning is configured; it affects the Blob service for the account rather than only one blob."
+        },
+        {
+          "term": "Previous version",
+          "definition": "A historical blob state retained after later changes or deletion."
+        },
+        {
+          "term": "Access tier",
+          "definition": "A storage pricing and access category such as hot, cool, cold, or archive for blob data."
+        }
+      ],
+      "watchOut": "- Existing versions are not deleted when versioning is disabled.\n- Object replication policies must be removed before disabling versioning.\n- Versioning is an account-level setting, so a single noisy container can justify a separate account.\n- Lifecycle cleanup is separate from the enable-or-disable switch.",
+      "productionTip": {
+        "official": "Microsoft documents that disabling blob versioning does not delete existing blobs, versions, or snapshots, and that versions can still be read, listed, or deleted by version ID. The same documentation states that object replication policies must be deleted before versioning can be disabled.",
+        "recommendation": "Before disabling versioning, export a list of retained versions needed for audit and confirm replication cutover with application owners. For future high-churn data, isolate workloads by account so one retention choice does not affect unrelated containers."
+      },
+      "memoryTrick": "Disable means **no new history**, not **erase old history**. Add the replication reminder: **OR before off** means remove Object Replication before turning versioning off.",
+      "examTip": "Watch for two facts in the wording: object replication and auditors needing old versions. The correct answer must satisfy the dependency first and preserve existing version access. A harder question may ask how to stop versions only for one container; since versioning is account-level, moving that workload can be the better design."
+    },
+    "sources": [
+      {
+        "title": "Blob Versioning in Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      },
+      {
+        "title": "Object replication overview",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.7-08",
+    "objective": "D2.3.7",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You manage a container that stores regulated export files. Blob versioning is enabled. Some previous versions have active version-level immutability policies, and other previous versions do not. An automation account must delete unprotected previous versions by using Microsoft Entra authorization. A partner tool might use a SAS to delete blob versions in a different container.\n\nWhich three statements are correct? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "For Microsoft Entra authorization, deleting a previous version requires the `Microsoft.Storage/storageAccounts/blobServices/containers/blobs/deleteBlobVersion/action` data action, such as through Storage Blob Data Owner or an equivalent custom role."
+      },
+      {
+        "id": "B",
+        "text": "Storage Blob Data Contributor is sufficient for previous version deletion because it can delete the current blob."
+      },
+      {
+        "id": "C",
+        "text": "A SAS that deletes blob versions needs the normal delete permission `d`; the `x` symbol is only for account deletion."
+      },
+      {
+        "id": "D",
+        "text": "An active version-level WORM retention policy or legal hold can prevent deleting that protected version even when the caller otherwise has delete-version permission."
+      },
+      {
+        "id": "E",
+        "text": "A SAS used to delete a blob version must include the delete version permission `x` for the applicable blob or container scope."
+      },
+      {
+        "id": "F",
+        "text": "Deleting the current version first removes any immutability policy on previous versions with the same blob name."
+      }
+    ],
+    "correct": [
+      "A",
+      "D",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra authorization uses Azure RBAC data actions. SAS examples refer to Blob service SAS or user delegation SAS permissions that support blob version operations. Protected versions have active version-level WORM policies.",
+    "sections": {
+      "correctAnswer": "**A**, **D**, and **E** are correct. Deleting a previous blob version is protected more tightly than deleting the current version: Azure RBAC needs the delete-blob-version data action, SAS needs the `x` delete version permission, and active version-level WORM retention or legal hold can still block deletion of the protected version.",
+      "technical": "Blob versioning separates deletion of the current version from deletion of a previous version. Microsoft lists `Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete` for deleting the current version, with Storage Blob Data Contributor support. It lists `Microsoft.Storage/storageAccounts/blobServices/containers/blobs/deleteBlobVersion/action` for deleting a previous version, with Storage Blob Data Owner support. A custom role can also include the required data action if you want narrower role design.\n\nSAS permissions have a parallel distinction. In the Blob service SAS permission table, `d` is Delete for a blob, while `x` is Delete version for a blob version. The signed resource for a blob version is `bv`, and a container-scoped SAS can include permissions that allow version deletion when the operation and scope match.\n\nVersion-level immutability adds another layer. Version-level WORM policies require blob versioning. When a blob version is protected by an active time-based retention policy or legal hold, delete operations are prohibited for that version. Permission answers and immutability answers are not contradictory: authorization can identify who is allowed to attempt an operation, while immutability can make the operation invalid for protected data until the policy permits deletion.\n\nFor least privilege, give automation the exact delete-version capability only where unprotected versions should be purged. Do not use Storage Blob Data Owner broadly across unrelated containers just because it contains the needed action.",
+      "wrongOptions": {
+        "B": "Storage Blob Data Contributor is documented for deleting the current version, not for the separate previous-version delete data action. Misconception: delete on the base blob automatically includes delete on historical versions. Could be correct when the automation only needs to delete current blobs and does not target previous versions.",
+        "C": "For SAS, `x` is the documented Delete version permission. The `d` permission deletes blobs, but version deletion has its own symbol. Misconception: SAS delete permission is a single all-purpose delete. Could be correct when the SAS must delete only the current blob and no previous versions are involved.",
+        "F": "Deleting the current version does not remove immutability policies from previous versions. Protected versions remain governed by their own retention or legal hold state. Misconception: all version-level controls are inherited dynamically from the current blob. Could be correct only after protected versions are no longer under active retention or legal hold and are individually deleted with proper authorization."
+      },
+      "plainEnglish": "There are two separate questions: is the caller allowed to delete a previous version, and is that particular version legally protected from deletion? For Microsoft Entra access, the caller needs the special delete-version data action, not just ordinary blob delete. For a SAS, the token needs the `x` permission that means delete version. But if the version is under an active WORM retention policy or legal hold, Azure will not delete it just because the caller has a powerful permission.",
+      "analogy": "A records room uses both keys and sealed evidence bags. A clerk needs the special archive-destruction key to remove old copies. A contractor's pass must also show the archive-destruction mark. Even with the right key or mark, a sealed evidence bag cannot be destroyed until the legal seal is lifted or the retention date passes.\n\n| Analogy | Azure reality |\n|---|---|\n| Archive-destruction key | RBAC `deleteBlobVersion/action` |\n| Contractor pass mark | SAS `x` permission |\n| Ordinary disposal key | Current blob delete permission |\n| Sealed evidence bag | Version-level WORM legal hold or retention |\n| Old copy | Previous blob version |\n\n**Where the analogy breaks down:** Azure evaluates signed tokens, RBAC data actions, version IDs, and policy state through service APIs rather than physical keys.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra authorization",
+          "definition": "Authorization based on Microsoft Entra identities and Azure RBAC roles rather than account keys."
+        },
+        {
+          "term": "Azure RBAC data action",
+          "definition": "A permission string that allows data-plane operations such as reading or deleting blob data."
+        },
+        {
+          "term": "`deleteBlobVersion/action`",
+          "definition": "The Azure Storage RBAC data action required to delete a previous blob version."
+        },
+        {
+          "term": "Storage Blob Data Owner",
+          "definition": "A built-in Azure role that includes broad blob data permissions, including support for deleting previous blob versions."
+        },
+        {
+          "term": "Storage Blob Data Contributor",
+          "definition": "A built-in Azure role that supports many blob data operations, including deleting the current version, but not the documented previous-version delete action."
+        },
+        {
+          "term": "Shared access signature (SAS)",
+          "definition": "A signed token in a URI that delegates limited access to Azure Storage resources."
+        },
+        {
+          "term": "`x` permission",
+          "definition": "The SAS permission symbol for deleting a blob version."
+        },
+        {
+          "term": "WORM",
+          "definition": "Write Once, Read Many; an immutable state where protected data cannot be modified or deleted during retention or legal hold."
+        },
+        {
+          "term": "Legal hold",
+          "definition": "An immutability policy that protects data until the hold is explicitly cleared."
+        },
+        {
+          "term": "Time-based retention policy",
+          "definition": "An immutability policy that protects data for a configured interval."
+        }
+      ],
+      "watchOut": "- Current-blob delete and previous-version delete use different RBAC data actions.\n- SAS `d` and SAS `x` are not the same permission.\n- Immutability can block deletion even for authorized callers.\n- Use custom roles or narrow scopes when automation only needs to purge versions in one container.",
+      "productionTip": {
+        "official": "Microsoft's versioning documentation lists the RBAC data action required to delete a previous version and identifies SAS `x` as Delete version. The version-level WORM documentation states that protected versions with active retention or legal hold prohibit Delete Blob operations.",
+        "recommendation": "Separate purge automation for unprotected operational versions from compliance containers. Use a custom role scoped to the container when possible, require change approval for SAS issuance, and log the exact version IDs that a cleanup job deletes."
+      },
+      "memoryTrick": "For old versions, remember **Owner or x, unless WORM says no**. It is a memory aid, not a full access model, because custom roles, scopes, and legal policy states still matter.",
+      "examTip": "The exam may hide three layers in one scenario: RBAC, SAS, and immutability. Match `deleteBlobVersion/action` to Microsoft Entra authorization, `x` to SAS version deletion, and WORM to a policy block. A harder item may ask for least privilege; then prefer a custom role containing only the needed data action at the narrowest scope."
+    },
+    "sources": [
+      {
+        "title": "Blob Versioning in Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      },
+      {
+        "title": "Create a service SAS",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas"
+      },
+      {
+        "title": "Version-level WORM policies for immutable blob data",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-version-level-worm-policies"
+      },
+      {
+        "title": "Configure immutability policies for blob versions",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-policy-configure-version-scope"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

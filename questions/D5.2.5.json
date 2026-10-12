@@ -1,0 +1,518 @@
+[
+  {
+    "id": "D5.2.5-01",
+    "objective": "D5.2.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have three Azure VMs in East US that host a claims-processing application for Fabrikam. You are enabling Azure-to-Azure replication by using Azure Site Recovery in a Recovery Services vault. The application team wants disaster recovery to Central US, a cache storage account that minimizes impact on the production VMs, and a replication policy that keeps recovery points for 24 hours while also creating an application-consistent point every 4 hours.\n\nWhich three settings or resources should you configure? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set **Target location** to Central US and select the failover virtual network and subnet in that region"
+      },
+      {
+        "id": "B",
+        "text": "Create or select the cache storage account in the source region used by the protected VMs"
+      },
+      {
+        "id": "C",
+        "text": "Configure the replication policy with 24 hours of recovery point retention and a 4-hour app-consistent snapshot frequency"
+      },
+      {
+        "id": "D",
+        "text": "Place the cache storage account in Central US because all replica managed disks are created in the target region"
+      },
+      {
+        "id": "E",
+        "text": "Disable the replication policy because Azure Site Recovery always retains recovery points for exactly seven days"
+      },
+      {
+        "id": "F",
+        "text": "Create the Recovery Services vault in the same source region as the VMs for cross-region disaster recovery"
+      }
+    ],
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The VMs, operating systems, storage, and target region are supported for Azure-to-Azure Site Recovery. The target virtual network and subnet either exist or can be created during configuration.",
+    "sections": {
+      "correctAnswer": "**A. Set **Target location** to Central US and select the failover virtual network and subnet in that region**, **B. Create or select the cache storage account in the source region used by the protected VMs**, and **C. Configure the replication policy with 24 hours of recovery point retention and a 4-hour app-consistent snapshot frequency**. These choices match the documented Azure-to-Azure replication settings for target resources, cache storage, and policy behavior.",
+      "technical": "Azure-to-Azure Site Recovery replication has three groups of settings that are easy to mix up: where the recovered VM will run, where changed data is temporarily staged, and how recovery points are retained. In the **Replication settings** step, **Target location** is the Azure region where source VM data is replicated and where failed-over VMs will be created. Network settings identify the failover virtual network and subnet in that target region.\n\nCache storage is not a target-region resource in the normal Azure-to-Azure design. Microsoft documents that Site Recovery needs a cache storage account in the source region. During replication, disk writes are sent to the cache storage account in the source region first, then Site Recovery processes the data and sends it to target storage or replica managed disks. The cache helps minimize impact on the production application because writes can be staged close to the source VM. The support matrix also states that the cache storage account should be in the same region as the VM being protected.\n\nThe replication policy defines recovery point retention and application-consistent snapshot frequency. The default policy keeps recovery points for one day and has app-consistent snapshot frequency set to zero hours, which means disabled. In this scenario, the requested retention is 24 hours, equivalent to the default one day, but the requested app-consistent frequency is 4 hours, so the policy must be configured or selected accordingly. Application-consistent points add memory and transaction consistency information through mechanisms such as VSS on Windows, and Microsoft notes that the app-consistent frequency should be less than the recovery-point retention period.\n\nThe configuration order in the portal is source, VM selection, replication settings, manage policy and extension settings, then review. Site Recovery can create default target resources with an `asr` suffix, but exam items often ask when you should override them. Here, the target region, cache placement, and policy frequency are explicit requirements, so you must set all three deliberately.",
+      "wrongOptions": {
+        "D": "The cache storage account belongs in the source region for Azure-to-Azure replication, not the target region merely because replica disks live there. Misconception: all disaster-recovery supporting resources must be in the recovery region. Could be correct only for target resources such as failover networks or replica managed disks, not for cache storage.",
+        "E": "Site Recovery uses a replication policy, and Microsoft documents recovery point retention and app-consistent snapshot frequency as policy settings. Misconception: recovery-point retention is a fixed service value that administrators cannot select. Could be correct if an individual setting were locked by a specific product limitation, but not for this documented policy pair.",
+        "F": "For cross-regional disaster recovery, Microsoft states the source location should be different from the Recovery Services vault and its resource group's location. Misconception: every protection vault must be colocated with the protected VM. Could be correct for some backup designs, but Azure-to-Azure cross-region replication uses different vault placement guidance."
+      },
+      "plainEnglish": "When you replicate a VM to another Azure region, you answer three separate questions. Where should the VM run after a disaster? In this scenario, Central US. Where should the VM first drop off its ongoing changes before Azure sends them onward? In a cache storage account near the original VM in East US. How many restore moments should Azure keep, and how often should it make a more application-aware restore moment? That is controlled by the replication policy. Putting the cache in the target region or pretending the policy cannot be changed confuses those jobs.",
+      "analogy": "A newspaper company is preparing a backup printing site. The emergency printing press is in another city, but the reporters first place drafts in a local outbox before couriers transfer them. The editor also decides how long old editions are kept and how often a carefully checked edition is saved.\n\n| Analogy | Azure reality |\n|---|---|\n| Backup printing city | Target Azure region |\n| Emergency press network | Failover VNet and subnet |\n| Local outbox | Cache storage account in the source region |\n| Kept old editions | Recovery point retention |\n| Carefully checked edition | App-consistent recovery point |\n\n**Where the analogy breaks down:** Site Recovery continuously processes disk writes, creates replica managed disks and recovery points, and applies Azure resource validation; a newspaper courier does not represent block replication or VSS coordination.",
+      "jargon": [
+        {
+          "term": "Azure Site Recovery",
+          "definition": "An Azure service that replicates supported workloads and orchestrates failover and failback for disaster recovery."
+        },
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure vault used by Site Recovery to store replication metadata, policies, and recovery orchestration objects."
+        },
+        {
+          "term": "Failover",
+          "definition": "The operation that brings protected workloads online in the recovery location."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A point in replicated data that can be selected when failing over a machine."
+        },
+        {
+          "term": "Source region",
+          "definition": "The Azure region where the protected VM normally runs."
+        },
+        {
+          "term": "Target region",
+          "definition": "The Azure region where the VM is recovered during a disaster recovery event."
+        },
+        {
+          "term": "Azure-to-Azure replication",
+          "definition": "Site Recovery replication of Azure VMs from one Azure region to another Azure region."
+        },
+        {
+          "term": "Target location",
+          "definition": "The Azure region selected as the disaster-recovery destination for replicated VMs."
+        },
+        {
+          "term": "Failover virtual network",
+          "definition": "The target-region VNet to which a VM is connected after failover."
+        },
+        {
+          "term": "Cache storage account",
+          "definition": "A source-region storage account used by Site Recovery to temporarily hold VM changes during replication."
+        },
+        {
+          "term": "Replication policy",
+          "definition": "A Site Recovery configuration that defines recovery point retention and app-consistent snapshot frequency."
+        },
+        {
+          "term": "Recovery point retention",
+          "definition": "How long Site Recovery keeps recovery points available for failover."
+        },
+        {
+          "term": "App-consistent snapshot",
+          "definition": "A snapshot that includes disk data plus application-consistency information such as in-memory data and transactions."
+        },
+        {
+          "term": "Replica managed disk",
+          "definition": "The target-side managed disk copy used by Site Recovery for replication and failover."
+        }
+      ],
+      "watchOut": "- Cache storage is in the source region, while failover networking and replica resources are in the target region.\n- The default app-consistent snapshot frequency is disabled, so a requested 4-hour interval requires policy attention.\n- Higher retention can increase storage cost because more recovery points must be stored.\n- Multi-VM consistency is separate from the basic replication policy and should be used only when workloads require it.\n- The vault region for cross-region disaster recovery should not be confused with the source VM region.",
+      "productionTip": {
+        "official": "Microsoft documents target settings, cache storage, and replication policy during Azure-to-Azure enablement. The architecture article states that cache storage is in the source location and that the default policy keeps recovery points for one day with app-consistent snapshot frequency set to zero hours.",
+        "recommendation": "Before enabling replication, prepare target networks, choose a cache account design based on churn, and document the chosen app-consistent frequency with application owners. Use least privilege roles such as Site Recovery Contributor for operational tasks instead of granting broad subscription ownership."
+      },
+      "memoryTrick": "Use **Target there, cache here, policy decides when**: recovery runs there, write staging starts here, and retention plus app consistency live in the policy. This phrase omits edge cases such as high churn, restricted regions, and multi-VM consistency.",
+      "examTip": "Clue words are **target region**, **cache storage**, and **recovery point retention/app-consistent frequency**. Map each phrase to a different setting instead of assuming one region or one wizard page covers everything. A harder version may include Premium SSD v2 or Ultra Disk, where high-churn storage choices also matter."
+    },
+    "sources": [
+      {
+        "title": "Configure replication for Azure VMs in Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-how-to-enable-replication"
+      },
+      {
+        "title": "Azure to Azure disaster recovery architecture in Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+      },
+      {
+        "title": "Support Matrix for Azure VM Disaster Recovery with Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-support-matrix"
+      },
+      {
+        "title": "Tutorial to set up Azure VM disaster recovery with Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.5-02",
+    "objective": "D5.2.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You enable Azure Site Recovery replication for a supported Azure VM named `vm-web01`. A junior administrator asks which guest component performs the Azure-to-Azure replication work and how it gets onto the VM.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The Site Recovery Mobility service extension is automatically installed during enablement and registers the VM with Azure Site Recovery"
+      },
+      {
+        "id": "B",
+        "text": "The Microsoft Azure Recovery Services (MARS) agent is installed because Azure-to-Azure Site Recovery uses file-and-folder backup technology"
+      },
+      {
+        "id": "C",
+        "text": "No extension or agent is used because managed disks replicate themselves whenever a Recovery Services vault exists"
+      },
+      {
+        "id": "D",
+        "text": "The Azure Monitor Agent is installed and converts Log Analytics records into recovery points"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The VM is supported for Azure-to-Azure Site Recovery, outbound connectivity requirements are met, and replication is enabled from the Azure portal using current Site Recovery behavior.",
+    "sections": {
+      "correctAnswer": "**A. The Site Recovery Mobility service extension is automatically installed during enablement and registers the VM with Azure Site Recovery**. Microsoft documents that enabling replication installs the Mobility service extension on the VM, registers it with Site Recovery, and starts continuous replication.",
+      "technical": "Azure-to-Azure Site Recovery uses a guest component called the Site Recovery Mobility service extension. During the enable replication process, Site Recovery installs this extension on the source Azure VM and registers the VM with the Site Recovery service. After registration, continuous replication begins: disk writes are sent to the source-region cache storage account, processed by Site Recovery, and then sent to target storage or replica managed disks.\n\nThis extension is distinct from Azure Backup components. The MARS agent backs up files, folders, and system state on supported Windows machines, and the Azure VM backup extension coordinates VM-level backup snapshots. Those are backup technologies, not the Azure-to-Azure replication component. Azure Monitor Agent collects monitoring data; it does not transform logs into disaster-recovery recovery points.\n\nThe management settings matter after installation too. In the enable replication wizard, the **Manage** step includes **Extension settings**, where you can select update settings and an Automation account. Microsoft recommends keeping Site Recovery components current, and for Azure VM disaster recovery to Azure, it strongly recommends enabling automatic updates for the Mobility service. Site Recovery also has a support policy in which versions older than the current version minus four are considered out of support.\n\nThe evaluation order is therefore: supported VM and prerequisites, outbound connectivity and certificates, enable replication, automatic Mobility service extension installation, registration, then data replication through cache and target resources. If the extension cannot install or communicate, replication health suffers. The existence of managed disks or a vault alone is not enough to protect a VM.",
+      "wrongOptions": {
+        "B": "MARS is a backup agent for files, folders, system state, and some backup-server scenarios; it is not the Azure-to-Azure Site Recovery replication extension. Misconception: all Recovery Services vault features use the same agent. Could be correct when configuring direct file and folder backups from a supported Windows machine.",
+        "C": "Managed disks do not automatically replicate for Site Recovery merely because a vault exists. Replication starts only after protection is enabled and the Mobility service extension registers the VM. Misconception: Azure platform storage replication equals disaster-recovery orchestration. Could be correct only for storage redundancy discussions that are unrelated to VM failover orchestration.",
+        "D": "Azure Monitor Agent handles monitoring data collection, not Site Recovery replication and recovery point creation. Misconception: any agent that sends data to Azure can create DR recovery points. Could be correct when the requirement is collecting guest metrics or logs for Azure Monitor."
+      },
+      "plainEnglish": "Site Recovery needs a helper inside the VM. When you turn on replication, Azure installs the Site Recovery Mobility service extension and connects that VM to the Site Recovery service. From then on, the VM's disk changes are tracked and sent through the replication pipeline. A backup agent, monitoring agent, or storage account by itself does not do that job. They may be useful for other Azure features, but they are not the component that makes Azure-to-Azure failover work.",
+      "analogy": "A courier company puts a barcode scanner in a warehouse before it can track outgoing packages. The scanner is installed as part of onboarding, and after that every package movement can be sent to the central routing system. A security camera or accounting notebook does not replace the scanner.\n\n| Analogy | Azure reality |\n|---|---|\n| Warehouse | Source Azure VM |\n| Barcode scanner | Mobility service extension |\n| Central routing system | Azure Site Recovery service |\n| Package movement | Disk writes |\n| Accounting notebook | Backup or monitoring agent |\n\n**Where the analogy breaks down:** The extension handles block replication and service registration under Azure control; a barcode scanner does not create recovery points or target managed disks.",
+      "jargon": [
+        {
+          "term": "Azure Site Recovery",
+          "definition": "An Azure service that replicates supported workloads and orchestrates failover and failback for disaster recovery."
+        },
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure vault used by Site Recovery to store replication metadata, policies, and recovery orchestration objects."
+        },
+        {
+          "term": "Failover",
+          "definition": "The operation that brings protected workloads online in the recovery location."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A point in replicated data that can be selected when failing over a machine."
+        },
+        {
+          "term": "Source region",
+          "definition": "The Azure region where the protected VM normally runs."
+        },
+        {
+          "term": "Target region",
+          "definition": "The Azure region where the VM is recovered during a disaster recovery event."
+        },
+        {
+          "term": "Mobility service extension",
+          "definition": "The Azure Site Recovery guest extension installed on Azure VMs to enable replication and register the VM with Site Recovery."
+        },
+        {
+          "term": "Enable replication",
+          "definition": "The Site Recovery operation that configures a VM for continuous replication to a target region."
+        },
+        {
+          "term": "Registration",
+          "definition": "The process of associating the protected VM and its extension with the Site Recovery service."
+        },
+        {
+          "term": "Cache storage account",
+          "definition": "A source-region storage account where changes are staged before being sent to the target."
+        },
+        {
+          "term": "Replica managed disk",
+          "definition": "A target-side disk resource used by Site Recovery to hold replicated data."
+        },
+        {
+          "term": "MARS agent",
+          "definition": "Microsoft Azure Recovery Services agent used mainly for Windows files, folders, and system state backup."
+        },
+        {
+          "term": "Azure Monitor Agent",
+          "definition": "The modern Microsoft agent for collecting guest monitoring data and sending it to Azure Monitor destinations."
+        },
+        {
+          "term": "Automatic updates",
+          "definition": "A Site Recovery setting that lets the service manage Mobility service updates for protected Azure VMs."
+        }
+      ],
+      "watchOut": "- Recovery Services vaults are used by both Backup and Site Recovery, but the guest components are not interchangeable.\n- The Mobility service extension must remain healthy and supported for reliable replication.\n- Automatic update settings are part of ongoing operations, not a replacement for initial enablement.\n- Monitoring data is useful for observability, but logs are not DR recovery points.\n- Replication still depends on outbound connectivity and supported OS/storage/network prerequisites.",
+      "productionTip": {
+        "official": "Microsoft documents that enabling Azure-to-Azure replication installs the Site Recovery Mobility service extension and registers the VM with Azure Site Recovery. Microsoft also recommends running current Site Recovery components and enabling automatic updates for Azure VM disaster recovery to Azure.",
+        "recommendation": "Track Mobility service health as part of DR operations. During maintenance windows, update Site Recovery components before OS or kernel upgrades when applicable, and avoid granting operators unrelated backup permissions just because the vault is shared between Backup and Site Recovery."
+      },
+      "memoryTrick": "**Mobility moves the machine.** The phrase is a simplification: the extension does not move the VM instantly; it tracks and sends changes so Site Recovery can create recovery points and fail over later.",
+      "examTip": "If the question asks what gets installed for Azure-to-Azure Site Recovery, choose **Mobility service extension**. If it asks about backing up Windows files and folders, then MARS may appear. A harder item may mention auto-upgrade; that is still Mobility service maintenance, not a different replication agent."
+    },
+    "sources": [
+      {
+        "title": "Tutorial to set up Azure VM disaster recovery with Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+      },
+      {
+        "title": "Azure to Azure disaster recovery architecture in Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+      },
+      {
+        "title": "Updates and component upgrades in Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/service-updates-how-to"
+      },
+      {
+        "title": "Configure replication for Azure VMs in Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-how-to-enable-replication"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.5-03",
+    "objective": "D5.2.5",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Adatum restricts outbound traffic from Azure VMs by using NSG rules and a URL-filtering firewall. You must enable Azure Site Recovery replication from West Europe to North Europe for several VMs. The security team asks which connectivity changes are required while keeping inbound access to the VMs blocked.\n\nWhich three statements are correct? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Allow outbound HTTPS on port 443 to the Storage service tag for the source region so VM changes can be written to the cache storage account"
+      },
+      {
+        "id": "B",
+        "text": "Allow outbound HTTPS on port 443 to Microsoft Entra ID and AzureSiteRecovery service endpoints or service tags"
+      },
+      {
+        "id": "C",
+        "text": "Allow outbound connectivity for Events Hub in the target region so Site Recovery monitoring data can be sent"
+      },
+      {
+        "id": "D",
+        "text": "Open inbound TCP 443 from Azure Site Recovery to every protected VM because replication is initiated from the service"
+      },
+      {
+        "id": "E",
+        "text": "Use an authenticated proxy for all Site Recovery communication because that is the supported way to enforce outbound identity"
+      },
+      {
+        "id": "F",
+        "text": "Add hard-coded Azure Site Recovery IP addresses to user-defined routes instead of using service tags"
+      }
+    ],
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud commercial regions. The organization controls outbound access with NSGs and URL filtering. The VMs are otherwise supported, and Azure Disk Encryption-specific Key Vault access is not the central requirement in this question.",
+    "sections": {
+      "correctAnswer": "**A. Allow outbound HTTPS on port 443 to the Storage service tag for the source region so VM changes can be written to the cache storage account**, **B. Allow outbound HTTPS on port 443 to Microsoft Entra ID and AzureSiteRecovery service endpoints or service tags**, and **C. Allow outbound connectivity for Events Hub in the target region so Site Recovery monitoring data can be sent**. Azure-to-Azure Site Recovery requires outbound connectivity and does not require inbound connectivity to the VM.",
+      "technical": "Azure Site Recovery for Azure-to-Azure replication is outbound-driven from the protected VM. Microsoft states that the replicated Azure VMs need outbound connectivity and that Site Recovery never needs inbound connectivity to the VM. If access is controlled by service tags, you create outbound HTTPS rules on port 443 for the required tags. For the source region, storage access lets the VM write changes to the cache storage account. Microsoft Entra ID access provides authorization and authentication. The AzureSiteRecovery tag allows the VM to reach the Site Recovery service. Events Hub access in the target region allows Site Recovery monitoring and diagnostics data to be written.\n\nIf a URL-based firewall is used, the documented commercial URLs include `*.blob.core.windows.net` for cache storage writes, `login.microsoftonline.com` for Microsoft Entra ID, `*.hypervrecoverymanager.windowsazure.com` for Site Recovery communication, and `*.servicebus.windows.net` for monitoring and diagnostics through Service Bus. Networking documentation also includes optional URL allowances such as Key Vault for Azure Disk Encryption scenarios and Azure Automation for Mobility agent auto-upgrade through the portal.\n\nTwo negative rules are exam favorites. Site Recovery does not support using an authenticated proxy to control network connectivity. The networking guidance also says IP-address-based filtering should not be used to control outbound connectivity and that Azure Site Recovery IP addresses should not be added to Azure route tables for that purpose. Service tags are preferred because they avoid hard dependencies on individual service IPs that can change.\n\nAfter failover, reverse-direction or target-region rules may also be needed so replication can be re-enabled or failed back. The question asks about enabling replication from West Europe to North Europe while keeping inbound blocked, so the required answer set focuses on outbound HTTPS and service endpoints, not inbound firewall holes.",
+      "wrongOptions": {
+        "D": "Inbound connectivity to the protected VM is not required for Azure-to-Azure Site Recovery replication. Misconception: a cloud service must call into the VM to pull replicated data. Could be correct for a different application that genuinely hosts an inbound endpoint, but not for Site Recovery replication traffic.",
+        "E": "Microsoft explicitly says Site Recovery doesn't support using an authenticated proxy to control network connectivity. Misconception: a proxy with authentication is always the strongest supported control. Could be correct for unrelated web-browsing governance, not for this replication requirement.",
+        "F": "The networking guidance discourages IP-address-based filtering and says not to add Azure Site Recovery IP addresses to route tables for outbound control. Misconception: hard-coded IPs are more precise than service tags for Azure platform services. Could be correct only for a service that officially publishes stable IP requirements and lacks service-tag support."
+      },
+      "plainEnglish": "The VMs do not wait for Azure Site Recovery to connect into them from the outside. Instead, they need permission to call out to Azure services. They must be able to send changed disk data to storage, authenticate to Microsoft Entra ID, talk to Site Recovery, and send monitoring information. You can keep inbound access blocked. Do not solve this by forcing an authenticated proxy or by writing static IP routes, because Microsoft does not support those methods for this scenario.",
+      "analogy": "A secure office sends disaster-recovery paperwork out by courier. The office does not open its front door for strangers to walk in and take files. It needs approved outbound courier routes: one route to the local drop box, one to identity verification, one to the disaster-recovery coordinator, and one for status reports.\n\n| Analogy | Azure reality |\n|---|---|\n| Local drop box | Cache storage account access |\n| Identity verification desk | Microsoft Entra ID |\n| Disaster-recovery coordinator | Azure Site Recovery service |\n| Status report channel | Events Hub/Service Bus monitoring path |\n| Locked front door | No inbound VM connectivity requirement |\n\n**Where the analogy breaks down:** Azure uses HTTPS service endpoints, service tags, DNS, and platform-managed replication components; couriers do not capture disk writes or create recovery points.",
+      "jargon": [
+        {
+          "term": "Azure Site Recovery",
+          "definition": "An Azure service that replicates supported workloads and orchestrates failover and failback for disaster recovery."
+        },
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure vault used by Site Recovery to store replication metadata, policies, and recovery orchestration objects."
+        },
+        {
+          "term": "Failover",
+          "definition": "The operation that brings protected workloads online in the recovery location."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A point in replicated data that can be selected when failing over a machine."
+        },
+        {
+          "term": "Source region",
+          "definition": "The Azure region where the protected VM normally runs."
+        },
+        {
+          "term": "Target region",
+          "definition": "The Azure region where the VM is recovered during a disaster recovery event."
+        },
+        {
+          "term": "Network security group (NSG)",
+          "definition": "An Azure resource that filters inbound and outbound network traffic with security rules."
+        },
+        {
+          "term": "Service tag",
+          "definition": "A Microsoft-managed label representing IP address ranges for an Azure service, used in NSG rules."
+        },
+        {
+          "term": "Storage service tag",
+          "definition": "A service tag used to allow traffic to Azure Storage in a specified region."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity and access service, formerly named Azure Active Directory."
+        },
+        {
+          "term": "AzureSiteRecovery tag",
+          "definition": "A service tag used to allow traffic to Azure Site Recovery service endpoints."
+        },
+        {
+          "term": "Events Hub",
+          "definition": "Azure messaging service used here for Site Recovery monitoring and diagnostics connectivity."
+        },
+        {
+          "term": "URL-based firewall",
+          "definition": "A firewall that allows or denies outbound traffic based on destination host names or URL patterns."
+        },
+        {
+          "term": "Authenticated proxy",
+          "definition": "A proxy that requires user or machine authentication before forwarding traffic."
+        },
+        {
+          "term": "User-defined route",
+          "definition": "A custom route in Azure networking that can direct traffic through an appliance or next hop."
+        },
+        {
+          "term": "Outbound HTTPS",
+          "definition": "Traffic initiated from the VM to a destination using HTTPS, commonly TCP port 443."
+        }
+      ],
+      "watchOut": "- Site Recovery needs outbound connectivity from protected VMs; it does not need inbound openings to those VMs.\n- Use service tags rather than hard-coded Azure Site Recovery IP addresses.\n- Authenticated proxies are not supported for controlling Site Recovery network connectivity.\n- Storage service tag should match the source region for cache writes; Events Hub service tag references the target region for monitoring in the source-to-target direction.\n- ADE and Mobility service auto-upgrade can add Key Vault or GuestAndHybridManagement/Azure Automation requirements.",
+      "productionTip": {
+        "official": "Microsoft documents the required Azure-to-Azure networking paths, including Storage, Microsoft Entra ID, AzureSiteRecovery, and Events Hub service tags for outbound HTTPS on port 443. The same networking guidance states that inbound connectivity to protected VMs isn't required and that authenticated proxies aren't supported for this control path.",
+        "recommendation": "Implement the rules first on a test NSG, validate initial replication and recovery point generation, then promote the same pattern to production. Keep rules service-tag based, monitor replication health after firewall changes, and document optional Key Vault or auto-upgrade paths only where those features are used."
+      },
+      "memoryTrick": "For ASR networking, remember **S-M-A-E out, nothing in**: Storage, Microsoft Entra, Azure Site Recovery, Events Hub outbound; no inbound replication hole. This memory aid leaves out optional Key Vault and auto-upgrade endpoints, so verify special cases.",
+      "examTip": "Clue words are **NSG**, **URL-filtering firewall**, **outbound**, and **inbound blocked**. Pick service tags and HTTPS outbound requirements. Reject answers that ask for inbound rules, authenticated proxies, or static IP route workarounds. A tougher version may switch to government cloud URLs, where endpoint suffixes differ."
+    },
+    "sources": [
+      {
+        "title": "About networking in Azure VM disaster recovery with Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-about-networking"
+      },
+      {
+        "title": "Azure to Azure disaster recovery architecture in Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-architecture"
+      },
+      {
+        "title": "Tutorial to set up Azure VM disaster recovery with Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/azure-to-azure-tutorial-enable-replication"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.5-04",
+    "objective": "D5.2.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Litware has six Azure VMs protected by Azure Site Recovery. Two database VMs must start first during failover, three application VMs must start after the databases, and one reporting VM must start last after an operator confirms that reports can be offline for maintenance. Litware also wants to run an Azure Automation runbook after the application tier starts.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a recovery plan, place the VMs into ordered groups, add a manual action before the reporting VM group, and add a runbook action after the application group starts"
+      },
+      {
+        "id": "B",
+        "text": "Create six separate Recovery Services vaults so each VM fails over independently in the required order"
+      },
+      {
+        "id": "C",
+        "text": "Configure a backup policy with daily retention because backup retention controls Site Recovery startup order"
+      },
+      {
+        "id": "D",
+        "text": "Disable replication and re-enable it in the desired sequence because Site Recovery always starts VMs by protection enablement time"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. All six VMs are already enabled for failover with the same source and target pairing required by a single recovery plan, and Azure Automation is available for supported runbook actions.",
+    "sections": {
+      "correctAnswer": "**A. Create a recovery plan, place the VMs into ordered groups, add a manual action before the reporting VM group, and add a runbook action after the application group starts**. Recovery plans are the Site Recovery feature for grouping machines, controlling failover order, and inserting manual or automated actions.",
+      "technical": "A recovery plan orchestrates failover for multiple protected machines. When a plan is created, selected machines are added to a default group. Machines in the same group start at the same time after failover. You can add more groups and move machines between them so that one tier starts before another tier. Microsoft documents that a recovery plan can have up to seven groups and that a machine or replication group can belong to only one group in a recovery plan.\n\nFor Litware, the database VMs belong in the first group, the application VMs in the second group, and the reporting VM in a later group. The operator confirmation requirement is a manual action. When the recovery plan runs and reaches that step, it stops and prompts the person running failover to indicate that the manual action is complete. The runbook requirement maps to a script/action customization. For Azure-to-Azure replication, Microsoft documents support for Azure Automation runbooks in recovery plans during failover and failback. You can add a post action after a group starts, which matches the requirement to run automation after the application tier is online.\n\nThe plan also enforces scope boundaries. When creating a recovery plan, you choose source and target locations, and the plan can contain machines with the same source and target. Microsoft notes that all VMs in a recovery plan must replicate into a single subscription; if different VMs replicate to different subscriptions, use more than one recovery plan. During failover, you can select recovery point types for the plan, and Site Recovery runs plan actions and VM starts as jobs.\n\nRecovery plans are not backup policies and do not require separate vaults per VM. They are runbook/manual-action orchestration containers for already replicated items. You should also run test failovers of recovery plans to validate that scripts and manual steps behave as expected before an actual outage.",
+      "wrongOptions": {
+        "B": "Separate vaults would fragment management and do not create a coordinated startup sequence. Recovery plans provide ordering inside the Site Recovery experience. Misconception: isolation by vault is the only way to control failover behavior. Could be correct when organizational or regional boundaries require separate vaults, not for tier startup order.",
+        "C": "Backup retention controls backup recovery point lifetime; it does not order Site Recovery VM startup or run failover actions. Misconception: Backup and Site Recovery policies are the same because both use Recovery Services vaults. Could be correct when the task is retaining VM backup recovery points, not orchestrating disaster-recovery failover.",
+        "D": "The protection enablement sequence is not the documented mechanism for multi-tier startup. Disabling and re-enabling replication is disruptive and unnecessary. Misconception: Site Recovery starts VMs only in the order they were protected. Could be correct never for this purpose; it might be done for certain reconfiguration tasks, but not as failover orchestration."
+      },
+      "plainEnglish": "Litware needs a disaster-recovery playbook. The databases should come up first, then the application servers, then the reporting server after a person approves it. Azure Site Recovery recovery plans are that playbook. You put machines into groups, add a checkpoint where a human must confirm a step, and attach automation where a script should run. A backup policy keeps old backups; it does not tell VMs when to start during a failover.",
+      "analogy": "A theater performance uses a stage manager's cue sheet. The musicians enter first, actors enter second, and a narrator waits until the stage manager gives a hand signal. A lighting macro runs after the actors enter. The theater does not build six separate stages just to control the order.\n\n| Analogy | Azure reality |\n|---|---|\n| Cue sheet | Recovery plan |\n| Musicians first | Database VM group |\n| Actors second | Application VM group |\n| Hand signal | Manual action |\n| Lighting macro | Azure Automation runbook |\n| Separate stages | Separate vaults, unnecessary for ordering |\n\n**Where the analogy breaks down:** Recovery plans operate on replicated machines, recovery points, failover jobs, subscriptions, and Azure Automation accounts; a theater cue sheet does not handle data consistency or VM creation.",
+      "jargon": [
+        {
+          "term": "Azure Site Recovery",
+          "definition": "An Azure service that replicates supported workloads and orchestrates failover and failback for disaster recovery."
+        },
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure vault used by Site Recovery to store replication metadata, policies, and recovery orchestration objects."
+        },
+        {
+          "term": "Failover",
+          "definition": "The operation that brings protected workloads online in the recovery location."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A point in replicated data that can be selected when failing over a machine."
+        },
+        {
+          "term": "Source region",
+          "definition": "The Azure region where the protected VM normally runs."
+        },
+        {
+          "term": "Target region",
+          "definition": "The Azure region where the VM is recovered during a disaster recovery event."
+        },
+        {
+          "term": "Recovery plan",
+          "definition": "An Azure Site Recovery object that groups protected machines and orchestrates failover order and actions."
+        },
+        {
+          "term": "Group",
+          "definition": "A recovery-plan collection of machines that start together at the same stage in the plan."
+        },
+        {
+          "term": "Manual action",
+          "definition": "A recovery-plan step that pauses execution until an operator confirms the instruction is complete."
+        },
+        {
+          "term": "Azure Automation runbook",
+          "definition": "An automation script hosted in Azure Automation that can be invoked by supported recovery-plan actions."
+        },
+        {
+          "term": "Post action",
+          "definition": "An action configured to run after the machines in a recovery-plan group start during failover."
+        },
+        {
+          "term": "Replication group",
+          "definition": "A grouping used when VMs need multi-VM-consistent recovery points."
+        },
+        {
+          "term": "Source location",
+          "definition": "The region or site where protected machines run before failover."
+        },
+        {
+          "term": "Target location",
+          "definition": "The region or site where machines are recovered during failover."
+        },
+        {
+          "term": "Test failover",
+          "definition": "A non-disruptive validation exercise used to confirm that disaster-recovery plans and actions work."
+        }
+      ],
+      "watchOut": "- Machines in the same recovery-plan group start at the same time, so separate tiers that need ordering into different groups.\n- A recovery plan can have up to seven groups.\n- A VM or replication group belongs to only one group inside a recovery plan.\n- For Azure-to-Azure scenarios, runbook actions are supported in both failover and failback.\n- If VMs replicate into different subscriptions, use more than one recovery plan.",
+      "productionTip": {
+        "official": "Microsoft documents creating recovery plans from a Recovery Services vault, adding groups, moving machines between groups, and inserting script or manual actions. The same documentation states that Azure-to-Azure recovery plans can use runbooks during failover and failback and recommends testing scripts with a test failover.",
+        "recommendation": "Treat the recovery plan as a controlled production runbook: name groups by application tier, keep manual-action instructions explicit, version-control runbook code, and perform regular test failovers. Give operators permission to run recovery plans without granting broad rights to redesign replication settings."
+      },
+      "memoryTrick": "**Plan equals playbook**: groups set the order, manual actions pause the play, and runbooks automate special cues. The phrase is simplified because subscription, source-target pairing, and recovery-point choices can still constrain the plan.",
+      "examTip": "Clue words are **start first**, **after**, **operator confirms**, and **runbook**. Those are recovery-plan orchestration signals. Rule out backup policy answers and vault-sprawl answers. A harder version may ask why a VM cannot be added; check whether it shares the same source/target and subscription constraints."
+    },
+    "sources": [
+      {
+        "title": "Create/customize recovery plans in Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-create-recovery-plans"
+      },
+      {
+        "title": "Run a Failover During Disaster Recovery With Azure Site Recovery",
+        "url": "https://learn.microsoft.com/en-us/azure/site-recovery/site-recovery-failover"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

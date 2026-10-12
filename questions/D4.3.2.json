@@ -1,0 +1,396 @@
+[
+  {
+    "id": "D4.3.2-01",
+    "objective": "D4.3.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You plan to publish a TCP application that runs on two Azure virtual machines. The application must be reachable from the Internet, use availability zones when available, and avoid retired load-balancing SKUs. The security team also wants inbound traffic to be allowed only by explicit network security group rules.\n\nWhich load balancer configuration should you create?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A Basic public load balancer because Basic is open to the Internet by default and has no charge"
+      },
+      {
+        "id": "B",
+        "text": "A Standard public load balancer with a Standard public IP frontend and NSG rules that allow the application port"
+      },
+      {
+        "id": "C",
+        "text": "A Standard internal load balancer with a private frontend IP address"
+      },
+      {
+        "id": "D",
+        "text": "A Gateway Load Balancer because every Internet-facing TCP workload requires the Gateway SKU"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The workload is a regional Layer 4 TCP service on Azure VMs. The question is not asking for global HTTP routing, TLS offload, or third-party appliance chaining.",
+    "sections": {
+      "correctAnswer": "**B. A Standard public load balancer with a Standard public IP frontend and NSG rules that allow the application port**. Standard is the correct current SKU for VM Layer 4 load balancing, a public frontend provides Internet reachability, and Standard load balancers are closed to inbound flows unless network security rules allow the traffic.",
+      "technical": "Azure Load Balancer operates at OSI layer 4 and distributes TCP or UDP flows across backend virtual machines or virtual machine scale set instances. The frontend IP configuration determines whether the load balancer is public or internal. A public IP address creates a public load balancer for Internet-facing traffic. A private IP address creates an internal load balancer for traffic inside a virtual network or connected private networks.\n\nThe SKU choice matters because Basic Load Balancer was retired on September 30, 2025. Microsoft documentation now says to upgrade Basic deployments to Standard and lists Standard and Gateway as current SKUs for different scenarios. Standard Load Balancer supports public and internal types, zone-redundant or zonal frontend IP configurations, Azure Monitor metrics, HTTPS health probes, HA ports on internal load balancers, outbound rules, and a secure-by-default model. Basic is documented as retired, lacks an SLA, is not compatible with availability zones, and is open by default.\n\nFor a public Standard Load Balancer, the public IP resource must also be Standard SKU. Standard public load balancers and public IP addresses are closed to inbound connections by default. Network Security Groups must explicitly permit allowed traffic to the backend resources. This is an important exam distinction: creating the public frontend and load-balancing rule does not replace NSG allowance.\n\nGateway Load Balancer is for transparent network virtual appliance scenarios, not the default choice for publishing a regular TCP application. Internal load balancers are private; they cannot accept incoming Internet traffic because their frontend is a private IP address.",
+      "wrongOptions": {
+        "A": "Basic Load Balancer is retired and does not meet the current-design or availability-zone requirement. Misconception: free or open-by-default means simpler and therefore better. Could be correct only in old historical material before retirement, not in current AZ-104 content.",
+        "C": "An internal load balancer uses a private frontend IP and cannot receive direct Internet traffic. Misconception: Standard SKU automatically means public access. Could be correct for line-of-business services reached from a VNet, peered VNet, VPN, or ExpressRoute path.",
+        "D": "Gateway Load Balancer is a specialized SKU for appliance insertion and chaining, not required for every TCP app. Misconception: newer or more advanced SKU is always the exam answer. Could be correct when the design places third-party NVAs transparently in the traffic path."
+      },
+      "plainEnglish": "You need two separate choices to line up. First, because users come from the Internet, the load balancer needs a public frontend IP address. Second, because Basic has been retired and the design needs zones and explicit security, choose Standard. Then allow the application port with an NSG rule. Without that security rule, Standard's secure-by-default behavior blocks inbound traffic even though the load balancer exists.",
+      "analogy": "A store needs a public front door, a modern approved building, and a security guard list. A back-office door would not let customers in from the street, and an old retired building should not be chosen for a new opening.\n\n| Analogy | Azure reality |\n|---|---|\n| Public front door | Public frontend IP configuration |\n| Back-office door | Internal load balancer private frontend |\n| Modern approved building | Standard Load Balancer |\n| Retired building | Basic Load Balancer |\n| Security guard list | NSG allow rule |\n\n**Where the analogy breaks down:** Azure's forwarding decision is per network flow and depends on frontend, backend, rule, probe, and NSG state rather than a person opening a door.",
+      "jargon": [
+        {
+          "term": "Azure Load Balancer",
+          "definition": "An Azure service that distributes Layer 4 TCP or UDP traffic to backend VMs or scale set instances."
+        },
+        {
+          "term": "Standard Load Balancer",
+          "definition": "The current general-purpose regional Load Balancer SKU for high-scale, zone-aware public and internal load balancing."
+        },
+        {
+          "term": "Basic Load Balancer",
+          "definition": "The retired legacy Load Balancer SKU that Microsoft says was retired on September 30, 2025."
+        },
+        {
+          "term": "Public frontend",
+          "definition": "A frontend IP configuration that uses a public IP address and can receive Internet-originated traffic when security rules allow it."
+        },
+        {
+          "term": "Internal load balancer",
+          "definition": "A load balancer with a private frontend IP address used for private network traffic."
+        },
+        {
+          "term": "NSG",
+          "definition": "Network Security Group, a set of packet-filtering rules for Azure subnets or NICs."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate datacenter zone within a supported Azure region."
+        },
+        {
+          "term": "Gateway Load Balancer",
+          "definition": "A Load Balancer SKU designed for transparent network virtual appliance scenarios."
+        }
+      ],
+      "watchOut": "- Basic Load Balancer was retired on September 30, 2025.\n- Public versus internal is determined by the frontend IP type: public IP or private IP.\n- A public Standard Load Balancer requires a Standard public IP resource.\n- Standard is secure by default; create NSG allow rules for intended inbound traffic.",
+      "productionTip": {
+        "official": "Microsoft documents Basic Load Balancer as retired and identifies Standard Load Balancer as supporting public and internal types, availability zones, diagnostics, outbound rules, and secure-by-default inbound behavior. Microsoft also states that public Standard Load Balancer uses Standard public IP resources.",
+        "recommendation": "For new Internet-facing VM services, start with Standard public load balancer, zone-aware frontend choices, health probes that reflect application readiness, and least-open NSG rules. If you still find Basic resources, plan migration rather than extending them."
+      },
+      "memoryTrick": "Public users need a public frontend; current exams expect Standard, not Basic. The shortcut fails for private-only applications where an internal Standard Load Balancer is the right answer.",
+      "examTip": "Clue words are **Internet**, **availability zones**, **retired**, and **explicit NSG rules**. Eliminate internal for public access and eliminate Basic for current designs. A harder version might compare Standard Load Balancer with Application Gateway; remember Load Balancer is Layer 4, while Application Gateway is Layer 7."
+    },
+    "sources": [
+      {
+        "title": "What is Azure Load Balancer?",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview"
+      },
+      {
+        "title": "Azure Load Balancer Components Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+      },
+      {
+        "title": "Azure Load Balancer SKUs",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.3.2-02",
+    "objective": "D4.3.2",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You configure a Standard public load balancer for a stateful TCP application on ports 443 and 8443. Clients that start a new TCP connection from the same IP address should usually be sent to the same backend instance. The load balancer must stop sending new connections to an instance when the application health endpoint returns HTTP 500.\n\nWhich two settings should you configure? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set session persistence on the load-balancing rule to **Client IP**"
+      },
+      {
+        "id": "B",
+        "text": "Create an inbound NAT rule for port 443 and associate it with the whole backend pool"
+      },
+      {
+        "id": "C",
+        "text": "Remove the backend pool so the frontend IP forwards directly to whichever VM replies first"
+      },
+      {
+        "id": "D",
+        "text": "Use the default hash-based distribution mode with session persistence set to **None**"
+      },
+      {
+        "id": "E",
+        "text": "Use an HTTP or HTTPS health probe that checks the application health path"
+      }
+    ],
+    "correct": [
+      "A",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The backend instances are VMs or scale set instances in a single virtual network. The application can expose an HTTP or HTTPS health endpoint that returns status code 200 only when it should receive traffic.",
+    "sections": {
+      "correctAnswer": "**A. Set session persistence on the load-balancing rule to Client IP** and **E. Use an HTTP or HTTPS health probe that checks the application health path**. Client IP persistence uses a two-tuple affinity decision, and HTTP or HTTPS probes can mark an instance unhealthy when the endpoint returns a non-200 response.",
+      "technical": "A working Azure Load Balancer configuration uses several linked components. The frontend IP and port receive client flows. A load-balancing rule maps that frontend protocol and port to a backend pool and backend port. The backend pool contains the VMs or scale set instances that can serve the traffic. A health probe decides which backend instances are eligible to receive new flows.\n\nBy default, Azure Load Balancer uses hash-based distribution with a five-tuple: source IP, source port, destination IP, destination port, and protocol. This provides stickiness only inside a transport session. If the same client opens a new connection, the source port can change and the new connection may land on another backend. Session persistence changes the tuple. **Client IP** mode uses source IP and destination IP so connections from the same client IP are routed to the same backend instance. **Client IP and protocol** uses source IP, destination IP, and protocol.\n\nHealth probes provide the traffic eligibility signal. TCP probes succeed when the TCP handshake on the probe port succeeds. HTTP and HTTPS probes send an HTTP GET to a configured relative path. Microsoft documents that HTTP and HTTPS probes fail when the endpoint returns a status code other than 200, does not respond within the timeout behavior, or closes the connection with a TCP reset. When a probe fails, Load Balancer stops sending new connections to that unhealthy backend instance. Existing TCP connections on Standard Load Balancer continue until the application ends the flow, an idle timeout occurs, or the VM shuts down.\n\nInbound NAT is not the right feature because it forwards one frontend port to a specific VM, not to all healthy instances through a load-balancing rule.",
+      "wrongOptions": {
+        "B": "An inbound NAT rule targets a specific VM or instance for port forwarding; it is not the rule that distributes port 443 across the whole healthy backend set. Misconception: any rule with a frontend port is a load-balancing rule. Could be correct for administrative access to one VM through a shared public IP.",
+        "C": "The backend pool is required to define which instances can receive load-balanced traffic. Misconception: the load balancer can discover responders dynamically like a broadcast. Could be correct in no Azure Load Balancer design; the service needs configured backend resources.",
+        "D": "The default five-tuple mode does not meet the requirement for new connections from the same client IP to usually remain on the same backend. Misconception: default hashing is the same as client affinity. Could be correct for stateless services where even spreading matters more than source affinity."
+      },
+      "plainEnglish": "The load balancer needs a list of servers, a rule for the port, and a health check. For this app, the rule should remember the client by IP address so a new connection from the same client tends to go back to the same server. The health check should ask the application's health URL, not merely check whether the VM is powered on. If that URL returns HTTP 500, the load balancer treats the server as unhealthy for new traffic.",
+      "analogy": "A call center routes customers to agents. For a stateful customer, the routing system can try to send the same caller ID back to the same agent. It also asks each agent's status light before assigning new calls.\n\n| Analogy | Azure reality |\n|---|---|\n| Caller ID routing | Client IP session persistence |\n| Agent roster | Backend pool |\n| Incoming phone number | Frontend IP and port |\n| Call assignment rule | Load-balancing rule |\n| Agent status light | HTTP or HTTPS health probe |\n\n**Where the analogy breaks down:** Load Balancer does not understand application sessions or cookies; it uses IP, port, and protocol tuple hashing at Layer 4.",
+      "jargon": [
+        {
+          "term": "Backend pool",
+          "definition": "The group of VM or scale set instances that can receive traffic from a load balancer rule."
+        },
+        {
+          "term": "Health probe",
+          "definition": "A periodic TCP, HTTP, or HTTPS check used to decide whether a backend instance can receive new flows."
+        },
+        {
+          "term": "Load-balancing rule",
+          "definition": "A mapping from frontend IP, protocol, and port to a backend pool and backend port."
+        },
+        {
+          "term": "Session persistence",
+          "definition": "A load distribution mode that keeps connections from the same source IP, or source IP and protocol, on the same backend instance."
+        },
+        {
+          "term": "Five-tuple",
+          "definition": "Source IP, source port, destination IP, destination port, and protocol."
+        },
+        {
+          "term": "HTTP 500",
+          "definition": "An HTTP status code indicating a server-side error."
+        },
+        {
+          "term": "TCP",
+          "definition": "Transmission Control Protocol, a connection-oriented transport protocol."
+        },
+        {
+          "term": "Frontend IP",
+          "definition": "The load balancer IP address clients contact."
+        }
+      ],
+      "watchOut": "- Session persistence is configured on the load-balancing rule, not on the health probe.\n- HTTP and HTTPS probes expect HTTP status 200 for success.\n- Standard Load Balancer keeps established TCP flows when a single backend probe goes down; it stops new flows to that instance.\n- Source IP affinity can create uneven load when many clients hide behind one proxy.",
+      "productionTip": {
+        "official": "Microsoft documents distribution modes as default five-tuple hashing, Client IP two-tuple persistence, and Client IP and protocol three-tuple persistence. Microsoft also documents that HTTP and HTTPS health probes fail on non-200 responses and control which backend instances receive new inbound connections.",
+        "recommendation": "Use persistence only when the application genuinely needs it; otherwise keep stateless services on default distribution. Make the health endpoint check dependencies needed for safe request handling, but do not make it so broad that one optional dependency drains every backend."
+      },
+      "memoryTrick": "Affinity changes who gets the flow; probes decide whether that server is eligible. This simplification leaves out NSGs and application behavior, which can still block traffic.",
+      "examTip": "Clue words are **same client IP** and **HTTP 500 health endpoint**. Pick session persistence for affinity and an HTTP or HTTPS probe for application-level health. A harder question may say UDP workload; you still use TCP, HTTP, or HTTPS probes because Load Balancer health probes are not UDP probes."
+    },
+    "sources": [
+      {
+        "title": "Azure Load Balancer Components Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+      },
+      {
+        "title": "Azure Load Balancer distribution modes",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/distribution-mode-concepts"
+      },
+      {
+        "title": "Azure Load Balancer health probes",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-custom-probe-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.3.2-03",
+    "objective": "D4.3.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a Standard public load balancer with a frontend public IP address. Two Linux VMs are in the backend pool for a web application. You need administrators to connect by SSH to each VM individually through the load balancer's public IP address. Web traffic on port 80 must continue to be balanced across both VMs.\n\nWhat should you configure for SSH access?",
+    "options": [
+      {
+        "id": "A",
+        "text": "One load-balancing rule for frontend port 22 to backend port 22 across the backend pool"
+      },
+      {
+        "id": "B",
+        "text": "An outbound rule with allocated SNAT ports for TCP 22"
+      },
+      {
+        "id": "C",
+        "text": "Two inbound NAT rules, such as frontend port 50001 to VM1 port 22 and frontend port 50002 to VM2 port 22"
+      },
+      {
+        "id": "D",
+        "text": "A health probe on port 22 and no NAT or load-balancing rule"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The organization has approved SSH exposure through the load balancer and will restrict it with NSG source rules. The web application already has a separate load-balancing rule for HTTP.",
+    "sections": {
+      "correctAnswer": "**C. Two inbound NAT rules, such as frontend port 50001 to VM1 port 22 and frontend port 50002 to VM2 port 22**. Inbound NAT rules perform port forwarding from a frontend IP and port to a specific backend VM or instance, which is exactly what individual SSH access requires.",
+      "technical": "Azure Load Balancer has different rule types for different jobs. A load-balancing rule distributes matching inbound traffic to all healthy instances in a backend pool. That is appropriate for web traffic on port 80 when either web server can answer the request. An inbound NAT rule forwards traffic that arrives at a frontend IP address and port combination to a specific virtual machine or instance in the backend pool. That is appropriate for administration or any scenario where the destination must be one chosen VM.\n\nFor this scenario, keep the existing HTTP load-balancing rule for port 80. Then create separate inbound NAT rules for SSH, each with a unique frontend port because the same frontend IP and port cannot identify two different VMs. A common design is:\n\n| Public endpoint | Backend destination |\n|---|---|\n| Load balancer public IP:50001 | VM1 private IP:22 |\n| Load balancer public IP:50002 | VM2 private IP:22 |\n\nThe administrator connects to the same public IP but changes the port number to select the VM. Network Security Groups must allow the chosen frontend ports and backend SSH traffic from approved source addresses. Health probes are unrelated to choosing an administrative target. Outbound rules are for SNAT from backend instances to external destinations, not for inbound SSH to a VM.\n\nThe priority order in your thinking should be: if many healthy VMs can serve the same client flow, use a load-balancing rule; if one exact VM must receive the connection, use an inbound NAT rule.",
+      "wrongOptions": {
+        "A": "A load-balancing rule on port 22 would send SSH connections to healthy backend instances according to distribution logic, not to the specific VM the administrator intended. Misconception: load balancing is a safe way to reach individual machines. Could be correct for a shared service where any backend can handle the connection.",
+        "B": "Outbound rules configure SNAT for traffic leaving backend VMs; they do not publish inbound SSH endpoints. Misconception: NAT in any direction can solve port forwarding. Could be correct when backend instances need controlled outbound Internet connectivity through load balancer public IPs.",
+        "D": "A health probe only checks health and does not create a listener that forwards SSH traffic. Misconception: probing a port opens that port for clients. Could be correct as part of a rule's health model, but not as the access path."
+      },
+      "plainEnglish": "For the website, visitors can land on either VM, so a load-balancing rule is right. For SSH, an administrator wants a particular VM. Give each VM its own public port on the load balancer. Port 50001 can mean \"send me to VM1's SSH port,\" and port 50002 can mean \"send me to VM2's SSH port.\" The public IP stays the same; the port number chooses the target.",
+      "analogy": "An apartment building has one street address. The lobby desk sends package deliveries to any available mail clerk, but direct calls to residents use different extension numbers.\n\n| Analogy | Azure reality |\n|---|---|\n| Street address | Load balancer public IP |\n| Package delivery desk | Port 80 load-balancing rule |\n| Resident extension | Unique inbound NAT frontend port |\n| Apartment resident | Specific backend VM |\n| Security visitor list | NSG source restrictions |\n\n**Where the analogy breaks down:** Azure forwards packets using configured protocol and port mappings; it does not authenticate administrators or decide whether SSH should be allowed by policy.",
+      "jargon": [
+        {
+          "term": "Inbound NAT rule",
+          "definition": "A Load Balancer rule that forwards a frontend IP and port to a specific backend VM or instance."
+        },
+        {
+          "term": "Port forwarding",
+          "definition": "Mapping one listening port on a public or frontend address to another port on a private backend resource."
+        },
+        {
+          "term": "SSH",
+          "definition": "Secure Shell, commonly used for administrative command-line access to Linux systems on TCP port 22."
+        },
+        {
+          "term": "Frontend port",
+          "definition": "The port on the load balancer IP address that clients contact."
+        },
+        {
+          "term": "Backend port",
+          "definition": "The port on the VM or instance that receives forwarded traffic."
+        },
+        {
+          "term": "SNAT",
+          "definition": "Source network address translation, used for outbound flows from private instances to external destinations."
+        },
+        {
+          "term": "Health probe",
+          "definition": "A check used by Load Balancer to decide whether a backend can receive new load-balanced flows."
+        },
+        {
+          "term": "Backend pool",
+          "definition": "The set of VMs or instances available to load-balancing rules."
+        }
+      ],
+      "watchOut": "- Inbound NAT rules select a specific backend VM; load-balancing rules distribute across a backend pool.\n- Each NAT rule on the same frontend IP needs a distinct frontend port.\n- NSG rules still need to allow the management source addresses.\n- A health probe does not expose a management listener by itself.",
+      "productionTip": {
+        "official": "Microsoft documents inbound NAT rules as forwarding incoming traffic from a frontend IP address and port combination to a specific virtual machine or instance in the backend pool. Load-balancing rules, by contrast, distribute inbound traffic to all instances in the backend pool.",
+        "recommendation": "Avoid exposing SSH broadly. Prefer Azure Bastion, Just-in-Time VM access, or private administrative paths when possible; if NAT rules are used, restrict NSG sources, log access, and choose non-overlapping frontend ports with clear naming."
+      },
+      "memoryTrick": "NAT names one machine; load balancing names a service. The phrase is a simplification because NAT rules can be grouped for scale sets, but the exam distinction remains specific target versus distributed service.",
+      "examTip": "The decisive phrase is **each VM individually**. Choose inbound NAT when the administrator must select VM1 or VM2. A harder item may combine HTTP load balancing and SSH administration; keep both rule types and do not replace the web rule with NAT."
+    },
+    "sources": [
+      {
+        "title": "Azure Load Balancer Components Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+      },
+      {
+        "title": "Tutorial: Create a single virtual machine inbound NAT rule - Azure portal - Azure Load Balancer",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/tutorial-load-balancer-port-forwarding-portal"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.3.2-04",
+    "objective": "D4.3.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You are designing networking for a hub virtual network. A pair of network virtual appliances (NVAs) must inspect all TCP and UDP flows that arrive on any port from spoke networks. Separately, a group of backend VMs behind a public Standard Load Balancer needs predictable outbound Internet connectivity from the load balancer's public IPs, with control over SNAT port allocation.\n\nWhich two configurations should you use? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Configure one public Basic Load Balancer rule per inspected port for the NVAs"
+      },
+      {
+        "id": "B",
+        "text": "Configure an HA ports rule on an internal Standard Load Balancer for the NVA backend pool"
+      },
+      {
+        "id": "C",
+        "text": "Use inbound NAT rules to allocate SNAT ports for outbound Internet flows"
+      },
+      {
+        "id": "D",
+        "text": "Configure outbound rules on the public Standard Load Balancer for the backend VM pool"
+      },
+      {
+        "id": "E",
+        "text": "Use an internal Basic Load Balancer with protocol set to All and frontend port 0"
+      }
+    ],
+    "correct": [
+      "B",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The NVA pattern is inside a virtual network and uses Azure Standard Load Balancer. The outbound design intentionally uses Load Balancer outbound rules rather than Azure NAT Gateway.",
+    "sections": {
+      "correctAnswer": "**B. Configure an HA ports rule on an internal Standard Load Balancer for the NVA backend pool** and **D. Configure outbound rules on the public Standard Load Balancer for the backend VM pool**. HA ports load-balance all ports and protocols on an internal Standard Load Balancer, while outbound rules explicitly define SNAT for backend instances through public Standard Load Balancer frontends.",
+      "technical": "This design has two different traffic directions and therefore two different Load Balancer features.\n\nFor the NVA path, Microsoft documents high availability ports as a type of load-balancing rule that load-balances all flows arriving on all ports of an internal Standard Load Balancer. The rule is configured with frontend port 0, backend port 0, and protocol All. The load-balancing decision is per flow and uses the five-tuple: source IP, source port, destination IP, destination port, and protocol. HA ports are intended for scenarios such as network virtual appliances where defining a separate rule for every possible port is not practical. HA ports are available only for internal Standard Load Balancer, not public load balancers or Basic.\n\nFor outbound Internet connectivity from backend VMs, outbound rules define SNAT for a public Standard Load Balancer. An outbound rule uses a frontend, parameters, and backend pool. It controls which VMs are translated to which public IP addresses, how SNAT ports are allocated, which protocols get outbound translation, idle timeout, and TCP reset behavior. Microsoft notes that outbound rules are followed only if the backend VM does not have an instance-level public IP address. Each frontend public IP address contributes up to 64,000 ephemeral ports that can be used as SNAT ports, and outbound rules let you tune port allocation.\n\nInbound NAT rules do the opposite direction: they forward inbound frontend ports to specific backend instances. Basic Load Balancer is retired and does not support HA ports or outbound rules, so it should not be selected for either requirement.",
+      "wrongOptions": {
+        "A": "Basic Load Balancer is retired and a public per-port rule set does not match the internal all-ports NVA scenario. Misconception: many individual rules are the only way to cover many ports. Could be correct only as an old, narrow design for a small set of known public application ports, not for current NVA HA ports.",
+        "C": "Inbound NAT rules publish inbound frontend ports to specific backend targets; they do not allocate SNAT ports for outbound Internet flows. Misconception: NAT rules are directionless. Could be correct when administrators need inbound port forwarding to a particular VM.",
+        "E": "HA ports require an internal Standard Load Balancer; Basic is retired and does not support HA ports. Misconception: setting protocol All and port 0 is enough regardless of SKU. Could be correct if the word Basic were replaced with Standard and the resource were internal."
+      },
+      "plainEnglish": "The appliances need to receive many different kinds of private traffic, so you do not want a separate rule for every port. Use HA ports on an internal Standard Load Balancer; it is built for all-port, all-protocol flows to appliances. The web VM pool has a different problem: when those VMs go out to the Internet, you want to control which public addresses and how many SNAT ports they use. That is what outbound rules on a public Standard Load Balancer do.",
+      "analogy": "A security checkpoint and a shipping dock solve different problems. The checkpoint accepts every kind of vehicle lane inside the campus and sends vehicles to available inspectors. The shipping dock controls which company return address and postage pool are used for packages leaving the campus.\n\n| Analogy | Azure reality |\n|---|---|\n| Campus checkpoint | Internal Standard Load Balancer |\n| Any vehicle lane | HA ports all ports and protocols |\n| Inspectors | NVA backend instances |\n| Shipping return address | Public frontend IP for SNAT |\n| Postage pool | Allocated SNAT ports |\n\n**Where the analogy breaks down:** Load Balancer does not inspect packet contents like a security guard; the NVA performs inspection after the flow is delivered.",
+      "jargon": [
+        {
+          "term": "HA ports",
+          "definition": "A Standard internal Load Balancer rule that balances all TCP and UDP flows on all ports, configured with protocol All and port 0."
+        },
+        {
+          "term": "NVA",
+          "definition": "Network virtual appliance, such as a firewall or SD-WAN appliance running as a VM."
+        },
+        {
+          "term": "Outbound rule",
+          "definition": "A Load Balancer rule that defines outbound SNAT behavior for all instances in a backend pool."
+        },
+        {
+          "term": "SNAT",
+          "definition": "Source network address translation, changing private source addresses to public frontend addresses for outbound flows."
+        },
+        {
+          "term": "Ephemeral port",
+          "definition": "A temporary transport port used to track outbound connections."
+        },
+        {
+          "term": "Five-tuple",
+          "definition": "Source IP, source port, destination IP, destination port, and protocol used in flow hashing."
+        },
+        {
+          "term": "Instance-level public IP",
+          "definition": "A public IP address assigned directly to a VM network interface."
+        },
+        {
+          "term": "Idle timeout",
+          "definition": "The period after which an inactive flow can be removed by the load balancer."
+        }
+      ],
+      "watchOut": "- HA ports are available only on internal Standard Load Balancer.\n- Configure HA ports with frontend port 0, backend port 0, and protocol All.\n- Outbound rules apply to public Standard Load Balancer SNAT; they are not inbound port-forwarding rules.\n- Each public frontend IP contributes up to 64,000 ephemeral ports for SNAT capacity.",
+      "productionTip": {
+        "official": "Microsoft documents HA ports as an internal Standard Load Balancer feature for all ports and protocols, commonly used with NVAs. Microsoft also documents outbound rules as explicit SNAT configuration for public Standard Load Balancer, including control over translated public IPs, protocols, idle timeout, and SNAT port allocation.",
+        "recommendation": "For appliance paths, validate vendor guidance for HA ports, health probes, and flow symmetry before production. For outbound-heavy workloads, size SNAT ports deliberately and compare Load Balancer outbound rules with Azure NAT Gateway, which Microsoft recommends for scalable outbound connectivity in many scenarios."
+      },
+      "memoryTrick": "HA ports catch everything coming in privately; outbound rules shape everything going out publicly. This simplification assumes the workload is using Load Balancer rather than NAT Gateway or Gateway Load Balancer.",
+      "examTip": "Clue words are **all TCP and UDP flows on any port** for NVAs and **SNAT port allocation** for outbound Internet. Match all-ports internal traffic to HA ports and SNAT tuning to outbound rules. A harder version may add UDRs and flow symmetry; then you must consider NVA routing design as well as the load balancer rule."
+    },
+    "sources": [
+      {
+        "title": "Azure Load Balancer Components Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/components"
+      },
+      {
+        "title": "Outbound Rules for Azure Load Balancer",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/outbound-rules"
+      },
+      {
+        "title": "High availability ports overview in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-ha-ports-overview"
+      },
+      {
+        "title": "Azure Load Balancer SKUs",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

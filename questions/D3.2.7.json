@@ -1,0 +1,724 @@
+[
+  {
+    "id": "D3.2.7-01",
+    "objective": "D3.2.7",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains a resource group named `rg-app`. A team will deploy a new Virtual Machine Scale Set for a stateful web tier. The VMs might use different VM sizes during migration, and the team wants to combine Spot and Regular priority VMs in the same scale set when capacity is available. The team also wants to manage the instances as standard Azure IaaS virtual machines where possible.\n\nYou must choose the orchestration mode before the scale set is created. Which orchestration mode should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Uniform orchestration, because all new scale sets use Uniform by default and support mixed VM sizes"
+      },
+      {
+        "id": "B",
+        "text": "Flexible orchestration, because it is the recommended mode for new workloads and supports mixed VM types and Spot with on-demand instances"
+      },
+      {
+        "id": "C",
+        "text": "Uniform orchestration with `singlePlacementGroup` set to `false`, because multiple placement groups allow different operating systems and Spot mixing"
+      },
+      {
+        "id": "D",
+        "text": "Flexible orchestration only after first creating the scale set as Uniform and converting the mode during the first model upgrade"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The scale set is newly created in October 2026. The scenario is about orchestration mode selection, not AKS node pools or Service Fabric scale sets. Where a command-line default is discussed, the assumption is current Azure CLI or Az PowerShell behavior after the November 2023 change documented by Microsoft.",
+    "sections": {
+      "correctAnswer": "**B. Flexible orchestration, because it is the recommended mode for new workloads and supports mixed VM types and Spot with on-demand instances**. Flexible orchestration provides a VMSS grouping around standard Azure IaaS VMs, and Microsoft recommends it when deploying scale sets in Azure unless a Uniform-only requirement applies.",
+      "technical": "The orchestration mode is a creation-time decision. Microsoft states that the orchestration mode is defined when the scale set is created and cannot be changed later, so this choice belongs before deployment rather than during an upgrade.\n\nFlexible orchestration is optimized for high availability and scalability with identical or mixed virtual machine types. It manages standard Azure IaaS VMs, which means administrators use normal VM APIs for many instance operations rather than only the Virtual Machine Scale Set VM API. Flexible orchestration also supports mixing Spot and Regular priority instances, and the comparison table shows Spot and Regular priority can coexist in Flexible scale sets. Current Microsoft guidance describes Flexible orchestration as the recommended orchestration mode for scale sets in Azure. Microsoft also documents that, starting in November 2023, VM scale sets created with Azure CLI or Az PowerShell default to Flexible if no orchestration mode is specified.\n\nUniform orchestration still matters. It is optimized for large-scale workloads with identical instances and a predefined VM profile. Uniform instances are managed as a group and are exposed through scale set VM APIs. Uniform can be a better fit for features that explicitly require Uniform, but the scenario asks for mixed sizes, possible Spot plus on-demand usage, and standard VM management.\n\nThe evaluation order is: choose the immutable orchestration mode, then select VM sizes and priority model, then configure scaling and health features supported by that mode. Do not plan to convert a deployed scale set from one orchestration mode to the other.",
+      "wrongOptions": {
+        "A": "Uniform orchestration is not the documented default for new Azure CLI or Az PowerShell scale-set creation after the November 2023 change, and it is not the mode Microsoft recommends for the mixed-instance scenario. Misconception: Uniform is newer or safer because older examples often used it. Could be correct when you deliberately need identical scale-set-specific instances or a feature that the current Flexible limitations do not support.",
+        "C": "Multiple placement groups help a Uniform scale set exceed the single-placement-group scale of 100 VMs, but they do not turn Uniform instances into standard IaaS VMs or allow the mixed Spot and Regular pattern described here. Misconception: `singlePlacementGroup=false` is a general feature switch for every scale-set capability. Could be correct when the only requirement is a large Uniform scale set with managed disks and appropriate load balancing.",
+        "D": "The orchestration mode cannot be changed after the scale set is created, so a planned Uniform-to-Flexible conversion is not a valid deployment path. Misconception: A scale set model upgrade can change any property. Could be correct only for properties that Microsoft permits updating on the scale set model, such as some scaling or protection settings."
+      },
+      "plainEnglish": "A Virtual Machine Scale Set is a way to manage many VMs as one application group. The first big choice is how Azure will organize those VMs. Flexible mode treats the members much more like normal VMs and lets you mix VM sizes and combine cheaper Spot VMs with regular pay-as-you-go VMs. Uniform mode is more like a factory line where every machine starts from the same mold and is managed mostly as part of the line. Because this application might need a mixed fleet and standard VM management, Flexible is the sensible exam answer. You cannot deploy the scale set one way and flip the orchestration mode later, so the creation screen or command must be right the first time.",
+      "analogy": "Imagine choosing between a managed apartment complex and a row of identical hotel rooms. Flexible orchestration is the apartment complex: units can differ, each unit has its own normal address, and the manager still knows they belong to one property. Uniform orchestration is the hotel floor: the rooms are designed to be consistent and operated as a block.\n\n| Analogy | Azure reality |\n|---|---|\n| Apartment complex | Flexible scale set |\n| Normal apartment address | Standard Azure VM resource and API |\n| Different apartment layouts | Mixed VM sizes or operating systems where supported |\n| Hotel floor of matching rooms | Uniform scale set |\n| Choosing before construction | Orchestration mode fixed at creation |\n\n**Where the analogy breaks down:** Azure also has autoscale, fault-domain placement, VM priority, API-version requirements, and image models. Real apartments do not have a platform API that can add capacity automatically.",
+      "jargon": [
+        {
+          "term": "Virtual Machine Scale Set",
+          "definition": "An Azure Compute resource that creates and manages a group of VM instances and can increase or decrease the instance count."
+        },
+        {
+          "term": "Flexible orchestration",
+          "definition": "A VMSS mode that manages standard Azure IaaS virtual machines and supports high availability, autoscale, instance protection, mixed VM types, and Spot plus Regular priority in supported configurations."
+        },
+        {
+          "term": "Uniform orchestration",
+          "definition": "A VMSS mode that creates scale-set-specific VM instances from a common model and manages them primarily as a group."
+        },
+        {
+          "term": "Spot VM",
+          "definition": "An Azure VM priority that can use unused Azure capacity at lower cost but can be evicted when Azure needs the capacity back or price conditions change."
+        },
+        {
+          "term": "Regular priority",
+          "definition": "The normal on-demand VM priority where the VM is not subject to Spot eviction rules."
+        },
+        {
+          "term": "IaaS VM",
+          "definition": "Infrastructure as a service virtual machine; a standard Azure virtual machine resource managed through normal VM APIs."
+        },
+        {
+          "term": "Scale set model",
+          "definition": "The configuration that defines how VMSS instances are created and updated, including image, SKU, extensions, networking, and policies."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's cross-platform command-line tool for creating and managing Azure resources."
+        },
+        {
+          "term": "Az PowerShell",
+          "definition": "Microsoft's PowerShell module set for administering Azure resources."
+        }
+      ],
+      "watchOut": "- The orchestration mode is not a later tuning knob; choose it before creation.\n- Current Microsoft docs recommend Flexible for new scale-set deployments in Azure.\n- Flexible is the mode for standard VM management and mixed VM-type scenarios.\n- Uniform still appears in many examples and remains valid for identical-instance designs.\n- For CLI or PowerShell, Microsoft documents that new scale sets default to Flexible if the mode is omitted.",
+      "productionTip": {
+        "official": "Microsoft documents Flexible orchestration as recommended for scale sets in Azure, notes that it can mix VM types and Spot with on-demand instances, and states that orchestration mode is fixed at scale-set creation. The same documentation compares API behavior and feature support across Flexible and Uniform.",
+        "recommendation": "For production, record the chosen orchestration mode in the deployment template rather than relying only on tool defaults. Use Flexible unless a required feature is documented as Uniform-only, and test Spot eviction handling before blending Spot capacity into an application tier."
+      },
+      "memoryTrick": "**Flexible feels like normal VMs in a group**. This is a shortcut, not a complete design rule, because some scale-set features and limits still vary by orchestration mode.",
+      "examTip": "Key clues are **mixed VM sizes**, **Spot and Regular together**, **standard Azure VM APIs**, and **new scale set**. Those point to Flexible. Rule out answers that depend on changing orchestration mode later. A harder version may mention an AKS or Service Fabric dependency; then you must check the product-specific support matrix instead of blindly choosing Flexible."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Machine Scale Sets overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/overview"
+      },
+      {
+        "title": "Orchestration modes for Virtual Machine Scale Sets in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-orchestration-modes"
+      },
+      {
+        "title": "Use scale-in policies with Azure Virtual Machine Scale Sets",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-scale-in-policy"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.7-02",
+    "objective": "D3.2.7",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You administer a Virtual Machine Scale Set named `vmss-api`. The application team reports that traffic rises unpredictably during business hours and falls again at night. You need Azure Monitor autoscale to add one VM when the average `Percentage CPU` is greater than 70 percent for 10 minutes, and remove one VM when load remains low. The scale set must never run fewer than two instances or more than eight instances, and it should recover to three instances if metrics cannot be read and current capacity is below that value.\n\nWhich two configuration choices should you make? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a profile with capacity minimum `2`, maximum `8`, and default `3`"
+      },
+      {
+        "id": "B",
+        "text": "Create only a scale-out rule because Azure automatically creates the opposite scale-in rule when CPU drops"
+      },
+      {
+        "id": "C",
+        "text": "Set the CPU rule's `timeWindow` to `PT1M` because autoscale evaluates every rule only once per hour"
+      },
+      {
+        "id": "D",
+        "text": "Create a scale-out rule for `Percentage CPU` greater than 70 over `PT10M` and a separate scale-in rule for a lower CPU threshold"
+      },
+      {
+        "id": "E",
+        "text": "Set the maximum instance count to `3` so the default capacity becomes the highest capacity allowed"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The scale set has a scaling profile that can add instances. CPU is a supported host metric for the scale set, and no predictive autoscale requirement is assumed. The exact low CPU threshold is chosen by the administrator, but it must be below the scale-out threshold to avoid flapping.",
+    "sections": {
+      "correctAnswer": "**A. Create a profile with capacity minimum `2`, maximum `8`, and default `3`** and **D. Create a scale-out rule for `Percentage CPU` greater than 70 over `PT10M` and a separate scale-in rule for a lower CPU threshold**. Autoscale profiles carry the capacity limits, and scale-out and scale-in decisions require explicit rules for the desired directions.",
+      "technical": "Azure Monitor autoscale settings contain profiles, capacity limits, rules, schedules, and notifications. A profile's `capacity` object defines `minimum`, `maximum`, and `default`. The minimum prevents autoscale from reducing capacity below the chosen floor. The maximum prevents autoscale from adding instances beyond the cap. The default is used for availability when autoscale has trouble reading the metric and current capacity is below the default; autoscale scales out to the default rather than scaling in.\n\nThe CPU requirement maps to a metric rule. The metric trigger uses `metricName` such as `Percentage CPU`, an operator such as `GreaterThan`, a threshold such as `70`, and a `timeWindow` such as `PT10M`. The scale action then says `Increase`, `ChangeCount`, value `1`, and a cooldown such as `PT5M` so the rule waits before initiating another scale action. A corresponding scale-in rule should use a lower threshold, such as CPU below 40 or 45 percent over a window, with `direction` set to `Decrease`.\n\nAutoscale evaluation is directional. After selecting the applicable profile, autoscale evaluates scale-out rules first. If any scale-out rule is triggered, it scales to the highest capacity requested by the triggered scale-out actions. If no scale-out rule fires, autoscale evaluates scale-in rules. Autoscale scales in only when all scale-in rules are triggered, and it chooses the most conservative removal when several rules apply. Cooldown is tracked for each candidate rule after a scale action.\n\nBecause autoscale does not invent the inverse of a rule, a design with only a scale-out rule can grow but not intentionally shrink based on the low-load condition.",
+      "wrongOptions": {
+        "B": "Autoscale does not automatically create the opposite rule. A scale-out rule adds instances when its condition is true; a separate scale-in rule is required to remove instances when demand falls. Misconception: Autoscale treats one threshold as a complete high-and-low range. Could be correct only if the requirement were one-way growth and administrators planned to reduce capacity manually.",
+        "C": "`PT1M` is a one-minute window, not the required 10-minute CPU duration. Microsoft documents `timeWindow` as the amount of time to look back, and autoscale jobs run much more frequently than once per hour. Misconception: The time window controls the autoscale service schedule rather than metric smoothing. Could be correct when a one-minute reaction is intentionally required and the workload can tolerate faster decisions.",
+        "E": "A maximum of three instances would block the required scale-out to as many as eight instances. The default capacity is not a substitute for maximum capacity; it is a fallback value used under specific metric-read conditions. Misconception: Default means desired peak capacity. Could be correct in a smaller application that must never exceed three VMs."
+      },
+      "plainEnglish": "Autoscale needs two kinds of instructions. First, it needs boundaries: the smallest number of VMs, the largest number, and a safe default if Azure cannot read the measurements. Here those numbers are two, eight, and three. Second, it needs rules. One rule says, in effect, 'if average CPU stays too high for 10 minutes, add a VM.' Another rule says, 'if CPU stays low enough, remove a VM.' Without the second rule, Azure has no reason to shrink the scale set just because the busy period ended. The cooldown is the quiet period after a change so the app and measurements can settle.",
+      "analogy": "Think of a restaurant roster. The manager sets a minimum of two cooks so the kitchen can open, a maximum of eight cooks because the kitchen has only so much space, and a normal backup level of three if the booking system stops reporting. A rush-hour rule calls in another cook when orders stay high. A closing-time rule sends one cook home when orders stay low.\n\n| Analogy | Azure reality |\n|---|---|\n| Minimum cooks | Autoscale minimum capacity |\n| Kitchen limit | Autoscale maximum capacity |\n| Backup roster | Autoscale default capacity |\n| Orders per minute | CPU or another monitored metric |\n| Wait before calling more staff | Cooldown |\n\n**Where the analogy breaks down:** Azure evaluates numeric telemetry, rule operators, and profile precedence. A restaurant manager can use judgement; autoscale follows the configured rules.",
+      "jargon": [
+        {
+          "term": "Azure Monitor autoscale",
+          "definition": "An Azure Monitor capability that changes resource instance counts according to metric rules or schedules."
+        },
+        {
+          "term": "Virtual Machine Scale Set",
+          "definition": "An Azure resource that manages multiple VM instances as one scalable group."
+        },
+        {
+          "term": "Profile",
+          "definition": "A collection of autoscale capacity limits, rules, and an optional schedule that is evaluated for a resource."
+        },
+        {
+          "term": "Capacity minimum",
+          "definition": "The lowest number of instances autoscale is allowed to run for the active profile."
+        },
+        {
+          "term": "Capacity maximum",
+          "definition": "The highest number of instances autoscale is allowed to run for the active profile."
+        },
+        {
+          "term": "Capacity default",
+          "definition": "The fallback instance count used when metrics cannot be read and current capacity is below that default."
+        },
+        {
+          "term": "Percentage CPU",
+          "definition": "A host metric commonly used to measure processor load across VMSS instances."
+        },
+        {
+          "term": "Time window",
+          "definition": "The look-back duration over which metric samples are aggregated before a rule is evaluated."
+        },
+        {
+          "term": "Cooldown",
+          "definition": "A waiting period after a scale action before the same candidate rule is eligible to initiate another scale operation."
+        },
+        {
+          "term": "Flapping",
+          "definition": "A pattern where scaling in would immediately trigger scaling out, causing unstable capacity changes."
+        }
+      ],
+      "watchOut": "- Build autoscale rules in pairs when the requirement includes both growth and shrinkage.\n- Keep the scale-in CPU threshold lower than the scale-out threshold to reduce flapping.\n- The default capacity is not the starting capacity for every minute; it is a fallback for metric-read problems.\n- Autoscale first selects the applicable profile, then evaluates scale-out before scale-in.\n- Cooldown does not disable every rule forever; it makes each candidate rule wait after a scale action.",
+      "productionTip": {
+        "official": "Microsoft documents that autoscale profiles contain minimum, maximum, and default capacities, and that rules include metric triggers plus scale actions. It also documents that scale-out fires when any scale-out rule is triggered, while scale-in requires all scale-in rules to be triggered.",
+        "recommendation": "Start with conservative thresholds and watch the autoscale run history before tightening. Use alerts for repeated maximum-capacity events, because hitting the cap means the application might need quota, optimization, caching, or a different scale unit rather than another autoscale tweak."
+      },
+      "memoryTrick": "Autoscale needs **rails and rules**: rails are min, max, default; rules are the scale-out and scale-in triggers. The phrase is simplified because profiles and schedules decide which rails and rules are active.",
+      "examTip": "The clue words are **greater than 70 for 10 minutes**, **never fewer than two**, **more than eight**, and **recover to three if metrics cannot be read**. Choose capacity settings for the limits and explicit metric rules for both directions. A harder item may add queue length and CPU together; remember that scale-out uses OR-style behavior across rules, but scale-in is conservative and requires all decrease rules to agree."
+    },
+    "sources": [
+      {
+        "title": "Autoscale in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-overview"
+      },
+      {
+        "title": "Understand autoscale settings in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-understanding-settings"
+      },
+      {
+        "title": "Overview of autoscale with Azure Virtual Machine Scale Sets",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-autoscale-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.7-03",
+    "objective": "D3.2.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You manage a scale set named `vmss-storefront` for an online retailer. Every Friday and Saturday, traffic rises predictably from 18:00 to 23:00 in the retailer's local time zone. The operations team wants the scale set to run between 6 and 20 instances during that repeating window, then return to the normal profile after the window ends. The team does not want to create a one-time event profile each week.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A fixed-date profile for the coming Friday, because fixed-date profiles automatically repeat every week until deleted"
+      },
+      {
+        "id": "B",
+        "text": "A recurrence autoscale profile with the Friday and Saturday schedule and its own capacity range"
+      },
+      {
+        "id": "C",
+        "text": "A metric-only CPU rule with no schedule, because scheduled scaling is supported for App Service but not for scale sets"
+      },
+      {
+        "id": "D",
+        "text": "A second default profile, because autoscale evaluates all default profiles and averages their instance limits"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The scale set supports Azure Monitor autoscale. The schedule is recurring by day of week, not a single sale event. The local time zone used in the autoscale profile is known and supported by the Azure Monitor autoscale schedule configuration.",
+    "sections": {
+      "correctAnswer": "**B. A recurrence autoscale profile with the Friday and Saturday schedule and its own capacity range**. Recurrence profiles are designed for repeating day-of-week schedules and can carry different minimum, maximum, and default capacities for the active window.",
+      "technical": "Azure Monitor autoscale settings can contain multiple profiles, and each autoscale run chooses one profile to execute. Microsoft documents three profile types: default, fixed-date, and recurrence. The default profile runs when no date-based or time-based profile applies. A fixed-date profile is for a single event with a start and end date. A recurrence profile is for a day or set of days of the week and does not include its own end date in the same way a fixed-date profile does. In portal-created recurring schedules, autoscale creates or adjusts another profile to represent the end of the recurring window.\n\nThe scenario is not asking for metrics to discover the load after it has already appeared. It says the load is predictable every Friday and Saturday between 18:00 and 23:00. A recurrence profile can start at 18:00 on Friday and Saturday with capacity such as minimum 6, maximum 20, and default appropriate for the retailer. A return profile, often the adjusted default profile, starts at 23:00 on those days and restores normal instance limits.\n\nProfile precedence matters. Autoscale evaluates fixed-date profiles first, then recurring profiles, then the default profile. The first suitable profile is used. That means a special one-time holiday sale fixed-date profile can override the normal weekend recurrence, while ordinary days fall back to the default profile. Within the selected profile, autoscale evaluates its limits and rules.\n\nA schedule profile can still contain metric rules. For example, during the window the profile may permit 6 to 20 instances and still add instances based on CPU or queue length inside that range.",
+      "wrongOptions": {
+        "A": "A fixed-date profile is intended for a single specific event and has an end date; it is not the weekly repeating profile type. Misconception: Any time-based profile repeats until removed. Could be correct for a one-time holiday launch, product release, or marketing event with a known start and end date.",
+        "C": "Scale sets do support schedule-based autoscale through Azure Monitor autoscale. A metric-only rule would wait for CPU to rise instead of pre-positioning capacity for a known traffic pattern. Misconception: Autoscale for VMSS is only reactive. Could be correct when the traffic pattern is not predictable and metrics are the only reliable signal.",
+        "D": "An autoscale setting can have only one default profile, and autoscale chooses the first applicable profile rather than averaging multiple default profiles. Misconception: More profiles blend together like weighted settings. Could be correct only in the sense that the normal non-scheduled behavior belongs in the single default profile."
+      },
+      "plainEnglish": "A recurring autoscale profile is like a weekly calendar rule. You tell Azure, 'On Fridays and Saturdays at 6 PM, use these bigger limits, and at 11 PM go back to the normal limits.' A fixed-date profile is more like a single appointment for one special day. A CPU-only rule is reactive: it waits until machines are already busy. For a known weekly rush, scheduled scaling gets the capacity ready earlier while still allowing metric rules inside the scheduled range.",
+      "analogy": "A supermarket does not wait until the checkout line reaches the freezer aisle every Friday night before scheduling cashiers. It writes a weekly roster that adds staff for the busy evening and returns to normal after closing rush.\n\n| Analogy | Azure reality |\n|---|---|\n| Weekly cashier roster | Recurrence autoscale profile |\n| Special grand-opening roster | Fixed-date profile |\n| Normal weekday roster | Default profile |\n| Local store clock | Autoscale schedule time zone |\n| Maximum cash registers | Profile maximum capacity |\n\n**Where the analogy breaks down:** Human managers can change staffing informally. Azure autoscale uses defined profile precedence, capacity limits, and rule evaluation on each autoscale run.",
+      "jargon": [
+        {
+          "term": "Autoscale profile",
+          "definition": "A named group of instance limits, optional schedule, and rules in an Azure Monitor autoscale setting."
+        },
+        {
+          "term": "Default profile",
+          "definition": "The autoscale profile used when no fixed-date or recurring profile applies to the current time."
+        },
+        {
+          "term": "Fixed-date profile",
+          "definition": "A profile intended for one specific event with a defined start and end date and time."
+        },
+        {
+          "term": "Recurrence profile",
+          "definition": "A profile that applies on repeating days of the week at configured hours and minutes."
+        },
+        {
+          "term": "Capacity range",
+          "definition": "The minimum and maximum instance counts allowed while a profile is active."
+        },
+        {
+          "term": "Time zone",
+          "definition": "The regional clock setting used to interpret scheduled start times in an autoscale profile."
+        },
+        {
+          "term": "Metric rule",
+          "definition": "An autoscale rule that triggers from measured resource data such as CPU, queue length, or network traffic."
+        },
+        {
+          "term": "Scale set",
+          "definition": "A Virtual Machine Scale Set, which is an Azure-managed group of VMs that can scale horizontally."
+        }
+      ],
+      "watchOut": "- Use recurrence for repeated days of the week; use fixed-date for a one-time event.\n- Autoscale profile selection order is fixed-date, then recurring, then default.\n- A scheduled profile changes the active limits; it does not have to eliminate metric-based rules.\n- The normal profile should still exist so the scale set has behavior outside the scheduled window.\n- Check the time zone in the schedule, especially for global operations teams and daylight-saving changes.",
+      "productionTip": {
+        "official": "Microsoft documents default, fixed-date, and recurrence autoscale profiles, including the profile selection order and the capacity values inside each profile. Microsoft also lists schedule-based scaling as supported for Virtual Machine Scale Sets.",
+        "recommendation": "For predictable peaks, schedule enough minimum capacity before customers arrive, then use metric rules for fine adjustment inside the scheduled maximum. Review cost reports after several cycles because recurring profiles can quietly keep extra instances running every week."
+      },
+      "memoryTrick": "**Fixed date is for one date; recurrence is for a rhythm.** This is a simplification because a complete schedule usually also needs a return profile or adjusted default behavior.",
+      "examTip": "Look for words such as **every Friday and Saturday**, **local time zone**, and **not a one-time event**. Those clues point to recurrence. A more difficult version may include a Black Friday launch on top of normal weekend traffic; the fixed-date profile wins during its window because autoscale evaluates fixed-date profiles before recurrence profiles."
+    },
+    "sources": [
+      {
+        "title": "Understand autoscale settings in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-understanding-settings"
+      },
+      {
+        "title": "Autoscale in Azure Monitor",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-overview"
+      },
+      {
+        "title": "Overview of autoscale with Azure Virtual Machine Scale Sets",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-autoscale-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.7-04",
+    "objective": "D3.2.7",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A Virtual Machine Scale Set named `vmss-workers` spans three availability zones and uses autoscale. The scale-in policy is set to `OldestVM`. Instance `0` is the oldest VM and is currently processing a six-hour batch job. You set the instance protection policy on instance `0` to protect it from scale-in. Ten minutes later, autoscale triggers a scale-in event.\n\nWhat will Azure do with instance `0` during that autoscale scale-in event?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Delete instance `0`, because `OldestVM` always overrides instance protection"
+      },
+      {
+        "id": "B",
+        "text": "Move instance `0` to a less populated availability zone, because the default policy balances zones by moving VMs first"
+      },
+      {
+        "id": "C",
+        "text": "Skip instance `0` for autoscale scale-in, but still allow a user to manually delete that instance"
+      },
+      {
+        "id": "D",
+        "text": "Block all scale-set operations, including deleting the entire scale set, until protection is removed"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Instance protection has already been applied successfully to the scale set instance. The question is about an autoscale-initiated scale-in, not a manual administrator delete request. The scale set is otherwise healthy and has other eligible instances to remove.",
+    "sections": {
+      "correctAnswer": "**C. Skip instance `0` for autoscale scale-in, but still allow a user to manually delete that instance**. Protect from scale-in prevents autoscale from deleting the protected instance, and Microsoft documents that user-initiated instance operations, including delete, are not blocked by that protection.",
+      "technical": "Scale-in selection has two layers in this scenario. The scale-in policy describes the preferred deletion order, while instance protection can remove a VM from autoscale consideration. Microsoft documents three scale-in policies: Default, NewestVM, and OldestVM. For a zone-spanning scale set, the platform first balances across availability zones, then applies the chosen age-based rule inside the relevant zone or balanced set. The Default policy similarly balances zones, balances fault domains on a best-effort basis, and then deletes the highest instance ID.\n\nInstance protection changes eligibility. `Protect from scale-in` is set on the individual instance model with the `protectFromScaleIn` property. It protects the instance from autoscale-initiated scale-in. It does not block user-initiated instance operations, and it does not block operations started at the scale-set level such as upgrade or reimage. `Protect from scale set actions` is stronger: it also protects from scale-set-initiated actions and automatically includes protection from autoscale scale-in. Even that stronger protection does not block user-initiated instance delete or deletion of the full scale set.\n\nTherefore, when autoscale asks the scale set to remove capacity, instance `0` is skipped even if `OldestVM` would otherwise choose it. Azure selects another eligible instance according to zone balancing, fault-domain balancing where applicable, scale-in policy, and protection status. The protected VM is not moved to another zone; balancing is achieved by deleting from overrepresented zones, not by relocating VMs.",
+      "wrongOptions": {
+        "A": "Instance protection is specifically designed to override autoscale scale-in eligibility for that instance. `OldestVM` describes deletion order among eligible instances; it does not force deletion of protected VMs. Misconception: Scale-in policy is an absolute command that ignores protection. Could be correct only if the instance were not protected or protection had been removed.",
+        "B": "Scale-in balancing is performed by choosing which VMs to delete from imbalanced zones or fault domains, not by moving an existing VM between zones. Misconception: Zone balancing relocates VMs like live migration between datacenters. Could be correct in a different Azure service that supports moving capacity, but VMSS scale-in policy does not do that here.",
+        "D": "Protect from scale-in is narrower than protect from scale-set actions, and even the stronger protection does not block deleting the full scale set. Misconception: Any protection flag is a resource lock. Could be correct if a separate Azure resource lock prevented deletion, but that is not the instance protection feature described."
+      },
+      "plainEnglish": "The scale-in policy is the scale set's normal rule for choosing which VM should be removed. The protection setting is like putting a temporary 'do not remove me automatically' note on one VM. If Azure autoscale decides to shrink the group, it must choose another VM. However, that note does not make the VM undeletable by an administrator. A person with the right permissions can still delete the instance, and deleting the whole scale set is not stopped by this VM-level protection.",
+      "analogy": "A warehouse manager normally sends the oldest rental forklift back first. One forklift is in the middle of unloading a long shipment, so the supervisor tapes a sign on it: 'Do not return during automatic end-of-day cleanup.' The cleanup crew skips it and returns a different forklift, but the warehouse owner could still manually send it away.\n\n| Analogy | Azure reality |\n|---|---|\n| Oldest rental returned first | `OldestVM` scale-in policy |\n| Long unloading task | Batch job on instance `0` |\n| Do-not-return sign | Protect from scale-in |\n| Cleanup crew | Autoscale scale-in action |\n| Owner manual decision | User-initiated delete |\n\n**Where the analogy breaks down:** Azure also considers zone balance, fault domains, instance IDs, and API properties. A paper sign does not represent separate protection modes.",
+      "jargon": [
+        {
+          "term": "Scale-in",
+          "definition": "Reducing the number of VM instances in a scale set."
+        },
+        {
+          "term": "Scale-in policy",
+          "definition": "A VMSS setting that influences which instances are removed when scale-in occurs."
+        },
+        {
+          "term": "Default scale-in policy",
+          "definition": "The built-in ordering that balances zones, balances fault domains best effort, and then chooses the highest instance ID."
+        },
+        {
+          "term": "NewestVM",
+          "definition": "A scale-in policy that chooses the most recently created eligible VM after zone balancing."
+        },
+        {
+          "term": "OldestVM",
+          "definition": "A scale-in policy that chooses the oldest created eligible VM after zone balancing."
+        },
+        {
+          "term": "Instance protection",
+          "definition": "A per-instance VMSS setting that can protect an instance from autoscale scale-in or from broader scale-set actions."
+        },
+        {
+          "term": "Protect from scale-in",
+          "definition": "A protection mode that prevents autoscale-initiated scale-in from deleting the instance but does not block user deletes or scale-set operations."
+        },
+        {
+          "term": "Protect from scale set actions",
+          "definition": "A stronger protection mode that also blocks operations started on the scale set, such as upgrade or reimage, for that instance."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate datacenter location within an Azure region used for higher availability."
+        },
+        {
+          "term": "Fault domain",
+          "definition": "A group of hardware that shares a common power and network boundary; spreading across fault domains reduces correlated failure risk."
+        }
+      ],
+      "watchOut": "- Scale-in policy chooses among eligible VMs; protection can make a VM ineligible for autoscale scale-in.\n- Protected VMs can still be manually deleted by a user with permission.\n- Zone balancing is done through deletion choices, not moving existing VMs between zones.\n- Protect from scale-set actions includes protection from scale-in, but the reverse is not true.\n- Instance protection is applied to instances after creation, not as a protection policy on the whole scale set model.",
+      "productionTip": {
+        "official": "Microsoft documents the scale-in ordering for Default, NewestVM, and OldestVM policies and separately documents two instance protection modes. The documentation states that protected VMs are skipped for scale-in regardless of scale-in policy and that user-initiated delete is not blocked.",
+        "recommendation": "Use protect-from-scale-in for short-lived drains or long-running jobs, and remove it when the job finishes. For stronger maintenance isolation, consider protect-from-scale-set-actions, but track protected instances so they do not become unpatched or permanently exempt from normal operations."
+      },
+      "memoryTrick": "**Policy picks; protection prevents.** This is a simplification because Azure still applies zone and fault-domain balancing before the final deletion choice.",
+      "examTip": "The key contrast is **OldestVM** versus **protect from scale-in**. The protected instance is skipped for autoscale removal, not made immortal. A tougher item may ask about protect-from-scale-set-actions; that protects from upgrades and reimages as well, but it still does not block a direct user delete of the instance or deletion of the entire scale set."
+    },
+    "sources": [
+      {
+        "title": "Use scale-in policies with Azure Virtual Machine Scale Sets",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-scale-in-policy"
+      },
+      {
+        "title": "Instance Protection for Azure Virtual Machine Scale Set instances",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-instance-protection"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.7-05",
+    "objective": "D3.2.7",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a Uniform orchestration scale set named `vmss-web` that runs a production web application. The team changes the scale set model by adding a VM extension and updating the image reference to a newer marketplace image version. The team wants Azure to update existing instances in batches while keeping a healthy percentage of the application available. The application exposes a `/healthz` endpoint on each VM.\n\nWhich upgrade configuration best meets the requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set the upgrade policy to Automatic, because it guarantees only one VM is restarted at a time"
+      },
+      {
+        "id": "B",
+        "text": "Set the upgrade policy to Manual, because model changes are automatically applied to all existing VMs after the model is saved"
+      },
+      {
+        "id": "C",
+        "text": "Set the upgrade policy to Rolling and configure application health monitoring with a load balancer health probe or the Application Health extension"
+      },
+      {
+        "id": "D",
+        "text": "Enable automatic OS image upgrade only; it applies all scale set model changes, including arbitrary extension changes, without a health signal"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The scale set uses Uniform orchestration, the workload is production, and the application can return a health response from `/healthz`. The image and extension changes are model changes that need to be applied to existing instances, not only to future instances.",
+    "sections": {
+      "correctAnswer": "**C. Set the upgrade policy to Rolling and configure application health monitoring with a load balancer health probe or the Application Health extension**. Rolling upgrade mode updates instances in batches, and Uniform rolling upgrades require either a health probe or Application Health extension to monitor application health.",
+      "technical": "A Virtual Machine Scale Set has an upgrade policy mode that determines how existing instances are brought up to date with the latest scale set model. Microsoft lists three modes: Automatic, Manual, and Rolling. Model changes include image reference updates, SKU changes, adding or removing a data disk, adding or removing extensions, and adding availability zones. Some changes require restart, reimage, or redeploy; image reference updates and VM size changes are examples of disruptive changes.\n\nAutomatic mode gives the least control. Microsoft states that the scale set makes no guarantees about the order of VMs being brought down and might take down all VMs at the same time. Manual mode gives the most operator control: nothing happens automatically to existing VMs when the model changes, although newly added instances use the latest model. Administrators then run update operations when they are ready. Rolling mode updates instances in batches and exposes controls such as batch size, health percentage, prioritizing unhealthy instances, and cross-zone upgrade behavior. Microsoft describes Rolling as best suited for production workloads that need a set number of instances to remain available.\n\nHealth monitoring is mandatory for the safe rolling path. For Flexible rolling upgrades, Microsoft requires the Application Health extension. For Uniform rolling upgrades, the scale set must use a load balancer health probe or the Application Health extension. The health signal lets Azure decide whether upgraded instances are healthy before moving forward.\n\nAutomatic OS image upgrade is related but narrower. It replaces OS disks with newer image versions in a platform-orchestrated manner and also requires application health monitoring for non-Service Fabric scale sets. It is not a general replacement for every model-change upgrade decision.",
+      "wrongOptions": {
+        "A": "Automatic mode does not guarantee one-at-a-time ordering. Microsoft warns that the scale set might take down all virtual machines at the same time. Misconception: Automatic means safest production rollout. Could be correct for DevTest environments where instance uptime during configuration changes is not important.",
+        "B": "Manual mode does not automatically update existing VMs after the model is saved. It waits for the administrator to update instances, while new instances use the latest model. Misconception: Saving the model is the same as upgrading every running instance. Could be correct when the team wants full control and plans to invoke updates manually during a maintenance window.",
+        "D": "Automatic OS image upgrade targets OS image versions and has its own requirements; it is not a blanket mechanism for all scale-set model changes and still relies on health monitoring. Misconception: OS image upgrade and upgrade policy are interchangeable. Could be correct when the only requirement is to keep supported OS images current using the automatic OS image upgrade feature."
+      },
+      "plainEnglish": "Changing the scale set model is like changing the recipe for how each web server should look. Existing servers do not all magically become safe to change at once. Rolling upgrade mode tells Azure to update a batch, check health, and continue only when the application is healthy enough. The `/healthz` endpoint gives Azure a way to ask each server, 'Are you ready?' Automatic mode can be too disruptive for production, and Manual mode puts the rollout entirely in the administrator's hands.",
+      "analogy": "A restaurant chain updates kitchen equipment. Automatic mode is like sending contractors to every branch without promising an order. Manual mode is like shipping the equipment but waiting for each branch manager to schedule installation. Rolling mode is like upgrading a few branches at a time and reopening them only after inspectors confirm the kitchens work.\n\n| Analogy | Azure reality |\n|---|---|\n| Equipment recipe | Scale set model |\n| Branch restaurants | VM instances |\n| Inspector check | Health probe or Application Health extension |\n| Few branches per wave | Rolling upgrade batch |\n| Manager schedules work | Manual upgrade mode |\n\n**Where the analogy breaks down:** Azure upgrade behavior is controlled by API properties, extension state, health thresholds, and image models. Real contractors do not replace OS disks or reapply VM extensions.",
+      "jargon": [
+        {
+          "term": "Upgrade policy",
+          "definition": "A VMSS setting that controls how existing instances receive changes from the latest scale set model."
+        },
+        {
+          "term": "Automatic upgrade policy",
+          "definition": "A mode where the scale set applies model changes automatically without ordering guarantees for uptime."
+        },
+        {
+          "term": "Manual upgrade policy",
+          "definition": "A mode where existing instances are not updated automatically after model changes; administrators choose when to update them."
+        },
+        {
+          "term": "Rolling upgrade policy",
+          "definition": "A mode that updates instances in batches and uses health information to preserve availability."
+        },
+        {
+          "term": "Scale set model",
+          "definition": "The desired configuration for scale set instances, including image, SKU, extensions, disks, and zones."
+        },
+        {
+          "term": "Application Health extension",
+          "definition": "A VM extension that reports application health from inside scale set instances using HTTP, HTTPS, or TCP probes."
+        },
+        {
+          "term": "Load balancer health probe",
+          "definition": "An Azure Load Balancer probe that checks whether backend instances should receive traffic and can be used as a health signal."
+        },
+        {
+          "term": "Image reference",
+          "definition": "The publisher, offer, SKU, and version or custom-image reference used to create or update VM OS disks."
+        },
+        {
+          "term": "Automatic OS image upgrade",
+          "definition": "A VMSS feature that automatically applies newer OS image versions to instances in batches when requirements are met."
+        },
+        {
+          "term": "Uniform orchestration",
+          "definition": "A scale set mode where instances are scale-set-specific VMs managed primarily as a consistent group."
+        }
+      ],
+      "watchOut": "- Automatic upgrade policy is not the safest production choice simply because the name sounds helpful.\n- Manual mode updates future instances immediately but leaves existing instances until you apply updates.\n- Rolling mode needs health monitoring; for Uniform, a load balancer health probe or Application Health extension can provide it.\n- Automatic OS image upgrade replaces OS disks with newer image versions and is not the same as every model upgrade.\n- Some model changes require restart, reimage, or redeploy, so plan maintenance even with rolling upgrades.",
+      "productionTip": {
+        "official": "Microsoft documents Automatic, Manual, and Rolling upgrade policies and lists model changes such as image reference and extension changes. It also states that Uniform rolling upgrades require either a health probe or Application Health extension and that rolling mode is suited for production availability.",
+        "recommendation": "Use rolling upgrades for production web tiers, expose a lightweight health endpoint that checks real dependencies, and test a failed health response before relying on the rollout. Keep manual updates for exceptional maintenance where humans must approve each instance wave."
+      },
+      "memoryTrick": "**Manual waits, Automatic may rush, Rolling checks as it goes.** The phrase is simplified because exact behavior depends on health configuration, batch settings, and the kind of model change.",
+      "examTip": "Watch for **production**, **batches**, **healthy percentage**, and **/healthz**. Those terms point to Rolling plus health monitoring. A harder question may use Flexible orchestration; there the rolling upgrade health requirement specifically points to the Application Health extension rather than a load balancer probe alone."
+    },
+    "sources": [
+      {
+        "title": "Upgrade policy modes for Virtual Machine Scale Sets",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-upgrade-policy"
+      },
+      {
+        "title": "Automatic OS image upgrades with Azure Virtual Machine Scale Sets",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-automatic-upgrade"
+      },
+      {
+        "title": "Use Application Health extension with Azure Virtual Machine Scale Sets",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-health-extension"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.7-06",
+    "objective": "D3.2.7",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You are designing a large compute pool by using Virtual Machine Scale Sets. One proposed design is a Uniform orchestration scale set that must scale to 800 instances from Azure Marketplace images, spread across multiple placement groups, and sit behind a layer-4 load balancer. Another proposed design is a Flexible orchestration scale set for a database tier that should spread instances across fault domains and zones where supported.\n\nWhich two statements are accurate for these designs? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "A Uniform scale set that needs more than 100 instances must use `singlePlacementGroup=false`, and Marketplace or Azure Compute Gallery images can scale up to 1,000 VMs in that large-scale design"
+      },
+      {
+        "id": "B",
+        "text": "Layer-4 load balancing for a Uniform scale set that spans multiple placement groups should use Azure Load Balancer Basic SKU because Basic supports multiple placement groups"
+      },
+      {
+        "id": "C",
+        "text": "For large Uniform scale sets, plan subnet address space for the target VM count only because overprovisioned VMs never consume IP addresses"
+      },
+      {
+        "id": "D",
+        "text": "Flexible orchestration supports up to 1,000 VMs and can spread instances across availability zones or fault domains; `platformFaultDomainCount=1` represents maximum spreading for supported Flexible configurations"
+      },
+      {
+        "id": "E",
+        "text": "A Flexible scale set can enable VMSS overprovisioning to improve deployment speed, while Uniform scale sets list overprovisioning as unsupported"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The Uniform design uses managed disks and supported Marketplace or Azure Compute Gallery images. The layer-4 load balancer means Azure Load Balancer, not Application Gateway. Regional and zonal fault-domain availability can vary by region and configuration.",
+    "sections": {
+      "correctAnswer": "**A. A Uniform scale set that needs more than 100 instances must use `singlePlacementGroup=false`, and Marketplace or Azure Compute Gallery images can scale up to 1,000 VMs in that large-scale design** and **D. Flexible orchestration supports up to 1,000 VMs and can spread instances across availability zones or fault domains; `platformFaultDomainCount=1` represents maximum spreading for supported Flexible configurations**. These statements match Microsoft's scale and placement guidance for large Uniform and Flexible designs.",
+      "technical": "Uniform scale sets and Flexible scale sets use different placement ideas. A Uniform scale set defaults to a single placement group. Microsoft describes a placement group as similar to an availability set with its own fault and upgrade domains. A single placement group has a maximum size of 100 VMs. Setting `singlePlacementGroup` to `false` allows the Uniform scale set to use multiple placement groups and scale from 0 to 1,000 VMs. Microsoft also notes that scale sets from Azure Marketplace images or Azure Compute Gallery images can scale up to 1,000 VMs, while scale sets from uploaded custom managed images have a lower 600-VM limit.\n\nLarge Uniform scale sets have networking consequences. Microsoft states that layer-4 load balancing for scale sets composed of multiple placement groups requires Azure Load Balancer Standard SKU. It also states that scale sets overprovision by default, creating extra VMs at deployment time or scale-out to improve reliability and performance, so you should allow subnet address space about 20 percent greater than the target VM count.\n\nFlexible orchestration has its own availability model. Microsoft documents enhanced availability guarantees up to 1,000 VMs, with instances spread across fault domains in a region or within an Availability Zone. The orchestration comparison identifies maximum spreading for Flexible with `platformFaultDomainCount=1`; fixed spreading can use greater values in supported regional configurations, while zone-spanning and zonal deployments have their own fault-domain behavior. Flexible also explicitly lists VMSS overprovisioning as an unsupported parameter, unlike the Uniform large-scale overprovisioning guidance.",
+      "wrongOptions": {
+        "B": "Microsoft states that layer-4 load balancing with scale sets composed of multiple placement groups requires Azure Load Balancer Standard SKU, not Basic. Misconception: Basic Load Balancer is the default simple choice for any VMSS. Could be correct only for smaller single-placement-group designs where Basic is otherwise supported and no current SKU or retirement consideration blocks it.",
+        "C": "Large scale sets overprovision by default, and Microsoft advises allowing address space 20 percent greater than the number of VMs you plan to scale to. Misconception: temporary overprovisioned VMs do not need network resources. Could be correct only if overprovisioning were disabled or the design otherwise guaranteed no extra instances, which is not the documented default described here.",
+        "E": "The statement reverses the documented support. Flexible orchestration lists Virtual Machine Scale Set overprovisioning as unsupported, while Uniform large scale-set documentation describes overprovisioning as the default. Misconception: Flexible always supports every convenience feature because it is the recommended mode. Could be correct for a different feature that is Flexible-only, such as standard VM API management."
+      },
+      "plainEnglish": "For very large Uniform scale sets, Azure breaks the group into multiple placement groups. You must turn off the single-placement-group setting to pass 100 VMs, and with the right image sources the design can reach 1,000 VMs. That affects networking: Standard Load Balancer is the documented layer-4 choice for multiple placement groups, and the subnet needs spare addresses because Azure may temporarily create extra VMs while scaling. Flexible scale sets use a different placement model. They can also reach 1,000 VMs in supported configurations and spread instances across zones or fault domains, but they do not support the VMSS overprovisioning parameter.",
+      "analogy": "A festival can use one small parking lot or several lots. A single lot is easy to supervise but fills at 100 cars. Several lots handle hundreds more, but traffic control must be upgraded and extra temporary spaces are needed while cars are being rearranged. Flexible orchestration is more like assigning cars across different neighborhoods with rules to avoid putting too many in the same risky place.\n\n| Analogy | Azure reality |\n|---|---|\n| One parking lot | Single placement group |\n| Several parking lots | Multiple placement groups |\n| Traffic control upgrade | Standard Load Balancer for layer-4 multi-placement-group design |\n| Extra temporary spaces | Overprovisioning address planning |\n| Neighborhood spreading | Flexible fault-domain or zone spreading |\n\n**Where the analogy breaks down:** Azure placement is controlled by regional capacity, platform fault domains, orchestration mode, and resource-provider rules. Cars do not have managed disks, VM images, or subnet IP assignments.",
+      "jargon": [
+        {
+          "term": "Placement group",
+          "definition": "A Uniform VMSS construct similar to an availability set, with its own fault domains and upgrade domains."
+        },
+        {
+          "term": "`singlePlacementGroup`",
+          "definition": "A VMSS property that controls whether a Uniform scale set uses one placement group or can span multiple placement groups."
+        },
+        {
+          "term": "Azure Marketplace image",
+          "definition": "A Microsoft or publisher-provided VM image available from Azure Marketplace."
+        },
+        {
+          "term": "Azure Compute Gallery",
+          "definition": "A service for sharing and versioning custom VM images; it was formerly called Shared Image Gallery."
+        },
+        {
+          "term": "Layer-4 load balancing",
+          "definition": "Load balancing at the transport layer, commonly using Azure Load Balancer for TCP or UDP traffic."
+        },
+        {
+          "term": "Standard Load Balancer",
+          "definition": "The Azure Load Balancer SKU documented for multi-placement-group VMSS layer-4 load balancing."
+        },
+        {
+          "term": "Overprovisioning",
+          "definition": "A VMSS behavior that temporarily creates extra VMs during deployment or scale-out to improve success and performance."
+        },
+        {
+          "term": "`platformFaultDomainCount`",
+          "definition": "A setting involved in how Flexible scale-set instances are spread across platform fault domains."
+        },
+        {
+          "term": "Maximum spreading",
+          "definition": "A Flexible orchestration placement mode associated with `platformFaultDomainCount=1`, where Azure maximally spreads instances for supported configurations."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate datacenter facility within an Azure region."
+        }
+      ],
+      "watchOut": "- A single Uniform placement group tops out at 100 VMs.\n- Marketplace and Azure Compute Gallery images have a higher VMSS scale limit than uploaded managed images.\n- Multiple placement groups with layer-4 load balancing require Standard Load Balancer.\n- Plan extra subnet addresses for Uniform overprovisioning unless you intentionally disable it in a supported design.\n- Flexible scale sets are recommended for many new workloads, but VMSS overprovisioning is listed as unsupported for Flexible orchestration.",
+      "productionTip": {
+        "official": "Microsoft documents the 0-100 VM range for single placement groups, the 0-1,000 VM range when `singlePlacementGroup=false`, the image-source limits, Standard Load Balancer requirements for multi-placement-group layer-4 balancing, and Flexible availability guarantees up to 1,000 VMs.",
+        "recommendation": "For pools near hundreds of VMs, validate regional vCPU quota, subnet size, load balancer SKU, image replication, and deployment time before production. Large scale sets fail most often from quota, address-space, or image-distribution assumptions rather than from the VMSS object itself."
+      },
+      "memoryTrick": "**Uniform uses placement groups; Flexible uses VM-style spreading.** This is a simplification because both modes still have zones, fault-domain details, and regional support limits.",
+      "examTip": "Clues such as **800 instances**, **Marketplace image**, **multiple placement groups**, and **layer-4 load balancer** point to `singlePlacementGroup=false` plus Standard Load Balancer. If the item says **Flexible** and **fault domains**, look for `platformFaultDomainCount` and the 1,000-VM Flexible limit instead of Uniform placement-group rules."
+    },
+    "sources": [
+      {
+        "title": "Virtual Machine Scale Sets and placement groups",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-placement-groups"
+      },
+      {
+        "title": "Orchestration modes for Virtual Machine Scale Sets in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-orchestration-modes"
+      },
+      {
+        "title": "Azure Virtual Machine Scale Sets overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.7-07",
+    "objective": "D3.2.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an existing Uniform orchestration scale set named `vmss-portal` in virtual network `vnet-prod`. The scale set's upgrade policy is Manual. You create an Application Gateway named `agw-prod` in the same virtual network and in a different subnet. You need new and existing scale set instances to receive layer-7 HTTP traffic through the Application Gateway backend pool.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add the Application Gateway backend pool ID to the scale set network profile, and then manually update the existing scale set instances"
+      },
+      {
+        "id": "B",
+        "text": "Move the Application Gateway into the same subnet as the scale set so the backend pool can discover the instances automatically"
+      },
+      {
+        "id": "C",
+        "text": "Add the scale set to an Azure Load Balancer backend pool, because Application Gateway cannot be used with Virtual Machine Scale Sets"
+      },
+      {
+        "id": "D",
+        "text": "Create public IP addresses on every scale set instance and add those public IPs to the Application Gateway frontend IP configuration"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The Application Gateway and scale set are in the same virtual network, and the Application Gateway is in a separate subnet. The scale set uses Uniform orchestration, so backend pool membership is configured through the scale set model and must be applied to existing instances when upgrade policy is Manual.",
+    "sections": {
+      "correctAnswer": "**A. Add the Application Gateway backend pool ID to the scale set network profile, and then manually update the existing scale set instances**. For a Uniform scale set, Microsoft documents referencing the Application Gateway backend pool in the scale set model and applying the model to existing instances; Manual upgrade policy requires manual instance updates.",
+      "technical": "Virtual Machine Scale Sets can integrate with Azure Load Balancer for layer-4 distribution and Azure Application Gateway for layer-7 distribution and TLS termination. For Application Gateway, the networking method depends on orchestration mode.\n\nFor a new Uniform orchestration scale set, you reference the Application Gateway backend pool ID in the scale set model under the network profile, specifically within a network interface IP configuration. Instances created from that model are placed in the Application Gateway backend pool. For an existing Uniform scale set, you first add the Application Gateway backend pool ID to the scale set model's network profile. Then the model must be applied to existing instances by an upgrade. If the scale set upgrade policy is Automatic or Rolling, the instances are updated for you. If the policy is Manual, you must upgrade the instances manually, such as with `az vmss update-instances` or the equivalent management operation.\n\nFor Flexible orchestration, Microsoft documents a different pattern: adding a Flexible scale set to an Application Gateway is like adding standalone VMs, by updating each VM's network interface IP configuration or using Application Gateway configuration. That is not the scenario here because the scale set is Uniform.\n\nThe subnet rule is also important. Microsoft states that the Application Gateway must be in the same virtual network as the scale set but in a different subnet. Placing both in the same subnet is not the required or supported design. Azure Load Balancer remains useful for layer-4 load balancing, but it does not replace Application Gateway when the requirement is layer-7 HTTP routing.",
+      "wrongOptions": {
+        "B": "Microsoft documents that the Application Gateway must be in the same virtual network as the scale set but in a different subnet. Moving it into the scale set subnet would violate that design. Misconception: Backend services and gateway must share a subnet to communicate. Could be correct for resources that are intentionally deployed in the same subnet, but Application Gateway requires its own subnet.",
+        "C": "Scale sets can be used with Application Gateway. The VMSS overview explicitly mentions Application Gateway for layer-7 distribution, and the networking article gives steps for adding a scale set to an Application Gateway backend pool. Misconception: VMSS load balancing means Azure Load Balancer only. Could be correct when the requirement is simple layer-4 TCP or UDP distribution rather than HTTP-aware routing.",
+        "D": "The Application Gateway frontend IP is where clients connect to the gateway, not where backend VM instance IPs are registered. Backend membership is configured through backend pools and NIC IP configurations. Misconception: Every backend VM needs a public IP for Application Gateway. Could be correct in a different architecture using public backend endpoints, but it is not the normal VMSS-in-vnet integration described."
+      },
+      "plainEnglish": "Application Gateway is the web traffic entry point. It needs to know which VM instances are its backend servers. In a Uniform scale set, that backend-pool link belongs in the scale set's network profile. Because this scale set uses Manual upgrade policy, changing the model is not enough for the existing VMs. You must apply the updated model to them. The gateway should be in the same virtual network so it can reach the VMs, but it must live in its own subnet rather than the scale set's subnet.",
+      "analogy": "A call center adds a new smart receptionist who routes customer calls by language and path. The receptionist has a list of agent desks. For a Uniform team, the desk list is printed in the team handbook, and existing agents must receive the new handbook before calls reach them.\n\n| Analogy | Azure reality |\n|---|---|\n| Smart receptionist | Application Gateway |\n| Agent desk list | Backend pool membership |\n| Team handbook | Uniform scale set network profile |\n| Handing out the new handbook | Updating existing VMSS instances |\n| Separate reception area | Application Gateway subnet |\n\n**Where the analogy breaks down:** Application Gateway uses listeners, rules, probes, backend pools, and IP configurations. A receptionist does not program NIC resources or follow VMSS upgrade policies.",
+      "jargon": [
+        {
+          "term": "Application Gateway",
+          "definition": "An Azure layer-7 load balancer that can route HTTP or HTTPS traffic and provide features such as TLS termination and path-based routing."
+        },
+        {
+          "term": "Backend pool",
+          "definition": "A collection of backend targets that a load balancer or Application Gateway can send traffic to."
+        },
+        {
+          "term": "Uniform orchestration",
+          "definition": "A VMSS mode where instances are scale-set-specific VMs created and managed from a common scale set model."
+        },
+        {
+          "term": "Network profile",
+          "definition": "The part of a VMSS model that describes NIC and IP configuration settings for instances."
+        },
+        {
+          "term": "IP configuration",
+          "definition": "A NIC setting that connects a VM to a subnet and can reference backend address pools."
+        },
+        {
+          "term": "Manual upgrade policy",
+          "definition": "A VMSS mode where existing instances are not automatically updated when the scale set model changes."
+        },
+        {
+          "term": "Layer-7",
+          "definition": "The application layer of networking, commonly involving HTTP and HTTPS routing decisions."
+        },
+        {
+          "term": "Azure Load Balancer",
+          "definition": "An Azure layer-4 load balancer for TCP and UDP traffic distribution."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A segmented address range inside a virtual network."
+        },
+        {
+          "term": "Virtual network",
+          "definition": "An Azure private network boundary where subnets and resources can communicate according to routing and security rules."
+        }
+      ],
+      "watchOut": "- Application Gateway belongs in the same virtual network as the VMSS but in a different subnet.\n- Uniform scale sets use the scale set network profile for Application Gateway backend pool references.\n- Existing Uniform instances need the model applied; Manual upgrade policy means you must trigger that update.\n- Flexible scale sets use a standalone-VM-style NIC configuration pattern instead.\n- Do not confuse the Application Gateway frontend IP with backend pool membership.",
+      "productionTip": {
+        "official": "Microsoft documents that scale sets support Application Gateway for layer-7 distribution, that Uniform scale sets reference the backend pool in the scale set network profile, and that existing Uniform instances with Manual upgrade policy must be updated manually after changing the model.",
+        "recommendation": "Before switching production traffic, confirm Application Gateway health probes show healthy backends in every zone or placement area you expect. Use a staged listener or temporary rule for validation, and keep NSG rules narrow so only required gateway-to-backend ports are allowed."
+      },
+      "memoryTrick": "**Uniform: put the pool in the model, then update the members.** This is simplified because Flexible uses NIC-level membership and gateway routing also needs listeners, rules, and probes.",
+      "examTip": "Clue words are **existing Uniform scale set**, **Application Gateway backend pool**, and **Manual upgrade policy**. The answer needs two moves: update the scale set network profile and apply that model to existing instances. A harder version may change the mode to Flexible; then the correct action shifts to updating each VM's network interface IP configuration or Application Gateway backend settings."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Machine Scale Sets overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/overview"
+      },
+      {
+        "title": "Networking for Azure Virtual Machine Scale Sets",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-networking"
+      },
+      {
+        "title": "Guidance for virtual machine scale sets with Azure Standard Load Balancer",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-standard-virtual-machine-scale-sets"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

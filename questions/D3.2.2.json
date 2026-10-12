@@ -1,0 +1,736 @@
+[
+  {
+    "id": "D3.2.2-01",
+    "objective": "D3.2.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains a Windows virtual machine named `vm1`. The security team reviewed the disk encryption choices and found that the managed OS and data disks already use default encryption at rest. The team now asks you to protect data that can be present on the VM host before it reaches the Azure Storage clusters, including temporary disk data and disk-cache data.\n\nWhich encryption option should you enable on `vm1`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Server-side encryption for Azure managed disks only"
+      },
+      {
+        "id": "B",
+        "text": "Encryption at host on the virtual machine"
+      },
+      {
+        "id": "C",
+        "text": "Confidential disk encryption for the OS disk only"
+      },
+      {
+        "id": "D",
+        "text": "Azure Disk Encryption inside the guest operating system"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The VM size and region support encryption at host, and the question compares Microsoft-documented disk encryption options rather than application-level encryption.",
+    "sections": {
+      "correctAnswer": "**B. Encryption at host on the virtual machine**. Encryption at host encrypts data stored on the VM host at rest and keeps it encrypted as it flows to the Storage service, which covers temporary disks and OS or data disk caches that ordinary managed disk SSE does not cover.",
+      "technical": "Server-side encryption and encryption at host protect different parts of the path. Azure Disk Storage server-side encryption, often shortened to SSE, is enabled by default for managed OS and data disks when data is persisted on Storage clusters. That default layer does not encrypt VM temporary disks or the host-side disk caches.\n\nEncryption at host is a VM security-profile setting. When it is enabled, encryption begins on the Azure server that hosts the VM. Microsoft states that data for the temporary disk and the OS or data disk caches is encrypted at rest and flows encrypted to the Storage service. Temporary disks and ephemeral OS disks are encrypted with platform-managed keys. Disk caches use the same key type as the associated disk: platform-managed keys for disks that use platform-managed keys, or customer-managed keys when the disk uses a disk encryption set.\n\nThe practical evaluation order is:\n\n1. Managed disk SSE protects persisted managed disk data by default.\n2. If the requirement names temporary disks, ephemeral OS disks, host caches, or data flowing from compute to storage, check for encryption at host.\n3. If the workload is a confidential VM and the OS disk key must be bound to the VM TPM, consider confidential disk encryption for that separate requirement.\n4. If the question says BitLocker or DM-Crypt inside the guest, that points to Azure Disk Encryption, not the host feature.\n\nThe exception to remember is compatibility. Encryption at host cannot be enabled on VMs or scale sets that currently have, or ever had, Azure Disk Encryption enabled.",
+      "wrongOptions": {
+        "A": "Server-side encryption for managed disks protects persisted managed disk data, but Microsoft explicitly separates it from encryption of temporary disks and disk caches. Misconception: default encryption at rest automatically covers every byte that passes through the VM host. Could be correct when the only requirement is default at-rest encryption for managed OS and data disks stored by Azure Disk Storage.",
+        "C": "Confidential disk encryption is for confidential VM scenarios and, in Microsoft's comparison, protects the OS disk by binding disk encryption keys to the VM TPM. It is not the general setting for encrypting ordinary VM host caches and temporary disks. Misconception: every encryption feature with stronger language replaces encryption at host. Could be correct when the question is specifically about confidential computing and protected OS disk content accessible only to the confidential VM.",
+        "D": "Azure Disk Encryption uses BitLocker on Windows or DM-Crypt on Linux inside the guest VM. The question asks for the host-side feature that covers temp disks, caches, and encrypted flow to Storage without using the VM CPU. Misconception: guest volume encryption and host encryption are the same administrative control. Could be correct when an existing design requires guest-managed volume encryption before ADE retirement planning is addressed."
+      },
+      "plainEnglish": "Think of the VM as using both cloud disks and a nearby workbench on the physical host. The cloud disks already have a lock when Azure stores them. The question is asking about items that may sit on the workbench: temporary disk data, cached reads and writes, and the trip from the workbench to the storage building. Encryption at host puts protection at that workbench. Server-side encryption protects the storage building, Azure Disk Encryption works from inside the machine's operating system, and confidential disk encryption is a special confidential-computing design.",
+      "analogy": "A courier company already locks parcels when they are in the warehouse. The auditor now asks whether the parcels are also locked while they are on the loading dock and moving from the dock to the warehouse.\n\n| Analogy | Azure reality |\n|---|---|\n| Warehouse lock | Server-side encryption for managed disks at rest |\n| Loading dock | VM host where temp disks and caches exist |\n| Locked on the dock | Encryption at host |\n| Driver carrying locked parcels | Data flowing encrypted to Storage |\n| Lock installed inside a package | Azure Disk Encryption in the guest |\n\n**Where the analogy breaks down:** Azure encryption is applied by platform services, key hierarchy, and VM security settings. A warehouse story cannot show disk encryption sets, TPM binding, or how individual I/O operations are processed.",
+      "jargon": [
+        {
+          "term": "Encryption at host",
+          "definition": "A VM or scale set setting that encrypts data on the Azure host, including temporary disk data and OS or data disk caches, and keeps that data encrypted as it flows to Azure Storage."
+        },
+        {
+          "term": "Server-side encryption (SSE)",
+          "definition": "Azure Storage encryption for managed disks at rest when data is persisted on Storage clusters. It is enabled by default for managed disks."
+        },
+        {
+          "term": "Temporary disk",
+          "definition": "Local storage associated with many VM sizes. It is not a managed disk and is not covered by managed disk SSE unless encryption at host or another documented feature covers the scenario."
+        },
+        {
+          "term": "Disk cache",
+          "definition": "Host-side caching for OS or data disks. Encryption at host encrypts this cache at rest using the key type associated with the disk."
+        },
+        {
+          "term": "Platform-managed key",
+          "definition": "An encryption key managed by Microsoft for Azure disk encryption at rest."
+        },
+        {
+          "term": "Customer-managed key",
+          "definition": "A key you control in Azure Key Vault or Managed HSM and connect to disks by using a disk encryption set."
+        },
+        {
+          "term": "Azure Disk Encryption",
+          "definition": "A guest-level feature that uses BitLocker for Windows or DM-Crypt for Linux to encrypt VM OS and data volumes."
+        },
+        {
+          "term": "Confidential disk encryption",
+          "definition": "A confidential VM disk protection option that binds disk encryption keys to the VM's TPM so protected disk content is available only to the VM."
+        },
+        {
+          "term": "Ephemeral OS disk",
+          "definition": "An OS disk stored on local VM storage rather than on a remote managed disk. Encryption at host encrypts it at rest with platform-managed keys."
+        }
+      ],
+      "watchOut": "- Do not equate default managed disk SSE with encryption at host.\n- Clues such as **temp disk**, **cache**, and **data flows encrypted to Storage** point to encryption at host.\n- ADE is a guest operating system encryption feature, not the host setting.\n- Confidential disk encryption is tied to confidential VM requirements and does not replace this objective's host configuration task.",
+      "productionTip": {
+        "official": "Microsoft documents that encryption at host encrypts data stored on the VM host at rest and lets it flow encrypted to the Storage service. The managed disk encryption comparison also states that server-side encryption does not encrypt temp disks or disk caches, while encryption at host does.",
+        "recommendation": "Use encryption at host as the default choice for new VM builds when your policy requires temp disk, cache, and compute-to-storage path protection. Record key-management decisions separately, because enabling the host setting and choosing platform-managed or customer-managed keys are related but distinct design steps."
+      },
+      "memoryTrick": "Remember **host means hallway**: it protects the data while it is on the VM host and on the way to Storage. This shortcut fails for confidential VM TPM-bound OS disk requirements, which use a different feature.",
+      "examTip": "The clue words are **temporary disk**, **caches**, and **flows encrypted to Storage**. Rule out SSE-only answers because SSE covers persisted managed disk data but not those host-side areas. A harder exam item may add customer-managed keys; the answer can still be encryption at host, with a disk encryption set added for OS and data disk cache key control."
+    },
+    "sources": [
+      {
+        "title": "Overview of managed disk encryption options - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+      },
+      {
+        "title": "Server-side encryption of Azure managed disks",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption"
+      },
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.2-02",
+    "objective": "D3.2.2",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are preparing an Azure subscription for a rollout of new Linux virtual machines that must use encryption at host. The platform team has not used this feature in the subscription before. You need to complete the subscription-level prerequisite and avoid creating VMs before the prerequisite is effective.\n\nWhich two actions should you perform? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Run `az feature register --namespace Microsoft.Compute --name EncryptionAtHost` for the subscription"
+      },
+      {
+        "id": "B",
+        "text": "Wait until `az feature show --namespace Microsoft.Compute --name EncryptionAtHost` reports `Registered`"
+      },
+      {
+        "id": "C",
+        "text": "Enable Azure Disk Encryption on a pilot VM to unlock encryption at host for the subscription"
+      },
+      {
+        "id": "D",
+        "text": "Register the `Microsoft.Storage` provider feature named `EncryptionAtHost`"
+      },
+      {
+        "id": "E",
+        "text": "Create a disk encryption set before registering the provider feature, even when platform-managed keys will be used"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The administrator has permission to register resource provider features in the target subscription. The VMs can use platform-managed keys unless a later question states otherwise.",
+    "sections": {
+      "correctAnswer": "**A. Run `az feature register --namespace Microsoft.Compute --name EncryptionAtHost` for the subscription** and **B. Wait until `az feature show --namespace Microsoft.Compute --name EncryptionAtHost` reports `Registered`**. Microsoft still documents subscription feature registration as a prerequisite before using the `EncryptionAtHost` property.",
+      "technical": "Encryption at host is exposed through the Microsoft.Compute resource provider. Before you use the VM or virtual machine scale set property, Microsoft says you must enable the feature for the subscription. The Azure CLI sequence is to register the `EncryptionAtHost` feature in the `Microsoft.Compute` namespace and then check the registration state. Registration can take a few minutes, so the deployment should not assume success immediately after the register command returns.\n\nA concise prerequisite flow is:\n\n```azurecli\naz account set --subscription \"<subscription-id>\"\naz feature register --namespace Microsoft.Compute --name EncryptionAtHost\naz feature show --namespace Microsoft.Compute --name EncryptionAtHost\n```\n\nThe important scope is the subscription context. Registering the feature for one subscription does not automatically prepare a different subscription. The namespace also matters: the setting is on VM and scale set compute resources, not on a storage account.\n\nA disk encryption set is required only when you want customer-managed keys for managed disk encryption and related host caches. It is not the prerequisite that turns on the host encryption property for a subscription using platform-managed keys. Azure Disk Encryption is not a prerequisite and is incompatible with encryption at host on VMs that currently or ever had ADE enabled.",
+      "wrongOptions": {
+        "C": "Azure Disk Encryption is not a setup step for encryption at host. Microsoft lists ADE and encryption at host as separate options, and the host feature cannot be enabled on VMs or scale sets that currently or ever had ADE enabled. Misconception: enabling one disk encryption product unlocks the other. Could be correct when the task is specifically to configure guest-level BitLocker or DM-Crypt for a supported existing ADE workload before retirement planning.",
+        "D": "The documented prerequisite registers `EncryptionAtHost` under `Microsoft.Compute`, not under `Microsoft.Storage`. The property belongs to virtual machines and scale sets. Misconception: because managed disks persist data in Storage, the feature must be a Storage provider feature. Could be correct for a different storage account capability that really is published by the Microsoft.Storage provider.",
+        "E": "A disk encryption set is not required for platform-managed key encryption at host. Microsoft says customer-managed key configurations need Key Vault and a disk encryption set, but platform-managed key examples skip that resource setup. Misconception: every disk encryption configuration requires a customer key resource. Could be correct when the organization requires customer-managed keys for OS or data disks and their host caches."
+      },
+      "plainEnglish": "Before the subscription can create VMs with this switch, Azure has to know that the subscription is allowed to use the compute feature. The command named `az feature register` asks Azure to turn on that feature. The follow-up command named `az feature show` checks whether the request has finished. Do not confuse that subscription readiness step with creating keys, encrypting a test VM by another method, or changing a storage account setting.",
+      "analogy": "A building manager wants to install a new badge reader model on office doors. First, the company must approve that model for the building account. Then the manager waits until the approval system says the model is active. Buying a box of keys or testing an old lock does not activate the new reader model.\n\n| Analogy | Azure reality |\n|---|---|\n| Building account approval | Subscription feature registration |\n| Badge reader model | `EncryptionAtHost` feature |\n| Facilities department | `Microsoft.Compute` provider namespace |\n| Approval status says active | Registration state is `Registered` |\n\n**Where the analogy breaks down:** Azure registration is a resource provider feature operation, not a paper approval. It is checked through APIs, Azure CLI, or PowerShell, and permissions are enforced by Azure RBAC.",
+      "jargon": [
+        {
+          "term": "Subscription",
+          "definition": "An Azure billing and management boundary that contains resource groups and resources. Provider feature registration is performed in a subscription context."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "An Azure service namespace that supplies resource types and operations, such as `Microsoft.Compute` for virtual machines."
+        },
+        {
+          "term": "Provider feature",
+          "definition": "A named capability that can require registration before a subscription can use it."
+        },
+        {
+          "term": "`az feature register`",
+          "definition": "An Azure CLI command that registers a named provider feature for the current subscription context."
+        },
+        {
+          "term": "`az feature show`",
+          "definition": "An Azure CLI command that displays a provider feature's registration details, including its state."
+        },
+        {
+          "term": "`Microsoft.Compute`",
+          "definition": "The Azure resource provider namespace for compute resources such as virtual machines and virtual machine scale sets."
+        },
+        {
+          "term": "`EncryptionAtHost`",
+          "definition": "The provider feature and VM security-profile property name used for Azure VM encryption at host."
+        },
+        {
+          "term": "Disk encryption set",
+          "definition": "An Azure resource that connects managed disks to a customer-managed key in Key Vault or Managed HSM."
+        },
+        {
+          "term": "Platform-managed keys",
+          "definition": "Encryption keys managed by Microsoft rather than by the customer."
+        },
+        {
+          "term": "Azure Disk Encryption",
+          "definition": "A separate guest-level VM disk encryption technology based on BitLocker or DM-Crypt."
+        }
+      ],
+      "watchOut": "- The prerequisite is still documented in current Microsoft guidance.\n- Register the feature in the target subscription, not in a management group or storage account.\n- Wait for `Registered`; a pending registration can make early deployments fail.\n- Do not enable ADE as a warm-up step, because ADE history blocks encryption at host for that VM.",
+      "productionTip": {
+        "official": "The Microsoft portal, CLI, and PowerShell articles all state that you must enable the `EncryptionAtHost` feature for the subscription before using the property for a VM or scale set. The CLI article shows `az feature register` followed by `az feature show` to confirm the state.",
+        "recommendation": "Bake the feature-registration check into landing-zone readiness rather than individual VM deployment scripts. In production pipelines, fail early with a clear message if the feature state is not `Registered`, and keep the subscription ID explicit so engineers do not prepare the wrong subscription."
+      },
+      "memoryTrick": "Think **Compute feature before compute resource**: register `EncryptionAtHost` under `Microsoft.Compute` before creating protected VMs. The phrase is a shortcut; it does not replace VM-size and ADE compatibility checks.",
+      "examTip": "Look for wording such as **first time in this subscription** or **before trying the feature**. Those clues point to provider feature registration and waiting for the registered state. A harder version might use PowerShell; the equivalent command is `Register-AzProviderFeature -FeatureName EncryptionAtHost -ProviderNamespace Microsoft.Compute` followed by `Get-AzProviderFeature`."
+    },
+    "sources": [
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+      },
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli"
+      },
+      {
+        "title": "az feature",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/feature?view=azure-cli-latest"
+      },
+      {
+        "title": "Register-AzProviderFeature",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.resources/register-azproviderfeature?view=azps-16.3.0"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.2-03",
+    "objective": "D3.2.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an existing Azure virtual machine named `vm-payroll` that uses managed disks and is currently running. The VM has never used Azure Disk Encryption. Your team must enable encryption at host by using Azure CLI during an approved maintenance window.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Run `az vm update --set securityProfile.encryptionAtHost=true` while the VM remains running"
+      },
+      {
+        "id": "B",
+        "text": "Detach the OS disk, enable server-side encryption on the disk, and reattach the OS disk"
+      },
+      {
+        "id": "C",
+        "text": "Enable Azure Disk Encryption first, restart the guest operating system, and then turn on encryption at host"
+      },
+      {
+        "id": "D",
+        "text": "Deallocate the VM, run `az vm update --set securityProfile.encryptionAtHost=true`, and then start the VM"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The VM size supports encryption at host in the region, the subscription feature is registered, and an outage is acceptable during the approved maintenance window.",
+    "sections": {
+      "correctAnswer": "**D. Deallocate the VM, run `az vm update --set securityProfile.encryptionAtHost=true`, and then start the VM**. Microsoft documents that existing VMs must be deallocated and reallocated in order to be encrypted, and the Azure CLI article shows updating `securityProfile.encryptionAtHost`.",
+      "technical": "For an existing VM, enabling encryption at host is not just an in-guest restart. It changes a VM security-profile property that affects how the Azure host handles temporary disk data, disk caches, and the data path to Storage. Microsoft lists a restriction for existing VMs: they must be deallocated and reallocated in order to be encrypted.\n\nA safe CLI sequence is:\n\n```azurecli\naz vm deallocate -g rg-prod -n vm-payroll\naz vm update -g rg-prod -n vm-payroll --set securityProfile.encryptionAtHost=true\naz vm start -g rg-prod -n vm-payroll\naz vm show -g rg-prod -n vm-payroll --query securityProfile.encryptionAtHost -o tsv\n```\n\nThe important state is **Stopped (deallocated)**, not merely a guest operating system shutdown. Deallocation releases the compute allocation so Azure can place the VM on a host configuration that satisfies the encryption setting. After the update, starting the VM reallocates it.\n\nSeveral prerequisites must already be satisfied: the subscription feature must be registered, the VM size must support the `EncryptionAtHost` capability, and the VM must not currently or historically have Azure Disk Encryption enabled. If customer-managed keys are in scope, the disks must be associated with an appropriate disk encryption set; that is separate from the deallocate-update-start sequence.",
+      "wrongOptions": {
+        "A": "The CLI update command shape is relevant, but applying it while the VM remains running ignores the documented deallocation requirement for existing VMs. Misconception: every VM property can be toggled live if Azure CLI accepts an update command. Could be correct for settings that are explicitly supported as online updates, but not for enabling host encryption on an existing VM.",
+        "B": "Managed disk server-side encryption is already default for managed disks and does not enable the VM host encryption property. Detaching the OS disk is unnecessary and riskier than updating the VM security profile. Misconception: encryption at host is configured directly on each disk object. Could be correct when changing a disk's disk encryption set for a customer-managed key scenario, subject to that feature's own rules.",
+        "C": "Azure Disk Encryption is not a prerequisite. It is incompatible with encryption at host on VMs or scale sets that currently or ever had ADE enabled. Misconception: adding guest encryption first creates a layered path to host encryption. Could be correct for a legacy workload that intentionally remains on ADE until it is migrated before ADE retirement."
+      },
+      "plainEnglish": "The VM is already running on a physical Azure host. To change this particular protection, Azure needs the VM to stop using its current host allocation. Deallocating is stronger than clicking restart inside Windows or Linux; it returns the compute slot to Azure. After that, Azure can update the VM's host-encryption setting and start the VM again. The command that changes the setting is important, but the stop-and-start allocation step is just as important.",
+      "analogy": "A hotel guest wants a room upgraded with a safe built into the floor. Housekeeping cannot install it while the guest is sleeping in the room. The guest must check out of the room, the hotel changes the room configuration, and then the guest checks back in.\n\n| Analogy | Azure reality |\n|---|---|\n| Guest room | Allocated Azure VM host placement |\n| Guest checks out | VM is deallocated |\n| Built-in safe option | `securityProfile.encryptionAtHost=true` |\n| Guest checks back in | VM is started and reallocated |\n| Looking at the room record | `az vm show` verification |\n\n**Where the analogy breaks down:** Azure may reallocate the VM to infrastructure according to capacity and platform rules. The hotel example does not represent disk encryption sets, resource provider registration, or VM-size validation.",
+      "jargon": [
+        {
+          "term": "Deallocate",
+          "definition": "Stop an Azure VM and release its compute resources so the VM reaches the Stopped (deallocated) state."
+        },
+        {
+          "term": "Reallocate",
+          "definition": "Start a deallocated VM so Azure assigns compute resources again."
+        },
+        {
+          "term": "`az vm deallocate`",
+          "definition": "An Azure CLI command that stops a VM and changes it from Stopped to Stopped (deallocated)."
+        },
+        {
+          "term": "`az vm update`",
+          "definition": "An Azure CLI command used to update VM properties, including nested resource properties through `--set`."
+        },
+        {
+          "term": "`securityProfile.encryptionAtHost`",
+          "definition": "The VM security-profile property that records whether encryption at host is enabled."
+        },
+        {
+          "term": "Managed disk",
+          "definition": "An Azure-managed block storage disk used as a VM OS disk or data disk."
+        },
+        {
+          "term": "Azure Disk Encryption",
+          "definition": "Guest-level VM disk encryption using BitLocker or DM-Crypt; it is incompatible with enabling encryption at host on VMs that have used it."
+        },
+        {
+          "term": "Maintenance window",
+          "definition": "A planned time period during which service interruption is approved for administrative changes."
+        },
+        {
+          "term": "Stopped (deallocated)",
+          "definition": "The Azure VM state in which compute resources are released, unlike a simple guest shutdown that may still reserve allocation details."
+        }
+      ],
+      "watchOut": "- A guest reboot is not the same as Azure VM deallocation.\n- Verify the property after starting the VM; do not rely only on script exit codes.\n- Check size support before the window so you do not discover an unsupported SKU during downtime.\n- Never enable ADE as a stepping stone to host encryption.",
+      "productionTip": {
+        "official": "The encryption at host documentation states that existing VMs must be deallocated and reallocated to be encrypted. The CLI how-to shows `az vm update --set securityProfile.encryptionAtHost=true` and a separate query to check `securityProfile.encryptionAtHost`.",
+        "recommendation": "Schedule the change with normal VM downtime communication, snapshot or back up critical disks according to your recovery policy, and validate application health after the VM starts. For fleets, test one supported SKU in each region first instead of changing every VM in a single maintenance wave."
+      },
+      "memoryTrick": "For an existing VM, **D-U-S**: Deallocate, Update, Start. This mnemonic assumes prerequisites are already met and does not cover customer-managed key preparation.",
+      "examTip": "The decisive phrase is **existing VM**. New VM creation can include the encryption-at-host flag, but an existing VM needs deallocation and reallocation. A harder item may say the VM is stopped from inside the guest; still look for the Azure deallocated state before applying the setting."
+    },
+    "sources": [
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli"
+      },
+      {
+        "title": "Enable end-to-end encryption using encryption at host with Azure PowerShell",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/disks-enable-host-based-encryption-powershell"
+      },
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+      },
+      {
+        "title": "az vm",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/vm?view=azure-cli-latest"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.2-04",
+    "objective": "D3.2.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A deployment pipeline creates VMs in multiple Azure regions. The next release must enable encryption at host, but the pipeline currently selects VM sizes from a general allow-list that includes older SKUs. You need to prevent deployment failures caused by unsupported VM sizes.\n\nWhat should you add to the pipeline?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A check that the OS image publisher supports Azure Disk Encryption for both Windows and Linux"
+      },
+      {
+        "id": "B",
+        "text": "A rule that allows only VMs with unmanaged disks, because managed disks hide encryption capabilities"
+      },
+      {
+        "id": "C",
+        "text": "A check that the selected VM size has the `EncryptionAtHostSupported` capability set to `True` in the target region"
+      },
+      {
+        "id": "D",
+        "text": "A rule that skips size validation when the subscription feature is already registered"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The subscription feature registration is handled separately, and the pipeline can query Azure resource SKU capabilities for the target region before deployment.",
+    "sections": {
+      "correctAnswer": "**C. A check that the selected VM size has the `EncryptionAtHostSupported` capability set to `True` in the target region**. Microsoft documents that some older VM sizes are not supported and that supported sizes can be found by querying resource SKU capabilities or Azure CLI output.",
+      "technical": "Encryption at host support is not universal across every VM size. The documentation says some older VM sizes are not supported and that the complete list should be pulled programmatically. The Resource SKUs API exposes a capability named `EncryptionAtHostSupported`; the CLI example filters VM sizes in a location where that capability has the value `True`.\n\nA pipeline-friendly Azure CLI check can use the same idea:\n\n```azurecli\naz vm list-skus --location australiaeast --all \\\n  --resource-type virtualMachines \\\n  --query \"[?name=='Standard_DS1_v2' && capabilities[?name=='EncryptionAtHostSupported' && value=='True']]\"\n```\n\nThe scope of the check is the target region and VM size. A size that is supported in one region or generation should not be assumed to be valid everywhere without checking the current SKU data. The PowerShell and CLI how-to pages also warn that upgrading a VM size triggers validation to check whether the new size supports the feature.\n\nFeature registration and size support are both required, but they answer different questions. Registration says the subscription can use the property. SKU capability says the actual size in the selected location supports the property. Passing one check does not waive the other.",
+      "wrongOptions": {
+        "A": "Azure Disk Encryption image support is a different compatibility matrix. Encryption at host is a host feature and does not require choosing an image that supports ADE. Misconception: all disk encryption checks use the guest operating system support list. Could be correct when planning a legacy ADE deployment that encrypts inside Windows or Linux.",
+        "B": "Encryption at host is documented for Azure VMs using managed disks; unmanaged disks are not the solution. Microsoft managed disk encryption guidance is the relevant context for this feature. Misconception: managed services hide capabilities that only unmanaged resources expose. Could be correct only in a separate migration question asking whether an old VM must be converted to managed disks for a different managed-disk feature.",
+        "D": "Subscription feature registration does not prove that every chosen VM size supports host encryption. The documentation calls out older unsupported sizes and programmatic size discovery. Misconception: once the feature is registered, Azure accepts any VM shape. Could be correct for a feature that has no SKU-level support differences, but this feature has documented VM-size support checks."
+      },
+      "plainEnglish": "The subscription switch is like permission to use a type of equipment. The VM size is the model of machine you are ordering. Some models support the equipment and some older ones do not. The pipeline should ask Azure, for the exact region and size, whether the capability named `EncryptionAtHostSupported` is true. If the answer is not true, choose a different size before trying to deploy the VM.",
+      "analogy": "A company approves heated seats for its car fleet, but not every car model in every country can be ordered with heated seats. The purchasing system should check the option list for the exact model and country before placing the order.\n\n| Analogy | Azure reality |\n|---|---|\n| Car model | VM size SKU |\n| Country catalog | Azure region SKU data |\n| Heated-seat option | `EncryptionAtHostSupported` capability |\n| Fleet approval | Subscription feature registration |\n| Purchasing rule | Pipeline preflight validation |\n\n**Where the analogy breaks down:** Azure capabilities are returned by resource provider APIs and can include many technical constraints. Car catalogs do not model deallocation, reallocation, or security-profile settings.",
+      "jargon": [
+        {
+          "term": "VM size",
+          "definition": "The Azure SKU that defines a VM's CPU, memory, local storage, and supported capabilities."
+        },
+        {
+          "term": "SKU",
+          "definition": "A stock-keeping unit or product shape. In Azure, it identifies a specific resource size or tier."
+        },
+        {
+          "term": "Resource SKUs API",
+          "definition": "An Azure Compute API that lists available resource SKUs and their capabilities in Azure locations."
+        },
+        {
+          "term": "`EncryptionAtHostSupported`",
+          "definition": "A resource SKU capability whose value indicates whether a VM size supports encryption at host."
+        },
+        {
+          "term": "Region",
+          "definition": "An Azure geographic area where resources are deployed. SKU capabilities and availability can vary by region."
+        },
+        {
+          "term": "`az vm list-skus`",
+          "definition": "An Azure CLI command that lists VM sizes and capability metadata for a location."
+        },
+        {
+          "term": "Pipeline",
+          "definition": "Automated deployment logic that validates inputs and creates or updates cloud resources."
+        },
+        {
+          "term": "Azure Disk Encryption",
+          "definition": "A guest-based encryption feature with its own operating system and VM support list, separate from host encryption size support."
+        },
+        {
+          "term": "Feature registration",
+          "definition": "A subscription-level provider feature enablement step that is required but not sufficient to guarantee a specific VM size supports the feature."
+        }
+      ],
+      "watchOut": "- Size support can vary; query the actual deployment location.\n- Do not substitute ADE operating system support for encryption-at-host SKU support.\n- Registering the feature and choosing a supported size are separate gates.\n- Resizing an existing VM to a new SKU can trigger validation for host encryption support.",
+      "productionTip": {
+        "official": "Microsoft says some older VM sizes are not supported and that the complete list of supported sizes can be pulled programmatically. The CLI documentation shows filtering VM SKUs where the `EncryptionAtHostSupported` capability equals `True`.",
+        "recommendation": "Make the capability check part of the same module that selects VM sizes. Cache results only for a short time, log the region and SKU used in each decision, and provide an approved fallback size so teams are not tempted to disable encryption at host to get a deployment through."
+      },
+      "memoryTrick": "Use **R-S-C**: Region, Size, Capability. This is a simplification because subscription registration, ADE history, and key configuration still have to pass their own checks.",
+      "examTip": "The clue is **older SKUs** or **not all VM sizes**. The exam wants `EncryptionAtHostSupported`, not a generic encryption or image-support answer. A harder question may combine this with a resize; remember that moving to a new size is validated against encryption at host support too."
+    },
+    "sources": [
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli"
+      },
+      {
+        "title": "Enable end-to-end encryption using encryption at host with Azure PowerShell",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/disks-enable-host-based-encryption-powershell"
+      },
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.2-05",
+    "objective": "D3.2.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Woodgrove Bank is creating a new VM named `vm-ledger`. Security policy requires encryption at host and customer-managed keys for the managed OS disk and managed data disks. The temporary disk can use the Microsoft-documented default key behavior for encryption at host. You are preparing the key resources and VM deployment.\n\nWhich two statements describe the correct design? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a disk encryption set that references an Azure Key Vault or Managed HSM key, and associate the OS and data disks with that disk encryption set"
+      },
+      {
+        "id": "B",
+        "text": "Expect the OS and data disk caches to use customer-managed keys when their disks use a disk encryption set"
+      },
+      {
+        "id": "C",
+        "text": "Use the customer-managed key to encrypt the temporary disk directly through the disk encryption set"
+      },
+      {
+        "id": "D",
+        "text": "Skip Key Vault purge protection because encryption at host does not depend on key recovery settings"
+      },
+      {
+        "id": "E",
+        "text": "Configure Azure Disk Encryption with a key encryption key because ADE is the required customer-managed-key layer for encryption at host"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The target VM size supports encryption at host, the subscription feature is registered, and the organization has selected Azure Key Vault or Managed HSM for customer-managed key storage.",
+    "sections": {
+      "correctAnswer": "**A. Create a disk encryption set that references an Azure Key Vault or Managed HSM key, and associate the OS and data disks with that disk encryption set** and **B. Expect the OS and data disk caches to use customer-managed keys when their disks use a disk encryption set**. Microsoft documents disk encryption sets for customer-managed keys and states that disk caches follow the selected disk encryption type.",
+      "technical": "Encryption at host can be used with platform-managed keys or customer-managed keys for the managed disks and their caches. For customer-managed keys, Microsoft documents an ordered setup: create or choose an Azure Key Vault or Managed HSM, create an encryption key, create a disk encryption set that references the key, grant the disk encryption set identity access to the key, and associate managed disks with the disk encryption set during VM creation or disk configuration.\n\nThe key behavior has an important split:\n\n| Component | Documented key behavior with encryption at host |\n|---|---|\n| Managed OS disk | Uses the disk's encryption type, including a disk encryption set for CMK |\n| Managed data disk | Uses the disk's encryption type, including a disk encryption set for CMK |\n| OS and data disk caches | Encrypted with CMK when the corresponding disk uses CMK |\n| Temporary disk | Encrypted at rest with platform-managed keys |\n| Ephemeral OS disk | Encrypted at rest with platform-managed keys |\n\nThe cache rule is why option B matters. Encryption at host does not mean every host-side component uses your key. Microsoft specifically says temporary disks and ephemeral OS disks are encrypted at rest with platform-managed keys, while OS and data disk caches use customer-managed or platform-managed keys depending on the selected disk encryption type.\n\nKey Vault settings matter because managed disk CMK support requires protections such as purge protection. The disk encryption set uses a managed identity to access the key for wrap and unwrap operations.",
+      "wrongOptions": {
+        "C": "Microsoft documents that temporary disks are encrypted at rest with platform-managed keys when encryption at host is enabled. The disk encryption set controls managed OS and data disk encryption and their caches, not a direct customer-managed-key assignment to the temp disk. Misconception: customer-managed keys for disks automatically apply to every host-local component. Could be correct only if Microsoft later documents direct CMK support for that component, which was not verified and is not used here.",
+        "D": "Purge protection is documented as mandatory when using a Key Vault for encrypting managed disks. Ignoring it can expose the organization to accidental key deletion and failed deployments. Misconception: host encryption removes normal managed disk CMK prerequisites. Could be correct when using only platform-managed keys and no customer Key Vault is part of the design.",
+        "E": "Azure Disk Encryption is not the required CMK layer for encryption at host. ADE is guest-level BitLocker or DM-Crypt and is incompatible with enabling encryption at host on VMs that currently or ever had ADE. Misconception: customer-managed key control for VM disks always means ADE. Could be correct for a legacy ADE workload that is not being configured for encryption at host."
+      },
+      "plainEnglish": "Customer-managed keys mean Woodgrove controls a key in Key Vault or Managed HSM. Azure connects that key to disks through a disk encryption set. For this VM, the OS and data disks are tied to that disk encryption set, and their host caches follow that disk key choice. The temporary disk is different. Microsoft says encryption at host protects it with platform-managed keys, so the bank should not design around directly assigning its own key to that temporary disk.",
+      "analogy": "A bank stores ledgers in locked cabinets and controls the cabinet keys. The desk copies of those ledgers are locked with the same cabinet key policy, but sticky notes on a temporary work pad are locked by the building's standard security system.\n\n| Analogy | Azure reality |\n|---|---|\n| Bank-controlled cabinet key | Customer-managed key in Key Vault or Managed HSM |\n| Cabinet key registry | Disk encryption set |\n| Ledger cabinet | Managed OS or data disk |\n| Desk copy of ledger pages | OS or data disk cache |\n| Temporary work pad | VM temporary disk |\n\n**Where the analogy breaks down:** Azure uses envelope encryption, managed identities, and platform services. A bank cabinet does not show key wrap and unwrap operations or the difference between managed disks and local temporary storage.",
+      "jargon": [
+        {
+          "term": "Customer-managed key (CMK)",
+          "definition": "An encryption key controlled by the customer in Azure Key Vault or Managed HSM and used by Azure managed disks through a disk encryption set."
+        },
+        {
+          "term": "Disk encryption set (DES)",
+          "definition": "An Azure resource that links managed disks, snapshots, or images to a customer-managed key."
+        },
+        {
+          "term": "Azure Key Vault",
+          "definition": "An Azure service for storing and controlling access to keys, secrets, and certificates."
+        },
+        {
+          "term": "Managed HSM",
+          "definition": "Azure Key Vault Managed Hardware Security Module, a service for HSM-backed cryptographic keys."
+        },
+        {
+          "term": "Purge protection",
+          "definition": "A Key Vault protection that prevents permanent deletion of a key until the retention period passes; it is mandatory for managed disk CMK scenarios."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An identity managed by Microsoft Entra ID that Azure resources use to access other Azure services without stored credentials."
+        },
+        {
+          "term": "Disk cache",
+          "definition": "Host-side cache for disk I/O. Under encryption at host, OS and data disk caches use the key type associated with the disk."
+        },
+        {
+          "term": "Temporary disk",
+          "definition": "Local VM storage whose data is not a managed disk. With encryption at host, it is encrypted at rest with platform-managed keys."
+        },
+        {
+          "term": "Platform-managed key",
+          "definition": "A Microsoft-managed encryption key used by Azure services for default encryption."
+        },
+        {
+          "term": "Envelope encryption",
+          "definition": "A pattern where data is encrypted with a data encryption key, and that key is protected by another key such as a customer-managed RSA key."
+        }
+      ],
+      "watchOut": "- A disk encryption set is the CMK connection for managed disks, not for a direct temp-disk key assignment.\n- The temporary disk key behavior is platform-managed under encryption at host.\n- Key Vault purge protection is mandatory for managed disk CMK setups.\n- Do not mix ADE into a VM that you intend to protect with encryption at host.",
+      "productionTip": {
+        "official": "Microsoft documents that Key Vault purge protection is mandatory when using Key Vault for managed disk encryption. The host encryption articles state that OS and data disk caches use customer-managed keys when the disks use customer-managed keys, while temporary disks are encrypted with platform-managed keys.",
+        "recommendation": "Create disk encryption sets through a standard platform module, assign the least key permissions needed for wrap, unwrap, and get, and monitor key expiration. Also explain the temporary-disk exception in security design records so auditors do not assume every encrypted component uses the customer key."
+      },
+      "memoryTrick": "**DES drives disk keys; PMK protects temp.** The phrase is a safe exam shortcut for this feature, but it does not describe confidential VM temp-disk options or future product changes.",
+      "examTip": "The giveaway is **customer-managed keys for OS and data disks**. Choose disk encryption set and cache-following-disk-key behavior. Reject answers that put customer keys directly on the temp disk or that introduce ADE as if it were required for host encryption."
+    },
+    "sources": [
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+      },
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli"
+      },
+      {
+        "title": "Server-side encryption of Azure managed disks",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption"
+      },
+      {
+        "title": "Overview of managed disk encryption options - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.2-06",
+    "objective": "D3.2.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Adatum has a production VM named `vm-legacy` that was encrypted with Azure Disk Encryption two years ago. The VM currently runs a supported operating system, and the security team wants to enable encryption at host because Microsoft recommends it for new VMs and has announced retirement plans for Azure Disk Encryption.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "You can enable encryption at host on `vm-legacy` after ADE is disabled, because only current ADE usage blocks the setting"
+      },
+      {
+        "id": "B",
+        "text": "You must enable confidential disk encryption first, and then Azure automatically converts ADE to encryption at host"
+      },
+      {
+        "id": "C",
+        "text": "You should leave ADE unchanged because Microsoft has not published a retirement date for Azure Disk Encryption"
+      },
+      {
+        "id": "D",
+        "text": "You cannot enable encryption at host on `vm-legacy` because the VM currently or ever had Azure Disk Encryption enabled"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The question is about the documented compatibility restriction for encryption at host on a VM that has a history of Azure Disk Encryption, not about a full migration project plan.",
+    "sections": {
+      "correctAnswer": "**D. You cannot enable encryption at host on `vm-legacy` because the VM currently or ever had Azure Disk Encryption enabled**. Microsoft documents that encryption at host cannot be enabled on VMs or scale sets that currently or ever had ADE enabled, and ADE is scheduled for retirement on September 15, 2028.",
+      "technical": "Azure Disk Encryption and encryption at host are separate disk-protection approaches. ADE runs inside the guest operating system, using BitLocker for Windows or DM-Crypt for Linux. Encryption at host runs at the Azure VM host layer and protects temporary disk data, OS and data disk caches, and data flow to Storage without using the VM's CPU.\n\nThe compatibility rule is strict. The encryption at host restrictions say it cannot be enabled on VMs or virtual machine scale sets that currently or ever had Azure Disk Encryption enabled. The word **ever** matters. Disabling ADE later does not erase the VM's ADE history for this rule. Microsoft also says ADE cannot be enabled on disks that have encryption at host enabled.\n\nThe retirement fact is also relevant but does not change the toggle rule. Microsoft states that Azure Disk Encryption is scheduled for retirement on September 15, 2028. The guidance says to use encryption at host for new VMs, or confidential VM sizes with OS disk encryption for confidential computing workloads, and that ADE-enabled VMs must migrate before the retirement date to avoid service disruption.\n\nFor an exam answer, avoid inventing a direct in-place switch for a VM with ADE history. In a real project, follow Microsoft's migration guidance or rebuild the workload on a supported VM configuration that has no ADE history.",
+      "wrongOptions": {
+        "A": "The restriction is not limited to VMs currently running ADE. Microsoft says encryption at host cannot be enabled on VMs or scale sets that currently or ever had ADE enabled. Misconception: disabling a feature always clears compatibility history. Could be correct for a setting whose documentation only blocks current state, but not for this documented rule.",
+        "B": "Confidential disk encryption is a separate confidential VM feature that binds disk keys to a VM TPM. It does not automatically convert an ADE VM to encryption at host. Misconception: stronger-sounding encryption products create a migration bridge between incompatible states. Could be correct when deploying a new confidential VM that specifically requires confidential OS disk encryption.",
+        "C": "Microsoft has published a retirement date: Azure Disk Encryption is scheduled for retirement on September 15, 2028. Misconception: because existing ADE workloads still run today, there is no announced deadline. Could be correct only before such a retirement announcement existed, not under the current documented guidance."
+      },
+      "plainEnglish": "The old VM has a history that matters. Azure's rule does not say, 'turn off ADE and then turn on host encryption.' It says a VM that currently had or ever had ADE is not eligible for encryption at host. Microsoft also says ADE is being retired, so the team should not ignore the issue. The correct direction is migration or rebuilding according to official guidance, not a simple switch on the same old VM.",
+      "analogy": "A factory machine once used an older chemical coating. The new coating process is not allowed on machines that currently use, or ever used, the old coating. Washing the machine does not make it eligible. The factory also announced the old coating line will close on a known date, so planners must replace or migrate the machine correctly.\n\n| Analogy | Azure reality |\n|---|---|\n| Old chemical coating | Azure Disk Encryption |\n| New coating process | Encryption at host |\n| Ever used the old coating | VM currently or historically had ADE |\n| Coating line closure date | ADE retirement date |\n| Replacement plan | Migration or rebuild guidance |\n\n**Where the analogy breaks down:** Azure compatibility is enforced by resource state and platform rules, not by physical residue. The real migration can involve disks, backups, images, keys, and workload validation.",
+      "jargon": [
+        {
+          "term": "Azure Disk Encryption (ADE)",
+          "definition": "A VM disk encryption feature that uses BitLocker on Windows or DM-Crypt on Linux inside the guest OS and integrates with Azure Key Vault."
+        },
+        {
+          "term": "BitLocker",
+          "definition": "Microsoft Windows volume encryption technology used by ADE for Windows VMs."
+        },
+        {
+          "term": "DM-Crypt",
+          "definition": "A Linux disk encryption subsystem used by ADE for Linux VMs."
+        },
+        {
+          "term": "Encryption at host",
+          "definition": "A VM host-layer encryption option that protects temporary disks, disk caches, and data flowing to Storage."
+        },
+        {
+          "term": "Confidential disk encryption",
+          "definition": "A confidential computing disk protection feature that binds disk encryption keys to a VM TPM."
+        },
+        {
+          "term": "TPM",
+          "definition": "Trusted Platform Module, a hardware-backed security component used in confidential VM attestation and key release scenarios."
+        },
+        {
+          "term": "Retirement",
+          "definition": "A Microsoft lifecycle event after which a feature is no longer supported in the same way and may cause workload disruption."
+        },
+        {
+          "term": "Migration",
+          "definition": "The process of moving a workload from one supported configuration to another while preserving required data and service behavior."
+        },
+        {
+          "term": "Key encryption key (KEK)",
+          "definition": "A key used to protect other encryption keys. ADE can use a KEK with Key Vault in supported scenarios."
+        }
+      ],
+      "watchOut": "- The blocker is **currently or ever had ADE**, not just current ADE status.\n- ADE retirement does not create an exception to the compatibility rule.\n- Encryption at host is recommended for new VMs, but legacy ADE VMs need a migration plan.\n- Confidential disk encryption is not an automatic ADE conversion feature.",
+      "productionTip": {
+        "official": "Microsoft documents that ADE is scheduled for retirement on September 15, 2028 and says ADE-enabled VMs must migrate before the retirement date to avoid service disruption. The encryption at host restrictions state that VMs or scale sets that currently or ever had ADE enabled cannot have encryption at host enabled.",
+        "recommendation": "Inventory ADE-enabled VMs early, separate them from clean new-build candidates, and test Microsoft's migration approach with backups before production waves. For new deployments, standardize encryption at host so you do not create additional ADE retirement work."
+      },
+      "memoryTrick": "**ADE leaves a no-host mark**: if the VM ever had ADE, do not choose encryption at host for that same VM. The wording is a simplification for exam decisions; real migrations require official step-by-step planning.",
+      "examTip": "Watch for **ever had Azure Disk Encryption**. That single phrase rules out answers that disable ADE and then toggle host encryption. A harder version may mention the September 15, 2028 retirement; that supports migration urgency but does not remove the incompatibility."
+    },
+    "sources": [
+      {
+        "title": "Overview of managed disk encryption options - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview"
+      },
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+      },
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli"
+      },
+      {
+        "title": "Enable Azure Disk Encryption for Linux VMs",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disk-encryption-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.2-07",
+    "objective": "D3.2.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You plan to enable encryption at host for a VM that uses an Ultra Disk data disk. The disk uses a 512e sector size and was created on 2023-04-20. You verified that the VM size supports encryption at host and the subscription feature is registered.\n\nWhat should you do with the Ultra Disk before enabling encryption at host?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Convert the Ultra Disk to an unmanaged disk because encryption at host supports only unmanaged 512e disks"
+      },
+      {
+        "id": "B",
+        "text": "Enable Azure Disk Encryption on the Ultra Disk first so the sector-size restriction no longer applies"
+      },
+      {
+        "id": "C",
+        "text": "Snapshot the disk and create a new disk from the snapshot, because 512e Ultra Disks for this feature must have been created after 2023-05-13"
+      },
+      {
+        "id": "D",
+        "text": "Do nothing special because the Ultra Disk caveat applies only to Premium SSD v2 disks"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The question focuses on the documented Ultra Disk and Premium SSD v2 caveat for encryption at host, not on application-level migration testing or regional Ultra Disk availability.",
+    "sections": {
+      "correctAnswer": "**C. Snapshot the disk and create a new disk from the snapshot, because 512e Ultra Disks for this feature must have been created after 2023-05-13**. Microsoft documents this restriction for Ultra Disks and Premium SSD v2 disks and gives snapshot-and-recreate as the workaround for older disks.",
+      "technical": "Encryption at host has general restrictions and additional restrictions for Ultra Disks and Premium SSD v2. The special caveat says disks using a 512e sector size need to have been created after 5/13/2023. If the disk was created before that date, Microsoft instructs you to snapshot the disk and create a new disk by using the snapshot.\n\nThe facts in the question fit the caveat exactly:\n\n| Fact | Result |\n|---|---|\n| Disk type is Ultra Disk | The Ultra/Premium SSD v2 restriction set is relevant |\n| Sector size is 512e | The creation-date condition applies |\n| Created on 2023-04-20 | It is before 2023-05-13 |\n| VM size and subscription are ready | Other prerequisites are satisfied, but the disk caveat remains |\n\nThe order matters. Do not ignore the disk caveat just because provider registration and VM-size support passed. Those checks only prove the subscription and VM shape are ready. The existing disk still has a documented creation-date limitation.\n\nThe workaround creates a new managed disk resource from a snapshot. After you validate the new disk and attach it according to your maintenance plan, you can proceed with host encryption steps. ADE is not a workaround and would create an incompatibility with encryption at host.",
+      "wrongOptions": {
+        "A": "The documented workaround is not conversion to unmanaged disks. Encryption at host guidance is written for Azure managed disks, and Ultra Disk is a managed disk offering. Misconception: old managed disk metadata can be escaped by moving to unmanaged storage. Could be correct only in a different legacy migration question unrelated to Ultra Disk encryption-at-host support.",
+        "B": "Azure Disk Encryption does not remove the Ultra Disk or Premium SSD v2 512e creation-date caveat. It also conflicts with encryption at host because VMs or scale sets that currently or ever had ADE enabled cannot use host encryption. Misconception: guest encryption can paper over platform disk restrictions. Could be correct when protecting a legacy supported VM with ADE and not planning to enable encryption at host.",
+        "D": "The caveat explicitly applies to Ultra Disks and Premium SSD v2. The disk in the question is an Ultra Disk with 512e sector size created before the documented date. Misconception: only the newest disk SKU has the special rule. Could be correct for a different disk type that is not covered by the Ultra/Premium SSD v2 restriction."
+      },
+      "plainEnglish": "The subscription and VM size are ready, but this particular disk has an old format timing issue for the feature. Microsoft's rule says 512e Ultra Disks and Premium SSD v2 disks need to have been created after May 13, 2023. This disk was created in April 2023. The fix is to take a snapshot and create a new disk from that snapshot so the replacement disk is a newer disk resource, then continue with the encryption-at-host plan.",
+      "analogy": "A security upgrade works only on safes of a certain model made after a factory change date. Your safe is the right model family, but it was built a month too early. The vendor tells you to copy the contents into a newly manufactured safe based on the old safe's contents rather than forcing the old safe to accept the upgrade.\n\n| Analogy | Azure reality |\n|---|---|\n| Safe model family | Ultra Disk or Premium SSD v2 |\n| Factory change date | 2023-05-13 creation-date requirement |\n| Copying safe contents | Snapshot the disk |\n| Newly manufactured safe | New disk created from the snapshot |\n| Security upgrade | Encryption at host enablement |\n\n**Where the analogy breaks down:** Azure snapshots and managed disk creation are storage operations with performance, consistency, and application-quiescing considerations. A safe analogy does not cover sector size or VM attachment states.",
+      "jargon": [
+        {
+          "term": "Ultra Disk",
+          "definition": "A high-performance Azure managed disk type designed for low-latency, high-throughput workloads."
+        },
+        {
+          "term": "Premium SSD v2",
+          "definition": "An Azure managed disk type that provides configurable performance for premium solid-state storage workloads."
+        },
+        {
+          "term": "512e sector size",
+          "definition": "A disk sector format that presents 512-byte logical sectors while using larger physical sectors internally."
+        },
+        {
+          "term": "Snapshot",
+          "definition": "A point-in-time copy of a managed disk that can be used to create another disk."
+        },
+        {
+          "term": "Managed disk",
+          "definition": "Azure-managed block storage for VM OS disks and data disks."
+        },
+        {
+          "term": "Creation date",
+          "definition": "The date the disk resource was created, which matters for this specific Ultra Disk and Premium SSD v2 restriction."
+        },
+        {
+          "term": "Azure Disk Encryption",
+          "definition": "Guest-level encryption using BitLocker or DM-Crypt; it is not a workaround for this encryption-at-host disk caveat."
+        },
+        {
+          "term": "VM size support",
+          "definition": "The requirement that the selected VM SKU has the `EncryptionAtHostSupported` capability in the region."
+        },
+        {
+          "term": "Provider feature registration",
+          "definition": "The subscription prerequisite that enables use of the `EncryptionAtHost` property for compute resources."
+        }
+      ],
+      "watchOut": "- The Ultra/Premium SSD v2 caveat is in addition to normal VM-size and subscription checks.\n- The date is May 13, 2023 in Microsoft documentation.\n- The rule is tied to 512e sector-size disks in those disk families.\n- ADE is not a workaround and can block encryption at host for the VM.",
+      "productionTip": {
+        "official": "Microsoft's encryption at host restrictions state that, for Ultra Disks and Premium SSD v2, disks using a 512e sector size need to have been created after 5/13/2023. If the disk was created before that date, the documentation says to snapshot the disk and create a new disk by using the snapshot.",
+        "recommendation": "Before the maintenance window, inventory disk SKU, sector size, creation date, attachment, and application consistency requirements. Practice the snapshot-and-new-disk process in a nonproduction environment so rollback and performance settings are understood before touching a critical Ultra Disk workload."
+      },
+      "memoryTrick": "For Ultra or Premium SSD v2, remember **512e after 5/13**. This is a narrow rule; it does not replace the wider checks for feature registration, supported VM size, and ADE history.",
+      "examTip": "The exam clue is the combination of **Ultra Disk**, **512e**, and a creation date before **2023-05-13**. Choose snapshot and recreate. A harder version may use Premium SSD v2 instead of Ultra Disk; the same documented caveat applies to both disk families."
+    },
+    "sources": [
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+      },
+      {
+        "title": "Enable end-to-end encryption using encryption at host - Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli"
+      },
+      {
+        "title": "Server-side encryption of Azure managed disks",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

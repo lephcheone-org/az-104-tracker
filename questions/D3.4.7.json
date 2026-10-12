@@ -1,0 +1,689 @@
+[
+  {
+    "id": "D3.4.7-01",
+    "objective": "D3.4.7",
+    "type": "multiple",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains an App Service app named `orders-web`. The app must meet two networking requirements.\n\n| Requirement | Details |\n|---|---|\n| R1 | `orders-web` must call an Azure SQL private endpoint in a virtual network. |\n| R2 | Users on the same virtual network must browse to `orders-web` without sending traffic over the public internet. |\n\nWhich two App Service networking features should you configure? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Hybrid Connections for R1 and access restrictions for R2"
+      },
+      {
+        "id": "B",
+        "text": "Virtual network integration for R1"
+      },
+      {
+        "id": "C",
+        "text": "NAT gateway integration for R2"
+      },
+      {
+        "id": "D",
+        "text": "A private endpoint for R2"
+      },
+      {
+        "id": "E",
+        "text": "An app-assigned address for both R1 and R2"
+      }
+    ],
+    "correct": [
+      "B",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The app is a multitenant App Service app in a supported dedicated compute tier, not an app already running inside an App Service Environment. The virtual network, DNS, and SQL private endpoint exist or can be configured.",
+    "sections": {
+      "correctAnswer": "**B. Virtual network integration for R1** and **D. A private endpoint for R2**. Virtual network integration is the App Service feature for outbound calls from the app into or through a virtual network. A private endpoint is the inbound Private Link entry point that lets private clients reach the app by private IP address.",
+      "technical": "App Service separates features that handle traffic **to** your app from features that handle calls **from** your app. Microsoft documents this as an important design split: inbound features include access restrictions, service endpoints, private endpoints, and app-assigned addresses; outbound features include Hybrid Connections and virtual network integration.\n\nFor R1, the app is the client. `orders-web` starts an outbound connection to Azure SQL through a private endpoint. Regional virtual network integration attaches the app to a delegated integration subnet and lets outbound traffic reach resources in the integrated virtual network, peered networks, service endpoint-secured services, private endpoint-enabled services, and networks reachable through ExpressRoute or VPN. Network security groups and route tables on the integration subnet affect only traffic that is routed through that integration.\n\nFor R2, clients in a private network need to reach the web app privately. A private endpoint creates a network interface in a subnet and gives the app an inbound private IP through Azure Private Link. The private endpoint is for incoming traffic only. It does not make the app's outbound calls use that subnet.\n\nThe evaluation order is scenario-driven: first ask who starts the connection, then choose the App Service feature that controls that direction. If the app starts the connection, think virtual network integration or Hybrid Connections. If a client reaches the app, think access restrictions, service endpoints, private endpoints, an app-assigned address, or an App Service Environment. Here the outbound target is an Azure private endpoint, so virtual network integration fits R1. The inbound target is the app itself over a private IP, so a private endpoint fits R2.",
+      "wrongOptions": {
+        "A": "Hybrid Connections are outbound and can reach a single TCP host and port through Azure Relay, but they are not the usual answer for an Azure SQL private endpoint in a virtual network, and access restrictions do not create a private IP address for the app. Misconception: Any feature that filters inbound requests makes the app privately reachable. Could be correct when the app only needs outbound access to one on-premises TCP endpoint and inbound access can remain public but filtered.",
+        "C": "NAT gateway integration gives predictable outbound internet-facing addresses and more SNAT ports after traffic is routed through virtual network integration. It is not an inbound private entry point to the web app. Misconception: A NAT gateway attached to a subnet makes every service in the subnet privately accessible. Could be correct when a partner firewall needs one static public source IP for the app's outbound calls.",
+        "E": "An app-assigned address is tied to IP-based TLS and gives a dedicated inbound address, but it still uses App Service front ends and does not provide outbound access to a SQL private endpoint. Misconception: A dedicated public IP solves both inbound privacy and outbound routing. Could be correct when a legacy client requires IP-based TLS or a unique inbound public address."
+      },
+      "plainEnglish": "Treat the web app like a person in a building. Sometimes the person phones another department; sometimes visitors come to the person's desk. Those are different directions of travel. Virtual network integration helps the app phone resources in a virtual network, such as a database behind a private endpoint. A private endpoint helps visitors from the virtual network come to the app by using a private address. One feature does not replace the other because one controls outgoing calls and the other controls incoming visits.",
+      "analogy": "Imagine `orders-web` as a shop in a large managed shopping centre. The shop needs a staff-only hallway to reach the stockroom, and customers from the office campus need a private entrance to the shop.\n\n| Analogy | Azure reality |\n|---|---|\n| Staff-only hallway from the shop | Virtual network integration for outbound app calls |\n| Stockroom reachable inside the campus | Azure SQL through a private endpoint |\n| Private entrance into the shop | App Service private endpoint |\n| Public shopping centre doors | Default App Service public endpoint |\n\n**Where the analogy breaks down:** Azure routing is not a hallway with people walking both ways. App Service uses separate platform features, subnets, DNS records, Private Link, and front-end roles, so each traffic direction must be configured deliberately.",
+      "jargon": [
+        {
+          "term": "Azure App Service",
+          "definition": "A managed Azure platform for hosting web apps, API apps, mobile back ends, and supported containers without managing the underlying servers."
+        },
+        {
+          "term": "Virtual network integration",
+          "definition": "An App Service feature that lets an app make outbound calls into or through an Azure virtual network by using a delegated subnet."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A private network interface in a virtual network that connects clients privately to an Azure PaaS resource by using Azure Private Link."
+        },
+        {
+          "term": "Azure Private Link",
+          "definition": "A service that lets supported Azure resources be reached privately over the Microsoft backbone through private endpoints."
+        },
+        {
+          "term": "Inbound traffic",
+          "definition": "Network traffic initiated by a client that is trying to reach the app."
+        },
+        {
+          "term": "Outbound traffic",
+          "definition": "Network traffic initiated by the app when it calls another service or endpoint."
+        },
+        {
+          "term": "App-assigned address",
+          "definition": "A dedicated inbound address related to IP-based TLS in App Service, not a private outbound routing feature."
+        },
+        {
+          "term": "NAT gateway",
+          "definition": "A virtual network service that provides predictable outbound public IP addresses and scalable SNAT ports for traffic leaving a subnet."
+        }
+      ],
+      "watchOut": "- Virtual network integration is outbound only; it does not let virtual network clients browse privately to the app.\n- A private endpoint is inbound only; the app's outgoing calls do not use the private endpoint.\n- App Service networking questions often hide the answer in the words **to the app** versus **from the app**.\n- You can combine inbound and outbound features when a design needs both directions controlled.",
+      "productionTip": {
+        "official": "Microsoft documents that virtual network integration doesn't grant inbound private access to an app and that private endpoints are only for inbound flows to the web app. The networking features overview also separates App Service inbound features from outbound features.",
+        "recommendation": "Draw arrows for each dependency before choosing features. For least privilege, enable only the direction required, lock private endpoints with network security groups, and document which subnet is used for App Service integration so teams do not place unrelated resources there."
+      },
+      "memoryTrick": "**VNet integration is the app going out; private endpoint is users coming in.** This rule is a simplification because access restrictions and service endpoints can also affect inbound designs, but it correctly separates the two headline features.",
+      "examTip": "Clue words include **app must call** for outbound and **users browse to the app privately** for inbound. Rule out answers that try to use one feature for both directions. A harder version might add access restrictions or service endpoints; those can filter the public/default endpoint but still do not replace a private endpoint when the requirement is a private IP for the app."
+    },
+    "sources": [
+      {
+        "title": "Networking Features - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+      },
+      {
+        "title": "Integrate your app with an Azure virtual network - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+      },
+      {
+        "title": "Use Private Endpoints for Apps - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-private-endpoint"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.7-02",
+    "objective": "D3.4.7",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have an App Service app named `claims-api` in the Australia East region. The app runs in a Standard App Service plan. You need to configure regional virtual network integration so that the app can call services in a virtual network. You create a subnet named `snet-appint`.\n\nWhich two subnet or plan requirements should you satisfy? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use an empty subnet that is delegated to `Microsoft.Web/serverFarms`"
+      },
+      {
+        "id": "B",
+        "text": "Place the virtual network in any Azure region because regional virtual network integration ignores region"
+      },
+      {
+        "id": "C",
+        "text": "Use at least a dedicated compute pricing tier such as Basic, Standard, Premium, Premium v2, Premium v3, or Premium v4"
+      },
+      {
+        "id": "D",
+        "text": "Put a private endpoint for the app in the same subnet as virtual network integration"
+      },
+      {
+        "id": "E",
+        "text": "Use the Free or Shared tier if the subnet is at least `/26`"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The design uses regional virtual network integration for a multitenant App Service app. The app and virtual network are intended to be in the same Azure region. The subnet is being prepared for App Service integration, not for private endpoints.",
+    "sections": {
+      "correctAnswer": "**A. Use an empty subnet that is delegated to `Microsoft.Web/serverFarms`** and **C. Use at least a dedicated compute pricing tier such as Basic, Standard, Premium, Premium v2, Premium v3, or Premium v4**. Microsoft documents that regional virtual network integration needs a supported dedicated compute tier and a suitable integration subnet delegated to App Service plans.",
+      "technical": "Regional virtual network integration has requirements at both the App Service plan layer and the subnet layer. The plan must be in a pricing tier that supports the feature. Microsoft lists Basic, Standard, Premium, Premium v2, Premium v3, Premium v4, and Elastic Premium as supported for virtual network integration scenarios. Free and Shared are multitenant worker tiers for inexpensive hosting, but they are not listed as supported integration tiers.\n\nThe subnet must be appropriate for integration. The enablement documentation says the subnet must be in the same region as the app, must be empty, and must be delegated to `Microsoft.Web/serverFarms`. If the subnet is not delegated, the provisioning process or command can apply the delegation when the caller has permissions. The same documentation says the subnet must be allocated at least an IPv4 `/28` block, while the recommended minimum is `/26` with 64 addresses to accommodate future growth and scaling. The overview adds that Azure reserves five addresses in any subnet, one address is used per App Service plan instance, scale operations can temporarily double IP use, and platform upgrades also need free addresses.\n\nSubnet separation matters. A private endpoint subnet does not need to be empty, but virtual network integration cannot use the same subnet as a private endpoint. Therefore, using a dedicated integration subnet avoids conflicts and preserves capacity.\n\nThe order of preparation is: confirm the plan tier, choose a virtual network in the same region, create or select an empty subnet sized for scale, delegate it to `Microsoft.Web/serverFarms`, then add virtual network integration from the App Service Networking page, CLI, PowerShell, or ARM resource properties.",
+      "wrongOptions": {
+        "B": "Regional virtual network integration supports a virtual network in the same region as the app. Region is not ignored. Misconception: Any Azure networking feature can cross regions by default. Could be correct when using other patterns such as peering after integration, gateway-required integration in specific legacy scenarios, or an App Service Environment connected to broader network topology.",
+        "D": "The private endpoint and virtual network integration features use different subnet rules, and Microsoft notes that virtual network integration can't use the same subnet as the private endpoint. Misconception: Placing every App Service networking object in one subnet simplifies routing. Could be correct when designing a separate subnet specifically for private endpoints, not the integration subnet.",
+        "E": "A larger subnet does not make Free or Shared support virtual network integration. The pricing tier requirement and subnet requirement are independent gates. Misconception: Subnet capacity can compensate for an unsupported App Service plan SKU. Could be correct for a low-cost public app that does not need virtual network integration."
+      },
+      "plainEnglish": "Before this app can use a virtual network for outgoing traffic, two things must be true. First, the app must run on a plan that supports the feature. Standard does, and so do Basic and Premium family plans. Free and Shared do not. Second, App Service needs a special empty subnet to plug into. That subnet should be prepared for App Service plans by using the `Microsoft.Web/serverFarms` delegation. Microsoft recommends making it big enough for growth, commonly `/26`, because scaling and platform upgrades need spare addresses.",
+      "analogy": "Think of a company campus shuttle. Only employees with a certain badge class can use the shuttle, and the shuttle needs an empty reserved bay marked for that shuttle service.\n\n| Analogy | Azure reality |\n|---|---|\n| Eligible badge class | Supported App Service pricing tier |\n| Reserved empty shuttle bay | Empty integration subnet |\n| Bay sign naming the shuttle operator | `Microsoft.Web/serverFarms` delegation |\n| Extra spaces for busy days | Spare subnet IP addresses for scale and upgrades |\n\n**Where the analogy breaks down:** A subnet is not a parking lot. Azure consumes addresses for worker instances, reserves platform addresses, applies delegation metadata, and may temporarily use extra IPs during App Service plan scaling.",
+      "jargon": [
+        {
+          "term": "Regional virtual network integration",
+          "definition": "The current App Service feature that connects an app to a subnet in a virtual network in the same region for outbound access."
+        },
+        {
+          "term": "Dedicated compute pricing tier",
+          "definition": "An App Service tier such as Basic, Standard, or Premium where worker resources are dedicated to an App Service plan rather than shared Free or Shared hosting."
+        },
+        {
+          "term": "Subnet delegation",
+          "definition": "A subnet property that designates which Azure service can create service-specific network resources or attach to the subnet."
+        },
+        {
+          "term": "`Microsoft.Web/serverFarms`",
+          "definition": "The subnet delegation used by App Service plans for regional virtual network integration."
+        },
+        {
+          "term": "`/26`",
+          "definition": "CIDR notation for a subnet with 64 IPv4 addresses before Azure-reserved addresses are considered."
+        },
+        {
+          "term": "`/28`",
+          "definition": "CIDR notation for a subnet with 16 IPv4 addresses; Microsoft documents it as an allocation minimum for integration, though larger subnets are recommended."
+        },
+        {
+          "term": "App Service plan",
+          "definition": "The compute plan that defines the pricing tier, worker size, scale settings, and region for App Service apps."
+        },
+        {
+          "term": "Private endpoint subnet",
+          "definition": "A subnet that hosts private endpoint network interfaces; it is separate from the App Service virtual network integration subnet."
+        }
+      ],
+      "watchOut": "- The `/26` value is a recommendation for future growth, not the only documented minimum.\n- Portal creation paths can enforce their own minimums, so distinguish product capability from a portal wizard rule.\n- The subnet must be empty for App Service integration.\n- A supported tier is still required even if the subnet is perfectly sized.",
+      "productionTip": {
+        "official": "Microsoft states that virtual network integration requires Basic, Standard, Premium, Premium v2, Premium v3, Premium v4, or Elastic Premium tiers and that the subnet must be same-region, empty, and delegated to `Microsoft.Web/serverFarms`. The documentation recommends `/26` for future scale while listing `/28` as the allocation minimum.",
+        "recommendation": "Reserve one named subnet per integration purpose and avoid packing unrelated private endpoints into it. Size for the largest planned instance count plus scale events; choosing `/26` early is usually cheaper than redesigning networks after address pressure appears."
+      },
+      "memoryTrick": "For regional integration remember **Tier, Region, Empty, Delegate, Space**. This is a study shortcut; you still need to check exact size and plan limits for the current SKU and deployment method.",
+      "examTip": "Clue words are **regional virtual network integration**, **Standard plan**, and **subnet**. Pick answers about supported tiers and `Microsoft.Web/serverFarms` delegation. A harder exam version may ask whether `/26` is required; the safe wording is that `/26` is recommended for growth, while smaller documented minimums exist and may vary by provisioning path."
+    },
+    "sources": [
+      {
+        "title": "Integrate your app with an Azure virtual network - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+      },
+      {
+        "title": "Enable Integration with Azure Virtual Network - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-vnet-integration-enable"
+      },
+      {
+        "title": "Use Private Endpoints for Apps - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-private-endpoint"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.7-03",
+    "objective": "D3.4.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an App Service app named `payroll-web`. The app currently has `publicNetworkAccess` explicitly enabled. A security engineer asks you to make the app reachable only from clients on `vnet-prod` by using Azure Private Link. The default host name `payroll-web.azurewebsites.net` and the Kudu site must work for private clients.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable virtual network integration and add an `A` record for `payroll-web.azurewebsites.net` in public DNS"
+      },
+      {
+        "id": "B",
+        "text": "Add an access restriction allow rule for `vnet-prod` and leave public network access enabled"
+      },
+      {
+        "id": "C",
+        "text": "Create a private endpoint for the app, configure private DNS records in `privatelink.azurewebsites.net` for the app and SCM host, and disable public network access"
+      },
+      {
+        "id": "D",
+        "text": "Create a NAT gateway on the integration subnet and add the NAT public IP to the app's access restriction list"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Private clients can resolve a private DNS zone linked to `vnet-prod`. The App Service plan supports private endpoints. Public access is explicitly enabled before the change, so it must be deliberately disabled for isolation.",
+    "sections": {
+      "correctAnswer": "**C. Create a private endpoint for the app, configure private DNS records in `privatelink.azurewebsites.net` for the app and SCM host, and disable public network access**. A private endpoint supplies the inbound Private Link path; DNS must resolve the default and SCM names to the private endpoint IP; disabling public access removes the existing public entry point.",
+      "technical": "A private endpoint for App Service is an inbound feature. It creates a network interface in a subnet of a virtual network and gives private clients a path to the app over Azure Private Link. Microsoft states that the private endpoint is used only for incoming traffic to the app; outgoing traffic uses other features such as virtual network integration.\n\nThe DNS step is essential. When a private endpoint exists, Azure public DNS changes the default hostname chain so that `payroll-web.azurewebsites.net` points by CNAME to `payroll-web.privatelink.azurewebsites.net`. That public chain still ends at a public address unless your private DNS system overrides the privatelink name with the private endpoint IP. Microsoft documents the private DNS zone as `privatelink.azurewebsites.net` and recommends an `A` record for the app name. The Kudu or SCM endpoint also needs a record, such as `payroll-web.scm.privatelink.azurewebsites.net`, when private deployment tools or the Kudu console are used.\n\nPrivate endpoints and public access can coexist. In this question, public access is explicitly enabled, so simply adding the private endpoint would not satisfy **reachable only**. You must disable public network access, or otherwise ensure the default public endpoint is blocked. Access restrictions aren't evaluated for traffic through a private endpoint, and private endpoint restrictions are handled with network security groups.\n\nThe order is: create the private endpoint in an appropriate subnet, integrate it with a private DNS zone or create the needed records, link the DNS zone to `vnet-prod`, test private resolution to the private IP, then disable public network access so internet clients cannot use the default endpoint.",
+      "wrongOptions": {
+        "A": "Virtual network integration is outbound from the app and does not publish an inbound private IP for private clients. Putting the default host directly in public DNS also misses the App Service private endpoint DNS pattern. Misconception: DNS alone can turn an outbound integration into inbound private access. Could be correct when the app needs to call private resources and no private inbound path is required.",
+        "B": "Access restrictions can allow or deny traffic on the default endpoint, but they do not create a Private Link private IP path. Leaving public network access enabled also conflicts with the requirement to be reachable only through Private Link. Misconception: A virtual network allow rule is the same as a private endpoint. Could be correct when you want to restrict the public/default endpoint to selected subnets by service endpoint rather than use Private Link.",
+        "D": "NAT gateway affects outbound internet-facing traffic that leaves through virtual network integration. Adding its public IP to inbound access rules does not make private clients reach the app privately. Misconception: NAT and private endpoints are interchangeable because both involve IP addresses. Could be correct when an external API must see a static source IP from the app."
+      },
+      "plainEnglish": "A private endpoint is the private front door for the web app. But clients find doors by names, so DNS must send `payroll-web.azurewebsites.net` to the private endpoint address inside the virtual network. Kudu has its own `scm` name, so it needs a private record too. Because the app was still publicly open, you must also turn off public network access. Otherwise, private access would exist, but the public door could still be used.",
+      "analogy": "Picture a payroll office that moves sensitive visits to a badge-only side entrance. The office also updates the company directory so staff who search for the usual office name are sent to the side entrance, not the street lobby.\n\n| Analogy | Azure reality |\n|---|---|\n| Badge-only side entrance | Private endpoint |\n| Company directory entry | Private DNS record |\n| Regular office name still used | `payroll-web.azurewebsites.net` |\n| Maintenance entrance listing | SCM/Kudu private DNS record |\n| Closing the street lobby | Disabling public network access |\n\n**Where the analogy breaks down:** Azure does not physically move the app. The public hostname uses CNAME records, Private Link forwards traffic, and certificate validation still expects the App Service hostname to match the request.",
+      "jargon": [
+        {
+          "term": "`publicNetworkAccess`",
+          "definition": "The App Service property that controls whether the app can be reached through the default public or default entry point."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A network interface in a virtual network that exposes a supported Azure resource privately by using Azure Private Link."
+        },
+        {
+          "term": "Azure Private Link",
+          "definition": "Azure technology for accessing PaaS services privately over the Microsoft backbone through private endpoints."
+        },
+        {
+          "term": "Private DNS zone",
+          "definition": "An Azure DNS zone linked to virtual networks so private clients resolve names to private IP addresses."
+        },
+        {
+          "term": "`privatelink.azurewebsites.net`",
+          "definition": "The documented private DNS zone name used for App Service private endpoint records."
+        },
+        {
+          "term": "Kudu",
+          "definition": "The App Service advanced tools and deployment site, also called the SCM site."
+        },
+        {
+          "term": "SCM site",
+          "definition": "The source control management endpoint of an App Service app, commonly reached through `<app>.scm.azurewebsites.net`."
+        },
+        {
+          "term": "CNAME",
+          "definition": "A DNS record type that aliases one name to another name."
+        }
+      ],
+      "watchOut": "- A private endpoint by itself is not always the same as blocking all public access; check the public access setting.\n- The app hostname and the SCM hostname need separate private DNS records when both must work privately.\n- Access restriction rules are not evaluated for traffic through the private endpoint.\n- Do not point clients directly at the private endpoint IP if certificate names and host headers matter.",
+      "productionTip": {
+        "official": "Microsoft documents that App Service private endpoint DNS uses the `privatelink.azurewebsites.net` zone and that the SCM endpoint needs a second record. The same documentation says private endpoints and public access can coexist and recommends disabling public network access for isolation.",
+        "recommendation": "Create the private DNS zone group with the private endpoint when possible so records are managed automatically. Validate with `nslookup` from a VM in the virtual network before disabling public access, and include deployment agents in the private DNS plan if they use Kudu or Web Deploy."
+      },
+      "memoryTrick": "Private endpoint designs need **PE plus DNS plus public-door decision**. This is a simplification because custom domains and Front Door private origins add extra certificate and DNS considerations.",
+      "examTip": "Clue words are **only from clients on the virtual network**, **Private Link**, **default host name**, and **Kudu**. Choose the answer that includes private endpoint, `privatelink.azurewebsites.net`, SCM DNS, and public access closure. A trick answer usually mentions virtual network integration, which is the wrong direction for incoming browser traffic."
+    },
+    "sources": [
+      {
+        "title": "Use Private Endpoints for Apps - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-private-endpoint"
+      },
+      {
+        "title": "App Service Access restrictions - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+      },
+      {
+        "title": "Networking Features - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.7-04",
+    "objective": "D3.4.7",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have an App Service app named `portal-web`. The app has the following access restriction rules for the main site.\n\n| Priority | Action | Type | Source |\n|---|---|---|---|\n| 100 | Allow | Service Tag | `AzureFrontDoor.Backend` with an `X-Azure-FDID` header filter |\n| 200 | Deny | IPv4 | `203.0.113.0/24` |\n\nThe app has no separate rules configured for the SCM/Kudu site. The **Use main site rules** option for the SCM site is turned off.\n\nYou need the main site to accept traffic only through the specified Azure Front Door instance, and you need to block all public access to Kudu unless a separate deployment rule is added later.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set the unmatched rule for the main site to Allow, and leave the SCM site with no rules"
+      },
+      {
+        "id": "B",
+        "text": "Delete the deny rule because allow rules always override deny rules in App Service"
+      },
+      {
+        "id": "C",
+        "text": "Add virtual network integration; access restriction rules apply only after outbound integration is enabled"
+      },
+      {
+        "id": "D",
+        "text": "Keep the priority-ordered main-site rules, set the main-site unmatched rule to Deny, and configure the SCM site with its own unmatched rule set to Deny or make it use the main-site rules"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Traffic comes through the default App Service endpoint, not through a private endpoint. The Front Door ID in the header filter is the intended instance, and public access to Kudu should be denied unless explicitly allowed later.",
+    "sections": {
+      "correctAnswer": "**D. Keep the priority-ordered main-site rules, set the main-site unmatched rule to Deny, and configure the SCM site with its own unmatched rule set to Deny or make it use the main-site rules**. App Service evaluates access restriction rules by priority, uses an unmatched-rule action at the end, and has a separate rule collection for the SCM/Kudu site unless you choose to reuse the main-site rules.",
+      "technical": "Access restrictions are inbound network controls implemented at the App Service front-end roles. They apply to the default endpoint before traffic reaches the worker that runs the app. The rules can use IP addresses, virtual network subnets through service endpoints, and service tags. Service tag rules can be combined with supported HTTP header filters, such as `X-Azure-FDID`, to limit Azure Front Door traffic to one Front Door instance rather than all Front Door back ends.\n\nRules are evaluated in priority order, from the lowest priority number upward. A request from the intended Azure Front Door instance matches the priority 100 allow rule and is accepted. A request from `203.0.113.0/24` that does not match the Front Door rule reaches priority 200 and is denied. Any request that matches neither rule is handled by the unmatched rule. Microsoft documents that if no unmatched rule is configured, having one or more rules implicitly changes unmatched behavior to deny all; however, production configurations are clearer when the unmatched rule is set deliberately.\n\nThe SCM site is separate. App Service has both the main site and the advanced tools site, also called SCM or Kudu. You can assign restrictions to SCM separately or select **Use main site rules** so SCM inherits the main-site list. In the question, that reuse option is off and no SCM rules exist. To block public Kudu access, you must configure SCM's unmatched rule to Deny or turn on reuse of main-site rules.\n\nOne exception is private endpoint traffic. Access restrictions are not evaluated for traffic entering through a private endpoint. This scenario is about the public/default endpoint, so access restrictions are the right control.",
+      "wrongOptions": {
+        "A": "An unmatched Allow would let all requests that miss the listed rules reach the main site, defeating the Front Door-only design. Leaving SCM with no restrictions while not using main-site rules leaves a management endpoint uncontrolled. Misconception: Adding one allow rule automatically blocks every other endpoint and every site surface. Could be correct only for a deliberately public app where unmatched traffic should continue to work.",
+        "B": "App Service does not use a general allow-over-deny model like some firewall descriptions. It processes rules in priority order, and the first matching priority sequence controls the request. Misconception: The action name matters more than priority. Could be correct when a deny rule is genuinely obsolete because a stricter earlier rule and unmatched deny already cover it, but not because allow always overrides deny.",
+        "C": "Virtual network integration is an outbound feature and is not a prerequisite for access restrictions on inbound requests. Misconception: App Service network controls all require joining a virtual network first. Could be correct when the app must call private back-end resources, but it does not control public Kudu access."
+      },
+      "plainEnglish": "The app has a doorman list. The doorman checks the list from the smallest priority number to the largest. First, the doorman allows the exact Front Door instance. Then the doorman blocks a specific IP range. After the list, there must be a final rule for everybody else. That final rule should say Deny. Kudu is like a maintenance entrance with its own doorman list. If the maintenance entrance is not using the main entrance's list, you need to lock it separately.",
+      "analogy": "Imagine a secure event hall with a public entrance and a staff entrance. The public entrance admits guests only from one approved shuttle company and blocks a known troublemaking neighborhood. The staff entrance has a separate clipboard unless the manager tells staff to copy the public clipboard.\n\n| Analogy | Azure reality |\n|---|---|\n| Public entrance clipboard | Main-site access restrictions |\n| Staff entrance clipboard | SCM/Kudu access restrictions |\n| Smaller line number checked first | Lower numeric priority evaluated first |\n| Approved shuttle plus badge | Front Door service tag plus `X-Azure-FDID` header |\n| Final deny instruction | Unmatched rule set to Deny |\n\n**Where the analogy breaks down:** Real access restrictions evaluate source addresses, service tags, virtual network service endpoints, and selected HTTP headers at App Service front ends rather than by human judgment.",
+      "jargon": [
+        {
+          "term": "Access restrictions",
+          "definition": "App Service inbound rules that allow or deny requests based on sources such as IP addresses, service tags, or virtual network subnets."
+        },
+        {
+          "term": "Priority",
+          "definition": "The numeric ordering used to evaluate access restriction rules; lower numbers are evaluated before higher numbers."
+        },
+        {
+          "term": "Unmatched rule",
+          "definition": "The final action App Service applies when no configured access restriction rule matches a request."
+        },
+        {
+          "term": "Service tag",
+          "definition": "A Microsoft-managed label representing IP address ranges for an Azure service, such as Azure Front Door back ends."
+        },
+        {
+          "term": "`AzureFrontDoor.Backend`",
+          "definition": "The service tag commonly used to identify traffic from Azure Front Door to origin back ends."
+        },
+        {
+          "term": "`X-Azure-FDID`",
+          "definition": "An HTTP header sent by Azure Front Door that identifies a specific Front Door instance."
+        },
+        {
+          "term": "SCM site",
+          "definition": "The source control management and advanced tools endpoint for an App Service app."
+        },
+        {
+          "term": "Kudu",
+          "definition": "The App Service advanced tools engine used for diagnostics, deployment support, and management capabilities."
+        }
+      ],
+      "watchOut": "- Access restrictions protect the default endpoint, not private endpoint traffic.\n- One access rule creates an implicit deny-all if the unmatched rule is not configured, but explicit unmatched settings make operations safer.\n- The main app and SCM site can have different rule collections.\n- A service tag for Front Door should usually be paired with `X-Azure-FDID` when only one Front Door instance is allowed.",
+      "productionTip": {
+        "official": "Microsoft documents access restrictions as priority-ordered allow/deny lists, with an implicit deny-all when one or more rules exist and the unmatched rule is not configured. The documentation also states that the SCM advanced tools site can have separate restrictions or use the main-site rules.",
+        "recommendation": "Set the unmatched rule explicitly for both the app and SCM site, then enable `IPSecurity Audit logs` to confirm real requests match the intended rules. For Front Door origins, include the `X-Azure-FDID` filter so another Front Door profile cannot use the broad service tag as a bypass path."
+      },
+      "memoryTrick": "For access restrictions, remember **priority, then fallback, then SCM separately**. This shortcut does not cover every header-filter or private endpoint exception, but it catches the common exam traps.",
+      "examTip": "Clue words are **priority**, **unmatched rule**, **SCM/Kudu**, and **Use main site rules turned off**. The correct answer must address both the public app and the advanced tools endpoint. A harder version might include duplicate priorities; then the returned ARM/portal order becomes relevant after priority matching."
+    },
+    "sources": [
+      {
+        "title": "Set Up Access Restrictions - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-ip-restrictions"
+      },
+      {
+        "title": "App Service Access restrictions - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions"
+      },
+      {
+        "title": "Networking Features - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.7-05",
+    "objective": "D3.4.7",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "Fabrikam has an App Service app named `claims-web`. The app must connect to an on-premises claims processing service named `claims01.corp.fabrikam.com` on TCP port 8443. The on-premises network is not connected to Azure by VPN or ExpressRoute, and the firewall team will not open inbound ports from the internet to the claims server. The solution must require minimal network changes.\n\nWhich two actions should you perform? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a private endpoint for `claims-web`"
+      },
+      {
+        "id": "B",
+        "text": "Create an App Service Hybrid Connection that targets `claims01.corp.fabrikam.com:8443`"
+      },
+      {
+        "id": "C",
+        "text": "Configure an access restriction allow rule for the on-premises server's private IP address"
+      },
+      {
+        "id": "D",
+        "text": "Create a NAT gateway and associate it with the app's private endpoint subnet"
+      },
+      {
+        "id": "E",
+        "text": "Install and configure Hybrid Connection Manager on a host that can reach `claims01.corp.fabrikam.com:8443` and can connect outbound to Azure Relay on port 443"
+      }
+    ],
+    "correct": [
+      "B",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The App Service plan SKU supports Hybrid Connections. The target protocol runs over TCP and can use a stable DNS host name and port. The on-premises environment permits outbound connections to Azure over TCP 443.",
+    "sections": {
+      "correctAnswer": "**B. Create an App Service Hybrid Connection that targets `claims01.corp.fabrikam.com:8443`** and **E. Install and configure Hybrid Connection Manager on a host that can reach `claims01.corp.fabrikam.com:8443` and can connect outbound to Azure Relay on port 443**. Hybrid Connections are designed for outbound app access to a single TCP host and port without requiring an inbound firewall opening to the private network.",
+      "technical": "App Service Hybrid Connections are an outbound connectivity feature. In App Service, each Hybrid Connection maps to one TCP host and port combination. The App Service infrastructure connects to Azure Relay for the application, and the Hybrid Connection Manager, or HCM, runs in the network that can reach the target endpoint. HCM also connects outbound to Azure Relay on port 443. Through the joined relay connections, the app can reach the specified private endpoint.\n\nThis pattern fits the scenario because the private network is not connected to Azure with VPN or ExpressRoute and the firewall team refuses inbound internet holes. Hybrid Connections normally use outbound web ports and do not require an internet-accessible claims server. When the app performs DNS resolution for the configured host and port, outbound TCP traffic is redirected through the Hybrid Connection and exits through HCM to the target. Microsoft notes that using a DNS name is preferred because some client software skips DNS lookup when configured with a raw IP address.\n\nHybrid Connections have important boundaries. They do not provide a new way for clients to access the web app. They do not support UDP, mounting a drive, LDAP scenarios that require UDP, Active Directory domain join, or dynamic-port protocols such as FTP Passive Mode. The feature is network-level and does not inspect the application protocol, so HTTPS-like custom services on TCP 8443 can work as long as the target host and port are reachable from HCM.\n\nThe implementation order is: create or select the Hybrid Connection with the exact host and port, add it to the app, install HCM on a machine that can resolve and reach that host and port, authorize HCM to relay that Hybrid Connection, and test from the app.",
+      "wrongOptions": {
+        "A": "A private endpoint controls inbound access to the App Service app. It does not help the app call an on-premises claims server. Misconception: Any private networking feature lets the app reach private back ends. Could be correct when users inside a virtual network must browse privately to `claims-web`.",
+        "C": "Access restrictions filter incoming requests to the app; they do not create an outbound path from the app to an on-premises server. Misconception: Allowing an IP address in access restrictions creates a route to that IP. Could be correct when the on-premises server or a proxy is calling the web app and you want to restrict inbound source addresses.",
+        "D": "NAT gateway is for predictable outbound public IP and SNAT scale after virtual network integration routes traffic through a subnet. It does not by itself bridge a private on-premises TCP endpoint without network connectivity. Misconception: Static outbound IP is equivalent to private reachability. Could be correct when the on-premises firewall accepts traffic from a public IP and the design already routes through VNet integration, but that is not the minimal no-inbound-hole pattern here."
+      },
+      "plainEnglish": "Hybrid Connections act like a relay. The web app talks out to Azure Relay, and a small agent inside Fabrikam's network also talks out to Azure Relay. Because both sides start outbound connections, the on-premises firewall does not need to accept new inbound internet traffic. The agent then forwards the traffic to the single claims server and port. This is different from making the web app private; the requirement is for the web app to reach a private on-premises service.",
+      "analogy": "Imagine two offices that cannot call each other directly because one office will not answer outside calls. Both offices can call a trusted switchboard. The web app calls the switchboard, the on-premises agent calls the switchboard, and the switchboard connects the conversation to one internal extension.\n\n| Analogy | Azure reality |\n|---|---|\n| Trusted switchboard | Azure Relay |\n| On-premises caller | Hybrid Connection Manager |\n| One internal extension | `claims01.corp.fabrikam.com:8443` |\n| Web app caller | App Service app using the Hybrid Connection |\n| No outside incoming calls | No inbound firewall opening to the claims server |\n\n**Where the analogy breaks down:** Hybrid Connections forward TCP packets through authenticated relay connections; they are not a telephone system and do not support every network protocol or multi-port negotiation pattern.",
+      "jargon": [
+        {
+          "term": "Hybrid Connections",
+          "definition": "An App Service and Azure Relay feature that lets an app make outbound TCP connections to a specific host and port in another network."
+        },
+        {
+          "term": "Hybrid Connection Manager",
+          "definition": "The relay agent installed where it can reach the target endpoint and Azure Relay; it forwards traffic for configured Hybrid Connections."
+        },
+        {
+          "term": "Azure Relay",
+          "definition": "An Azure messaging and connectivity service used by Hybrid Connections to join outbound connections from the app side and private-network side."
+        },
+        {
+          "term": "TCP",
+          "definition": "Transmission Control Protocol, a connection-oriented network protocol used by many application protocols."
+        },
+        {
+          "term": "Port 443",
+          "definition": "The standard HTTPS port; Hybrid Connection Manager uses outbound access to Azure Relay over this port."
+        },
+        {
+          "term": "VPN",
+          "definition": "Virtual private network connectivity that can link networks through encrypted tunnels; not present in this scenario."
+        },
+        {
+          "term": "ExpressRoute",
+          "definition": "A private connectivity service between on-premises networks and Microsoft cloud services; not available in the scenario."
+        },
+        {
+          "term": "Access restriction",
+          "definition": "An App Service inbound filtering rule, not an outbound relay to a private endpoint."
+        }
+      ],
+      "watchOut": "- Hybrid Connections are for outbound app-to-endpoint calls, not inbound user access to the app.\n- Each connection maps to one host and one port.\n- UDP and dynamic-port protocols are not supported.\n- Use DNS names for Hybrid Connection endpoints when possible, because matching depends on the app resolving the configured host.",
+      "productionTip": {
+        "official": "Microsoft documents that each App Service Hybrid Connection correlates to a single TCP host and port, HCM reaches Azure Relay over port 443, and the feature does not require an internet-accessible endpoint or inbound firewall holes to the private server.",
+        "recommendation": "Use Hybrid Connections for targeted legacy dependencies while planning a longer-term private networking model if many endpoints appear. Monitor HCM service health, keep the agent updated for TLS requirements, and document the exact host-port pairs so application teams do not assume whole-network reachability."
+      },
+      "memoryTrick": "Hybrid Connection means **one host, one TCP port, outbound relay**. This is a simplification because several Hybrid Connections can be attached to a plan, but each endpoint definition remains specific.",
+      "examTip": "Clue words are **on-premises**, **no VPN or ExpressRoute**, **no inbound firewall opening**, and **TCP host and port**. Choose Hybrid Connection plus HCM. A harder version might mention UDP, LDAP, drive mounting, or passive FTP; those details should push you away from Hybrid Connections."
+    },
+    "sources": [
+      {
+        "title": "Hybrid Connections in Azure App Service - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-hybrid-connections"
+      },
+      {
+        "title": "Networking Features - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.7-06",
+    "objective": "D3.4.7",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have an App Service app named `billing-api` in a Premium v3 plan. A payment provider allows requests only from one public IP address that you register. The current App Service properties show several outbound IP addresses and several possible outbound IP addresses. The operations team also plans to scale the app between pricing families during the next year.\n\nYou need to provide a stable outbound public IP address for internet-facing calls from `billing-api` to the provider.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable regional virtual network integration, route outbound internet traffic through the integration, associate a NAT gateway with the integration subnet, and register the NAT gateway public IP address with the provider"
+      },
+      {
+        "id": "B",
+        "text": "Register only the first value in `outboundIpAddresses` because App Service always uses the first address for external calls"
+      },
+      {
+        "id": "C",
+        "text": "Create a private endpoint for `billing-api` and register the private endpoint IP address with the provider"
+      },
+      {
+        "id": "D",
+        "text": "Use an access restriction rule with the provider's public IP address as an Allow rule"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The provider is an internet-facing service that allowlists a public source IP. The app can use a supported tier for virtual network integration and the integration subnet can be configured for NAT gateway. The goal is stable outbound egress, not inbound filtering.",
+    "sections": {
+      "correctAnswer": "**A. Enable regional virtual network integration, route outbound internet traffic through the integration, associate a NAT gateway with the integration subnet, and register the NAT gateway public IP address with the provider**. App Service outbound addresses can vary by deployment unit and pricing-family changes, while NAT gateway integration provides a predictable outbound public IP when traffic is routed through the virtual network.",
+      "technical": "App Service apps have outbound IP behavior that is easy to misread. At any moment, an app can use any address in its current outbound IP set for outbound connections. The address is selected at runtime, so a downstream firewall must allow all current outbound addresses if no egress control is added. Microsoft also documents a `possibleOutboundIpAddresses` property that shows all addresses the app might use across pricing tiers available in the deployment unit.\n\nThe current set can change. Microsoft lists changes such as deleting and recreating apps in different deployment units and scaling between lower tiers, PremiumV2, PremiumV3, and Pmv3 options. Premium v4 is a special case because it does not provide a stable set of platform outbound IP addresses; Microsoft recommends a solution such as Azure NAT Gateway when a predictable outbound IP is required.\n\nNAT gateway integration is the App Service answer for a static, predictable public source IP to internet-facing destinations. It requires regional virtual network integration and routing of internet-bound traffic through that integration. In newer site-property terms, application and configuration routing can be controlled with `outboundVnetRouting` properties, and older `vnetRouteAllEnabled` or `WEBSITE_VNET_ROUTE_ALL` settings remain supported for compatibility. The NAT gateway is associated with the integration subnet and uses its configured public IP address or prefix for outbound internet traffic.\n\nEvaluation order: the app generates the outbound request, route settings decide whether the traffic enters the virtual network integration, the integration subnet sends internet-bound traffic to NAT gateway, and the provider sees the NAT gateway public IP. Without route-all style routing, internet traffic may continue to leave through App Service platform addresses instead of the NAT gateway.",
+      "wrongOptions": {
+        "B": "App Service does not guarantee that the first listed outbound IP is used. Any outbound connection can use one of the listed addresses, and the set can change when the plan moves across pricing families. Misconception: The portal list is ordered by preference. Could be correct never as a stable allowlisting design; it is only a way to inspect current values.",
+        "C": "A private endpoint is for inbound access to the App Service app. Its private IP is not the source address used for the app's outbound call to an internet payment provider. Misconception: Private endpoint IPs represent all traffic for the app. Could be correct when private clients need to reach `billing-api` privately.",
+        "D": "Access restrictions filter incoming requests to the app; they do not influence the source IP that the provider sees when the app calls out. Misconception: Inbound allow rules can rewrite outbound addresses. Could be correct if the provider calls `billing-api` and you want to allow only that provider source."
+      },
+      "plainEnglish": "The payment provider cares about the address it sees when the app calls it. App Service's built-in outbound addresses are a pool, not a single permanent address. Scaling to another pricing family can change that pool. To make the provider see one predictable public IP, send the app's internet-bound traffic through a virtual network subnet that has a NAT gateway. Then the provider allowlists the NAT gateway public IP, not the changing App Service platform list.",
+      "analogy": "A company used to send mail through several shared mailrooms, and partners never knew which return address would appear. For a bank, the company routes all payment letters through one official courier desk with one registered return address.\n\n| Analogy | Azure reality |\n|---|---|\n| Shared mailrooms | App Service platform outbound IP pool |\n| Future office move | Scaling across pricing families |\n| Official courier desk | NAT gateway |\n| Route all payment letters to the desk | Route outbound internet traffic through VNet integration |\n| Partner allowlist | Payment provider source IP registration |\n\n**Where the analogy breaks down:** Network flows use SNAT ports, route tables, site properties, and subnet associations. The NAT gateway does not read application content like a courier inspecting letters.",
+      "jargon": [
+        {
+          "term": "Outbound IP addresses",
+          "definition": "The set of public IP addresses that an App Service app can use as source addresses for outbound connections."
+        },
+        {
+          "term": "Possible outbound IP addresses",
+          "definition": "The wider set of outbound addresses an App Service app might use across supported pricing tiers or options in a deployment unit."
+        },
+        {
+          "term": "NAT gateway",
+          "definition": "An Azure virtual network resource that provides predictable outbound public IP addresses and scalable SNAT for subnet traffic."
+        },
+        {
+          "term": "SNAT",
+          "definition": "Source network address translation, which changes the source address and port of outbound traffic."
+        },
+        {
+          "term": "Regional virtual network integration",
+          "definition": "An App Service feature that sends selected outbound app traffic into a same-region virtual network subnet."
+        },
+        {
+          "term": "`vnetRouteAllEnabled`",
+          "definition": "A legacy App Service setting for routing all application outbound traffic through virtual network integration; newer site properties are preferred."
+        },
+        {
+          "term": "`outboundVnetRouting.allTraffic`",
+          "definition": "A site property that routes application and configuration traffic through virtual network integration."
+        },
+        {
+          "term": "Premium v3",
+          "definition": "An App Service pricing family that supports virtual network integration and has its own outbound IP behavior."
+        }
+      ],
+      "watchOut": "- Registering only one App Service platform outbound IP is unsafe because the app can use other addresses in the set.\n- The possible outbound address list can grow or differ when new pricing options become available.\n- NAT gateway requires traffic to be routed through virtual network integration; merely attaching NAT to a subnet is not enough if the app bypasses the subnet.\n- Private endpoints solve inbound privacy, not outbound public source identity.",
+      "productionTip": {
+        "official": "Microsoft documents that outbound connections use one of the app's outbound addresses at runtime, that outbound sets can change when scaling between pricing families, and that virtual network integration plus NAT gateway can provide a static outbound IP for App Service.",
+        "recommendation": "For third-party allowlists, prefer NAT gateway with a dedicated public IP or prefix and automated tests that confirm the observed egress IP. Keep the old App Service outbound list available only as a fallback reference, not as the primary contract with the provider."
+      },
+      "memoryTrick": "For stable egress remember **VNet route, then NAT out**. This shortcut assumes the destination is internet-facing; private destinations might use private endpoints, service endpoints, or internal routing instead.",
+      "examTip": "Clue words are **payment provider allowlist**, **one public IP**, **possible outbound IPs**, and **scale between pricing families**. Choose NAT gateway plus VNet integration and route-all style settings. A harder version might mention Premium v4, where the platform does not expose stable outbound IPs, strengthening the NAT gateway answer."
+    },
+    "sources": [
+      {
+        "title": "Inbound/Outbound IP Addresses - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-inbound-outbound-ips"
+      },
+      {
+        "title": "Configure Azure NAT Gateway Integration - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-nat-gateway-integration"
+      },
+      {
+        "title": "Configure virtual network integration with application and configuration routing - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-vnet-integration-routing"
+      },
+      {
+        "title": "Integrate your app with an Azure virtual network - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.7-07",
+    "objective": "D3.4.7",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Woodgrove Bank is designing a new internal claims portal. The portal will include many App Service apps and function apps. Security requirements state that the hosting environment must be single tenant, deployed into Woodgrove's virtual network, and controlled with network security groups and route tables outside individual app configuration. The bank also expects to host apps that need private inbound addresses and private outbound connectivity to resources on the same network.\n\nWhich App Service networking option should Woodgrove choose?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Multitenant App Service with access restrictions on each app"
+      },
+      {
+        "id": "B",
+        "text": "An App Service Environment v3 deployed into a dedicated subnet in the virtual network"
+      },
+      {
+        "id": "C",
+        "text": "A private endpoint on each multitenant app without changing the hosting environment"
+      },
+      {
+        "id": "D",
+        "text": "Hybrid Connections from each app to every dependency"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The bank requires platform-level single-tenant isolation for the App Service hosting environment, not only private access to a few endpoints. Regional availability and ASE capacity planning are handled during design.",
+    "sections": {
+      "correctAnswer": "**B. An App Service Environment v3 deployed into a dedicated subnet in the virtual network**. An App Service Environment is the single-tenant App Service deployment model that runs in the customer's virtual network and lets network access controls live outside each individual app's settings.",
+      "technical": "App Service has two broad deployment models for this topic. The public multitenant service hosts many customers in shared supporting infrastructure and uses per-app networking features such as access restrictions, private endpoints, virtual network integration, NAT gateway integration, and Hybrid Connections. Those features are powerful, but they are enabled at the application level and do not change the fundamental multitenant hosting model.\n\nAn App Service Environment, or ASE, is different. Microsoft describes ASE as a fully isolated and dedicated environment for running App Service apps securely at high scale. It is a single-tenant deployment of App Service in a virtual network. When an ASE is installed, you select the virtual network and a single dedicated subnet; nothing else can be deployed into that subnet. Apps in the ASE already reside in that networked environment and can access resources on the same virtual network without adding ordinary multitenant virtual network integration.\n\nNetworking controls can be handled at the network layer. The ASE subnet can use network security groups, route tables, web application firewall devices in front of inbound traffic, and NAT gateway for customized outbound public egress. If the ASE uses an internal virtual IP, inbound app addresses are private addresses inside the ASE network model. The networking documentation states that all inbound and outbound application traffic is inside the specified virtual network for the ASE.\n\nSubnet planning is a real design task. The ASE subnet must be empty and delegated to `Microsoft.Web/hostingEnvironments`. Microsoft recommends `/24` for production scale and notes `/27` as the minimal size, with larger ranges such as `/23` for near-maximum scale and frequent scale operations. These subnet facts distinguish ASE from the smaller delegated subnets used for multitenant virtual network integration.",
+      "wrongOptions": {
+        "A": "Access restrictions can filter inbound traffic per app, but they do not make the App Service hosting environment single tenant or move platform-level network controls outside individual app configuration. Misconception: Locking down public access on every app equals ASE isolation. Could be correct for a smaller multitenant workload that only needs inbound filtering.",
+        "C": "Private endpoints give private inbound paths to multitenant apps, but the apps still run in the public multitenant App Service model unless you choose ASE. Misconception: Private Link changes the underlying compute tenancy. Could be correct when the only requirement is private inbound access to a few apps without full hosting isolation.",
+        "D": "Hybrid Connections provide outbound access from apps to specific TCP host-port endpoints. They are not a hosting environment and do not give private inbound addresses or single-tenant App Service infrastructure. Misconception: Reaching private dependencies one by one is the same as being deployed in a virtual network. Could be correct for isolated legacy dependencies when no broad network-isolated hosting requirement exists."
+      },
+      "plainEnglish": "Woodgrove is not asking for just one private doorway or one connection to a database. It wants a whole private App Service neighborhood that belongs to one customer and sits inside its virtual network. That is what App Service Environment is for. Access restrictions, private endpoints, and Hybrid Connections can improve individual multitenant apps, but the apps still live in the shared public App Service environment. ASE changes the hosting model.",
+      "analogy": "A business can rent offices in a shared tower and add badge readers to each room, or it can lease an entire secured campus inside its own perimeter. Woodgrove's requirement describes the campus.\n\n| Analogy | Azure reality |\n|---|---|\n| Shared tower rooms | Multitenant App Service apps |\n| Badge readers on rooms | Per-app access restrictions or private endpoints |\n| Entire secured campus | App Service Environment |\n| Campus road rules | NSGs and route tables around the ASE subnet |\n| Private loading docks and streets | Private inbound and outbound network paths |\n\n**Where the analogy breaks down:** ASE remains a managed Azure PaaS service. Woodgrove controls virtual network placement and routing, but Microsoft still operates the platform infrastructure and applies documented service limits.",
+      "jargon": [
+        {
+          "term": "App Service Environment",
+          "definition": "A single-tenant deployment of Azure App Service that runs in a customer's virtual network and hosts App Service plans using Isolated v2 pricing."
+        },
+        {
+          "term": "Single tenant",
+          "definition": "A deployment model where the supporting environment is dedicated to one customer rather than shared by many customers."
+        },
+        {
+          "term": "Internal virtual IP",
+          "definition": "An ASE option where inbound app access uses an internal address in the virtual network rather than a public-facing address."
+        },
+        {
+          "term": "Network security group",
+          "definition": "An Azure networking resource containing inbound and outbound security rules for subnet or network interface traffic."
+        },
+        {
+          "term": "Route table",
+          "definition": "A collection of user-defined routes that can steer subnet traffic through appliances such as firewalls."
+        },
+        {
+          "term": "`Microsoft.Web/hostingEnvironments`",
+          "definition": "The subnet delegation required for an App Service Environment subnet."
+        },
+        {
+          "term": "Isolated v2",
+          "definition": "The App Service pricing family used by App Service Environment v3 plans."
+        },
+        {
+          "term": "Multitenant App Service",
+          "definition": "The public App Service deployment model where many customers share supporting platform infrastructure in an App Service scale unit."
+        }
+      ],
+      "watchOut": "- ASE is a hosting model choice, not just a toggle on an existing multitenant app.\n- Apps in an ASE do not need ordinary multitenant virtual network integration to reach resources in the same virtual network.\n- ASE subnet sizing is larger and more strategic than a typical integration subnet.\n- If the requirement is only one private inbound endpoint, private endpoint may be cheaper and simpler than ASE.",
+      "productionTip": {
+        "official": "Microsoft documents App Service Environment as a fully isolated, single-tenant deployment that runs in a virtual network. The ASE networking documentation states that it deploys into an empty delegated subnet and that inbound and outbound application traffic is inside the specified virtual network.",
+        "recommendation": "Use ASE for strong isolation, large regulated estates, or network controls that must be enforced outside app-owner configuration. For small workloads, compare the operational cost of ASE against multitenant App Service with private endpoints, access restrictions, VNet integration, and Azure Policy guardrails."
+      },
+      "memoryTrick": "**ASE is the App Service estate.** This phrase is a simplification because multitenant apps can still be highly secured, but ASE is the answer when the exam says single-tenant environment in your virtual network.",
+      "examTip": "Clue words are **single tenant**, **deployed into the virtual network**, **network controls outside app configuration**, and **many apps**. Choose App Service Environment. A harder version may ask whether virtual network integration is still needed inside ASE for same-VNet resources; the documented answer is no for ordinary same-network access because the environment already resides in the VNet."
+    },
+    "sources": [
+      {
+        "title": "App Service Environment Overview - Azure App Service Environment",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/environment/overview"
+      },
+      {
+        "title": "App Service Environment networking - Azure App Service Environment",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/environment/networking"
+      },
+      {
+        "title": "Networking Features - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/networking-features"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

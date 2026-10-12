@@ -1,0 +1,1064 @@
+[
+  {
+    "id": "D1.2.1-01",
+    "objective": "D1.2.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription named `Sub1`. A group named `Helpdesk-Leads` must be able to create and remove Azure role assignments for support groups at the `rg-support` resource group scope. The group must not be able to create virtual machines, delete storage accounts, or manage resources by using Azure Policy.\n\nYou need to use the least-privilege built-in role.\n\nWhich role should you assign to `Helpdesk-Leads` at `rg-support`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Reader"
+      },
+      {
+        "id": "B",
+        "text": "Contributor"
+      },
+      {
+        "id": "C",
+        "text": "Role Based Access Control Administrator"
+      },
+      {
+        "id": "D",
+        "text": "Owner"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. No inherited role assignments, deny assignments, or role assignment conditions exist unless the scenario states otherwise.",
+    "sections": {
+      "correctAnswer": "**C. Role Based Access Control Administrator**. This role is designed to manage access to Azure resources by assigning roles using Azure RBAC, without granting broad resource-management permissions.",
+      "technical": "A role assignment has three core parts: principal, role definition, and scope. The principal is `Helpdesk-Leads`, the scope is `rg-support`, and the role definition must contain role-assignment management permissions. Role Based Access Control Administrator includes role assignment write and delete actions, read access to control-plane information, and support-ticket actions. Owner can also assign roles, but it grants full resource management and therefore violates least privilege. Contributor can manage many resources, but the built-in role excludes Azure RBAC role assignment write and delete operations through `NotActions`. Reader has only read access. Assigning the chosen role at `rg-support` limits the delegation to that resource group and child resources rather than the whole subscription.\n\nFor this specific helpdesk delegation, evaluate the requested operation before choosing the role. Adding a support group to `rg-support` requires `Microsoft.Authorization/roleAssignments/write`; removing an obsolete grant requires `Microsoft.Authorization/roleAssignments/delete`; viewing the resource group and current assignments requires read actions. Role Based Access Control Administrator contains those assignment actions without granting `Microsoft.Compute/virtualMachines/write` or storage-account delete authority. Keeping the scope at `rg-support` also means the leads cannot use this assignment to manage access in unrelated resource groups.",
+      "wrongOptions": {
+        "A": "Reader cannot create or delete role assignments. Misconception: viewing Access control (IAM) means changing it is allowed. Could be correct when the group only audits access.",
+        "B": "Contributor manages many resources but excludes Azure RBAC role assignment write and delete. Misconception: Contributor is the standard role for all administration. Could be correct for resource operators who must not manage access.",
+        "D": "Owner works technically but is too powerful because it grants full resource and access management. Misconception: any working role is acceptable for least privilege. Could be correct for trusted subscription owners."
+      },
+      "plainEnglish": "Think of Azure roles as job badges. Reader is a visitor badge, Contributor is a builder badge, Owner is a master badge, and Role Based Access Control Administrator is the badge-office badge. The helpdesk leads only need to hand out Azure access for one resource group. They do not need to build resources or own the environment. The right choice is the badge-office badge at the one floor where they work.",
+      "analogy": "A city hall has a counter that issues parking permits for one district. The clerk can approve or remove permits, but cannot buy police cars, redesign streets, or issue citywide master keys.\n\n| Analogy | Azure reality |\n|---|---|\n| Permit clerk | Role Based Access Control Administrator |\n| One district | `rg-support` resource group scope |\n| Citywide master key | Owner role |\n| Street repair crew | Contributor role |\n| Tourist information desk | Reader role |\n\n**Where the analogy breaks down:** Azure does not use physical permits; it evaluates signed-in identities, matching role assignments, inherited scopes, and possible conditions before allowing `Microsoft.Authorization` operations.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control for Azure resources."
+        },
+        {
+          "term": "Built-in role",
+          "definition": "A Microsoft-provided role definition."
+        },
+        {
+          "term": "Role Based Access Control Administrator",
+          "definition": "Role for managing Azure RBAC assignments."
+        },
+        {
+          "term": "Owner",
+          "definition": "Full management role including assigning roles."
+        },
+        {
+          "term": "Contributor",
+          "definition": "Resource management role that does not assign Azure RBAC roles."
+        },
+        {
+          "term": "Reader",
+          "definition": "Read-only Azure resource role."
+        },
+        {
+          "term": "Scope",
+          "definition": "Boundary where a role assignment applies."
+        },
+        {
+          "term": "Principal",
+          "definition": "User, group, service principal, or managed identity."
+        }
+      ],
+      "watchOut": "- Do not choose Owner just because it can do the task.\n- Contributor does not manage Azure RBAC role assignments.\n- Scope still matters; use `rg-support`, not the subscription.\n- Conditions can further constrain delegation but are not required here.",
+      "productionTip": {
+        "official": "Microsoft documents Role Based Access Control Administrator as a privileged built-in role that can create and delete Azure RBAC role assignments and read control-plane information.",
+        "recommendation": "Use a security group for access administrators, assign it at the smallest useful scope, and periodically review privileged access assignments."
+      },
+      "memoryTrick": "**Owner owns, Contributor changes, Reader sees, RBAC Administrator grants.** This is a simplification because some specialized roles include constrained assignment permissions.",
+      "examTip": "Clue words are **least privilege**, **create and remove Azure role assignments**, and **must not manage resources**. Compare privileged access roles by what they can change: Reader views, Contributor changes resources but excludes authorization writes, Owner overgrants, and Role Based Access Control Administrator targets RBAC assignment work at the selected scope. A harder version may add a condition limiting which roles the helpdesk can assign."
+    },
+    "sources": [
+      {
+        "title": "What is Azure role-based access control (Azure RBAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"
+      },
+      {
+        "title": "Azure built-in roles for Privileged",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/privileged"
+      },
+      {
+        "title": "Azure built-in roles for General",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/general"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.1-02",
+    "objective": "D1.2.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You review part of the built-in `Contributor` role definition.\n\n```json\n{\n  \"roleName\": \"Contributor\",\n  \"permissions\": [{\n    \"actions\": [\"*\"],\n    \"notActions\": [\n      \"Microsoft.Authorization/*/Delete\",\n      \"Microsoft.Authorization/*/Write\",\n      \"Microsoft.Authorization/elevateAccess/Action\"\n    ],\n    \"dataActions\": [],\n    \"notDataActions\": []\n  }]\n}\n```\n\nA user is assigned only the Contributor role on `Sub1`. What can the user do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Manage most Azure resources in `Sub1`, but not create Azure RBAC role assignments"
+      },
+      {
+        "id": "B",
+        "text": "Create any Azure RBAC role assignment because `actions` contains `*`"
+      },
+      {
+        "id": "C",
+        "text": "Read blob data in every storage account because `actions` contains `*`"
+      },
+      {
+        "id": "D",
+        "text": "Only view resources because `notActions` removes all write operations"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. No inherited role assignments, deny assignments, or role assignment conditions exist unless the scenario states otherwise. The excerpt is used to test the documented permission calculation model.",
+    "sections": {
+      "correctAnswer": "**A. Manage most Azure resources in `Sub1`, but not create Azure RBAC role assignments**. Azure computes management permissions as `Actions - NotActions`, so the authorization write exclusions remove role-assignment writes from Contributor.",
+      "technical": "Role definitions separate management-plane `Actions` from data-plane `DataActions`. A wildcard `*` in `Actions` is broad, but it is not the end of the evaluation. For a single role, Azure subtracts `NotActions` from `Actions`; similarly it subtracts `NotDataActions` from `DataActions`. Contributor therefore manages many Azure resources but does not create or delete role assignments because authorization write and delete operations are excluded. Empty `DataActions` also matters: this role does not automatically read service data such as blob contents when Microsoft Entra data authorization is used. `NotActions` is not a global deny. If the same user later receives Owner or another privileged role, Azure RBAC's additive model can grant the missing permissions unless a deny assignment or condition blocks access.\n\nApply the role-definition formula to the exact requested action. A request to create a VM matches `*` and is not listed in the shown `NotActions`, so Contributor can perform it if the scope includes the VM location. A request to create `/providers/Microsoft.Authorization/roleAssignments/...` matches `Microsoft.Authorization/*/Write`, so the same Contributor assignment does not allow it. A request to read `Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read` is a data action, so it must be found in `DataActions`, not inferred from the management wildcard.\n\nDo not treat `NotActions` as a deny rule that follows the user everywhere; it is only part of this Contributor role definition. That distinction explains why another assignment, such as Owner at the same scope, could still allow authorization writes.",
+      "wrongOptions": {
+        "B": "The wildcard is reduced by `NotActions`. Misconception: `*` always wins over exclusions. Could be correct for Owner, which has `*` without these exclusions.",
+        "C": "Blob contents are data-plane data, and this definition has no blob `DataActions`. Misconception: managing a storage account equals reading its data. Could be correct with Storage Blob Data Reader.",
+        "D": "Only the listed actions are removed; many write operations remain. Misconception: any `NotActions` entry makes a role read-only. Could be correct for Reader."
+      },
+      "plainEnglish": "The role says, roughly, `you may do almost everything`, then lists important exceptions. One exception is changing Azure authorization settings. So a Contributor can build and manage many Azure resources but cannot hand out Azure RBAC access. Also, seeing or changing the outside of a service is not the same as opening the private data stored inside that service.",
+      "analogy": "Think of a hotel maintenance card that opens almost every service room, except the safe where master cards are encoded. The card looks powerful because it says `all rooms`, but the printed exceptions still block the card-encoding safe.\n\n| Analogy | Azure reality |\n|---|---|\n| `All rooms` maintenance card | `Actions: [\"*\"]` |\n| Safe with card encoder | `Microsoft.Authorization/*/Write` excluded by `NotActions` |\n| Guest documents inside locked boxes | Data-plane data such as blobs |\n| Another separate safe key | A second role assignment such as Owner |\n| Door-check rule | `Actions - NotActions` calculation |\n\n**Where the analogy breaks down:** A hotel card is usually checked alone, while Azure can combine several assignments and then evaluate deny assignments and conditions for the requested operation.",
+      "jargon": [
+        {
+          "term": "Role definition",
+          "definition": "Collection of permissions for a role."
+        },
+        {
+          "term": "Actions",
+          "definition": "Allowed management-plane operations."
+        },
+        {
+          "term": "NotActions",
+          "definition": "Management operations subtracted from `Actions`."
+        },
+        {
+          "term": "DataActions",
+          "definition": "Allowed data-plane operations."
+        },
+        {
+          "term": "NotDataActions",
+          "definition": "Data operations subtracted from `DataActions`."
+        },
+        {
+          "term": "Contributor",
+          "definition": "Built-in role for broad resource management without RBAC assignment."
+        },
+        {
+          "term": "Management plane",
+          "definition": "Azure Resource Manager control layer."
+        },
+        {
+          "term": "Data plane",
+          "definition": "Service-specific data access layer."
+        }
+      ],
+      "watchOut": "- Check `NotActions` after seeing a wildcard.\n- `NotActions` is not an explicit deny against other roles.\n- Empty `DataActions` means no automatic blob or secret data access.\n- Multiple role assignments are additive.",
+      "productionTip": {
+        "official": "Microsoft documents the effective formulas `Actions - NotActions` and `DataActions - NotDataActions`, and documents Contributor with authorization write and delete exclusions.",
+        "recommendation": "Inspect role definitions in JSON before granting broad roles, and review parent-scope assignments that could add the missing permissions back."
+      },
+      "memoryTrick": "Read role JSON as **allow minus exceptions**. This fails if you ignore other assignments that can add permissions.",
+      "examTip": "When a question shows role-definition JSON, read the arrays in order: `Actions`, then subtract `NotActions`, then separately inspect `DataActions`. The `*` in Contributor is tempting, but the authorization write exclusions are the exam trap. A harder version may add Owner inherited from a parent scope, making the missing role-assignment permission available through a different assignment."
+    },
+    "sources": [
+      {
+        "title": "Understand Azure role definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions"
+      },
+      {
+        "title": "Azure built-in roles for Privileged",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/privileged"
+      },
+      {
+        "title": "What is Azure role-based access control (Azure RBAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.1-03",
+    "objective": "D1.2.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stdata` and a key vault named `kv-prod`. A managed identity named `mi-report` must read blob contents from a container named `reports` and read the value of secrets stored in `kv-prod`. The identity must not manage the storage account, manage the key vault resource, or assign access.\n\nWhich two built-in roles should you assign? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Storage Blob Data Reader on the `reports` container"
+      },
+      {
+        "id": "B",
+        "text": "Reader on the `stdata` storage account"
+      },
+      {
+        "id": "C",
+        "text": "Key Vault Secrets User on `kv-prod`"
+      },
+      {
+        "id": "D",
+        "text": "Key Vault Contributor on `kv-prod`"
+      },
+      {
+        "id": "E",
+        "text": "Owner on the resource group"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Blob access uses Microsoft Entra authorization. The key vault uses the Azure RBAC permission model. No shared keys, SAS tokens, or Key Vault access policies are part of the solution.",
+    "sections": {
+      "correctAnswer": "**A. Storage Blob Data Reader on the `reports` container** and **C. Key Vault Secrets User on `kv-prod`**. Both are data-plane roles that match the required data reads without granting broad management access.",
+      "technical": "Azure RBAC distinguishes control-plane permissions from data-plane permissions. Control-plane permissions manage resource configuration through Azure Resource Manager. Data-plane permissions access data inside a resource, such as blob contents or Key Vault secret values. Storage Blob Data Reader includes the blob data read permission, and assigning it at container scope keeps access limited to `reports`. The general Reader role only views resource metadata and does not read blobs by default. For Key Vault using Azure RBAC, Key Vault Secrets User reads secret contents. Key Vault Contributor is a control-plane role and Microsoft documents that it does not allow access to keys, secrets, or certificates. Owner is far broader than required and includes access-management capability.\n\nThe two assignments should also be placed at different scopes because the protected objects live in different services. For blobs, the container is the narrow boundary that contains all needed report files, so a container-scope role avoids exposing other containers. For Key Vault secrets, vault scope is normally the practical boundary for one application and environment unless an individual-secret exception is justified. The managed identity still authenticates to Microsoft Entra ID for both services; the roles only answer the authorization question after identity is established.",
+      "wrongOptions": {
+        "B": "Reader views the storage resource, not blob contents. Misconception: viewing a storage account opens its data. Could be correct for metadata-only inspection.",
+        "D": "Key Vault Contributor manages the vault resource but does not read secret values. Misconception: service Contributor includes service data. Could be correct for vault configuration management.",
+        "E": "Owner is excessive and can assign access. Misconception: one broad role is simpler and acceptable. Could be correct for a true resource owner, not this managed identity."
+      },
+      "plainEnglish": "The identity needs to open two kinds of private content: blob files and secret values. A role that lets it look at the outside label of a storage account or vault is not enough. A role that lets it run the whole resource group is too much. Choose a blob data reader role for blobs and a Key Vault secrets reader role for secrets.",
+      "analogy": "A reporting robot visits a records office that has file cabinets and a password safe. It needs a read-only key for one cabinet and a separate key that opens password envelopes, but it should not receive the building manager's keys.\n\n| Analogy | Azure reality |\n|---|---|\n| Reporting robot | Managed identity `mi-report` |\n| Cabinet named reports | Blob container `reports` |\n| Read-only cabinet key | Storage Blob Data Reader |\n| Password safe | Key vault `kv-prod` |\n| Key for password envelopes | Key Vault Secrets User |\n\n**Where the analogy breaks down:** Azure Storage and Key Vault are different services with different data actions; one physical robot key cannot show Microsoft Entra authentication, RBAC scopes, or Key Vault permission models.",
+      "jargon": [
+        {
+          "term": "Managed identity",
+          "definition": "Microsoft Entra identity managed for an Azure workload."
+        },
+        {
+          "term": "Storage Blob Data Reader",
+          "definition": "Role for read access to blob containers and data."
+        },
+        {
+          "term": "Key Vault Secrets User",
+          "definition": "Role for reading secret contents in RBAC-enabled vaults."
+        },
+        {
+          "term": "Key Vault Contributor",
+          "definition": "Control-plane vault management role."
+        },
+        {
+          "term": "Control plane",
+          "definition": "Resource management layer."
+        },
+        {
+          "term": "Data plane",
+          "definition": "Layer for data inside resources."
+        },
+        {
+          "term": "Blob container",
+          "definition": "Grouping of blobs in storage."
+        },
+        {
+          "term": "Secret",
+          "definition": "Sensitive value stored in Key Vault."
+        }
+      ],
+      "watchOut": "- Reader is not a universal data-reader role.\n- Key Vault Contributor does not read secrets.\n- Use the smallest useful scope, such as a blob container.\n- Confirm the Key Vault permission model before assigning RBAC data roles.",
+      "productionTip": {
+        "official": "Microsoft documents Storage Blob Data Reader with blob data read permissions and Key Vault Secrets User as a Key Vault data-plane role. It also states Key Vault Contributor is control-plane only for vault contents.",
+        "recommendation": "Use managed identities with service-specific data roles, and avoid granting Owner or Contributor to applications that only need to consume data."
+      },
+      "memoryTrick": "If the task opens **contents**, look for a **data** role. If it changes the **container**, look for a management role.",
+      "examTip": "Clue words are **blob contents**, **secret value**, and **must not manage**. Choose service data roles, not general Reader or Contributor-style roles. A harder version may ask for Key Vault key cryptographic operations, certificate private key access, or a storage queue operation, each of which requires a different data-plane role than the two selected here."
+    },
+    "sources": [
+      {
+        "title": "Understand Azure role definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions"
+      },
+      {
+        "title": "Azure built-in roles for Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage"
+      },
+      {
+        "title": "Grant permission to applications to access an Azure key vault using Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/key-vault/general/rbac-guide"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.1-04",
+    "objective": "D1.2.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a key vault named `kv-payroll` that uses the Azure RBAC permission model. A payroll application uses a managed identity named `mi-payroll`. The identity must retrieve the values of existing secrets from `kv-payroll`. It must not create secrets, delete secrets, manage the key vault resource, or assign access.\n\nWhich built-in role should you assign to `mi-payroll`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Key Vault Reader"
+      },
+      {
+        "id": "B",
+        "text": "Key Vault Secrets User"
+      },
+      {
+        "id": "C",
+        "text": "Key Vault Secrets Officer"
+      },
+      {
+        "id": "D",
+        "text": "Key Vault Contributor"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The vault uses Azure RBAC for Key Vault data-plane authorization, not legacy access policies.",
+    "sections": {
+      "correctAnswer": "**B. Key Vault Secrets User**. This role reads secret contents without granting secret management, vault management, or role assignment permissions.",
+      "technical": "Key Vault has a control plane and a data plane. The control plane manages the vault resource: creating, deleting, tagging, and configuring the vault. The data plane works with keys, secrets, and certificates stored in the vault. In the Azure RBAC permission model, Microsoft provides data-plane roles for these operations. Key Vault Secrets User is the least-privilege match for reading existing secret values. Key Vault Reader reads metadata of vaults and objects but not sensitive values such as secret contents. Key Vault Secrets Officer can perform secret lifecycle operations except managing permissions, so it is too powerful. Key Vault Contributor is a control-plane role and does not allow access to keys, secrets, or certificates.\n\nThe incorrect Key Vault choices fail for different reasons. `Key Vault Reader` reaches object metadata but not the secret payload, so the payroll app would still fail when requesting the value. `Key Vault Secrets Officer` includes write-oriented secret lifecycle operations, which creates an avoidable risk for a runtime identity. `Key Vault Contributor` belongs to the management side of the vault, where operations such as resource configuration are handled. The required operation is data-plane secret retrieval, so the selected role must come from the Key Vault data-plane roles.\n\nThis is why the scope should usually be the vault resource for an application identity: the role applies to secrets in that vault, while the identity still lacks authorization to change the vault resource or assign roles.",
+      "wrongOptions": {
+        "A": "Key Vault Reader reads metadata, not secret values. Misconception: all Reader roles read protected data. Could be correct for metadata audits.",
+        "C": "Secrets Officer can manage secrets, which exceeds read-only retrieval. Misconception: any secrets role is equivalent. Could be correct for a secrets lifecycle administrator.",
+        "D": "Key Vault Contributor manages the vault resource and does not read secret values. Misconception: Contributor includes data contents. Could be correct for vault configuration operators."
+      },
+      "plainEnglish": "The application needs to open existing secret values, like reading a password from a safe. A role that reads labels on the safe is not enough. A role that creates and deletes envelopes in the safe is too much. A role that manages the safe building is the wrong type of access.",
+      "analogy": "A payroll kiosk needs to read sealed pay-rate cards from a safe each morning. It should not add new cards, shred old cards, move the safe, or decide who else receives safe access.\n\n| Analogy | Azure reality |\n|---|---|\n| Payroll kiosk | Managed identity `mi-payroll` |\n| Safe | `kv-payroll` key vault |\n| Sealed pay-rate card contents | Secret values |\n| Read-only envelope permission | Key Vault Secrets User |\n| Safe relocation crew | Key Vault Contributor |\n\n**Where the analogy breaks down:** In Azure Key Vault, reading a secret value depends on the vault's authorization model and a data-plane RBAC role; a physical safe does not have separate control-plane and data-plane APIs.",
+      "jargon": [
+        {
+          "term": "Azure Key Vault",
+          "definition": "Service for protecting keys, secrets, and certificates."
+        },
+        {
+          "term": "Secret",
+          "definition": "Sensitive value such as a password or token."
+        },
+        {
+          "term": "Key Vault Secrets User",
+          "definition": "Role for reading secret contents."
+        },
+        {
+          "term": "Key Vault Reader",
+          "definition": "Role for metadata reading."
+        },
+        {
+          "term": "Key Vault Secrets Officer",
+          "definition": "Role for managing secrets except permissions."
+        },
+        {
+          "term": "Key Vault Contributor",
+          "definition": "Control-plane vault management role."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "Managed Microsoft Entra identity."
+        },
+        {
+          "term": "Data plane",
+          "definition": "Operations on vault contents."
+        }
+      ],
+      "watchOut": "- Key Vault Reader does not read secret values.\n- Key Vault Contributor is not a secret reader.\n- Secrets Officer is too broad for an app that only reads.\n- This assumes the Azure RBAC permission model.",
+      "productionTip": {
+        "official": "Microsoft documents Key Vault data-plane roles and explicitly notes that Key Vault Contributor is for control-plane operations only and does not allow access to keys, secrets, or certificates.",
+        "recommendation": "Assign applications read-only data roles through managed identities and separate human secret-administration roles from runtime secret-consumption roles."
+      },
+      "memoryTrick": "**Contributor controls the vault; Secrets User consumes the secret.** This applies to RBAC-enabled vaults.",
+      "examTip": "Focus on **retrieve secret values** and **existing secrets**. Key Vault Reader is metadata-only, Secrets Officer is lifecycle administration, and Key Vault Contributor is vault control-plane management. A harder version may switch to the legacy access policy model, where the answer would not be an Azure RBAC data role assignment."
+    },
+    "sources": [
+      {
+        "title": "Grant permission to applications to access an Azure key vault using Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/key-vault/general/rbac-guide"
+      },
+      {
+        "title": "Understand Azure role definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.1-05",
+    "objective": "D1.2.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a resource group named `rg-network` that contains virtual networks, subnets, network security groups, public IP addresses, and load balancers. A network operations team must manage these networking resources. The team must not create or manage virtual machines and must not assign access to other users.\n\nWhich built-in role should you assign to the team at `rg-network`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Virtual Machine Contributor"
+      },
+      {
+        "id": "B",
+        "text": "Network Contributor"
+      },
+      {
+        "id": "C",
+        "text": "Contributor"
+      },
+      {
+        "id": "D",
+        "text": "Reader"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. No inherited role assignments, deny assignments, or role assignment conditions exist unless the scenario states otherwise.",
+    "sections": {
+      "correctAnswer": "**B. Network Contributor**. This service-specific role manages network resources but not access, and it does not grant permission to deploy or manage virtual machines.",
+      "technical": "Built-in roles are often service-specific. Network Contributor includes networking provider permissions such as `Microsoft.Network/*`, plus supporting read, deployment, monitoring, and support operations. Microsoft documents it as managing networks but not access to them, and notes that it does not grant permission to deploy or manage virtual machines. Virtual Machine Contributor is for VM management and does not grant management access to connected virtual networks or storage accounts. General Contributor would manage many resource types in `rg-network`, which is broader than required. Reader cannot change network resources. The least-privilege built-in role for this team is Network Contributor at the resource group that contains the network resources.\n\nNetwork Contributor is especially useful when network resources are separated into their own resource group. At that scope, the team can update NSG rules, subnets, public IP resources, load balancer configuration, and other `Microsoft.Network` resources. It does not become a VM deployment role merely because a NIC or load balancer later connects to a VM. If VM administrators need to attach VMs to those networks, grant them their own VM-focused role rather than expanding the network team's assignment to general Contributor.\n\nIf the same resource group later contains non-network resources, the network team still receives only permissions included in Network Contributor, not automatic rights over every resource type in the group. Avoid using this role as a substitute for subnet-join permissions in every application deployment pipeline.",
+      "wrongOptions": {
+        "A": "Virtual Machine Contributor is for VM operations, not full network management. Misconception: VM operators manage all attached networking. Could be correct for VM lifecycle operators.",
+        "C": "Contributor is broader than network-only administration. Misconception: general Contributor is always the right write role. Could be correct for a team managing every resource type in a scope.",
+        "D": "Reader cannot modify network resources. Misconception: operations teams only need viewing rights. Could be correct for auditors or monitoring teams."
+      },
+      "plainEnglish": "The team is a network team, not a server team and not an access-control team. Azure has a network-specific builder badge. Use it instead of a broad builder badge or a VM-specific badge. The role lets the team change network resources while avoiding VM administration and access delegation.",
+      "analogy": "A campus has a networking closet team that can configure switches, patch panels, and firewall labels for one building. That team should not be issued server-room build authority or the HR badge-system console.\n\n| Analogy | Azure reality |\n|---|---|\n| Networking closet team | Network operations group |\n| Switches and patch panels | VNets, subnets, NSGs, public IPs, load balancers |\n| Network closet badge | Network Contributor |\n| Server build badge | Virtual Machine Contributor |\n| HR badge console | Azure RBAC role-assignment permissions |\n\n**Where the analogy breaks down:** Azure networking resources are software objects under resource providers, and some VM operations can reference network resources even when full network management remains a separate role.",
+      "jargon": [
+        {
+          "term": "Network Contributor",
+          "definition": "Role for managing Azure network resources."
+        },
+        {
+          "term": "Virtual Machine Contributor",
+          "definition": "Role for managing virtual machines."
+        },
+        {
+          "term": "NSG",
+          "definition": "Network security group containing traffic rules."
+        },
+        {
+          "term": "Virtual network",
+          "definition": "Private network in Azure."
+        },
+        {
+          "term": "Subnet",
+          "definition": "Segment of a virtual network."
+        },
+        {
+          "term": "Load balancer",
+          "definition": "Resource that distributes traffic."
+        },
+        {
+          "term": "Public IP address",
+          "definition": "Internet-routable Azure IP resource."
+        },
+        {
+          "term": "Scope",
+          "definition": "Boundary of a role assignment."
+        }
+      ],
+      "watchOut": "- Prefer service-specific contributor roles over general Contributor.\n- Network Contributor is not VM Contributor.\n- Assigning at a resource group covers current and future resources in it.\n- None of these choices is an RBAC delegation role.",
+      "productionTip": {
+        "official": "Microsoft documents Network Contributor as managing networks but not access and states that it does not grant permission to deploy or manage virtual machines.",
+        "recommendation": "Keep shared networking resources in dedicated resource groups so network teams can receive Network Contributor without also managing unrelated compute or data services."
+      },
+      "memoryTrick": "**Network Contributor changes networks; VM Contributor changes VMs.** The shortcut is safe for exam role selection.",
+      "examTip": "Clue words are **network operations**, **must not manage virtual machines**, and **must not assign access**. The exam distinction is service-specific Contributor versus broad Contributor. A harder version may place VNets and NSGs in different resource groups; then you must choose both the correct role and every scope that contains the network objects to manage."
+    },
+    "sources": [
+      {
+        "title": "Azure built-in roles for Networking",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/networking"
+      },
+      {
+        "title": "Azure built-in roles for Compute",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/compute"
+      },
+      {
+        "title": "What is Azure role-based access control (Azure RBAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.1-06",
+    "objective": "D1.2.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You have a Windows virtual machine named `vm1`. An operations group named `VM-Ops` must start, restart, resize, and update the virtual machine; install and run VM extensions; and sign in to the guest operating system with administrator privileges by using Microsoft Entra-based VM sign-in. The group must not assign Azure RBAC roles or manage the virtual network separately.\n\nWhich two built-in roles should you assign to `VM-Ops` on `vm1`? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Virtual Machine Contributor"
+      },
+      {
+        "id": "B",
+        "text": "Virtual Machine User Login"
+      },
+      {
+        "id": "C",
+        "text": "Virtual Machine Administrator Login"
+      },
+      {
+        "id": "D",
+        "text": "Network Contributor"
+      },
+      {
+        "id": "E",
+        "text": "Owner"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Microsoft Entra-based VM sign-in is configured for `vm1`.",
+    "sections": {
+      "correctAnswer": "**A. Virtual Machine Contributor** and **C. Virtual Machine Administrator Login**. The first manages the VM resource; the second grants administrator-level guest sign-in.",
+      "technical": "VM resource management and guest operating system sign-in are separate permissions. Virtual Machine Contributor is a compute management role that can manage virtual machines, disks, VM operations, and extensions, but it does not allow assigning Azure RBAC roles and does not independently manage the connected virtual network or storage account. Microsoft Entra-based guest sign-in uses separate login roles. Virtual Machine Administrator Login includes data actions for regular login and administrator or root login. Virtual Machine User Login provides regular user sign-in only. Owner is too broad because it can assign roles. Network Contributor manages network resources but does not provide guest administrator sign-in or VM lifecycle management.\n\nThe role pair also reflects the difference between Azure Resource Manager operations and guest access. Starting, resizing, or adding an extension is an ARM control-plane request against the VM resource and is covered by Virtual Machine Contributor. Signing in through Microsoft Entra-based VM login is represented in the login roles by VM login data actions. Assigning only the login role would let the group enter the OS but not resize or install extensions. Assigning only VM Contributor would let it manage the Azure VM object but not necessarily sign in as a guest administrator through Entra-based login.",
+      "wrongOptions": {
+        "B": "User Login is regular sign-in, not administrator/root sign-in. Misconception: all VM login roles are equivalent. Could be correct for nonadmin guest access.",
+        "D": "Network Contributor manages network resources, not VM lifecycle and guest sign-in. Misconception: VM networking requires network admin for VM ops. Could be correct for a network team.",
+        "E": "Owner is too broad and can assign roles. Misconception: VM administrator login requires Azure Owner. Could be correct for a true resource owner."
+      },
+      "plainEnglish": "There are two doors. One controls the Azure object called `vm1`: start, restart, resize, and add extensions. The other controls logging in to Windows inside the VM as an administrator. One role opens the Azure management door, and another role opens the administrator login door.",
+      "analogy": "A fleet garage separates vehicle maintenance from driver authority. A mechanic can service a truck and install approved equipment, but driving it as an emergency commander requires a separate credential.\n\n| Analogy | Azure reality |\n|---|---|\n| Service the truck | Start, restart, resize, and update `vm1` |\n| Mechanic credential | Virtual Machine Contributor |\n| Emergency commander driving card | Virtual Machine Administrator Login |\n| Regular driver card | Virtual Machine User Login |\n| Road-design department | Network Contributor |\n\n**Where the analogy breaks down:** VM sign-in roles use Azure data actions and Microsoft Entra-based guest login, while a garage credential does not represent guest OS privileges or VM extension operations.",
+      "jargon": [
+        {
+          "term": "Virtual Machine Contributor",
+          "definition": "Built-in role for VM management."
+        },
+        {
+          "term": "Virtual Machine Administrator Login",
+          "definition": "Role for administrator/root VM guest sign-in."
+        },
+        {
+          "term": "Virtual Machine User Login",
+          "definition": "Role for regular VM guest sign-in."
+        },
+        {
+          "term": "VM extension",
+          "definition": "Software installed through Azure VM management."
+        },
+        {
+          "term": "DataActions",
+          "definition": "Role permissions for data or service-specific operations."
+        },
+        {
+          "term": "Microsoft Entra",
+          "definition": "Microsoft cloud identity service."
+        },
+        {
+          "term": "Guest operating system",
+          "definition": "OS running inside the VM."
+        },
+        {
+          "term": "Owner",
+          "definition": "Full management role including assigning roles."
+        }
+      ],
+      "watchOut": "- VM management and VM sign-in are separate.\n- User Login is not Administrator Login.\n- VM Contributor does not assign RBAC roles.\n- Owner is not least privilege.\n- Network Contributor is not a guest-login role.",
+      "productionTip": {
+        "official": "Microsoft documents Virtual Machine Contributor for VM management and separate Virtual Machine Administrator Login and User Login roles with VM login data actions.",
+        "recommendation": "Use separate groups for VM resource operators and guest OS administrators unless the same people truly require both types of access."
+      },
+      "memoryTrick": "**Manage the machine** with VM Contributor; **enter the machine** with a VM Login role.",
+      "examTip": "This item splits VM work into two layers: Azure resource management and guest OS sign-in. VM Contributor handles lifecycle and extensions; VM Administrator Login handles privileged login. A harder version may ask for regular user sign-in only, in which case Virtual Machine User Login replaces Administrator Login while VM Contributor may still be needed for lifecycle operations."
+    },
+    "sources": [
+      {
+        "title": "Azure built-in roles for Compute",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/compute"
+      },
+      {
+        "title": "Understand Azure role definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.1-07",
+    "objective": "D1.2.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a Recovery Services vault named `rsv1`. A backup team must create and modify backup policies, stop backup with delete data when required by approved retention procedures, and manage backup items. The team must not delete the vault or assign access to other users.\n\nWhich built-in role should you assign to the backup team?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Backup Reader"
+      },
+      {
+        "id": "B",
+        "text": "Backup Operator"
+      },
+      {
+        "id": "C",
+        "text": "Backup Contributor"
+      },
+      {
+        "id": "D",
+        "text": "Contributor"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The requirement is for Azure Backup management through supported Azure management surfaces.",
+    "sections": {
+      "correctAnswer": "**C. Backup Contributor**. Azure Backup documents this role as managing backup except deleting Recovery Services vaults and giving access to others, including policy and destructive backup operations.",
+      "technical": "Azure Backup provides built-in roles for backup duties. Backup Reader views backup management operations. Backup Operator can perform many operational tasks, such as enable backup, trigger backup, and restore, but it excludes destructive operations such as stop backup with delete data and excludes backup policy management. Backup Contributor is the backup administrator role: it can create and manage backup and policies, while still not deleting Recovery Services vaults or giving access to others. General Contributor is broader than necessary because it manages non-backup resources at the assigned scope. Since the scenario explicitly includes modifying policies and stopping backup with delete data, Backup Operator is insufficient and Backup Contributor is the least-privilege built-in role listed.\n\nThe destructive phrase in the question is deliberate. Azure Backup documentation distinguishes an operator who performs common backup tasks from a contributor who can manage policies and operations such as stopping backup with delete data. Policy changes affect future recovery-point creation and retention, while stop-with-delete affects protected backup data. Those activities should be reserved for the role that is documented for backup management administration. The role still does not turn the team into vault owners for every purpose, because deleting the Recovery Services vault and granting access are outside the described Backup Contributor boundary.\n\nFor production separation of duties, pair this role choice with approval outside Azure RBAC for destructive retention changes; RBAC authorizes the action, but it does not record business approval by itself.",
+      "wrongOptions": {
+        "A": "Backup Reader only views backup operations. Misconception: monitoring and administering backups use the same role. Could be correct for a backup audit team.",
+        "B": "Backup Operator excludes policy management and destructive stop-with-delete operations. Misconception: Operator is the highest backup role. Could be correct for routine backup and restore operators.",
+        "D": "Contributor is not backup-specific and can overgrant unrelated resource changes. Misconception: all service administration should use general Contributor. Could be correct for a team managing all resource types at a scope."
+      },
+      "plainEnglish": "The team is more than a backup viewer. It must change retention rules and sometimes perform approved destructive cleanup. Azure Backup has a role for senior backup administration: Backup Contributor. Backup Operator is useful for everyday backup operations but not for policy management and destructive stop actions.",
+      "analogy": "A museum archive has three staff levels. A viewer checks whether boxes exist, a desk operator retrieves boxes for researchers, and the archive manager changes retention schedules and approves destruction under policy.\n\n| Analogy | Azure reality |\n|---|---|\n| Archive viewer | Backup Reader |\n| Desk operator | Backup Operator |\n| Archive manager | Backup Contributor |\n| Retention schedule | Backup policy |\n| Destroying expired boxes | Stop backup with delete data |\n\n**Where the analogy breaks down:** Azure Backup roles apply to documented Azure management surfaces; separate backup agents or target restore resources can need permissions that the archive staffing story does not show.",
+      "jargon": [
+        {
+          "term": "Recovery Services vault",
+          "definition": "Azure vault for backup and recovery metadata and points."
+        },
+        {
+          "term": "Backup Contributor",
+          "definition": "Role for creating and managing backups except vault deletion and access grants."
+        },
+        {
+          "term": "Backup Operator",
+          "definition": "Role for many backup operations except destructive and policy tasks."
+        },
+        {
+          "term": "Backup Reader",
+          "definition": "Role for viewing backup operations."
+        },
+        {
+          "term": "Backup policy",
+          "definition": "Schedule and retention configuration."
+        },
+        {
+          "term": "Stop backup with delete data",
+          "definition": "Destructive backup operation."
+        },
+        {
+          "term": "Contributor",
+          "definition": "Broad Azure resource management role."
+        },
+        {
+          "term": "Least privilege",
+          "definition": "Grant only needed permissions."
+        }
+      ],
+      "watchOut": "- Backup Operator is not enough for policy management.\n- Stop backup with delete data points to Backup Contributor.\n- Backup roles may not control legacy agent UIs.\n- Some restore flows need extra roles on target resources.",
+      "productionTip": {
+        "official": "Azure Backup documents Backup Contributor, Backup Operator, and Backup Reader and maps minimum roles for backup management operations such as policy changes, backup, and restore.",
+        "recommendation": "Separate backup monitoring from backup administration, and reserve Backup Contributor for teams authorized to change retention or perform destructive backup operations."
+      },
+      "memoryTrick": "**Reader watches, Operator runs, Contributor governs.** Restore scenarios can still need extra roles.",
+      "examTip": "Look for **modify backup policy** and **stop backup with delete data**. Those phrases eliminate Backup Reader and Backup Operator because the task includes policy and destructive backup lifecycle authority. A harder item may ask for a restore to a new resource group, where Backup Operator alone is not enough because target compute, storage, or resource group permissions can also be required."
+    },
+    "sources": [
+      {
+        "title": "Manage Backups with Azure role-based access control",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-rbac-rs-vault"
+      },
+      {
+        "title": "Understand Azure role definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.1-08",
+    "objective": "D1.2.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You need to inspect the permissions in the built-in `Virtual Machine Contributor` role from Azure CLI. You want the command output to show the role definition's allowed action strings so that you can compare them with a proposed custom role.\n\nWhich command should you run?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`az role assignment list --role \"Virtual Machine Contributor\" --output table`"
+      },
+      {
+        "id": "B",
+        "text": "`az role definition list --name \"Virtual Machine Contributor\" --output json --query '[].permissions[0].actions'`"
+      },
+      {
+        "id": "C",
+        "text": "`az ad app permission list --id \"Virtual Machine Contributor\" --output json`"
+      },
+      {
+        "id": "D",
+        "text": "`az provider operation show --namespace Microsoft.Compute --query roleAssignments`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Azure CLI is installed and authenticated. You are inspecting a role definition, not listing principals that have a role.",
+    "sections": {
+      "correctAnswer": "**B. `az role definition list --name \"Virtual Machine Contributor\" --output json --query '[].permissions[0].actions'`**. Role definitions contain permissions; role assignments only show who received a role at a scope.",
+      "technical": "Azure RBAC has distinct role definitions and role assignments. A role definition is the permission template: `actions`, `notActions`, `dataActions`, and `notDataActions`. A role assignment attaches that template to a principal at a scope. Microsoft documents `az role definition list` for listing all roles or details of a named role, and shows querying `[].permissions[0].actions` for Virtual Machine Contributor. `az role assignment list` answers who has what role. Microsoft Entra application permissions are a different identity-app concept. Provider operations help when researching operation strings, but they are not the built-in role definition itself.\n\nThe `--query` portion is not cosmetic. Role definitions returned by Azure CLI are JSON arrays, and permissions are nested under `permissions`. Querying `[].permissions[0].actions` extracts the allowed management-plane actions so you can compare them with the proposed custom role's `Actions` list. If the comparison also involves excluded operations or data access, run a broader query or inspect the full JSON so that `notActions`, `dataActions`, and `notDataActions` are not missed.\n\nThe command also preserves the distinction between a role display name and the role definition ID. Built-in role IDs are stable, so after inspecting the readable name, automation should prefer IDs where practical to avoid ambiguity if names are changed or localized. If a command returns an array, remember that the query starts with `[]` to project each returned role object before selecting nested permissions.",
+      "wrongOptions": {
+        "A": "This lists assignments, not permission arrays. Misconception: assignment and definition mean the same thing. Could be correct when finding who has the role.",
+        "C": "Application API permissions are not Azure RBAC role definitions. Misconception: all Microsoft permissions are under `az ad app`. Could be correct for app registration API permissions.",
+        "D": "Provider operations are not the selected built-in role definition. Misconception: service operations equal roles. Could be correct when researching possible custom-role actions."
+      },
+      "plainEnglish": "You want the recipe for the role, not the list of people who have the role. The recipe is the role definition, where Azure stores the allowed actions and exclusions. The assignment list is only a roster of who received that recipe at a scope. To compare a built-in role with a proposed custom role, print the built-in role definition and examine the action arrays rather than searching for existing assignments.",
+      "analogy": "A security office keeps two binders. One binder describes each badge type and the doors it opens. The other binder lists employees who currently hold those badges. You need the first binder for comparison.\n\n| Analogy | Azure reality |\n|---|---|\n| Badge-type binder | Azure role definition |\n| Employee holder binder | Role assignment list |\n| Door list for a badge | `permissions[0].actions` |\n| Ask for the badge recipe | `az role definition list` |\n| Ask who has a badge | `az role assignment list` |\n\n**Where the analogy breaks down:** Azure CLI returns structured JSON with action, notAction, dataAction, and scope properties; paper binders do not require JMESPath queries or distinguish control-plane from data-plane operations.",
+      "jargon": [
+        {
+          "term": "Azure CLI",
+          "definition": "Command-line tool for Azure."
+        },
+        {
+          "term": "az role definition list",
+          "definition": "CLI command to list role definitions."
+        },
+        {
+          "term": "Role definition",
+          "definition": "Permission template for a role."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "Grant of a role to a principal at a scope."
+        },
+        {
+          "term": "JMESPath",
+          "definition": "Query syntax used by Azure CLI `--query`."
+        },
+        {
+          "term": "permissions[0].actions",
+          "definition": "JSON path for allowed management actions."
+        },
+        {
+          "term": "Custom role",
+          "definition": "User-defined Azure RBAC role."
+        },
+        {
+          "term": "Resource provider",
+          "definition": "Service namespace exposing Azure operations."
+        }
+      ],
+      "watchOut": "- Definition commands show what a role can do.\n- Assignment commands show who has a role.\n- PowerShell equivalent is `Get-AzRoleDefinition`.\n- Check all permission arrays, not only actions.",
+      "productionTip": {
+        "official": "Microsoft Learn documents listing Azure role definitions with `az role definition list` and includes examples querying the actions for Virtual Machine Contributor.",
+        "recommendation": "Use role-definition output during custom-role design reviews and document differences from the built-in role before assigning the custom role."
+      },
+      "memoryTrick": "**Definition describes; assignment applies.** Use the matching command family.",
+      "examTip": "The wording asks for a role's **allowed action strings**, so inspect the role definition, not role assignments. `az role assignment list` answers who has a role; `az role definition list` answers what the role contains. A harder version may ask for PowerShell, where `Get-AzRoleDefinition \"Virtual Machine Contributor\"` followed by selecting `Actions` is the equivalent path."
+    },
+    "sources": [
+      {
+        "title": "List Azure role definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions-list"
+      },
+      {
+        "title": "Understand Azure role definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions"
+      },
+      {
+        "title": "Understand Azure role assignments",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.1-09",
+    "objective": "D1.2.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have two subscriptions, `SubA` and `SubB`, in the same Microsoft Entra tenant. A team needs to monitor and restart virtual machines in both subscriptions. The team must not delete virtual machines, run arbitrary VM commands, reset local administrator passwords, or manage disks. No built-in role matches these permissions without overgranting access.\n\nWhich custom role design should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a custom role with only the required compute read and restart/start actions, and set `AssignableScopes` to include `SubA` and `SubB`"
+      },
+      {
+        "id": "B",
+        "text": "Create a custom role with `Actions: [\"*\"]` and put VM delete operations in `NotActions`"
+      },
+      {
+        "id": "C",
+        "text": "Create the custom role with `AssignableScopes: [\"/\"]` so it can be assigned anywhere in the tenant"
+      },
+      {
+        "id": "D",
+        "text": "Assign the built-in Virtual Machine Contributor role because it is the closest built-in role"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The custom role will not include `DataActions`, and both subscriptions trust the same Microsoft Entra tenant.",
+    "sections": {
+      "correctAnswer": "**A. Create a custom role with only the required compute read and restart/start actions, and set `AssignableScopes` to include `SubA` and `SubB`**. Custom roles are appropriate when built-in roles do not meet needs, and `AssignableScopes` controls where the role can be assigned.",
+      "technical": "Microsoft recommends using built-in roles when they fit and creating custom roles when they do not. The documented process is to determine needed permissions, review built-in roles and provider operations, create the role, and test it. This scenario needs a narrow VM operator role, not full Virtual Machine Contributor. The custom role should explicitly list read and restart/start operations rather than using a broad wildcard with exceptions. `AssignableScopes` is required and specifies where the custom role is available. Custom roles can be shared between subscriptions that trust the same Microsoft Entra tenant, so including both subscription scopes is valid. Custom roles cannot use root scope `/` as an assignable scope.\n\nFor this custom role, the forbidden operations shape the permission list as much as the allowed operation does. Do not include `Microsoft.Compute/virtualMachines/*`, because that would include delete, run command, and other operations. Use the specific read and start or restart actions that satisfy monitoring and restart. If the team needs the same role in both subscriptions, list both subscription resource IDs in `AssignableScopes`; that makes the role available there without making it available for assignment throughout the tenant root.\n\nThat one-word difference, `read` instead of wildcard, is the heart of the least-privilege design.",
+      "wrongOptions": {
+        "B": "Wildcards risk overgranting current and future permissions. Misconception: `NotActions` is the safest least-privilege tool. Could be correct only for a carefully reviewed broad admin role.",
+        "C": "Custom roles cannot set `AssignableScopes` to root scope `/`. Misconception: custom roles follow the same root assignable scope as many built-in roles. Could be correct for built-in role definitions, not this custom role.",
+        "D": "Virtual Machine Contributor overgrants operations the scenario forbids. Misconception: closest built-in role is always acceptable. Could be correct when full VM management is required."
+      },
+      "plainEnglish": "The team needs a very small permission set: look at VMs and restart them in two subscriptions. The built-in VM role is a full mechanic kit with tools the team should not use. A custom role is a smaller tool pouch. `AssignableScopes` says where that custom tool pouch is allowed to be handed out, so list `SubA` and `SubB` instead of trying to make it tenant-root assignable.",
+      "analogy": "A factory wants night staff who may inspect a machine panel and press Restart, but not remove parts, open the service laptop, or rewire the motor. The factory creates a narrow night-operator pass for exactly two plants.\n\n| Analogy | Azure reality |\n|---|---|\n| Night-operator pass | Custom Azure role |\n| Inspect panel | VM read actions |\n| Press Restart | VM start or restart action |\n| Remove parts | Delete VM or manage disks |\n| Two plants | `SubA` and `SubB` in `AssignableScopes` |\n\n**Where the analogy breaks down:** Azure custom roles are tenant-scoped role definitions with operation strings and assignable-scope rules; a factory pass does not model provider-operation updates or wildcard risks.",
+      "jargon": [
+        {
+          "term": "Custom role",
+          "definition": "Organization-created Azure RBAC role."
+        },
+        {
+          "term": "AssignableScopes",
+          "definition": "Scopes where a custom role can be assigned and managed."
+        },
+        {
+          "term": "Microsoft.Compute",
+          "definition": "Provider namespace for compute resources."
+        },
+        {
+          "term": "Actions",
+          "definition": "Allowed control-plane operations."
+        },
+        {
+          "term": "NotActions",
+          "definition": "Excluded operations from Actions."
+        },
+        {
+          "term": "Wildcard",
+          "definition": "`*` matching many operations."
+        },
+        {
+          "term": "Virtual Machine Contributor",
+          "definition": "Broad built-in VM management role."
+        },
+        {
+          "term": "Microsoft Entra tenant",
+          "definition": "Identity tenant trusted by subscriptions."
+        }
+      ],
+      "watchOut": "- Use custom roles only when built-ins do not fit.\n- Avoid `Actions: [\"*\"]` for narrow roles.\n- Custom roles cannot use root `/` as AssignableScopes.\n- Custom roles with DataActions have management-group assignment restrictions.",
+      "productionTip": {
+        "official": "Microsoft documents custom roles, required `AssignableScopes`, sharing roles across subscriptions in the same tenant, and a recommendation to specify actions explicitly instead of relying on wildcards.",
+        "recommendation": "Start with the required operation list, test in nonproduction, and keep `AssignableScopes` limited to the subscriptions or management group where the role is needed."
+      },
+      "memoryTrick": "Custom role design is **Need -> Actions -> AssignableScopes -> Test**.",
+      "examTip": "Clue words are **no built-in role matches** plus a list of forbidden VM operations. That points to a custom role with explicit actions, not a wildcard role with many exclusions. A harder version may include blob or queue `DataActions`; then remember that custom roles with data actions have management-group assignment restrictions."
+    },
+    "sources": [
+      {
+        "title": "Azure custom roles",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles"
+      },
+      {
+        "title": "Understand Azure role definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions"
+      },
+      {
+        "title": "Azure built-in roles for Compute",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/compute"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.1-10",
+    "objective": "D1.2.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a subscription named `Sub1`. A project lead named Dara must be able to assign only the `Virtual Machine User Login` and `Virtual Machine Administrator Login` roles to members of the `VM-Users` group for VMs in `rg-app`. Dara must not be able to assign Owner, Contributor, or other roles to herself or to other principals.\n\nWhich approach should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign Dara the Owner role at `rg-app`"
+      },
+      {
+        "id": "B",
+        "text": "Assign Dara the User Access Administrator role at `rg-app` without conditions"
+      },
+      {
+        "id": "C",
+        "text": "Assign Dara the Role Based Access Control Administrator role at `rg-app` with a condition that constrains the assignable roles and principals"
+      },
+      {
+        "id": "D",
+        "text": "Assign Dara the Virtual Machine Contributor role at `rg-app`"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Role assignment conditions are available for the delegation scenario.",
+    "sections": {
+      "correctAnswer": "**C. Assign Dara the Role Based Access Control Administrator role at `rg-app` with a condition that constrains the assignable roles and principals**. Conditional delegation restricts which role assignments Dara can create instead of granting unrestricted access management.",
+      "technical": "Owner and User Access Administrator can create and delete role assignments at their scope. Without conditions, they can assign many roles to many principals, including privileged roles. Microsoft documents a more secure method: delegate role assignment management with conditions. The Role Based Access Control Administrator role is designed for Azure RBAC assignment management and has fewer permissions than User Access Administrator. Conditions can constrain the roles that can be assigned, the principal types or specific principals that can receive assignments, and add versus remove behavior. Here, the condition should allow only the two VM login role definitions and the approved group or principals. Virtual Machine Contributor manages VMs but does not write Azure RBAC assignments.\n\nThis design protects against a common privilege-escalation path. If Dara can assign any role, she could assign Owner or User Access Administrator to herself and then escape the intended VM-login task. A condition on Role Based Access Control Administrator changes the allowed assignment request: the requested role definition ID must be one of the VM login roles and the recipient must match the allowed principal rule. If Dara submits a different role definition or target principal, the authorization check for the role-assignment write fails even though she has delegated assignment capability.\n\nIf the portal shows fewer roles or principals during assignment, that is expected behavior when the delegate's own assignment is constrained by a condition.",
+      "wrongOptions": {
+        "A": "Owner is unrestricted for resource and access management. Misconception: Owner is normal for any access task. Could be correct for a true resource owner.",
+        "B": "Unconditioned User Access Administrator is too broad. Misconception: scope alone prevents privilege escalation. Could be correct for a trusted access admin allowed to manage all assignments at the scope.",
+        "D": "Virtual Machine Contributor does not assign roles. Misconception: VM login assignment is part of VM management. Could be correct for VM operations, not access delegation."
+      },
+      "plainEnglish": "Dara should print only two specific VM login badges and only for approved people. If you give her Owner or unrestricted access administrator rights, she could print master badges. A condition is the rule on the badge printer that limits which badges and recipients are allowed.",
+      "analogy": "A lab supervisor may issue only `lab visitor` and `lab assistant` stickers to names on a project roster. The sticker machine rejects `building owner` stickers and rejects names outside the roster.\n\n| Analogy | Azure reality |\n|---|---|\n| Lab supervisor | Dara |\n| Sticker machine access | Role Based Access Control Administrator |\n| Machine restriction rules | Role assignment condition |\n| Visitor and assistant stickers | VM User Login and VM Administrator Login roles |\n| Project roster | Allowed `VM-Users` principals |\n\n**Where the analogy breaks down:** Azure conditions are evaluated against role-assignment request and resource attributes for specific authorization actions; a sticker machine cannot express all Azure ABAC syntax or removal constraints.",
+      "jargon": [
+        {
+          "term": "Delegation",
+          "definition": "Giving another person administrative capability."
+        },
+        {
+          "term": "Role assignment condition",
+          "definition": "Expression that filters role-assignment permissions."
+        },
+        {
+          "term": "Azure ABAC",
+          "definition": "Attribute-based conditions added to Azure RBAC."
+        },
+        {
+          "term": "Role Based Access Control Administrator",
+          "definition": "Role for Azure RBAC assignment management."
+        },
+        {
+          "term": "User Access Administrator",
+          "definition": "Role that manages user access to Azure resources."
+        },
+        {
+          "term": "Principal",
+          "definition": "Identity receiving a role assignment."
+        },
+        {
+          "term": "Virtual Machine User Login",
+          "definition": "Regular VM sign-in role."
+        },
+        {
+          "term": "Virtual Machine Administrator Login",
+          "definition": "Administrator VM sign-in role."
+        }
+      ],
+      "watchOut": "- Scope limits where Dara acts; conditions limit what she can assign.\n- Unconditioned access-administrator roles are often too broad.\n- Conditions can constrain roles and principals.\n- VM Contributor is not an RBAC delegation role.",
+      "productionTip": {
+        "official": "Microsoft documents delegated role assignment management with conditions and identifies Role Based Access Control Administrator as a least-privilege role for this delegation pattern.",
+        "recommendation": "Use conditional delegation for project leads and automation that should assign only approved operational roles. Monitor failed attempts for possible privilege escalation."
+      },
+      "memoryTrick": "Safe delegation asks **who can assign what to whom**.",
+      "examTip": "Clue words are **only these roles**, **only this group**, and **must not assign Owner or Contributor**. Scope alone limits where Dara acts, but the condition limits what and to whom she can assign. A harder version may separate add and remove actions, requiring a condition that constrains role assignment creation differently from role assignment deletion."
+    },
+    "sources": [
+      {
+        "title": "Delegate Azure access management to others",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/delegate-role-assignments-overview"
+      },
+      {
+        "title": "What is Azure attribute-based access control (Azure ABAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/conditions-overview"
+      },
+      {
+        "title": "Azure built-in roles for Privileged",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/privileged"
+      },
+      {
+        "title": "Azure built-in roles for Compute",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/compute"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.1-11",
+    "objective": "D1.2.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account that contains many blob containers. Blobs are tagged with a blob index tag named `Project`. Users in the `Project-Cascade-Readers` group must be able to read blobs only when `Project=Cascade`. You want to avoid creating separate role assignments for every container as new containers are added.\n\nWhich solution should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign Storage Blob Data Reader at the storage account scope with a role assignment condition that requires the blob tag `Project=Cascade`"
+      },
+      {
+        "id": "B",
+        "text": "Assign Reader at the storage account scope and rely on the `Project` blob index tag"
+      },
+      {
+        "id": "C",
+        "text": "Assign Storage Blob Data Contributor at the subscription scope without a condition"
+      },
+      {
+        "id": "D",
+        "text": "Create a deny assignment that blocks reads for blobs whose `Project` tag is not `Cascade`"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. Blob access uses Microsoft Entra authorization. Blob index tags are consistently applied and supported role assignment conditions are available.",
+    "sections": {
+      "correctAnswer": "**A. Assign Storage Blob Data Reader at the storage account scope with a role assignment condition that requires the blob tag `Project=Cascade`**. The data role grants blob read capability, and the condition filters the grant by blob attributes.",
+      "technical": "Azure ABAC builds on Azure RBAC by adding conditions to role assignments. A condition is an additional check that filters permissions granted by the role definition and role assignment. Microsoft documents conditions for built-in or custom role assignments that include blob or queue storage data actions. Conditions can use blob attributes such as blob index tags, container name, blob path, private link, and current time. Storage Blob Data Reader supplies the needed blob read `DataActions`. Assigning it at storage account scope avoids separate assignments for each container, while the condition restricts reads to blobs tagged `Project=Cascade`. Reader is control-plane only. Storage Blob Data Contributor without a condition overgrants write and delete data access. Conditions filter grants; they are not explicit deny assignments.\n\nThe scope-and-condition combination is what reduces administrative effort. A container-by-container assignment would work only after every new container is discovered and granted. A storage-account-scope data role reaches the containers under the account, and the condition then evaluates attributes of the blob request before allowing the read. The condition depends on supported storage data actions and accurate blob index tags; if a blob lacks the `Project=Cascade` tag, the conditioned grant does not authorize reading that blob.",
+      "wrongOptions": {
+        "B": "Reader does not read blob contents, and tags alone do not enforce access. Misconception: tags are permissions. Could be correct for metadata-only access.",
+        "C": "Blob Data Contributor at subscription scope is too broad and lacks the tag restriction. Misconception: any data role is acceptable for read access. Could be correct for an app that must write and delete blobs broadly.",
+        "D": "Conditions filter grants; administrators do not normally create custom deny assignments for this. Misconception: Azure RBAC uses user-authored deny rules. Could be correct only in Azure-managed deny-assignment scenarios."
+      },
+      "plainEnglish": "The group should read only files labeled `Project=Cascade`. Instead of assigning every container separately, give one read permission at the storage account and attach a rule: the blob must have the Cascade label. The role gives the general ability to read blob data; the condition narrows it.",
+      "analogy": "A research library gives a reader one card for the whole periodicals wing, but the checkout scanner releases only articles with a blue `Cascade` project stamp. New shelves work automatically if the article stamps are correct.\n\n| Analogy | Azure reality |\n|---|---|\n| Periodicals wing card | Storage Blob Data Reader at storage account scope |\n| Article stamp | Blob index tag `Project=Cascade` |\n| Checkout scanner rule | Role assignment condition |\n| New shelves | New blob containers |\n| Ordinary building map | Reader control-plane role |\n\n**Where the analogy breaks down:** Azure conditions are authorization expressions on supported storage data actions; they filter a grant and do not create a separate explicit-deny rule for every nonmatching blob.",
+      "jargon": [
+        {
+          "term": "Azure ABAC",
+          "definition": "Attribute-based access control for Azure."
+        },
+        {
+          "term": "Role assignment condition",
+          "definition": "Expression that filters a role assignment grant."
+        },
+        {
+          "term": "Storage Blob Data Reader",
+          "definition": "Role for reading blob data."
+        },
+        {
+          "term": "Storage Blob Data Contributor",
+          "definition": "Role for reading, writing, and deleting blob data."
+        },
+        {
+          "term": "Blob index tag",
+          "definition": "Key-value tag on a blob."
+        },
+        {
+          "term": "DataActions",
+          "definition": "Permissions for data inside a resource."
+        },
+        {
+          "term": "Storage account scope",
+          "definition": "Scope covering resources under a storage account."
+        },
+        {
+          "term": "Deny assignment",
+          "definition": "Azure-managed assignment that can block actions."
+        }
+      ],
+      "watchOut": "- Conditions require supported data actions.\n- Tags alone do not grant or block access.\n- Conditions filter grants and cannot explicitly deny by themselves.\n- Keep tags accurate because authorization depends on them.",
+      "productionTip": {
+        "official": "Microsoft documents Azure ABAC conditions for blob and queue storage data actions and lists blob index tags and other blob attributes as condition inputs. Conditions can reduce the number of role assignments.",
+        "recommendation": "Use conditional blob access only when tagging is automated and audited. Periodically test access with tagged and untagged blobs."
+      },
+      "memoryTrick": "RBAC says **may read blobs**; ABAC adds **only if this blob matches**.",
+      "examTip": "Clue words are **tagged blobs**, **only when Project=Cascade**, and **avoid separate assignments for every container**. Choose a blob data role plus a condition at a broader storage scope. A harder version may replace tags with blob path, container name, private link, or time attributes; verify that the selected condition attribute is supported for the data action."
+    },
+    "sources": [
+      {
+        "title": "What is Azure attribute-based access control (Azure ABAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/conditions-overview"
+      },
+      {
+        "title": "Azure built-in roles for Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage"
+      },
+      {
+        "title": "Understand Azure role definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions"
+      },
+      {
+        "title": "Understand Azure role assignments",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

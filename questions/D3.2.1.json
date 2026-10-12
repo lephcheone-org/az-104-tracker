@@ -1,0 +1,705 @@
+[
+  {
+    "id": "D3.2.1-01",
+    "objective": "D3.2.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription. A junior administrator plans to create a single Windows Server virtual machine named `vm-app01` by using Azure PowerShell. The administrator wants to know which resources are actually required by the VM and which resources are conveniences that creation tools can create for you.\n\nWhich statement correctly describes the resource requirements when creating the VM?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A VM can be created without a network interface if the VM will be managed only through Azure Run Command"
+      },
+      {
+        "id": "B",
+        "text": "The VM needs a network interface and an OS disk; tools such as `New-AzVM` can also create a virtual network, subnet, network security group, and public IP address when needed"
+      },
+      {
+        "id": "C",
+        "text": "A public IP address and network security group are always mandatory resources for every VM"
+      },
+      {
+        "id": "D",
+        "text": "A virtual network is optional as long as the VM has a managed OS disk and boot diagnostics enabled"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The question concerns a single Azure Resource Manager VM created from a platform image with managed disks, not classic VMs, VM scale sets, availability sets, or availability zones.",
+    "sections": {
+      "correctAnswer": "**B. The VM needs a network interface and an OS disk; tools such as `New-AzVM` can also create a virtual network, subnet, network security group, and public IP address when needed**. The compute resource references an OS disk and at least one NIC, while portal, CLI, and PowerShell workflows can create companion networking resources if you do not supply existing ones.",
+      "technical": "When you create an Azure VM, the VM object is only one part of the deployment. The compute resource has a storage profile for the operating system disk and a network profile that points to network interfaces. The network interface then connects to a subnet in a virtual network. Microsoft quickstarts show the portal filling in default names for other resources that are needed, and the PowerShell quickstart shows `New-AzVM` creating named resources such as `myVnet`, `mySubnet`, `myNetworkSecurityGroup`, and `myPublicIpAddress` when those names are supplied and the resources do not already exist.\n\nThe dependencies are best read in layers:\n\n1. The VM requires an OS disk. For a marketplace image, Azure creates the OS disk from the image unless you attach an existing OS disk.\n2. The VM needs a NIC because the VM network profile contains network interfaces. The NIC is the point where private IP configuration, subnet placement, and optional public IP association are handled.\n3. The NIC must be placed in a subnet, and the subnet belongs to a virtual network. Creation tools can create those networking resources, or you can target pre-existing ones.\n4. A public IP address is not universal. The Azure CLI even has an example that creates a Windows VM with `--public-ip-address \"\"` for a private-IP-only VM.\n5. An NSG is a common security control and quickstart default when opening RDP or SSH, but a VM is not defined by the NSG itself. The exam usually wants you to separate required dependency from convenient default.\n\nThe order matters during deployment: Azure validates the VM settings, prepares or references the network and disk resources, creates the compute resource, and then powers it on. If you use a convenience cmdlet, it may hide several resource creations behind one command, but those are still separate Azure resources with their own names and lifecycle.",
+      "wrongOptions": {
+        "A": "A NIC is still required for a normal Azure VM deployment. Run Command can execute scripts through the VM agent after the VM exists, but it does not remove the network-profile requirement from the VM model. Misconception: management-plane access replaces all guest networking. Could be correct when saying a VM does not need a public IP for some management tasks, but not when saying no NIC is needed.",
+        "C": "A public IP is optional. A VM can be created with only private networking, and NSG association depends on the chosen network design and tooling defaults. Misconception: because quickstarts open RDP or SSH from the Internet, every VM must expose a public endpoint. Could be correct when the explicit requirement is direct Internet access to RDP, SSH, or a web listener.",
+        "D": "A virtual network is still part of normal Azure VM networking because the NIC's IP configuration is placed in a subnet. Boot diagnostics records boot output; it does not provide network placement. Misconception: diagnostics or disks can stand in for virtual networking. Could be correct only in a narrow discussion that boot diagnostics itself can use managed storage without your own storage account."
+      },
+      "plainEnglish": "A virtual machine in Azure is like a rented computer, but it is assembled from several named parts. The computer needs a system drive, which is the OS disk. It also needs a network card, which Azure calls a network interface. That network card plugs into a subnet inside a virtual network. If you want to reach the machine from the Internet, you may add a public IP address and open an NSG rule. Azure tools can make those pieces automatically, so a one-line command may look as if it creates only a VM. In reality, the supporting pieces still exist and can be managed or deleted separately.",
+      "analogy": "Imagine ordering a small office. The office room is the VM, the door key is the administrator credential, the power feed is Azure compute, the desk phone jack is the NIC, the building floor plan is the virtual network, and the hallway security guard is the NSG. The landlord can arrange several of those items for you in one order, but they remain separate things.\n\n| Analogy | Azure reality |\n|---|---|\n| Office room | VM compute resource |\n| System cabinet | OS disk |\n| Phone or network jack | Network interface |\n| Building floor plan | Virtual network and subnet |\n| Public reception number | Public IP address |\n\n**Where the analogy breaks down:** Azure resources are declared and validated by APIs. A physical office can sometimes exist without a network jack; an Azure Resource Manager VM deployment expects a network profile with NIC information.",
+      "jargon": [
+        {
+          "term": "Virtual machine",
+          "definition": "An Azure compute resource that runs a guest operating system such as Windows Server or Linux."
+        },
+        {
+          "term": "OS disk",
+          "definition": "The managed disk that contains the operating system for the VM."
+        },
+        {
+          "term": "Network interface (NIC)",
+          "definition": "The Azure networking resource attached to a VM to provide private IP configuration and subnet connectivity."
+        },
+        {
+          "term": "Virtual network",
+          "definition": "An isolated Azure network container that contains subnets and address space."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A range inside a virtual network where NICs are placed."
+        },
+        {
+          "term": "Public IP address",
+          "definition": "An optional Azure resource that can expose a VM or load-balanced service to the Internet."
+        },
+        {
+          "term": "Network security group",
+          "definition": "A resource containing inbound and outbound security rules that can filter traffic at subnet or NIC scope."
+        },
+        {
+          "term": "New-AzVM",
+          "definition": "An Azure PowerShell cmdlet that creates an Azure virtual machine and can create common companion resources in simple workflows."
+        }
+      ],
+      "watchOut": "- A one-command creation experience may still create several resources.\n- Do not make a public IP mandatory unless the scenario requires direct Internet reachability.\n- The NIC is a separate resource, not a hidden property inside the VM.\n- Deleting a resource group removes the VM and related resources in that group, but deleting only the VM may leave disks, NICs, or IPs depending on delete options.",
+      "productionTip": {
+        "official": "Microsoft's VM quickstarts show the portal and PowerShell creating associated resources such as virtual networks, subnets, network security groups, public IP addresses, and disks as part of a VM deployment workflow.",
+        "recommendation": "For production, create or select the virtual network, subnet, NSG, route, and public IP strategy deliberately before running a convenience VM command. Avoid accidental public IPs, name resources predictably, and tag companion objects so cleanup does not strand disks or IP addresses."
+      },
+      "memoryTrick": "Remember **D-N-N** for a basic VM: Disk, NIC, Network. This shortcut leaves out optional items such as a public IP, but it keeps the core dependency chain straight.",
+      "examTip": "Look for words such as **always**, **optional**, and **created for you**. If the option says every VM requires a public IP, eliminate it. If it says a helper command can create a VNet, subnet, NSG, or public IP, that can be true without making each item mandatory in every design. A harder item may ask which orphaned resources remain after deleting only the VM."
+    },
+    "sources": [
+      {
+        "title": "Quickstart - Create a Windows VM in the Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/quick-create-portal"
+      },
+      {
+        "title": "Quickstart - Create a Windows VM with Azure PowerShell",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/quick-create-powershell"
+      },
+      {
+        "title": "New-AzVM",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.compute/new-azvm"
+      },
+      {
+        "title": "az vm create",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/vm?view=azure-cli-latest#az-vm-create"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.1-02",
+    "objective": "D3.2.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A team at Fabrikam is standardizing VM creation scripts. A Linux script tries to create `vm-linux01` with administrator username `root` and password authentication. A Windows script tries to create `vm-win01` with administrator username `admin` and a password. Both scripts fail validation.\n\nWhat should you change?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep the usernames and add boot diagnostics to both VMs"
+      },
+      {
+        "id": "B",
+        "text": "Use `administrator` for Windows and `admin` for Linux because they are the built-in privileged account names"
+      },
+      {
+        "id": "C",
+        "text": "Use the same forbidden usernames but specify a larger VM size"
+      },
+      {
+        "id": "D",
+        "text": "Use allowed administrator usernames such as `azureuser`; use SSH public key authentication for Linux unless password authentication is explicitly required, and use a compliant password for Windows"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The question is about local administrator credentials supplied during VM creation, not Microsoft Entra sign-in extensions or post-deployment identity configuration.",
+    "sections": {
+      "correctAnswer": "**D. Use allowed administrator usernames such as `azureuser`; use SSH public key authentication for Linux unless password authentication is explicitly required, and use a compliant password for Windows**. Microsoft documents reserved usernames for Azure VMs, and Linux VM guidance shows SSH key authentication as the normal secure creation path.",
+      "technical": "Azure validates the administrator account values during VM creation. The Windows and Linux FAQ pages list usernames that are not allowed, including `admin`, `administrator`, and `root`. The Linux FAQ also states usernames should be 1 to 32 characters, while the Windows FAQ says Windows usernames can be a maximum of 20 characters and cannot end in a period. Password rules differ by tool, but both operating systems require passwords that meet length and complexity requirements when password authentication is used.\n\nAuthentication choice is also OS-specific:\n\n| VM OS | Common creation authentication | Important rule |\n|---|---|---|\n| Linux | SSH public key | Azure copies the public key into `~/.ssh/authorized_keys` and key-based VMs disable SSH password authentication |\n| Windows | Password for the local administrator | Portal, CLI, and PowerShell enforce documented password rules |\n\nAzure CLI makes the distinction visible. `az vm create` defaults to password authentication for Windows and SSH public key authentication for Linux. The `--generate-ssh-keys` option can create or reuse a local SSH key pair for Linux. The `--admin-username` parameter sets the username, but it does not allow reserved values.\n\nThe evaluation order is: validate the username, validate the authentication parameters for the selected OS image, validate password or SSH key material, and then proceed to resource deployment. Changing VM size, boot diagnostics, or public IP settings does not fix a forbidden admin name.",
+      "wrongOptions": {
+        "A": "Boot diagnostics helps observe serial logs and screenshots after a VM starts or fails to boot, but it does not make `root` or `admin` valid creation usernames. Misconception: every creation failure is a diagnostics setting problem. Could be correct when troubleshooting a VM that was created but cannot boot successfully.",
+        "B": "`administrator`, `admin`, and `root` are specifically reserved or disallowed in the documented Azure VM username lists. Misconception: cloud VM administrator names must match traditional built-in account names. Could be correct in some on-premises operating system discussions, but not for Azure VM creation input.",
+        "C": "VM size affects CPU, memory, and supported capabilities, not whether a reserved username passes validation. Misconception: validation failures are caused by insufficient compute resources. Could be correct if the failure were a quota or size availability issue, not a credential naming issue."
+      },
+      "plainEnglish": "Azure asks you to choose the first sign-in account for a new VM. Some obvious names are blocked because they are risky, confusing, or reserved by the platform and operating system. `root`, `admin`, and `administrator` are examples from the documented lists. For a Linux VM, the safer normal method is to sign in with an SSH key, where Azure puts the public key into the VM and you keep the private key. For a Windows VM, you normally supply a username that is not reserved plus a strong password. Changing unrelated VM settings will not make a blocked username acceptable.",
+      "analogy": "A hotel will not issue a room key under names such as `Manager`, `Owner`, or `Security` because those names could confuse staff and systems. The guest can still check in by choosing a normal name and proving identity with the accepted method.\n\n| Analogy | Azure reality |\n|---|---|\n| Guest name | Administrator username |\n| Banned staff titles | Reserved usernames |\n| Metal key or card | Password or SSH key |\n| Linux secure card reader | SSH public key authentication |\n| Windows front-desk PIN | Local admin password |\n\n**Where the analogy breaks down:** Azure validates exact strings and cryptographic key formats through APIs. A hotel clerk may make exceptions; Azure creation validation will not.",
+      "jargon": [
+        {
+          "term": "Administrator username",
+          "definition": "The local account name supplied at VM creation for initial sign-in to the guest OS."
+        },
+        {
+          "term": "Reserved username",
+          "definition": "A username that Azure does not allow during VM creation, such as `root`, `admin`, or `administrator`."
+        },
+        {
+          "term": "SSH",
+          "definition": "Secure Shell, an encrypted protocol commonly used to connect to Linux VMs."
+        },
+        {
+          "term": "SSH public key",
+          "definition": "The shareable half of an SSH key pair that Azure places on the Linux VM."
+        },
+        {
+          "term": "Private key",
+          "definition": "The secret half of an SSH key pair kept by the administrator to prove identity."
+        },
+        {
+          "term": "Password authentication",
+          "definition": "A sign-in method where the user proves identity by typing a password."
+        },
+        {
+          "term": "`az vm create`",
+          "definition": "The Azure CLI command used to create Linux or Windows VMs."
+        },
+        {
+          "term": "`--generate-ssh-keys`",
+          "definition": "An Azure CLI option that creates or reuses SSH key files for Linux VM access."
+        }
+      ],
+      "watchOut": "- Do not use `root`, `admin`, or `administrator` as the supplied Azure VM admin username.\n- Windows and Linux username length rules are not identical.\n- SSH key authentication and password authentication are different choices; do not mix them accidentally in automation.\n- A strong password is still required when a VM creation path uses password authentication.",
+      "productionTip": {
+        "official": "Microsoft documents blocked username lists and password requirements for both Windows and Linux Azure VMs. Microsoft also documents SSH key pairs as the recommended way to connect to Linux VMs securely.",
+        "recommendation": "Use a standard non-reserved name such as `azureuser` only for initial bootstrap, then manage access through centralized identity and just-in-time processes. Store private SSH keys securely, rotate credentials when staff changes, and avoid password-based Linux access for Internet-facing VMs unless a specific control requires it."
+      },
+      "memoryTrick": "If the username sounds like a built-in superuser, assume Azure may block it. That is a simplification, so check the official list when scripting names at scale.",
+      "examTip": "The clue is that both scripts fail before the VM exists. Credential validation happens early, so diagnostics, size, and network changes are distractions. A tougher version may give a username that is allowed but a password that is too short for the chosen tool; then the password rule, not SSH, becomes the decisive fact."
+    },
+    "sources": [
+      {
+        "title": "Frequently asked questions for Linux VMs in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/faq"
+      },
+      {
+        "title": "FAQ about Windows VMs in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/faq"
+      },
+      {
+        "title": "Detailed steps to create an SSH key pair",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/create-ssh-keys-detailed"
+      },
+      {
+        "title": "az vm create",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/vm?view=azure-cli-latest#az-vm-create"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.1-03",
+    "objective": "D3.2.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are writing deployment examples for a study lab. The lab must show one Azure CLI command that creates a Linux VM from an Azure Marketplace image and one Azure PowerShell command that creates a Windows VM with simple parameters. You also want learners to recognize when a gallery image ID can replace a marketplace alias.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "`az vm create` can use `--image Ubuntu2204`, a full marketplace URN, or an Azure Compute Gallery image version resource ID"
+      },
+      {
+        "id": "B",
+        "text": "`--size` chooses the operating system image, and `--image` chooses the VM's CPU and memory"
+      },
+      {
+        "id": "C",
+        "text": "The simple `New-AzVM` parameter set can create a VM with `-Name`, `-Credential`, `-Image`, and `-Size`, while more detailed builds use `New-AzVMConfig` plus profile cmdlets"
+      },
+      {
+        "id": "D",
+        "text": "Marketplace images and Azure Compute Gallery images use the same four-part publisher:offer:sku:version syntax in every command"
+      },
+      {
+        "id": "E",
+        "text": "`--generate-ssh-keys` is required for every Windows VM created with Azure CLI"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The examples use current Azure CLI and Az PowerShell documentation. The question does not cover availability zones, data disks, or image capture workflows beyond selecting an image source for creation.",
+    "sections": {
+      "correctAnswer": "**A. `az vm create` can use `--image Ubuntu2204`, a full marketplace URN, or an Azure Compute Gallery image version resource ID** and **C. The simple `New-AzVM` parameter set can create a VM with `-Name`, `-Credential`, `-Image`, and `-Size`, while more detailed builds use `New-AzVMConfig` plus profile cmdlets**. These are documented creation patterns for CLI and PowerShell.",
+      "technical": "VM creation commands separate the compute settings from the image source. In Azure CLI, `az vm create` requires a resource group and name, and it accepts many optional parameters. The image can be a familiar alias such as `Ubuntu2204`, a full Marketplace URN such as `Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest`, a custom managed image name, or an Azure Compute Gallery image resource ID. Microsoft documents examples for marketplace images, generalized gallery image versions, specialized gallery images, and latest gallery image references.\n\nImage terminology matters. Marketplace images are identified by publisher, offer, SKU, and version. The version can often be `latest`. Azure Compute Gallery image versions, by contrast, are Azure resources under a gallery, image definition, and version path. You pass their resource ID or supported gallery reference to `--image`; you do not rewrite them as a marketplace URN.\n\nPowerShell offers two levels of control. The `New-AzVM` simple parameter set is a convenient path that makes common creation arguments optional and accepts parameters such as `-Name`, `-Credential`, `-Image`, and `-Size`. For a more explicit build, the documentation points to `New-AzVMConfig`, then cmdlets such as `Add-AzVMNetworkInterface`, `Set-AzVMOperatingSystem`, `Set-AzVMSourceImage`, and `Set-AzVMOSDisk`.\n\nThe exam distinction is basic but important: `--image` or `-Image` identifies what OS/image to deploy; `--size` or `-Size` identifies the VM hardware shape. SSH-key options are authentication helpers for Linux scenarios, not a universal Windows requirement.",
+      "wrongOptions": {
+        "B": "This reverses the parameters. The image parameter selects the operating system or source image, while the size parameter selects the compute SKU such as CPU and memory. Misconception: all creation parameters are interchangeable labels. Could be correct only if the words were swapped.",
+        "D": "Marketplace images use publisher:offer:sku:version. Azure Compute Gallery images are Azure resources with gallery/image/version identifiers and can be supplied by resource ID or gallery path. Misconception: every image source is expressed as a marketplace URN. Could be correct when discussing only Azure Marketplace images.",
+        "E": "Windows VM creation normally uses a password credential, not SSH key generation. `--generate-ssh-keys` is common for Linux VM SSH access. Misconception: an authentication option seen in Linux quickstarts must be required for all OS types. Could be correct for a Linux VM where you want Azure CLI to create or reuse SSH keys."
+      },
+      "plainEnglish": "A VM creation command has two big choices: what machine shape to rent and what disk image to put on it. The machine shape is the size. The disk image is the OS image, such as Ubuntu, Windows Server, or a company image in Azure Compute Gallery. Azure CLI can accept short aliases for popular marketplace images, full marketplace names, or gallery image IDs. Azure PowerShell can either use a short convenient command or a more detailed build process where you set the network, OS, source image, and disk pieces one by one.",
+      "analogy": "Ordering a VM is like ordering a laptop fleet. The model tells you CPU and memory, while the software image says which operating system and preinstalled software the laptop receives. A company warehouse image is not named the same way as a public retail catalog item.\n\n| Analogy | Azure reality |\n|---|---|\n| Laptop model | VM size |\n| Retail OS catalog entry | Marketplace image alias or URN |\n| Company-approved build | Azure Compute Gallery image |\n| Quick order form | Simple `New-AzVM` or `az vm create` |\n| Detailed assembly sheet | `New-AzVMConfig` with profile cmdlets |\n\n**Where the analogy breaks down:** Azure validates image features, generation, licensing plan terms, region availability, and security type through APIs; a laptop order form usually hides fewer platform constraints.",
+      "jargon": [
+        {
+          "term": "Azure CLI",
+          "definition": "A cross-platform command-line tool that uses commands such as `az vm create` to manage Azure resources."
+        },
+        {
+          "term": "Azure PowerShell",
+          "definition": "PowerShell modules such as Az.Compute used to create and manage Azure resources."
+        },
+        {
+          "term": "Marketplace image",
+          "definition": "A public image in Azure Marketplace described by publisher, offer, SKU, and version."
+        },
+        {
+          "term": "URN",
+          "definition": "A colon-separated marketplace image identifier in the form publisher:offer:sku:version."
+        },
+        {
+          "term": "Azure Compute Gallery",
+          "definition": "A service for versioning, replicating, and sharing custom images and VM applications."
+        },
+        {
+          "term": "VM size",
+          "definition": "The Azure compute SKU that defines CPU, memory, and related capabilities."
+        },
+        {
+          "term": "`New-AzVMConfig`",
+          "definition": "A PowerShell cmdlet that creates a VM configuration object for detailed VM builds."
+        },
+        {
+          "term": "`Set-AzVMSourceImage`",
+          "definition": "A PowerShell cmdlet used to define the source image in a VM configuration object."
+        }
+      ],
+      "watchOut": "- Do not confuse image with size.\n- A Compute Gallery image version is an Azure resource, not a marketplace URN.\n- Some marketplace images require purchase plan terms; lab aliases avoid much of that complexity.\n- A short creation command can hide defaults that a production template should set explicitly.",
+      "productionTip": {
+        "official": "Microsoft documents `az vm create` examples for marketplace aliases, marketplace URNs, managed images, and Azure Compute Gallery image versions. Microsoft also documents both simple and object-based `New-AzVM` creation patterns.",
+        "recommendation": "Use Marketplace aliases only in disposable labs. For repeatable production, pin a tested image version or gallery version, record the selected VM size, and make plan acceptance, licensing type, and security type explicit in infrastructure-as-code."
+      },
+      "memoryTrick": "**Image installs; size powers.** The phrase is a simplification because images can also imply generation and security capabilities, but it prevents the most common parameter mix-up.",
+      "examTip": "When a question shows `--image` and `--size`, map them separately before reading the options. If you see publisher:offer:sku:version, think Marketplace. If you see `/subscriptions/.../galleries/.../images/.../versions/...`, think Azure Compute Gallery. A harder version may add Trusted Launch, where the image generation and security features must also match."
+    },
+    "sources": [
+      {
+        "title": "az vm create",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/vm?view=azure-cli-latest#az-vm-create"
+      },
+      {
+        "title": "New-AzVM",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.compute/new-azvm"
+      },
+      {
+        "title": "Find and use marketplace purchase plan information using the CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage"
+      },
+      {
+        "title": "Overview of Azure Compute Gallery",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/azure-compute-gallery"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.1-04",
+    "objective": "D3.2.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Woodgrove Bank is creating a new Gen2 Windows Server VM from a marketplace image. The security team wants the VM to use Azure's default foundational boot protection, including Secure Boot and a virtual TPM, but the workload does not require confidential computing hardware isolation or confidential OS disk encryption.\n\nWhich security type should you select?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Standard"
+      },
+      {
+        "id": "B",
+        "text": "Confidential VM"
+      },
+      {
+        "id": "C",
+        "text": "Trusted launch"
+      },
+      {
+        "id": "D",
+        "text": "Standard with boot diagnostics enabled"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The VM uses a supported Generation 2 marketplace image and VM size. The question is about the security type at VM creation, not disk encryption at host, Azure Disk Encryption, or Microsoft Defender for Cloud recommendations.",
+    "sections": {
+      "correctAnswer": "**C. Trusted launch**. Trusted Launch is for Generation 2 Azure VMs and provides Secure Boot and vTPM-based measured boot capabilities without requiring the confidential VM isolation model.",
+      "technical": "Azure VM security type controls which platform boot-protection model is used. Microsoft documents Trusted Launch as an easy way to improve security for Generation 2 VMs. It protects against bootkits, rootkits, and low-level malware by using features that include Secure Boot and a virtual Trusted Platform Module. Secure Boot verifies signed boot components; vTPM provides a TPM 2.0-compatible vault for measurements, keys, and attestation. Microsoft also states that Trusted Launch is the default state for newly created Azure Gen2 VMs and scale sets.\n\nThe choices are not synonyms:\n\n| Security type | Main meaning in this scenario |\n|---|---|\n| Standard | No Trusted Launch security profile selected for the new VM |\n| Trusted launch | Gen2 VM boot integrity features such as Secure Boot and vTPM |\n| Confidential VM | Hardware-backed confidential computing isolation, qualified images and sizes, and optional confidential OS disk encryption choices |\n\nConfidential VMs are for stronger confidentiality requirements. They create a hardware-enforced boundary between the workload and the virtualization stack, use dedicated vTPM capabilities, and have their own supported size families and OS-image requirements. That is more than the stated requirement.\n\nThe image requirement is the usual trap. Trusted Launch requires Generation 2 support and a supported image. The Trusted Launch FAQ says you can validate a marketplace OS image by checking that `hyperVGeneration` is `V2` and the image features include a `SecurityType` value containing `TrustedLaunch`. If you select an unsupported Gen1 image or unsupported size, deployment can fail or you must choose a different combination.",
+      "wrongOptions": {
+        "A": "Standard explicitly avoids the Trusted Launch security profile. It may be needed for dependencies unsupported by Trusted Launch, but it does not meet the request for Secure Boot and vTPM defaults. Misconception: standard is safer because it is the generic default word. Could be correct when a supported exception requires disabling Trusted Launch for a new deployment.",
+        "B": "Confidential VM is stronger and more specialized than the requirement. It targets hardware-enforced confidentiality and has separate qualified sizes, OS support, and confidential disk encryption considerations. Misconception: the highest-sounding security option is always the right exam answer. Could be correct when the workload requires confidential computing isolation from the host and virtualization stack.",
+        "D": "Boot diagnostics captures serial logs and screenshots for troubleshooting. It does not enable Secure Boot or vTPM. Misconception: any boot-related setting improves boot-chain security. Could be correct when the task is to troubleshoot startup failures, not to choose a security type."
+      },
+      "plainEnglish": "Trusted Launch is the normal Azure choice when you want Azure to check that a modern VM starts in a trustworthy way. Secure Boot helps ensure the operating system boot pieces are signed and trusted. The virtual TPM stores and reports measurements about the boot process. Confidential VM is a different, heavier category for protecting data and VM state from more of the underlying platform. Standard turns off these Trusted Launch protections for a new deployment. Boot diagnostics is a camera and log recorder for startup, not a security lock.",
+      "analogy": "Think of three delivery boxes. Standard is a normal box. Trusted Launch is a normal box with tamper-evident seals and a checklist that proves the seals were intact before opening. Confidential VM is a locked courier safe with a special route and extra custody controls.\n\n| Analogy | Azure reality |\n|---|---|\n| Normal box | Standard VM security type |\n| Tamper-evident seal | Secure Boot |\n| Seal inspection record | vTPM measurements and attestation |\n| Courier safe | Confidential VM |\n| Startup camera | Boot diagnostics |\n\n**Where the analogy breaks down:** Secure Boot and vTPM use firmware, cryptographic signatures, and platform measurements; a physical seal cannot model image-generation compatibility or VM size support.",
+      "jargon": [
+        {
+          "term": "Security type",
+          "definition": "The VM creation setting that selects Standard, Trusted Launch, or Confidential VM behavior."
+        },
+        {
+          "term": "Trusted Launch",
+          "definition": "An Azure VM security capability for supported Gen2 VMs that includes Secure Boot and vTPM protections."
+        },
+        {
+          "term": "Generation 2 VM",
+          "definition": "A VM generation that supports modern firmware features required by Trusted Launch."
+        },
+        {
+          "term": "Secure Boot",
+          "definition": "A feature that allows only trusted signed boot components to load."
+        },
+        {
+          "term": "vTPM",
+          "definition": "Virtual Trusted Platform Module, a TPM 2.0-compatible component used for measurements, keys, and attestation."
+        },
+        {
+          "term": "Confidential VM",
+          "definition": "An Azure confidential computing VM type that uses hardware-backed isolation for high confidentiality requirements."
+        },
+        {
+          "term": "Attestation",
+          "definition": "A process that provides evidence about the platform or boot state so trust decisions can be made."
+        },
+        {
+          "term": "Boot diagnostics",
+          "definition": "A troubleshooting feature that captures serial log information and screenshots during VM startup."
+        }
+      ],
+      "watchOut": "- Trusted Launch needs a supported Gen2 image and size.\n- Confidential VM is not just Trusted Launch with a different name.\n- Boot diagnostics and Secure Boot solve different problems.\n- Microsoft recommends not disabling Trusted Launch for new deployments unless an unsupported dependency requires it.",
+      "productionTip": {
+        "official": "Microsoft documents Trusted Launch as the default state for newly created Azure Gen2 VMs and documents Secure Boot and vTPM as key Trusted Launch technologies. Microsoft separately documents confidential VMs as hardware-isolated confidential computing resources with specific size and OS support.",
+        "recommendation": "Keep Trusted Launch enabled for new supported VMs unless you have a tested exception such as an unsupported driver, feature, image, or size. Validate image `hyperVGeneration` and `SecurityType` before automating large deployments, and reserve Confidential VM for workloads with explicit confidentiality or attestation requirements."
+      },
+      "memoryTrick": "**Trusted checks the boot; Confidential shields the workload.** This is a simplification because confidential VMs also use boot protections, but it separates the exam intent.",
+      "examTip": "Clue words are **Gen2**, **Secure Boot**, **vTPM**, and **not confidential computing**. Those point to Trusted Launch. If a question says the VM must protect memory or disk state from the host, reconsider Confidential VM. If it says serial log or screenshot, think boot diagnostics instead."
+    },
+    "sources": [
+      {
+        "title": "Trusted Launch for Azure VMs",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/trusted-launch"
+      },
+      {
+        "title": "FAQ for Trusted Launch",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/trusted-launch-faq"
+      },
+      {
+        "title": "About Azure confidential VMs",
+        "url": "https://learn.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.1-05",
+    "objective": "D3.2.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "Litware is creating two new VMs. `vm-license01` will run Windows Server and Litware has eligible Windows Server licenses with active Software Assurance. `vm-batch01` runs interruptible batch jobs and should use unused Azure capacity at the lowest possible compute price.\n\nWhich two configuration choices are appropriate? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set `licenseType` to `None` on `vm-license01` to activate Azure Hybrid Benefit"
+      },
+      {
+        "id": "B",
+        "text": "Set the Windows VM license type to `Windows_Server` when using Azure Hybrid Benefit"
+      },
+      {
+        "id": "C",
+        "text": "Use Azure Spot for `vm-batch01` and expect the VM to have the same SLA as a regular pay-as-you-go VM"
+      },
+      {
+        "id": "D",
+        "text": "Set Spot eviction policy to `Deallocate` if Litware wants the VM stopped-deallocated and possibly redeployed later after eviction"
+      },
+      {
+        "id": "E",
+        "text": "Set Spot max price to `-1` if Litware does not want price-based eviction and accepts paying up to the standard VM price"
+      }
+    ],
+    "correct": [
+      "B",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. Litware has verified license eligibility for Azure Hybrid Benefit. The batch workload can tolerate interruption, and the question asks about creation-time choices rather than reserved instances or savings plans.",
+    "sections": {
+      "correctAnswer": "**B. Set the Windows VM license type to `Windows_Server` when using Azure Hybrid Benefit** and **E. Set Spot max price to `-1` if Litware does not want price-based eviction and accepts paying up to the standard VM price**. Microsoft documents `Windows_Server` as the license type for Azure Hybrid Benefit and `-1` as the Spot max price value that prevents eviction for price reasons.",
+      "technical": "Azure Hybrid Benefit and Azure Spot address different cost levers at VM creation. Azure Hybrid Benefit for Windows Server lets eligible customers use on-premises Windows Server core licenses with active Software Assurance or qualifying subscription licenses to reduce the cost of Windows Server VMs. In CLI or template terms, the licensing metadata is `licenseType` with the value `Windows_Server`; PowerShell also has a `-LicenseType` parameter. Microsoft notes that changing this licensing flag does not restart the VM because it is metadata.\n\nAzure Spot VMs are different. Spot uses unused Azure capacity and can be evicted when Azure needs the capacity back or when the Spot price exceeds the maximum price you set. Spot VMs have no SLA and can be evicted with 30 seconds notice. At creation, the relevant choices include priority `Spot`, eviction policy, and max price. The eviction policy can be `Deallocate`, which is the default and keeps the VM in stopped-deallocated state while storage costs continue, or `Delete`, which deletes the VM and underlying disks on eviction.\n\nThe max price rule is precise. If the max price is below the current price, the VM is not deployed or cannot be restarted. If the price later rises above the max, the VM can be evicted. If max price is set to `-1`, the VM is not evicted for pricing reasons; the charge is the current Spot price up to the standard VM price, while capacity-based eviction is still possible.\n\nThe two settings can coexist only when their OS and business requirements make sense. AHB is a Windows Server licensing benefit. Spot is an interruptible capacity model suitable for stateless or restartable workloads.",
+      "wrongOptions": {
+        "A": "`None` is used to move a VM away from Azure Hybrid Benefit back to normal pay-as-you-go Windows Server licensing. Misconception: none means no extra Windows charge. Could be correct when intentionally disabling Azure Hybrid Benefit on an existing VM.",
+        "C": "Spot VMs do not provide the same availability guarantees as regular VMs. Microsoft explicitly states there is no SLA for Azure Spot VMs and they can be evicted. Misconception: a lower price is just a discount on identical service guarantees. Could be correct only if it said the workload accepts interruptions.",
+        "D": "The statement accurately describes `Deallocate`, but the question asks for the two appropriate choices and the strongest Spot price control in this set is the `-1` max price option. Misconception: eviction policy controls all reasons for eviction. Could be correct when the requirement specifically says preserve the VM resource after eviction for possible redeployment."
+      },
+      "plainEnglish": "Litware has two separate ways to save money. For the Windows Server VM, it can tell Azure that it is using its own eligible Windows Server license benefit. The Azure setting for that is `Windows_Server`. For the batch VM, it can ask for Spot capacity, which is cheaper because Azure can take it back. If Litware sets max price to `-1`, Azure will not evict the VM just because the Spot price rose, but Azure can still evict it when capacity is needed. Spot is not for workloads that must stay up.",
+      "analogy": "Azure Hybrid Benefit is like bringing a valid prepaid ticket to reduce the train fare. Spot is like taking a standby seat that costs less but can be reclaimed if a full-fare passenger needs it.\n\n| Analogy | Azure reality |\n|---|---|\n| Prepaid Windows ticket | Eligible Windows Server license with Software Assurance |\n| Stamp on the ticket | `licenseType = Windows_Server` |\n| Standby seat | Azure Spot VM |\n| Seat reclaimed | Spot eviction |\n| Will pay up to normal fare | Max price `-1` |\n\n**Where the analogy breaks down:** Azure billing and licensing are governed by product terms, quotas, region availability, and API metadata. A train conductor does not model eviction policies or stopped-deallocated storage charges.",
+      "jargon": [
+        {
+          "term": "Azure Hybrid Benefit",
+          "definition": "A licensing benefit that lets eligible customers use existing Windows Server licenses to reduce Azure VM costs."
+        },
+        {
+          "term": "Software Assurance",
+          "definition": "A Microsoft licensing program benefit that can qualify Windows Server licenses for Azure Hybrid Benefit."
+        },
+        {
+          "term": "`licenseType`",
+          "definition": "The VM metadata property used to indicate licensing behavior, such as `Windows_Server`."
+        },
+        {
+          "term": "Azure Spot VM",
+          "definition": "A VM that uses unused Azure capacity at variable lower pricing and can be evicted."
+        },
+        {
+          "term": "Eviction",
+          "definition": "Azure stopping or deleting a Spot VM when capacity is needed or price exceeds the configured maximum."
+        },
+        {
+          "term": "Eviction policy",
+          "definition": "The Spot setting that controls whether an evicted VM is deallocated or deleted."
+        },
+        {
+          "term": "Max price",
+          "definition": "The highest hourly Spot price the customer is willing to pay for a Spot VM."
+        },
+        {
+          "term": "SLA",
+          "definition": "Service level agreement; Spot VMs do not have the high availability guarantees of regular VMs."
+        }
+      ],
+      "watchOut": "- Azure Hybrid Benefit eligibility is a licensing prerequisite, not just a portal checkbox.\n- Spot can be evicted for capacity even when max price is `-1`.\n- `Deallocate` keeps disks and quota impact; `Delete` removes the VM and disks.\n- Do not place stateful production workloads on Spot unless the application is designed for interruption.",
+      "productionTip": {
+        "official": "Microsoft documents Azure Hybrid Benefit for Windows Server with `licenseType` set to `Windows_Server`, and documents Azure Spot eviction policy choices of Deallocate or Delete plus the special max price value `-1`.",
+        "recommendation": "Use Azure Policy or queries to audit AHB usage against licensing records. For Spot, design checkpointing, retries, and replacement capacity before deployment; use Scheduled Events for best-effort eviction notices and choose Delete only when automated rebuild is proven."
+      },
+      "memoryTrick": "**License saves Windows cost; Spot rents spare capacity.** This is a simplification because both affect billing, but they solve different economic problems.",
+      "examTip": "Clue words are **eligible Windows Server licenses** and **interruptible batch**. Match the first to `Windows_Server`, and the second to Spot. If an option promises a Spot SLA, reject it. If an option says `None` enables AHB, remember that `Windows_Server` is the enabling value."
+    },
+    "sources": [
+      {
+        "title": "Explore Azure Hybrid Benefit for Windows VMs",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/windows/hybrid-use-benefit-licensing"
+      },
+      {
+        "title": "About Azure Spot Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/spot-vms"
+      },
+      {
+        "title": "az vm create",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/vm?view=azure-cli-latest#az-vm-create"
+      },
+      {
+        "title": "New-AzVM",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.compute/new-azvm"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.1-06",
+    "objective": "D3.2.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Contoso is creating an Ubuntu VM from an Azure Marketplace image. During first boot, the VM must install `nginx` and write a small configuration file before administrators sign in. The script does not contain secrets and is needed only for initial provisioning.\n\nWhat should Contoso use during VM creation?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Pass a cloud-init configuration file by using custom data, such as `az vm create --custom-data cloud-init.txt`"
+      },
+      {
+        "id": "B",
+        "text": "Use Action Run Command before the VM resource is created"
+      },
+      {
+        "id": "C",
+        "text": "Use Custom Script Extension because custom data is available only to Windows VMs"
+      },
+      {
+        "id": "D",
+        "text": "Store the script in boot diagnostics managed storage and let Azure execute it"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The image is a cloud-init-enabled Linux marketplace image. The task is first-boot configuration at VM creation, not later repair of an existing VM.",
+    "sections": {
+      "correctAnswer": "**A. Pass a cloud-init configuration file by using custom data, such as `az vm create --custom-data cloud-init.txt`**. Azure custom data is made available during provisioning, and cloud-init-enabled Linux images can process it on first boot.",
+      "technical": "Custom data is an Azure VM creation feature for injecting a script or metadata at provisioning time. Microsoft documents that custom data is made available during first startup, also called provisioning. When you use Azure CLI, `--custom-data` can point to a file and the CLI performs the Base64 conversion for you. The custom data size cannot exceed 64 KB.\n\nFor Linux VMs, cloud-init is the common provisioning agent that processes custom data. It can install packages, write files, configure users, and run first-boot setup. Microsoft documents endorsed Linux marketplace images that are cloud-init ready, and the quickstart-style examples create VMs with `--custom-data MyCloudInitScript.yml`. The first line of a cloud-init file, such as `#cloud-config`, tells cloud-init how to interpret the payload.\n\nCustom Script Extension and Run Command are separate tools. The Custom Script Extension downloads and runs scripts on an Azure VM for post-deployment configuration, software installation, or management. It is useful after the VM exists or when extension-based deployment is preferred, and it has its own limits such as a 90-minute script run limit for the Linux extension. Run Command uses the VM agent to run scripts inside an existing Windows or Linux VM for management, diagnostics, or remediation. Action Run Command is not a pre-resource creation mechanism.\n\nThe key order is: choose a cloud-init-enabled image, provide custom data during VM creation, let provisioning expose the data to the guest, and let cloud-init process it during first boot. For secrets, use a more secure mechanism than plain custom data.",
+      "wrongOptions": {
+        "B": "Run Command relies on a VM and VM agent. It is for scripts inside an existing VM, not for executing a first-boot payload before the VM resource exists. Misconception: any Azure script-running feature can be used at any lifecycle stage. Could be correct when repairing or checking a VM after deployment.",
+        "C": "Custom data applies to both Linux and Windows VMs. The important Linux detail is whether the provisioning agent, usually cloud-init, processes it. Misconception: because Windows stores custom data differently, Linux cannot use it. Could be correct when a post-deployment script needs extension features such as downloading from protected storage.",
+        "D": "Boot diagnostics stores startup logs and screenshots; it does not execute scripts. Misconception: a boot-related storage feature participates in guest configuration. Could be correct when the need is to inspect console output from a failed boot."
+      },
+      "plainEnglish": "Contoso wants the VM to configure itself the first time it starts. For Linux images that support cloud-init, the normal method is to hand Azure a small text file at creation time. Azure passes that file into the VM, and cloud-init reads it during first boot. A Custom Script Extension is more like sending a worker to run a script after the machine exists. Run Command is for asking an existing VM to run something for diagnostics or repair. Boot diagnostics only records what happens during startup.",
+      "analogy": "A new apartment can come with a move-in instruction envelope waiting on the kitchen counter. The resident reads it on the first day and sets up the rooms. That is custom data with cloud-init. Calling a maintenance worker later is more like Custom Script Extension or Run Command.\n\n| Analogy | Azure reality |\n|---|---|\n| Move-in envelope | Custom data |\n| First-day resident checklist | cloud-init processing |\n| Maintenance worker visit | Custom Script Extension |\n| Emergency phone instruction | Run Command |\n| Security camera recording the hallway | Boot diagnostics |\n\n**Where the analogy breaks down:** cloud-init has strict supported formats, size limits, guest-agent behavior, and image readiness requirements; an envelope can hold any paper note.",
+      "jargon": [
+        {
+          "term": "Custom data",
+          "definition": "A VM creation payload that Azure makes available to the guest during first startup or provisioning."
+        },
+        {
+          "term": "cloud-init",
+          "definition": "A Linux provisioning system that can process first-boot configuration such as package installation and file creation."
+        },
+        {
+          "term": "Provisioning",
+          "definition": "The process where Azure passes VM creation values such as hostname, credentials, keys, and custom data to the guest."
+        },
+        {
+          "term": "Base64",
+          "definition": "An encoding used for custom data in the Azure API; Azure CLI can encode file contents automatically."
+        },
+        {
+          "term": "Custom Script Extension",
+          "definition": "A VM extension that downloads and runs scripts for post-deployment configuration or management."
+        },
+        {
+          "term": "Run Command",
+          "definition": "An Azure VM feature that uses the VM agent to run scripts inside an existing VM."
+        },
+        {
+          "term": "VM agent",
+          "definition": "Guest software that communicates with Azure to support extensions and management operations."
+        },
+        {
+          "term": "`--custom-data`",
+          "definition": "The Azure CLI parameter used to provide custom data during VM creation."
+        }
+      ],
+      "watchOut": "- Custom data for a single VM cannot be updated in the VM model after creation.\n- Do not put secrets in custom data.\n- Validate that the Linux image is cloud-init ready before relying on first-boot processing.\n- Run Command and Custom Script Extension are powerful but belong to later or extension-based lifecycle stages.",
+      "productionTip": {
+        "official": "Microsoft documents custom data as available during first startup and documents cloud-init as a way to configure Linux VMs during initial boot. Microsoft separately describes Custom Script Extension and Run Command as script execution tools for VMs.",
+        "recommendation": "Use cloud-init for small deterministic first-boot Linux configuration, keep it idempotent, and send logs to a place you monitor. Use extensions or managed Run Command when you need post-deployment execution, protected settings, sequencing, or operational remediation."
+      },
+      "memoryTrick": "**Custom data is packed before the VM trip; Run Command calls after arrival.** The rule is simplified because extensions can be declared in templates, but it captures the first-boot distinction.",
+      "examTip": "Clue words are **during first boot**, **Ubuntu**, and **before administrators sign in**. Those point to custom data plus cloud-init. If the question says an existing VM lost SSH access, Run Command becomes more plausible. If it says download and run a file after deployment, compare Custom Script Extension."
+    },
+    "sources": [
+      {
+        "title": "Custom data on Azure virtual machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/custom-data"
+      },
+      {
+        "title": "Overview of cloud-init support for Linux VMs in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/using-cloud-init"
+      },
+      {
+        "title": "Run Custom Script Extension on Linux VMs in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/extensions/custom-script-linux"
+      },
+      {
+        "title": "Run scripts in a Windows or Linux VM in Azure with Run Command",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/run-command-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.1-07",
+    "objective": "D3.2.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Adatum is creating several VMs in `eastus`. One deployment fails before the VM is created with an insufficient D-series vCPU quota message. Another VM is created successfully, but the operating system does not finish booting and administrators need serial log information without creating a customer storage account first.\n\nWhich two actions should Adatum take? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Increase only the VM count limit; regional and VM-family vCPU quotas are not used during VM creation"
+      },
+      {
+        "id": "B",
+        "text": "Create a premium storage account for boot diagnostics because managed boot diagnostics is unsupported"
+      },
+      {
+        "id": "C",
+        "text": "Request an increase for the relevant VM-family vCPU quota, which also increases the regional vCPU quota when approved"
+      },
+      {
+        "id": "D",
+        "text": "Use boot diagnostics with a managed storage account to view serial log and screenshot information"
+      },
+      {
+        "id": "E",
+        "text": "Resolve the quota error by switching from managed disks to unmanaged disks"
+      }
+    ],
+    "correct": [
+      "C",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The quota failure is a standard pay-as-you-go VM-family vCPU quota issue in one subscription and region. The boot failure is for an Azure Resource Manager VM that supports managed boot diagnostics.",
+    "sections": {
+      "correctAnswer": "**C. Request an increase for the relevant VM-family vCPU quota, which also increases the regional vCPU quota when approved** and **D. Use boot diagnostics with a managed storage account to view serial log and screenshot information**. Microsoft documents both regional and per-family vCPU quota enforcement, and managed boot diagnostics is the recommended boot diagnostics experience.",
+      "technical": "Two unrelated creation-time issues are mixed in the scenario. The first is quota. Azure Resource Manager enforces standard vCPU quotas for VMs at two tiers for each subscription in each region: total regional vCPU quota and VM-family vCPU quota, such as D-series vCPUs. When the requested VM size would exceed the family quota in `eastus`, creation fails before the VM is deployed. Microsoft documents requesting increases from the Quotas experience; if a VM-family quota increase is approved, Azure automatically increases the regional vCPU quota for that region by the same amount. Some quotas are adjustable directly, and non-adjustable quotas require a support request.\n\nThe second issue is boot observation. Boot diagnostics lets administrators diagnose VM boot failures by collecting serial log information and screenshots. When you create a VM in the Azure portal, boot diagnostics is enabled by default. The recommended experience is managed boot diagnostics, which uses a managed storage account. With managed storage, the storage account is not directly accessible and the boot diagnostics blobs are not currently billed. A custom storage account is still possible, but it must satisfy region, subscription, firewall, and account-type requirements; premium storage accounts and zone-redundant storage accounts are not supported for boot diagnostics.\n\nThe troubleshooting order should therefore be clean. Fix quota so Azure can allocate the VM size, or choose a different size or region only if that meets requirements. For a VM that exists but fails during guest startup, use boot diagnostics to inspect startup output. Disk management style does not change vCPU quota enforcement.",
+      "wrongOptions": {
+        "A": "Azure enforces regional and VM-family vCPU quotas for VM creation. A generic VM count limit is not the described control. Misconception: quota means only a number of VM objects. Could be correct only for a different service limit that explicitly counts resource instances rather than vCPUs.",
+        "B": "Managed boot diagnostics is supported and recommended. Premium storage accounts are not supported for boot diagnostics storage. Misconception: more expensive storage is required for diagnostics. Could be correct only if the organization deliberately chooses a supported custom Standard storage account for a specific compliance reason.",
+        "E": "Managed versus unmanaged disks does not increase vCPU quota. Quota is about compute cores by region and family. Misconception: storage configuration fixes allocation limits. Could be correct when troubleshooting a legacy unmanaged-disk compatibility issue, not a vCPU quota error."
+      },
+      "plainEnglish": "The first VM never starts because the subscription is not allowed to allocate enough D-series CPU cores in that region. The fix is to ask Azure for more of that quota or choose a different allowed size or region. The second VM exists but the operating system is stuck during startup. For that, boot diagnostics is like looking at the VM's startup screen and serial console log. Azure can store those diagnostics in a managed account so Adatum does not have to create its own storage account for the basic recommended setup.",
+      "analogy": "Adatum is dealing with a parking garage and a car dashboard. The quota error is the garage saying there are not enough reserved D-series parking spots in that city. Boot diagnostics is the dashboard camera that helps explain why a car already in a spot will not start.\n\n| Analogy | Azure reality |\n|---|---|\n| City parking allowance | Regional vCPU quota |\n| D-series parking section | VM-family vCPU quota |\n| Request more spaces | Quota increase request |\n| Dashboard camera | Boot diagnostics screenshot |\n| Engine startup log | Serial log |\n\n**Where the analogy breaks down:** Azure quota approval is a subscription governance workflow, and boot diagnostics captures virtual console data rather than physical engine signals.",
+      "jargon": [
+        {
+          "term": "vCPU quota",
+          "definition": "A subscription limit on virtual CPU allocation for VMs in a region and VM family."
+        },
+        {
+          "term": "Regional vCPU quota",
+          "definition": "The total standard vCPU limit for a subscription in a particular Azure region."
+        },
+        {
+          "term": "VM-family vCPU quota",
+          "definition": "A quota for a VM size family, such as D-series, within a subscription and region."
+        },
+        {
+          "term": "Quota request",
+          "definition": "A portal or support workflow used to ask Azure for a higher service limit."
+        },
+        {
+          "term": "Boot diagnostics",
+          "definition": "A VM troubleshooting feature that captures serial logs and screenshots during boot."
+        },
+        {
+          "term": "Managed storage account",
+          "definition": "A Microsoft-managed storage location used by managed boot diagnostics, not directly accessible to the customer."
+        },
+        {
+          "term": "Serial log",
+          "definition": "Text output from the VM boot process that can help diagnose startup failures."
+        },
+        {
+          "term": "Screenshot",
+          "definition": "A captured image of the VM console during boot diagnostics."
+        }
+      ],
+      "watchOut": "- Quota is scoped by subscription and region; another region may have different available quota.\n- VM-family quota and regional quota both matter.\n- Managed boot diagnostics is recommended and avoids creating a customer storage account.\n- Premium and zone-redundant storage accounts are not supported as custom boot diagnostics storage accounts.",
+      "productionTip": {
+        "official": "Microsoft documents standard vCPU quotas at total regional and VM-family tiers, plus quota increase workflows. Microsoft also documents boot diagnostics as collecting serial logs and screenshots, with managed storage as the recommended experience.",
+        "recommendation": "Before deployment waves, preflight quota for the exact family and region, and submit quota requests early. Leave managed boot diagnostics enabled on baseline VM images so startup failures produce useful evidence without emergency storage-account changes."
+      },
+      "memoryTrick": "**Quota blocks creation; boot diagnostics explains startup.** This is a simplification because allocation can fail for other reasons, but it separates pre-create capacity from post-create boot evidence.",
+      "examTip": "If the prompt says **insufficient quota** before creation, choose a quota increase or different size/region, not diagnostics. If the prompt says the VM exists but does not boot, choose boot diagnostics. A harder version may mention Spot quota, which has a separate quota pool from standard VM quota."
+    },
+    "sources": [
+      {
+        "title": "Increase VM-family vCPU quotas",
+        "url": "https://learn.microsoft.com/en-us/azure/quotas/per-vm-quota-requests"
+      },
+      {
+        "title": "Azure boot diagnostics",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/boot-diagnostics"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

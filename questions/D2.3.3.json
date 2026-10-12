@@ -1,0 +1,741 @@
+[
+  {
+    "id": "D2.3.3-01",
+    "objective": "D2.3.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a general-purpose v2 storage account that stores block blobs for a finance department. A container named `statements` contains PDF files that are usually downloaded during the first week after upload and then retained for compliance. A junior administrator proposes moving a blob to the cold tier after 10 days and then to the archive tier after 80 days to minimize capacity charges.\n\nYou need to explain the documented minimum retention periods and billing risk.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The cool tier has no minimum retention period, the cold tier has 30 days, and the archive tier has 90 days."
+      },
+      {
+        "id": "B",
+        "text": "The cool tier has a 30-day minimum, the cold tier has a 90-day minimum, and the archive tier has a 180-day minimum; early deletion charges can apply if data is deleted, overwritten, or moved too soon."
+      },
+      {
+        "id": "C",
+        "text": "Early deletion charges apply only when a storage account is deleted, not when an individual blob is moved to another tier."
+      },
+      {
+        "id": "D",
+        "text": "The hot, cool, cold, and archive tiers all have the same minimum retention period, but archive has a longer rehydration time."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The storage account is standard general-purpose v2, and the data is stored as block blobs.",
+    "sections": {
+      "correctAnswer": "**B. The cool tier has a 30-day minimum, the cold tier has a 90-day minimum, and the archive tier has a 180-day minimum; early deletion charges can apply if data is deleted, overwritten, or moved too soon.** Those are the documented minimum retention periods for standard Blob Storage access tiers in a general-purpose v2 account.",
+      "technical": "Azure Blob Storage access tiers trade capacity cost against access cost, retrieval behavior, and expected retention. Hot is optimized for active data and has no minimum retention period in the summary table. Cool is an online tier for infrequently accessed data that should stay for at least 30 days. Cold is an online tier for rarely accessed data that still needs fast retrieval and should stay for at least 90 days. Archive is offline, has retrieval latency measured in hours, and should stay for at least 180 days.\n\nThe billing rule is tied to a blob's stay in the selected tier. Microsoft states that blobs are subject to an early deletion penalty if they are deleted, overwritten, or moved to a different tier before the minimum number of days required by the tier has passed. The charge is prorated. A cool blob deleted after 21 days can leave nine days of cool storage to be charged. An archived blob moved to hot after 45 days can be charged for the remaining 135 days of the archive interval.\n\nFor exam reasoning, first identify the current tier, then compare the days spent in that tier with the documented minimum, then decide whether the planned operation deletes, overwrites, or moves the blob. A useful exception is soft delete: when soft delete is enabled, the blob is considered deleted for this purpose after the soft-delete retention period expires.",
+      "wrongOptions": {
+        "A": "The periods are mapped incorrectly: cool is 30 days, cold is 90 days, and archive is 180 days for standard general-purpose v2 accounts. Misconception: Cold and archive sound like similar deep-storage choices, so their retention periods are easy to swap.. Could be correct when: the question were about another product's unrelated retention policy rather than Blob Storage access tiers.",
+        "C": "Microsoft describes early deletion charges for blob-level actions, including deleting, overwriting, or moving a blob out of a cooler tier too early. Misconception: Billing penalties happen only when an entire Azure resource is removed.. Could be correct when: the topic were resource deletion cleanup rather than per-blob access tier billing.",
+        "D": "The tiers do not share one retention period; hot has no minimum in the table, while cool, cold, and archive have different minimums. Misconception: Rehydration latency is the only meaningful difference among cool, cold, and archive.. Could be correct when: the answer was comparing archive latency with online-tier latency and did not mention retention."
+      },
+      "plainEnglish": "A cheaper tier is like a cheaper storage contract that expects the file to stay longer. Hot is expensive shelf space for things you touch often. Cool is cheaper but expects about a month. Cold expects roughly three months. Archive expects about six months and is not ready to read immediately. If you put a file into a cheaper long-stay area and then remove, replace, or move it too soon, Azure can charge you for the unused part of that expected stay.",
+      "analogy": "A records warehouse offers four rooms. The front room is costly but flexible, a monthly shelf is cheaper, a quarterly shelf is cheaper again, and a deep vault has the longest stay.\n\n| Analogy | Azure reality |\n|---|---|\n| Front room with no planned stay | Hot tier |\n| Monthly shelf | Cool tier |\n| Quarterly shelf | Cold tier |\n| Six-month vault | Archive tier |\n| Leaving before the contract period | Early deletion charge |\n\n**Where the analogy breaks down:** Azure billing is metered by capacity, operation, access, retrieval, redundancy, and region rather than by a single paper warehouse contract.",
+      "jargon": [
+        {
+          "term": "GPv2",
+          "definition": "A standard general-purpose v2 storage account, the recommended account type for current Azure Storage features."
+        },
+        {
+          "term": "Block blob",
+          "definition": "A Blob Storage object type used for files, documents, images, and other binary or text objects; access tier setting applies to block blobs."
+        },
+        {
+          "term": "Hot tier",
+          "definition": "An online Blob Storage tier for data that is accessed or modified frequently."
+        },
+        {
+          "term": "Cool tier",
+          "definition": "An online Blob Storage tier for infrequently accessed data that should usually remain for at least 30 days."
+        },
+        {
+          "term": "Cold tier",
+          "definition": "An online Blob Storage tier for rarely accessed data that still needs fast retrieval and should usually remain for at least 90 days."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "An offline Blob Storage tier for long-retained data that can tolerate retrieval latency measured in hours and should usually remain for at least 180 days."
+        },
+        {
+          "term": "Early deletion charge",
+          "definition": "A prorated charge that can apply when a blob is deleted, overwritten, or moved out of a cooler tier before the minimum retention period elapses."
+        }
+      ],
+      "watchOut": "- Cool and cold are online tiers; archive is offline.\n- Moving a blob to a warmer tier before the minimum period can trigger early deletion charges.\n- Rewriting an entire object can count like replacing the blob.\n- Do not optimize only the per-GB capacity meter when retention is short.",
+      "productionTip": {
+        "official": "Microsoft documents 30 days for cool, 90 days for cold, and 180 days for archive, and states that deleting, overwriting, or moving blobs too early can create prorated early deletion charges.",
+        "recommendation": "Before implementing tier movement, tag datasets with expected retention and run a cost estimate that includes overwrites and restores. Use age thresholds that exceed business churn patterns rather than moving data the moment it becomes quiet."
+      },
+      "memoryTrick": "Remember **30, 90, 180**: cool is one month, cold is about one quarter, archive is about half a year. It is a retention mnemonic, not a pricing calculator.",
+      "examTip": "When the scenario gives exact ages such as 10 or 80 days, the exam is testing minimum retention rather than only storage price. A harder item may add soft delete or overwrite wording; keep the same rule and ask whether the blob effectively leaves the cooler tier too early."
+    },
+    "sources": [
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.3-02",
+    "objective": "D2.3.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a container named `images` that stores product photos. The photos are rarely downloaded after the first year, but a support application must still be able to display any photo immediately when a customer opens a ticket. The operations team wants the lowest possible capacity cost that still allows immediate reads.\n\nWhich tier should you choose for the old product photos?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cold, because it is an online tier with fast retrieval and lower storage cost than cool."
+      },
+      {
+        "id": "B",
+        "text": "Archive, because it has the lowest storage cost and archived blobs can still be read by applications."
+      },
+      {
+        "id": "C",
+        "text": "Smart, because it can move blobs to archive automatically when customers stop opening tickets."
+      },
+      {
+        "id": "D",
+        "text": "Premium block blob storage, because premium accounts use archive automatically for old blobs."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The product photos are block blobs in a standard storage account, and the support application needs the blob data immediately.",
+    "sections": {
+      "correctAnswer": "**A. Cold, because it is an online tier with fast retrieval and lower storage cost than cool.** Cold is an online tier for rarely accessed data that must still be available without archive rehydration.",
+      "technical": "The key distinction is online versus offline. Hot, cool, and cold are online access tiers. A blob in one of those tiers can be read immediately through normal Blob Storage operations if the requester is authorized and the network path is allowed. Archive is different. It is an offline tier. Microsoft states that while a blob is in archive, it cannot be read or modified. To read or download the data, you must first rehydrate the blob to an online tier such as hot, cool, or cold.\n\nThe support application requirement says the photo must display immediately when a customer opens a ticket. That rules out archive even though archive has the lowest capacity cost. Cold is a better match than cool when data is rarely accessed, the organization accepts higher access and transaction charges than warmer tiers, and the business still needs online retrieval latency.\n\nThere is a nuance that can appear on exams. Archived blob metadata and properties can be listed or read in limited ways, and tags can have supported operations. That does not mean the image bytes are readable. Seeing that an object exists in a listing is not the same as serving the product photo to a support agent.",
+      "wrongOptions": {
+        "B": "Archive has the lowest capacity cost, but archived blob data is offline and cannot be read or modified until rehydration completes. Misconception: The cheapest capacity meter automatically satisfies a cost-minimization requirement.. Could be correct when: the workflow can tolerate hours of restore latency before anyone needs the data.",
+        "C": "Smart tier manages eligible objects across hot, cool, and cold; Microsoft states smart tier does not support archive. Misconception: Automatic tiering must include every colder tier.. Could be correct when: access patterns are unclear and the data must stay in online tiers.",
+        "D": "Premium block blob accounts are for low latency and high transaction rates, not standard hot/cool/cold/archive economics. Misconception: Premium means the account secretly combines high performance with automatic archiving.. Could be correct when: the workload values premium latency and transaction performance more than tiered capacity cost."
+      },
+      "plainEnglish": "The support app needs the actual picture right away. Archive is like deep storage: cheap to keep, but not ready to open. Cold is still online, so the app can read the photo without waiting for a restore job. The read might cost more than reading from hot, but the customer service workflow is not blocked. That is why the lowest acceptable tier is not simply the cheapest storage tier; it is the cheapest tier that still meets the access time requirement.",
+      "analogy": "A retailer keeps old catalog photos either on a back-room shelf or in a distant records cave. The back-room shelf is cheaper than the front counter, but staff can still grab the picture during a call. The distant cave is cheaper, but retrieval takes time.\n\n| Analogy | Azure reality |\n|---|---|\n| Front counter | Hot tier |\n| Back-room shelf | Cool or cold online tier |\n| Distant records cave | Archive tier |\n| Call with a customer waiting | Immediate application read |\n\n**Where the analogy breaks down:** Azure online tiers have specific availability, transaction, retrieval, and billing meters; a shelf analogy cannot show those exact service properties.",
+      "jargon": [
+        {
+          "term": "Block blob",
+          "definition": "A Blob Storage object type used for files, documents, images, and other binary or text objects; access tier setting applies to block blobs."
+        },
+        {
+          "term": "Hot tier",
+          "definition": "An online Blob Storage tier for data that is accessed or modified frequently."
+        },
+        {
+          "term": "Cool tier",
+          "definition": "An online Blob Storage tier for infrequently accessed data that should usually remain for at least 30 days."
+        },
+        {
+          "term": "Cold tier",
+          "definition": "An online Blob Storage tier for rarely accessed data that still needs fast retrieval and should usually remain for at least 90 days."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "An offline Blob Storage tier for long-retained data that can tolerate retrieval latency measured in hours and should usually remain for at least 180 days."
+        },
+        {
+          "term": "Rehydration",
+          "definition": "The process of restoring an archived blob to an online tier so the blob data can be read or modified."
+        },
+        {
+          "term": "Smart tier",
+          "definition": "A Blob Storage account default tier that automatically manages eligible block blobs across hot, cool, and cold capacity tiers."
+        }
+      ],
+      "watchOut": "- Archive blobs can appear in listings, but the data cannot be read until rehydration finishes.\n- Cold is online; archive is offline.\n- Immediate display requirements normally eliminate archive.\n- Metadata availability is not the same as data availability.",
+      "productionTip": {
+        "official": "Microsoft documents hot, cool, and cold as online tiers and archive as an offline tier. It also states that archived blob data cannot be read or modified until rehydrated.",
+        "recommendation": "For customer-facing lookup paths, use an online tier and test real read patterns before changing production data. Reserve archive for processes with restore tracking, user communication, and tolerance for hours of delay."
+      },
+      "memoryTrick": "**Cold is callable; archive is away.** The phrase is simplified, because cold reads still have different charges from hot reads.",
+      "examTip": "Words such as **immediately**, **display**, and **download now** point away from archive. If the wording says hours are acceptable, or the object is a compliance copy, archive may become the correct answer."
+    },
+    "sources": [
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      },
+      {
+        "title": "Blob rehydration from the archive tier",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/archive-rehydrate-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.3-03",
+    "objective": "D2.3.3",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Woodgrove Bank archived a 6-GB block blob named `audit-2025.zip` 60 days ago. An auditor now needs a working copy as soon as possible, but the compliance team wants to keep the archived source unchanged so that the source does not leave the archive tier before 180 days. You can accept higher retrieval cost for the emergency.\n\nWhich two actions should you choose? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Copy `audit-2025.zip` to a new blob in an online tier such as hot, cool, or cold."
+      },
+      {
+        "id": "B",
+        "text": "Change the archived blob's tier to hot by using Set Blob Tier so that the same blob becomes online."
+      },
+      {
+        "id": "C",
+        "text": "Use a lifecycle management policy to rehydrate the archived blob into the hot tier."
+      },
+      {
+        "id": "D",
+        "text": "Set high rehydration priority for the copy because high priority can complete faster for objects under 10 GB and costs more."
+      },
+      {
+        "id": "E",
+        "text": "Choose standard priority because high priority is available only for blobs larger than 10 GB."
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The source is an archived block blob, the account has available priority retrieval capacity, and an independent working copy is acceptable.",
+    "sections": {
+      "correctAnswer": "**A. Copy `audit-2025.zip` to a new blob in an online tier such as hot, cool, or cold** and **D. Set high rehydration priority for the copy because high priority can complete faster for objects under 10 GB and costs more.** Copy rehydration leaves the source archived, and high priority is the documented emergency option.",
+      "technical": "Azure supports two primary ways to rehydrate archive data. You can change the archived blob's tier to hot, cool, or cold by using Set Blob Tier. That brings the same blob back online when rehydration completes. You can also copy an archived blob to a new destination blob in an online tier by using Copy Blob. With the copy method, the source remains in archive and the destination becomes an independent online blob after the service finishes the restore and copy work.\n\nThis scenario says the blob entered archive only 60 days ago and the compliance team wants the source to remain unchanged. Archive has a 180-day minimum retention period. Changing the source blob's tier to hot would move that original object out of archive before the minimum period. Microsoft notes that copying an archived blob to an online tier can avoid the early deletion fee because the source blob remains unmodified in the archive tier.\n\nPriority is a separate choice. Standard priority is the default and might take up to 15 hours for objects under 10 GB. High priority is prioritized over standard requests and might complete in less than one hour for objects under 10 GB, although it costs more and can take longer depending on size and service demand. Priority retrieval is also subject to a 10-GiB-per-hour limit at the storage account level.",
+      "wrongOptions": {
+        "B": "Set Blob Tier can rehydrate the same blob, but it changes the source out of archive and conflicts with the requirement to keep the original archived copy unchanged. Misconception: All rehydration methods have the same compliance and early-deletion impact.. Could be correct when: the organization wants the original blob itself online and accepts any early deletion charge.",
+        "C": "Microsoft states that lifecycle management policies cannot rehydrate archived blobs to an online tier. Misconception: Any tier movement can be automated by lifecycle management.. Could be correct when: the rule moves online blobs to cooler tiers or archives them by age.",
+        "E": "High priority is not restricted to objects larger than 10 GB; the documentation gives under-10-GB latency guidance for both priorities. Misconception: Emergency priority is a large-blob-only feature.. Could be correct when: cost matters more than speed and the auditor can wait for normal processing."
+      },
+      "plainEnglish": "Woodgrove needs two things at once: a fast working copy and an untouched archive original. Pulling the original out of archive is not the best match because it has been archived for only 60 days. Making a copy lets the archive original stay in deep storage while the auditor receives a new online blob. High priority is the paid fast lane. It does not make archive readable instantly, but it asks Azure to process that restore ahead of standard requests.",
+      "analogy": "A bank keeps a sealed evidence box in deep storage. The auditor needs to inspect the contents, but compliance does not want the sealed box removed from the vault ledger. The records team makes a working copy and pays for rush handling.\n\n| Analogy | Azure reality |\n|---|---|\n| Sealed evidence box | Archived source blob |\n| Working folder | New online destination blob |\n| Rush handling | High rehydration priority |\n| Normal restore queue | Standard priority |\n\n**Where the analogy breaks down:** Azure copy rehydration has service properties, account-level throughput limits, status checks, and billing details that a paper copy process does not model.",
+      "jargon": [
+        {
+          "term": "Block blob",
+          "definition": "A Blob Storage object type used for files, documents, images, and other binary or text objects; access tier setting applies to block blobs."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "An offline Blob Storage tier for long-retained data that can tolerate retrieval latency measured in hours and should usually remain for at least 180 days."
+        },
+        {
+          "term": "Rehydration",
+          "definition": "The process of restoring an archived blob to an online tier so the blob data can be read or modified."
+        },
+        {
+          "term": "Copy Blob",
+          "definition": "A Blob Storage operation that can create a new destination blob in a selected tier while leaving the source blob unchanged."
+        },
+        {
+          "term": "Set Blob Tier",
+          "definition": "The Blob Storage operation used to change an existing block blob's access tier."
+        },
+        {
+          "term": "Early deletion charge",
+          "definition": "A prorated charge that can apply when a blob is deleted, overwritten, or moved out of a cooler tier before the minimum retention period elapses."
+        },
+        {
+          "term": "Hot tier",
+          "definition": "An online Blob Storage tier for data that is accessed or modified frequently."
+        },
+        {
+          "term": "Cool tier",
+          "definition": "An online Blob Storage tier for infrequently accessed data that should usually remain for at least 30 days."
+        },
+        {
+          "term": "Cold tier",
+          "definition": "An online Blob Storage tier for rarely accessed data that still needs fast retrieval and should usually remain for at least 90 days."
+        }
+      ],
+      "watchOut": "- Copy rehydration keeps the source archived; Set Blob Tier rehydrates the original blob.\n- Standard priority is the default, but high priority is available when speed justifies cost.\n- Lifecycle management can archive blobs but cannot rehydrate them.\n- The 10-GiB-per-hour priority retrieval limit is at the account level.",
+      "productionTip": {
+        "official": "Microsoft documents copy-to-online-tier and Set Blob Tier as rehydration methods, standard and high rehydration priority, and high-priority under-10-GB guidance with higher cost.",
+        "recommendation": "For regulated archives, prefer copy rehydration when users need a working copy but the source must remain in archive. Monitor completion through blob properties or events and reserve high priority for true business urgency."
+      },
+      "memoryTrick": "**Copy keeps; Set shifts.** Copy keeps the archive source in place, while Set Blob Tier shifts the original blob to a new tier.",
+      "examTip": "The clues are **source unchanged**, **60 days ago**, and **as soon as possible**. Those clues point to copy plus high priority. If the question removes the unchanged-source requirement, Set Blob Tier may become plausible."
+    },
+    "sources": [
+      {
+        "title": "Blob rehydration from the archive tier",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/archive-rehydrate-overview"
+      },
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.3-04",
+    "objective": "D2.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a general-purpose v2 storage account named `stanalytics`. The default blob access tier is set to Cool. The account contains the following blobs.\n\n| Blob | Current portal tier display | How it was set |\n|---|---|---|\n| `raw/a.csv` | Cool (inferred) | Uploaded without specifying a tier |\n| `raw/b.csv` | Hot | Uploaded with an explicit tier |\n| `raw/c.csv` | Cool | Tier changed explicitly after upload |\n\nYou change the storage account's default blob access tier from Cool to Cold.\n\nWhich blob tier behavior should you expect?",
+    "options": [
+      {
+        "id": "A",
+        "text": "All three blobs change to Cold because the account default tier always overrides existing blob settings."
+      },
+      {
+        "id": "B",
+        "text": "Only `raw/b.csv` changes to Cold because explicit hot blobs follow future account defaults."
+      },
+      {
+        "id": "C",
+        "text": "No existing blobs change because the default tier affects only blobs uploaded after the change."
+      },
+      {
+        "id": "D",
+        "text": "Only `raw/a.csv` follows the new default, because blobs without an explicit tier infer their tier from the account setting."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The question is about the Blob Storage account default tier and explicit blob tier settings, not lifecycle management.",
+    "sections": {
+      "correctAnswer": "**D. Only `raw/a.csv` follows the new default, because blobs without an explicit tier infer their tier from the account setting.** Explicitly tiered blobs keep their blob-level tier until you change them directly.",
+      "technical": "A storage account has a default access tier setting for Blob Storage. Microsoft documents that the default indicates the online tier used when a new blob is created without an explicitly supplied tier. In a general-purpose v2 account, the default can be hot, cool, or cold, and a new account defaults to hot if you do not change it. Archive is not supported as the storage account default access tier.\n\nA blob can also carry an explicit access tier. A tier set during upload or changed later on the blob takes precedence over the account default. If a blob has no explicit tier, its tier is inferred from the account default. The Azure portal can show this as Hot (inferred), Cool (inferred), or Cold (inferred).\n\nWhen the account default changes from Cool to Cold, Azure applies that new default to blobs whose tier is inferred. In the table, `raw/a.csv` was uploaded without specifying a tier, so it follows the account default and becomes cold as an inferred value. `raw/b.csv` remains explicitly hot. `raw/c.csv` remains explicitly cool because someone changed that blob's tier after upload. Microsoft also notes that changing a default tier can have billing impact for all blobs whose access tier is inferred.",
+      "wrongOptions": {
+        "A": "The account default does not override blob-level explicit tiers. Misconception: Account settings always outrank object properties.. Could be correct when: the setting being changed is truly enforced uniformly at account scope.",
+        "B": "Explicit hot blobs do not automatically adopt later account defaults. Misconception: An explicit tier matters only at upload time and then expires.. Could be correct when: the blob had no explicit tier and was displayed as an inferred value.",
+        "C": "Existing inferred blobs can follow a changed default; the effect is not limited to future uploads. Misconception: Default settings are always create-time-only.. Could be correct when: the Azure feature being discussed does not recalculate inherited object settings."
+      },
+      "plainEnglish": "The default is the house rule for blobs that did not choose their own tier. `raw/a.csv` never chose, so it keeps borrowing the account default. When the account default changes to Cold, that blob follows. `raw/b.csv` and `raw/c.csv` already have their own tier labels, so the account default does not replace them. That is why the word **inferred** is important: it means the blob is looking up the value from the account.",
+      "analogy": "A cafeteria has a default lunch for students without a preference form. Students who filed their own lunch choice keep that choice when the cafeteria changes the default meal.\n\n| Analogy | Azure reality |\n|---|---|\n| Default lunch | Storage account default access tier |\n| Student with no form | Blob with inferred tier |\n| Signed preference form | Explicit blob tier |\n| New default menu | Changed account default |\n\n**Where the analogy breaks down:** Azure default changes can create tier-change billing effects, while lunch choices do not involve data retrieval or transaction charges.",
+      "jargon": [
+        {
+          "term": "Default access tier",
+          "definition": "The storage account setting used for new blobs that do not have an explicitly assigned tier."
+        },
+        {
+          "term": "Inferred tier",
+          "definition": "A blob tier value inherited from the storage account default because the blob has no explicit tier of its own."
+        },
+        {
+          "term": "Explicit tier",
+          "definition": "A tier set directly on a blob during upload or by a later tier-change operation."
+        },
+        {
+          "term": "GPv2",
+          "definition": "A standard general-purpose v2 storage account, the recommended account type for current Azure Storage features."
+        },
+        {
+          "term": "Hot tier",
+          "definition": "An online Blob Storage tier for data that is accessed or modified frequently."
+        },
+        {
+          "term": "Cool tier",
+          "definition": "An online Blob Storage tier for infrequently accessed data that should usually remain for at least 30 days."
+        },
+        {
+          "term": "Cold tier",
+          "definition": "An online Blob Storage tier for rarely accessed data that still needs fast retrieval and should usually remain for at least 90 days."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "An offline Blob Storage tier for long-retained data that can tolerate retrieval latency measured in hours and should usually remain for at least 180 days."
+        }
+      ],
+      "watchOut": "- Archive cannot be the default account access tier.\n- Inferred blobs follow the account default.\n- Explicit blob tiers remain until changed at blob level.\n- A default-tier change can have billing impact for inferred blobs.",
+      "productionTip": {
+        "official": "Microsoft documents that blobs without an explicitly assigned tier infer their tier from the account default, and that changing the default applies to blobs for which no explicit tier is set.",
+        "recommendation": "Before changing a production default, inventory `blobTierInferred` or equivalent properties. Explicitly set tiers for exceptions so a broad default change does not unintentionally move important data."
+      },
+      "memoryTrick": "**Inferred obeys; explicit stays.** The shortcut works for account default changes but does not remove the need to check billing impact.",
+      "examTip": "If the table shows **(inferred)**, treat the account default as the source of truth for that blob. A harder question may ask whether Archive can be selected as the account default; eliminate that answer."
+    },
+    "sources": [
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      },
+      {
+        "title": "Set a blob's access tier - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.3-05",
+    "objective": "D2.3.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are designing storage accounts for a document archive. The design must allow some block blobs to be moved to the archive tier. You are comparing account redundancy and blob types.\n\nWhich two statements describe documented requirements or limitations for using Blob Storage access tiers? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Archive is supported for accounts configured with ZRS, GZRS, or RA-GZRS because zone redundancy is required for offline blobs."
+      },
+      {
+        "id": "B",
+        "text": "Only accounts configured for LRS, GRS, or RA-GRS support moving blobs to the archive tier."
+      },
+      {
+        "id": "C",
+        "text": "Access tier changes can be applied to block blobs, append blobs, and page blobs in the same way."
+      },
+      {
+        "id": "D",
+        "text": "Archive can be selected as the default access tier for a general-purpose v2 storage account."
+      },
+      {
+        "id": "E",
+        "text": "Setting the access tier is allowed on block blobs and is not supported for append blobs or page blobs."
+      }
+    ],
+    "correct": [
+      "B",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The question refers to standard Blob Storage access tiers, not Azure Files media tiers or managed disks.",
+    "sections": {
+      "correctAnswer": "**B. Only accounts configured for LRS, GRS, or RA-GRS support moving blobs to the archive tier** and **E. Setting the access tier is allowed on block blobs and is not supported for append blobs or page blobs.** Archive support is limited by redundancy, and tiering is limited by blob type.",
+      "technical": "Blob access tiering is not universal across every Azure Storage object type or redundancy option. Microsoft states that setting the access tier is allowed on block blobs and is not supported for append blobs or page blobs. That matters because all three are blob types, but the tier feature is scoped to block blobs.\n\nRedundancy support also differs by tier. Hot, cool, and cold support all redundancy configurations. Archive is narrower. Microsoft documents that only storage accounts configured for LRS, GRS, or RA-GRS support moving blobs to the archive tier. Archive is not supported for ZRS, GZRS, or RA-GZRS accounts. If a storage account contains archived blobs and you want to change its redundancy configuration, Microsoft says you must first rehydrate all archived blobs to hot, cool, or cold.\n\nDefault account settings have a separate boundary. Archive is not supported as the default account access tier. To place data in archive, use an explicit upload tier, Set Blob Tier, Copy Blob to archive, or a lifecycle transition. Lifecycle rules are a separate objective area, but they can appear as context in tiering questions.",
+      "wrongOptions": {
+        "A": "Archive is specifically not supported for ZRS, GZRS, or RA-GZRS accounts. Misconception: The most resilient redundancy options must support every tier.. Could be correct when: the target tier is hot, cool, or cold, because those online tiers support all redundancy configurations.",
+        "C": "Access tier setting applies to block blobs and not to append or page blobs. Misconception: Every blob subtype exposes identical tiering behavior.. Could be correct when: the operation being discussed truly supports all blob types.",
+        "D": "Archive is not a supported default account access tier. Misconception: Any individual blob tier can also be configured as the account default.. Could be correct when: the default tier choice is hot, cool, or cold in a GPv2 account."
+      },
+      "plainEnglish": "Two checks are needed before you plan archive. First, make sure the object is a block blob. Append blobs and page blobs are valid Azure blob types, but they are not the targets for this access-tier setting. Second, make sure the account redundancy supports archive. Archive works with the documented local and geo-redundant choices, but not with the zone-redundant choices. If a design needs ZRS or GZRS, do not assume the same account can also archive blobs.",
+      "analogy": "A storage company offers deep vault storage only for standard boxes and only in selected warehouses. Log binders and rolling cabinets are accepted by the company for other services, but not for the vault.\n\n| Analogy | Azure reality |\n|---|---|\n| Standard box | Block blob |\n| Log binder | Append blob |\n| Rolling cabinet | Page blob |\n| Selected warehouse | LRS, GRS, or RA-GRS account |\n| Deep vault | Archive tier |\n\n**Where the analogy breaks down:** Azure redundancy describes precise replication architecture across zones and regions, not physical warehouse buildings.",
+      "jargon": [
+        {
+          "term": "LRS",
+          "definition": "Locally redundant storage, which stores copies within one region location."
+        },
+        {
+          "term": "GRS",
+          "definition": "Geo-redundant storage, which asynchronously replicates data to a secondary region."
+        },
+        {
+          "term": "RA-GRS",
+          "definition": "Read-access geo-redundant storage, which provides read access to a secondary region in addition to geo replication."
+        },
+        {
+          "term": "ZRS",
+          "definition": "Zone-redundant storage, which synchronously replicates data across availability zones in one region."
+        },
+        {
+          "term": "GZRS",
+          "definition": "Geo-zone-redundant storage, which combines zone redundancy in the primary region with geo replication."
+        },
+        {
+          "term": "RA-GZRS",
+          "definition": "Read-access geo-zone-redundant storage, which adds read access to the secondary region for GZRS accounts."
+        },
+        {
+          "term": "Block blob",
+          "definition": "A Blob Storage object type used for files, documents, images, and other binary or text objects; access tier setting applies to block blobs."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "An offline Blob Storage tier for long-retained data that can tolerate retrieval latency measured in hours and should usually remain for at least 180 days."
+        },
+        {
+          "term": "Set Blob Tier",
+          "definition": "The Blob Storage operation used to change an existing block blob's access tier."
+        }
+      ],
+      "watchOut": "- Archive supports LRS, GRS, and RA-GRS, but not ZRS, GZRS, or RA-GZRS.\n- Hot, cool, and cold have broader redundancy support than archive.\n- Access tier setting is for block blobs only.\n- Archive cannot be chosen as the account default tier.",
+      "productionTip": {
+        "official": "Microsoft documents archive support only for LRS, GRS, and RA-GRS accounts, and notes that setting an access tier is supported on block blobs but not append or page blobs.",
+        "recommendation": "Pick redundancy before large archive ingestion. If active data needs zone redundancy and long-term data needs archive, consider separate accounts instead of forcing incompatible requirements into one account."
+      },
+      "memoryTrick": "For archive, remember **local or geo, not zone**; for object type, remember **block gets tiers**. Always read the acronym carefully.",
+      "examTip": "Archive answers containing ZRS, GZRS, or RA-GZRS are traps. Answers applying tiering to append blobs or page blobs are also traps even though those objects live in Blob Storage. A harder version may list RA-GRS beside RA-GZRS to see whether you notice the zone letter; only RA-GRS belongs with archive."
+    },
+    "sources": [
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.3-06",
+    "objective": "D2.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Fabrikam stores telemetry exports as block blobs. One dataset is read by dashboards several times per hour and is overwritten every night. Another dataset is retained for months and is almost never read, but analysts may occasionally retrieve it during the same business day. The team wants to minimize total cost, not just storage capacity cost.\n\nWhich statement best describes how to choose tiers for these datasets?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Place both datasets in archive because archive always produces the lowest total cost for retained data."
+      },
+      {
+        "id": "B",
+        "text": "Place both datasets in cold because cold and hot have the same access and transaction charges."
+      },
+      {
+        "id": "C",
+        "text": "Keep the frequently read and overwritten dataset in hot, and consider cool or cold for the rarely read dataset after accounting for access, transaction, retrieval, and retention charges."
+      },
+      {
+        "id": "D",
+        "text": "Use the storage account default tier only; explicitly setting blob tiers prevents Azure from billing access operations."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The datasets are standard block blobs, and the question is about manual tier selection rather than smart tier automation.",
+    "sections": {
+      "correctAnswer": "**C. Keep the frequently read and overwritten dataset in hot, and consider cool or cold for the rarely read dataset after accounting for access, transaction, retrieval, and retention charges.** The cheapest capacity tier is not always the cheapest workload tier.",
+      "technical": "Blob tier selection is a total-cost decision. Microsoft summarizes hot as having higher storage costs but lower access costs. Cool has lower storage costs and higher access costs than hot. Cold has lower storage costs and higher access costs than cool. Archive has the lowest storage cost but is offline and has the highest retrieval friction.\n\nThe dashboard dataset is read several times per hour and overwritten nightly. That is active data. Moving it to cool or cold might reduce capacity charges but would increase access and transaction charges. If the object is overwritten before the minimum retention period for a cooler tier, early deletion charges can also appear. Hot is designed for data that is actively used or expected to require frequent reads and writes.\n\nThe analyst dataset has a different pattern. It is retained for months, almost never read, and still may need same-day access. Cool or cold can be a reasonable online choice if the expected reads are rare enough to offset higher access charges. Archive might be considered only if the business accepts hours of rehydration and restore workflow overhead. The phrase **total cost** means you must include capacity, operation, retrieval, tier-change, and retention effects together.",
+      "wrongOptions": {
+        "A": "Archive has the lowest capacity cost, but it is offline and can be expensive or slow to retrieve from, especially for active data. Misconception: The lowest per-GB storage meter always wins.. Could be correct when: the data is a long-term copy that is almost never accessed and can wait hours for restoration.",
+        "B": "Cold and hot do not have the same cost profile; access and transaction charges increase as tiers get cooler. Misconception: Online tiers differ only by capacity price.. Could be correct when: the question is about broad durability characteristics rather than billing behavior.",
+        "D": "Explicit tiering does not prevent access operation billing, and account defaults are not a billing bypass. Misconception: Default tiers are special free paths through Azure Storage.. Could be correct when: the task is simply to decide how an untagged upload receives its initial tier."
+      },
+      "plainEnglish": "Do not judge cost by shelf rent alone. A cheap shelf becomes expensive if someone pulls the file all day or replaces it every night. The live dashboard export is busy, so hot is usually the sensible tier. The older analyst data sits quietly for months, so a cooler online tier may save money while still allowing same-day retrieval. Archive is even cheaper to store, but it changes the user experience because data must be restored before it can be used.",
+      "analogy": "A factory keeps frequently used tools beside the production line and spare parts in a cheaper storeroom. The line-side cabinet costs more space, but workers open it constantly. The spare storeroom is fine for parts needed only occasionally.\n\n| Analogy | Azure reality |\n|---|---|\n| Line-side cabinet | Hot tier |\n| Spare storeroom | Cool or cold online tier |\n| Offsite vault | Archive tier |\n| Worker pickup fee | Access, transaction, and retrieval charges |\n\n**Where the analogy breaks down:** Azure cost also depends on region, redundancy, data transfer, minimum retention, and exact operation mix, which a factory shelf example cannot quantify.",
+      "jargon": [
+        {
+          "term": "Block blob",
+          "definition": "A Blob Storage object type used for files, documents, images, and other binary or text objects; access tier setting applies to block blobs."
+        },
+        {
+          "term": "Hot tier",
+          "definition": "An online Blob Storage tier for data that is accessed or modified frequently."
+        },
+        {
+          "term": "Cool tier",
+          "definition": "An online Blob Storage tier for infrequently accessed data that should usually remain for at least 30 days."
+        },
+        {
+          "term": "Cold tier",
+          "definition": "An online Blob Storage tier for rarely accessed data that still needs fast retrieval and should usually remain for at least 90 days."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "An offline Blob Storage tier for long-retained data that can tolerate retrieval latency measured in hours and should usually remain for at least 180 days."
+        },
+        {
+          "term": "Early deletion charge",
+          "definition": "A prorated charge that can apply when a blob is deleted, overwritten, or moved out of a cooler tier before the minimum retention period elapses."
+        },
+        {
+          "term": "Default access tier",
+          "definition": "The storage account setting used for new blobs that do not have an explicitly assigned tier."
+        }
+      ],
+      "watchOut": "- **Minimize total cost** is different from **minimize capacity cost**.\n- Frequent overwrites can undermine cool, cold, or archive savings.\n- Cool and cold are online but have higher access charges than hot.\n- Same-day access normally means an online tier unless a restore process is acceptable.",
+      "productionTip": {
+        "official": "Microsoft documents decreasing capacity cost and increasing access and transaction costs as tiers get cooler, plus billing impacts when blobs move between tiers.",
+        "recommendation": "Measure reads, writes, overwrites, and retention before changing tier policy. Use hot for operational data, model cool or cold for quiet online data, and require a restore runbook before using archive."
+      },
+      "memoryTrick": "**Hot costs to sit; cold costs to touch.** It is a simplification, but it reminds you to include both storage and access behavior.",
+      "examTip": "When the question says **total cost**, look for read and write frequency. Frequent access points to hot; rare online access points to cool or cold; archive needs a delay-tolerant restore story. A harder version may add exact read counts and days since tier change, requiring you to compare access charges with retention penalties instead of relying on tier names."
+    },
+    "sources": [
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.3-07",
+    "objective": "D2.3.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You manage two storage accounts.\n\n| Account | Kind of account | Data |\n|---|---|---|\n| `ststandard01` | Standard general-purpose v2 | Block blobs in container `logs` |\n| `stpremium01` | Premium block blob storage account | Low-latency application blobs |\n\nYou need to move `logs/app1.log` in `ststandard01` to the Cold tier by using Azure CLI. A teammate also asks whether the same hot/cool/cold/archive tiering model can be applied inside `stpremium01`.\n\nWhich answer is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Run `az storage blob set-tier --account-name ststandard01 --container-name logs --name logs/app1.log --tier Cold --auth-mode login`; premium block blob accounts cannot tier data to hot, cool, cold, or archive by using Set Blob Tier or lifecycle management."
+      },
+      {
+        "id": "B",
+        "text": "Run `az storage account update --name ststandard01 --access-tier Archive`; premium block blob accounts can use archive as their default tier."
+      },
+      {
+        "id": "C",
+        "text": "Run `az storage blob upload --tier Cold` against the existing blob; premium block blob accounts move existing data by selecting Cool in the Configuration blade."
+      },
+      {
+        "id": "D",
+        "text": "Run `az storage blob copy start --tier Smart` for the existing blob; premium block blob accounts automatically convert smart tier capacity to archive."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The Azure CLI version supports the Cold tier, the blob is a block blob, and the identity has authorization.",
+    "sections": {
+      "correctAnswer": "**A. Run `az storage blob set-tier --account-name ststandard01 --container-name logs --name logs/app1.log --tier Cold --auth-mode login`; premium block blob accounts cannot tier data to hot, cool, cold, or archive by using Set Blob Tier or lifecycle management.** The command targets an existing blob, and the premium-account limitation is documented.",
+      "technical": "For an existing block blob in a standard account, the direct operation is Set Blob Tier. Azure CLI exposes that operation through `az storage blob set-tier`, where you provide the storage account, container, blob name, target tier, and authorization approach. Microsoft shows this command pattern for changing a blob's access tier to a cooler tier.\n\nThe account default tier is a different concept. `az storage account update --access-tier` changes the default access tier for blobs without explicit tiers; it does not target one existing object named `logs/app1.log`. Archive is also not supported as the account default access tier. Upload commands are likewise the wrong fit because the blob already exists and only its tier needs to change.\n\nPremium block blob accounts have a separate constraint. Microsoft states that data in a premium block blob storage account cannot be tiered to hot, cool, cold, or archive by using Set Blob Tier or Azure Blob Storage lifecycle management. To move data, Microsoft describes synchronously copying blobs from the premium block blob account to the hot tier in a different account by using supported copy mechanisms such as Put Block From URL or AzCopy versions that support that API.",
+      "wrongOptions": {
+        "B": "The account update command changes an account default, not a specific blob, and Archive is not a valid account default tier. Misconception: Account access tier and blob access tier are interchangeable.. Could be correct when: changing an account default to a supported online value for inferred blobs.",
+        "C": "`az storage blob upload --tier` is for setting a tier while uploading; it is not the clean operation for changing the tier of an existing blob. Misconception: Any command with a tier parameter is suitable for any tiering task.. Could be correct when: creating a new block blob directly in a chosen tier.",
+        "D": "Smart is configured as a supported account default on eligible accounts, not as a per-copy archive automation for premium accounts. Misconception: Smart tier is a universal copy target and eventually becomes archive.. Could be correct when: enabling smart tier as the default on a supported Standard GPv2 account with zonal redundancy."
+      },
+      "plainEnglish": "Use a blob command when one existing blob needs a new tier. The account command changes the default behavior for blobs that do not have their own tier, and the upload command is for creating data. The premium account is built for speed, not for the standard tier ladder. If a workload needs premium latency, keep it in premium. If it needs hot, cool, cold, or archive economics, plan a copy into a supported standard account.",
+      "analogy": "A courier service has normal warehouse boxes and premium express lockers. A normal box can be moved from the warm shelf to the cold shelf. The express locker facility is designed for speed and does not have the same cheap cold shelves.\n\n| Analogy | Azure reality |\n|---|---|\n| Move one normal box | `az storage blob set-tier` |\n| Warehouse default shelf | Account default access tier |\n| Premium express locker | Premium block blob account |\n| Move to another facility | Copy to a standard account |\n\n**Where the analogy breaks down:** Azure operations require exact CLI syntax, authorization, REST API support, and billing awareness; a courier shelf label is not an API property.",
+      "jargon": [
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's command-line tool for managing Azure resources and supported data operations."
+        },
+        {
+          "term": "Set Blob Tier",
+          "definition": "The Blob Storage operation used to change an existing block blob's access tier."
+        },
+        {
+          "term": "Block blob",
+          "definition": "A Blob Storage object type used for files, documents, images, and other binary or text objects; access tier setting applies to block blobs."
+        },
+        {
+          "term": "Cold tier",
+          "definition": "An online Blob Storage tier for rarely accessed data that still needs fast retrieval and should usually remain for at least 90 days."
+        },
+        {
+          "term": "Default access tier",
+          "definition": "The storage account setting used for new blobs that do not have an explicitly assigned tier."
+        },
+        {
+          "term": "Smart tier",
+          "definition": "A Blob Storage account default tier that automatically manages eligible block blobs across hot, cool, and cold capacity tiers."
+        }
+      ],
+      "watchOut": "- Use `az storage blob set-tier` for one existing blob.\n- Account default commands do not target a named blob.\n- Archive is not a valid default account tier.\n- Premium block blob accounts do not use Set Blob Tier or lifecycle policies for standard tiering.",
+      "productionTip": {
+        "official": "Microsoft documents `az storage blob set-tier` for changing an existing blob's tier and states that premium block blob account data cannot be tiered to hot, cool, cold, or archive by Set Blob Tier or lifecycle management.",
+        "recommendation": "Separate performance-focused premium accounts from cost-optimized standard accounts. When moving data out of premium, plan a controlled server-side copy, update application references carefully, and validate rollback before deleting the source."
+      },
+      "memoryTrick": "**Blob command for blob tier; account command for default tier.** The command clue helps, but account type support still decides whether tiering is possible.",
+      "examTip": "The words **existing blob** and **Azure CLI** point to `az storage blob set-tier`. Options that change the account, upload data, or promise premium archive behavior are distractors. A harder version may include a command that changes the account default to Cold; remember that inherited blobs and one explicitly targeted existing blob are different tasks."
+    },
+    "sources": [
+      {
+        "title": "Set a blob's access tier - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+      },
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.3-08",
+    "objective": "D2.3.3",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Adatum has a Standard general-purpose v2 storage account that uses GZRS. The account stores many block blobs whose access patterns are unknown. The operations team wants Azure to automatically keep new eligible blobs online while moving inactive objects among hot, cool, and cold capacity tiers. The team does not want to build lifecycle tiering rules for this behavior.\n\nWhich two statements about smart tier are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Smart tier can be enabled by setting the default account access tier to Smart on a supported Standard GPv2 account with zonal redundancy."
+      },
+      {
+        "id": "B",
+        "text": "Smart tier supports LRS and GRS accounts, but it is unavailable for ZRS, GZRS, and RA-GZRS accounts."
+      },
+      {
+        "id": "C",
+        "text": "Smart tier automatically manages eligible objects across hot, cool, and cold capacity tiers, but it does not support archive."
+      },
+      {
+        "id": "D",
+        "text": "After a blob is moved out of smart tier to an explicit tier, the same blob can be individually set back to Smart with Set Blob Tier."
+      },
+      {
+        "id": "E",
+        "text": "Smart tier moves every object to archive after 180 days of inactivity and then rehydrates it automatically on the next read."
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud in a generally available smart tier region. The account is Standard GPv2 with GZRS and stores block blobs.",
+    "sections": {
+      "correctAnswer": "**A. Smart tier can be enabled by setting the default account access tier to Smart on a supported Standard GPv2 account with zonal redundancy** and **C. Smart tier automatically manages eligible objects across hot, cool, and cold capacity tiers, but it does not support archive.** The account described matches the public-cloud prerequisites for smart tier.",
+      "technical": "Smart tier is an account-default access tier option for supported Blob Storage accounts. Microsoft describes it as automatically moving data between the hot, cool, and cold access tiers based on usage patterns without supplementary rulesets or policies. It is intended for online data whose future access pattern is unclear.\n\nThe prerequisites are important. Smart tier requires a Standard general-purpose v2 storage account, zonal redundancy such as ZRS, GZRS, or RA-GZRS, and block blobs. It does not support legacy GPv1 or premium storage accounts. Adatum's Standard GPv2 account with GZRS and block blobs satisfies those prerequisites in Azure public cloud.\n\nSmart tier starts managed objects in the hot capacity tier. Objects not accessed for 30 days move to cool. After 60 more days without access, which is 90 days of inactivity overall, they move to cold. Access operations such as Get Blob or Put Blob move the object back to hot and restart the cycle. Smart tier does not support archive. It is enabled by setting the default account access tier to Smart. Blobs with explicitly set tiers do not move into smart tier, and once a managed object is moved to an explicit tier, it cannot be tiered back to smart tier individually.",
+      "wrongOptions": {
+        "B": "Smart tier requires zonal redundancy and supports ZRS, GZRS, or RA-GZRS; LRS and GRS are not the supported redundancy pattern. Misconception: Smart tier follows the same redundancy rules as archive.. Could be correct when: the question asks about archive, where LRS, GRS, and RA-GRS are the supported account redundancy options.",
+        "D": "Microsoft states that once objects are moved to an explicit tier, they cannot be tiered back to smart tier. Misconception: Smart is just another per-blob target tier.. Could be correct when: moving a smart-managed blob out to an explicit normal tier such as hot, cool, or cold.",
+        "E": "Smart tier does not support archive and keeps data on online tiers only. Misconception: Automatic tiering always means eventual archive plus automatic rehydration.. Could be correct when: a separate lifecycle management rule is configured to archive blobs by age."
+      },
+      "plainEnglish": "Smart tier is for blobs where you do not know the future. Azure starts them hot, watches usage, moves quiet objects to cool and then cold, and brings accessed objects back to hot. It is not a hidden archive feature, so the data remains in online tiers. To use it, the account must be the right kind: Standard GPv2, zonal redundancy, and block blobs. You turn it on through the default account access tier instead of writing your own tiering rules.",
+      "analogy": "A library has smart shelves. New books start near the front. If nobody touches a book for a month, staff move it to a middle shelf; after more quiet time, it moves to a back shelf. If someone borrows it, it returns to the front.\n\n| Analogy | Azure reality |\n|---|---|\n| Smart shelves | Smart tier |\n| Front shelf | Hot capacity tier |\n| Middle shelf | Cool capacity tier |\n| Back shelf | Cold capacity tier |\n| Offsite archive not used | Archive unsupported by smart tier |\n\n**Where the analogy breaks down:** Azure uses documented access operations, object-size behavior, account redundancy prerequisites, and billing meters rather than human librarians moving books.",
+      "jargon": [
+        {
+          "term": "Smart tier",
+          "definition": "A Blob Storage account default tier that automatically manages eligible block blobs across hot, cool, and cold capacity tiers."
+        },
+        {
+          "term": "GPv2",
+          "definition": "A standard general-purpose v2 storage account, the recommended account type for current Azure Storage features."
+        },
+        {
+          "term": "GZRS",
+          "definition": "Geo-zone-redundant storage, which combines zone redundancy in the primary region with geo replication."
+        },
+        {
+          "term": "Block blob",
+          "definition": "A Blob Storage object type used for files, documents, images, and other binary or text objects; access tier setting applies to block blobs."
+        },
+        {
+          "term": "Default access tier",
+          "definition": "The storage account setting used for new blobs that do not have an explicitly assigned tier."
+        },
+        {
+          "term": "Explicit tier",
+          "definition": "A tier set directly on a blob during upload or by a later tier-change operation."
+        },
+        {
+          "term": "Hot tier",
+          "definition": "An online Blob Storage tier for data that is accessed or modified frequently."
+        },
+        {
+          "term": "Cool tier",
+          "definition": "An online Blob Storage tier for infrequently accessed data that should usually remain for at least 30 days."
+        },
+        {
+          "term": "Cold tier",
+          "definition": "An online Blob Storage tier for rarely accessed data that still needs fast retrieval and should usually remain for at least 90 days."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "An offline Blob Storage tier for long-retained data that can tolerate retrieval latency measured in hours and should usually remain for at least 180 days."
+        }
+      ],
+      "watchOut": "- Smart tier uses hot, cool, and cold only; do not add archive.\n- Smart tier requires zonal redundancy, while archive excludes ZRS, GZRS, and RA-GZRS.\n- Blobs with explicit tiers are not moved into smart tier.\n- Lifecycle management is a separate rule-based feature, not required for smart tier's built-in movement.",
+      "productionTip": {
+        "official": "Microsoft documents smart tier as available for supported Standard GPv2 accounts with zonal redundancy and block blobs, and states that it manages hot, cool, and cold but not archive.",
+        "recommendation": "Use smart tier when access patterns are uncertain and online availability must remain. Avoid it for datasets that must archive, for premium accounts, or when deterministic age-based tier transitions are a compliance requirement."
+      },
+      "memoryTrick": "**Smart stays online: hot, cool, cold.** It is a useful exam shortcut, but remember the separate prerequisites for account type, redundancy, and blob type.",
+      "examTip": "The clues are **unknown access patterns** and **without lifecycle rules**. Then check prerequisites: Standard GPv2, zonal redundancy, and block blobs. Eliminate options that mention archive, LRS-only support, premium accounts, or per-blob Set Blob Tier back to Smart."
+    },
+    "sources": [
+      {
+        "title": "Optimize Azure Blob Storage costs with smart tier - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-smart"
+      },
+      {
+        "title": "Set a blob's access tier - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-online-manage"
+      },
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

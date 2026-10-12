@@ -1,0 +1,781 @@
+[
+  {
+    "id": "D2.2.3-01",
+    "objective": "D2.2.3",
+    "type": "multiple",
+    "difficulty": "foundation",
+    "prompt": "You have two Azure storage accounts named `stsource` and `stdest`. You plan to configure object replication from a container in `stsource` to a container in `stdest`. The accounts are new general-purpose v2 accounts, and no blob data protection features have been enabled yet.\n\nWhich two account-level features must you enable before the object replication policy can work? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable blob change feed on `stsource`"
+      },
+      {
+        "id": "B",
+        "text": "Enable blob change feed on `stdest`"
+      },
+      {
+        "id": "C",
+        "text": "Enable blob versioning on both `stsource` and `stdest`"
+      },
+      {
+        "id": "D",
+        "text": "Enable soft delete for blobs on both storage accounts"
+      },
+      {
+        "id": "E",
+        "text": "Enable point-in-time restore on `stsource`"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Both storage accounts are standard general-purpose v2 accounts without a hierarchical namespace. The question asks about documented object replication prerequisites, not optional data protection features.",
+    "sections": {
+      "correctAnswer": "**A. Enable blob change feed on `stsource`** and **C. Enable blob versioning on both `stsource` and `stdest`**. Object replication uses the source account's change feed to discover blob operations and requires blob versioning on both accounts so versions can be copied and tracked.",
+      "technical": "Object replication for Azure Blob Storage is built on two blob service features. First, blob change feed must be enabled on the source storage account. The change feed is an ordered, durable log of create, update, and delete activity for blobs and blob metadata. Object replication periodically checks that source-side log and then copies eligible operations to the destination. Second, blob versioning must be enabled on both the source and destination accounts. When a source blob is changed, Azure Storage creates a new version of that blob and can replicate the current version and previous versions to the destination.\n\nThe order of reasoning is:\n\n1. Confirm that the accounts support object replication. The usual exam case is general-purpose v2 or premium block blob accounts.\n2. Enable blob versioning on the source account.\n3. Enable blob versioning on the destination account.\n4. Enable change feed on the source account.\n5. Create the source and destination containers, then create the object replication policy and its rules.\n\nThe scope is the storage account's blob service settings, not an individual container setting. A rule later chooses a source container and destination container, but the prerequisite features are account-level blob service capabilities. Inheritance is also important: once versioning is enabled on the account, blobs in containers in that account use versioning behavior. The destination does not need its own change feed for this source-to-destination relationship because it is not the account whose changes are being watched.\n\nThe main exception is removal. If a storage account has object replication policies in effect, Microsoft states that blob versioning can't be disabled until the object replication policies are deleted. Enabling these features can create extra storage and transaction costs, so the exam may mention cost, but cost does not remove the prerequisite.",
+      "wrongOptions": {
+        "B": "Change feed is required on the source account because object replication reads source-side changes. The destination account receives replicated writes; it doesn't need its own change feed for the policy described here. Misconception: every prerequisite must be enabled symmetrically on both accounts. Could be correct when the same account also acts as a source in a separate object replication policy.",
+        "D": "Blob soft delete is a useful recovery feature, but Microsoft doesn't list it as an object replication prerequisite. The required protection feature is blob versioning, not soft delete. Misconception: all blob data protection features are required together. Could be correct when the business goal is to recover accidentally deleted blobs, independent of object replication.",
+        "E": "Point-in-time restore depends on change feed and versioning, but it is a separate data protection feature and is not required to configure object replication. Misconception: a feature that uses some of the same foundations must be enabled first. Could be correct when the requirement is to restore a storage account's block blobs to an earlier time after accidental deletion or corruption."
+      },
+      "plainEnglish": "Object replication is like a copier that watches a log of changes in the source account. The source account must keep that change log, which Azure calls change feed. Both accounts must also keep versions of blobs so Azure can understand and copy the right blob states. The destination does not need to keep its own source-change diary for this one-way copy, because nobody is asking Azure to watch changes that start there. Soft delete and point-in-time restore are helpful safety features, but they are not the specific switches that object replication requires.",
+      "analogy": "Imagine a warehouse that sends copies of changed documents to a branch office. The main warehouse needs a change ledger, and both locations need a filing system that keeps document revisions. Without the ledger, nobody knows what changed. Without revision folders, the branch can't receive the right versions.\n\n| Analogy | Azure reality |\n|---|---|\n| Main warehouse | Source storage account |\n| Branch office | Destination storage account |\n| Change ledger | Blob change feed |\n| Revision folders | Blob versioning |\n| Shipping instruction | Object replication policy |\n\n**Where the analogy breaks down:** Azure doesn't have a clerk reading paper. The service records blob operations in a change feed, creates version IDs, and performs asynchronous replication according to policy rules.",
+      "jargon": [
+        {
+          "term": "Object replication",
+          "definition": "An Azure Blob Storage feature that asynchronously copies eligible block blob operations from a source container to a destination container in another storage account."
+        },
+        {
+          "term": "Blob change feed",
+          "definition": "An account-level blob service log that records create, update, and delete activity for blobs and blob metadata."
+        },
+        {
+          "term": "Blob versioning",
+          "definition": "A blob service feature that automatically keeps previous versions when blobs are created, modified, or deleted."
+        },
+        {
+          "term": "Source account",
+          "definition": "The storage account where original blob operations occur and from which object replication reads changes."
+        },
+        {
+          "term": "Destination account",
+          "definition": "The storage account that receives replicated blobs from the source account."
+        },
+        {
+          "term": "General-purpose v2",
+          "definition": "A current Azure Storage account kind that supports modern storage features, including object replication when other requirements are met."
+        },
+        {
+          "term": "Soft delete",
+          "definition": "A recovery feature that retains deleted blobs for a configured retention period; it is not an object replication prerequisite."
+        },
+        {
+          "term": "Point-in-time restore",
+          "definition": "A data protection feature used to restore block blobs to an earlier state; it is separate from object replication."
+        }
+      ],
+      "watchOut": "- Enable change feed on the source account, not because the destination is unimportant, but because the source is where operations are tracked.\n- Enable blob versioning on both accounts before expecting replication to work.\n- Do not substitute soft delete, snapshots, or point-in-time restore for versioning.\n- Versioning and change feed can affect cost because versions and change records are stored.",
+      "productionTip": {
+        "official": "Microsoft documents object replication prerequisites as blob versioning on both source and destination accounts and change feed on the source account. The configuration article also notes that enabling these prerequisites requires blob service write permission and should be understood as allowing data to be copied between the two accounts once a policy is created.",
+        "recommendation": "Before enabling the features on a busy account, estimate the storage impact of blob versions and change feed retention. Use a small pilot container, confirm replication status on test blobs, and grant administrators only the permissions needed to configure blob service properties and the replication policy."
+      },
+      "memoryTrick": "Remember **Source tells, both remember**: the source tells Azure what changed with change feed, and both accounts remember blob states with versioning. This shortcut fails if the destination later becomes a source for a separate policy.",
+      "examTip": "Clue words are **object replication**, **two storage accounts**, and **features must you enable**. Pick change feed only for the source and versioning for both accounts. A harder version may include soft delete, point-in-time restore, or snapshots as attractive distractors because they are related to data protection but are not the prerequisite pair."
+    },
+    "sources": [
+      {
+        "title": "Object replication overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      },
+      {
+        "title": "Configure object replication - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+      },
+      {
+        "title": "Blob Versioning in Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      },
+      {
+        "title": "Change feed in Blob Storage - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-change-feed"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.3-02",
+    "objective": "D2.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A team at Fabrikam wants to replicate blobs from `stlake01` to `starchive01`. The accounts are configured as shown in the following table.\n\n| Account | Kind | Hierarchical namespace | Data to replicate |\n|---|---|---|---|\n| `stlake01` | General-purpose v2 | Enabled | Block blobs uploaded through Data Lake Storage Gen2 APIs |\n| `starchive01` | General-purpose v2 | Disabled | Empty container |\n\nThe team asks why the object replication rule cannot be created for this design.\n\nWhat is the primary issue?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The source and destination accounts must use general-purpose v1, not general-purpose v2"
+      },
+      {
+        "id": "B",
+        "text": "The destination account must be a page blob account because object replication copies all blob types"
+      },
+      {
+        "id": "C",
+        "text": "Object replication requires both accounts to be in the archive tier before the policy is created"
+      },
+      {
+        "id": "D",
+        "text": "Object replication is not supported for accounts with hierarchical namespace enabled or for blobs uploaded by using Data Lake Storage Gen2 APIs"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The scenario uses the current documented behavior for Azure Blob Storage object replication. The question focuses on account capability and blob API support, not network firewall configuration.",
+    "sections": {
+      "correctAnswer": "**D. Object replication is not supported for accounts with hierarchical namespace enabled or for blobs uploaded by using Data Lake Storage Gen2 APIs**. General-purpose v2 is a supported account kind, but hierarchical namespace and Data Lake Storage Gen2 API uploads are documented exclusions for object replication.",
+      "technical": "Object replication has both positive support requirements and explicit exclusions. Microsoft documents support for general-purpose v2 storage accounts and premium block blob accounts. Both the source and destination accounts must be one of those supported kinds. The feature supports block blobs only; it doesn't support append blobs or page blobs.\n\nThe design in the question fails because the source account has hierarchical namespace enabled. Hierarchical namespace is the capability used by Azure Data Lake Storage Gen2 for file-system-like semantics. The object replication overview and configuration pages state that object replication isn't supported in accounts that have a hierarchical namespace enabled. The overview also states that object replication isn't supported for blobs uploaded by using Data Lake Storage APIs.\n\nThe evaluation order is useful for exams:\n\n1. Check the storage account kind. General-purpose v2 and premium block blob are the supported choices.\n2. Check whether hierarchical namespace is enabled. If yes, stop; object replication isn't supported for that account.\n3. Check the blob type and API path. Object replication is for block blobs and excludes Data Lake Storage API uploads.\n4. Then check prerequisites such as versioning and change feed.\n\nThere is no inheritance workaround at the container level. If hierarchical namespace is enabled on the storage account, a specific container cannot opt out to become an object replication source. Also, moving the account's default access tier doesn't change this support boundary. Account kind support and hierarchical namespace support are separate questions.",
+      "wrongOptions": {
+        "A": "General-purpose v2 is supported for object replication; general-purpose v1 is not the required target. The old v1 account type is not the right answer for a current AZ-104 scenario. Misconception: older features require older account kinds. Could be correct only in a legacy migration discussion where a workload already uses GPv1 and must be upgraded to use newer blob capabilities.",
+        "B": "Object replication supports block blobs only and explicitly doesn't support page blobs or append blobs. A page blob account wouldn't make all blob types replicable. Misconception: replication means every storage object type is copied. Could be correct when the workload is Azure managed disks or other page-blob-specific data, but object replication isn't the feature for that workload.",
+        "C": "The archive tier is an offline blob access tier and is not a prerequisite for replication. In fact, object replication fails if a blob in either the source or destination is moved to the archive tier. Misconception: archive accounts are the natural destination for every replication feature. Could be correct after replication if lifecycle management later moves replicated data to archive for long-term retention."
+      },
+      "plainEnglish": "The account type is not the problem. General-purpose v2 accounts can be used for object replication. The problem is that `stlake01` is set up as a data lake account with hierarchical namespace. Object replication for blobs doesn't work with that capability, and it also doesn't support blobs that are uploaded through the Data Lake Storage Gen2 APIs. If you want object replication, use supported blob accounts and block blob operations rather than a hierarchical-namespace data lake design.",
+      "analogy": "Think of object replication as a courier trained to copy boxes from one ordinary storeroom to another. A data lake account with hierarchical namespace is more like a library with aisles, folders, and different handling rules. The courier is not certified for that building layout.\n\n| Analogy | Azure reality |\n|---|---|\n| Ordinary storeroom | Supported GPv2 or premium block blob account |\n| Special library layout | Hierarchical namespace |\n| Standard boxes | Block blobs |\n| Different handling rules | Data Lake Storage Gen2 APIs |\n| Courier route | Object replication policy |\n\n**Where the analogy breaks down:** Azure's limitation isn't about physical movement. It is a product support boundary tied to account capabilities, APIs, blob types, and replication service behavior.",
+      "jargon": [
+        {
+          "term": "Hierarchical namespace",
+          "definition": "A storage account capability that provides directory and file-system semantics used by Azure Data Lake Storage Gen2."
+        },
+        {
+          "term": "Azure Data Lake Storage Gen2",
+          "definition": "Azure's big data storage capability built on Blob Storage with hierarchical namespace and Data Lake APIs."
+        },
+        {
+          "term": "General-purpose v2",
+          "definition": "A modern Azure Storage account kind that supports blobs, files, queues, and tables and supports object replication when other requirements are satisfied."
+        },
+        {
+          "term": "Premium block blob account",
+          "definition": "A performance-focused storage account kind for block blob workloads; it is also supported for object replication."
+        },
+        {
+          "term": "Block blob",
+          "definition": "A Blob Storage object type optimized for text and binary data and built from blocks; object replication supports this blob type."
+        },
+        {
+          "term": "Append blob",
+          "definition": "A blob type optimized for append operations, such as logging; it is not supported by object replication."
+        },
+        {
+          "term": "Page blob",
+          "definition": "A blob type optimized for random read/write operations, commonly used for disks; it is not supported by object replication."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "An offline access tier for rarely accessed blob data; archived blobs are not replicated by object replication."
+        }
+      ],
+      "watchOut": "- General-purpose v2 is supported; don't reject it just because the scenario says data lake.\n- Hierarchical namespace is the blocking setting in this case.\n- Object replication supports block blobs, not append blobs or page blobs.\n- Data Lake Storage Gen2 API uploads are outside the documented object replication support path.",
+      "productionTip": {
+        "official": "Microsoft documents that object replication supports general-purpose v2 and premium block blob accounts, supports block blobs only, and isn't supported for accounts with hierarchical namespace enabled or blobs uploaded by using Data Lake Storage APIs.",
+        "recommendation": "Decide early whether the workload needs Data Lake Storage Gen2 semantics or blob object replication. If both data lake analytics and cross-account replication are required, validate an alternative pattern such as data pipeline copy, event-driven copy, or a separate non-HNS landing account before production data arrives."
+      },
+      "memoryTrick": "**OR likes ordinary block blobs**: object replication likes supported blob accounts and block blobs, not hierarchical data lake accounts. This is a memory aid, not a rule for every Azure copy feature.",
+      "examTip": "The table hides the answer in the **Hierarchical namespace: Enabled** row and the **Data Lake Storage Gen2 APIs** phrase. Rule out answers that claim GPv2 is unsupported or that page blobs are required. A harder version may list both accounts as GPv2 and ask why one setting still prevents object replication."
+    },
+    "sources": [
+      {
+        "title": "Object replication overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      },
+      {
+        "title": "Configure object replication - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.3-03",
+    "objective": "D2.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank configured object replication between two storage accounts in the same continent. A compliance analyst expects every replicated blob to appear in the destination account within a fixed number of seconds. Priority replication is not enabled.\n\nWhich statement should you give the analyst?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Object replication is synchronous, so a successful write to the source means the destination has the blob immediately"
+      },
+      {
+        "id": "B",
+        "text": "Standard object replication guarantees 99.0 percent of objects within 15 minutes whenever accounts are in the same continent"
+      },
+      {
+        "id": "C",
+        "text": "Standard object replication is asynchronous and has no guaranteed completion time; priority replication provides the documented 99.0 percent within 15 minutes SLA for eligible same-continent workloads"
+      },
+      {
+        "id": "D",
+        "text": "Replication latency is controlled only by the account redundancy option, so enabling GRS gives the object replication SLA"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The workload uses object replication for block blobs. Priority replication is available but is not enabled in the scenario unless stated.",
+    "sections": {
+      "correctAnswer": "**C. Standard object replication is asynchronous and has no guaranteed completion time; priority replication provides the documented 99.0 percent within 15 minutes SLA for eligible same-continent workloads**. Without priority replication, the source and destination accounts are not immediately in sync and no fixed completion time is promised.",
+      "technical": "Object replication copies block blob operations asynchronously. A client write to the source account can complete before the corresponding blob version is available in the destination account. Microsoft explicitly warns that source and destination accounts aren't immediately in sync. Standard object replication can be monitored by checking object replication status on the source blob and by using metrics, but ordinary asynchronous replication doesn't give a fixed time guarantee.\n\nPriority replication changes the performance contract for eligible workloads. When priority replication is enabled, operations in the policy are prioritized, metrics are automatically enabled, and Microsoft documents an SLA for supported workloads: when the source and destination accounts are within the same continent, object replication priority replication replicates 99.0 percent of objects within 15 minutes. That statement has eligibility exclusions, including objects larger than 5 GB, objects modified more than 10 times per second, source and destination accounts not in the same continent, very large accounts, and periods where high transfer or operation rates create a backlog.\n\nThe order of interpretation is:\n\n1. Identify whether the feature is object replication or account redundancy.\n2. Identify whether priority replication is enabled on the object replication policy.\n3. If priority replication is not enabled, treat replication as asynchronous with no guaranteed completion time.\n4. If priority replication is enabled, check same-continent placement and other eligibility exclusions before quoting the SLA.\n\nThe exception is that a blob may replicate quickly in practice. Fast observed replication is not the same as a documented guarantee. For exam purposes, the word **guarantee** is a clue to look for priority replication, not merely object replication.",
+      "wrongOptions": {
+        "A": "Object replication is asynchronous, not synchronous. A source write can succeed before the destination copy exists. Misconception: replication features always behave like a two-phase write to both locations. Could be correct for a feature that explicitly performs synchronous writes, such as zone-redundant storage within the primary region, not for standard object replication.",
+        "B": "The 99.0 percent within 15 minutes statement belongs to object replication priority replication for eligible workloads, not to standard object replication by default. Misconception: same-continent placement alone activates the SLA. Could be correct when priority replication is enabled and the workload satisfies the documented eligibility requirements.",
+        "D": "GRS is an account redundancy option and doesn't turn standard object replication into priority replication. Misconception: geo-redundant storage and object replication are the same mechanism. Could be correct when the question asks how account data is durably replicated to a paired secondary region for disaster protection."
+      },
+      "plainEnglish": "Standard object replication is a background copy process. Azure accepts the write in the source account first, and later copies the eligible blob operation to the destination. That is useful, but it does not mean the two accounts match at every second. If Woodgrove needs a documented time target for eligible same-continent workloads, it must look at object replication priority replication, not ordinary object replication and not storage account redundancy by itself.",
+      "analogy": "Standard object replication is like sending documents by regular internal courier: the courier usually arrives, but the sender should not promise a precise arrival time. Priority replication is like paying for a priority courier service with a published delivery target, but only for packages that meet the service conditions.\n\n| Analogy | Azure reality |\n|---|---|\n| Regular courier | Standard object replication |\n| Priority courier | Object replication priority replication |\n| Published delivery target | SLA for eligible same-continent workloads |\n| Package too large or changed constantly | SLA exclusions such as large or frequently modified objects |\n| Tracking slip | Replication status and metrics |\n\n**Where the analogy breaks down:** Azure replication status is based on blob operations, versions, policy rules, metrics, and documented SLA terms, not a human delivery company.",
+      "jargon": [
+        {
+          "term": "Asynchronous replication",
+          "definition": "A replication model where the source operation can complete before the destination has received the copied data."
+        },
+        {
+          "term": "Priority replication",
+          "definition": "An object replication option that prioritizes operations in a policy and provides an SLA for eligible workloads."
+        },
+        {
+          "term": "SLA",
+          "definition": "Service Level Agreement; a documented Microsoft commitment with defined eligibility conditions and remedies."
+        },
+        {
+          "term": "Same continent",
+          "definition": "A placement condition used in the priority replication SLA language for source and destination accounts."
+        },
+        {
+          "term": "Replication status",
+          "definition": "A property that can be checked on the source blob to see whether object replication completed or failed."
+        },
+        {
+          "term": "Replication metrics",
+          "definition": "Object replication metrics that show operations and bytes pending for replication in time buckets."
+        },
+        {
+          "term": "GRS",
+          "definition": "Geo-redundant storage, an account redundancy option that asynchronously copies account data to a paired secondary region."
+        },
+        {
+          "term": "Eligible workload",
+          "definition": "A workload that meets the documented conditions for a feature or SLA, such as object size, modification rate, geography, and rate limits."
+        }
+      ],
+      "watchOut": "- Standard object replication is useful but not immediate.\n- Same-continent placement alone does not create the priority replication SLA.\n- Priority replication has exclusions; do not promise the SLA for objects larger than 5 GB or very high-change objects.\n- Check source blob replication status before telling an application that the destination copy is ready.",
+      "productionTip": {
+        "official": "Microsoft states that object replication asynchronously copies block blobs and that the source and destination aren't immediately in sync. The priority replication documentation states that standard object replication has no guaranteed completion time, while priority replication can replicate 99.0 percent of objects within 15 minutes for supported same-continent workloads.",
+        "recommendation": "If an application must read immediately after write, design it to read from the source or check replication status before switching to the destination. Use priority replication only after validating eligibility, cost, and monitoring needs, and document what the SLA does not cover."
+      },
+      "memoryTrick": "**Async unless priority says otherwise**. This is a simplification because priority replication still has eligibility rules and doesn't make every object instant.",
+      "examTip": "Watch for words such as **immediately**, **guarantees**, **SLA**, and **priority replication not enabled**. Those clues point away from a fixed time promise. A more advanced exam item may include priority replication but add an exclusion, such as objects larger than 5 GB, to test whether you read the SLA conditions."
+    },
+    "sources": [
+      {
+        "title": "Object replication overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      },
+      {
+        "title": "Configure object replication - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+      },
+      {
+        "title": "Introducing object replication priority replication for block blobs",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-priority-replication"
+      },
+      {
+        "title": "Data redundancy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.3-04",
+    "objective": "D2.2.3",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Contoso is creating an object replication policy by using Azure CLI because the policy needs more than ten container pairs. The destination account is `stdest`, the source account is `stsource`, and both containers already exist. The team also wants to replicate only blobs whose names start with `reports/` and only objects created on or after 1 September 2026.\n\nWhich three statements are correct about the policy and rules? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create the policy on the destination account first, obtain the generated policy ID, and then create the policy on the source account by using the same policy ID"
+      },
+      {
+        "id": "B",
+        "text": "A single replication rule can map multiple source containers to the same destination container if the prefixes are different"
+      },
+      {
+        "id": "C",
+        "text": "A rule can map one source container to one destination container and can include both a prefix filter and a minimum creation time filter"
+      },
+      {
+        "id": "D",
+        "text": "A policy can contain up to 1,000 rules, but the Azure portal creation experience can create up to 10 container pairs per policy"
+      },
+      {
+        "id": "E",
+        "text": "A destination container can be reused in many rules as long as each source container is different"
+      },
+      {
+        "id": "F",
+        "text": "Prefix filters support wildcard expressions such as `reports/*.csv`"
+      }
+    ],
+    "correct": [
+      "A",
+      "C",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The accounts and containers already meet object replication prerequisites. The team uses Azure CLI or JSON because it needs more container pairs than the Azure portal creation workflow supports.",
+    "sections": {
+      "correctAnswer": "**A. Create the policy on the destination account first, obtain the generated policy ID, and then create the policy on the source account by using the same policy ID**, **C. A rule can map one source container to one destination container and can include both a prefix filter and a minimum creation time filter**, and **D. A policy can contain up to 1,000 rules, but the Azure portal creation experience can create up to 10 container pairs per policy**. Those statements match the documented policy creation sequence, rule structure, filters, and limits.",
+      "technical": "An object replication configuration has a policy and one or more rules. The policy identifies the source account and destination account. Each rule identifies a single source container, a single destination container, and optional filters that define which block blobs in that source container are replicated.\n\nFor non-portal automation, the creation order matters. Microsoft documents creating the replication policy on the destination account first. Azure Storage assigns a policy ID when the destination policy is created. The same policy ID must then be used when associating the policy with the source account; source and destination policy IDs must match for replication to occur. This is why CLI examples create the destination policy, show or download it, and then create the source policy from that definition.\n\nRules can include filters. A prefix filter copies only blobs whose names start with the prefix, such as `reports/`. The prefix is a plain prefix; the portal documentation states that wildcard characters aren't supported. A minimum creation time filter can restrict copying to block blobs created on or after a specific timestamp. The rule can therefore express a source container, destination container, prefix match, and minimum creation time together.\n\nThe limits create two common exam traps. The Azure portal creation workflow can create up to 10 container pairs per policy. To configure more than 10 container pairs, use a JSON file or automation. The policy itself can have up to 1,000 rules. Each rule defines one container pair, and each source and destination container can be used in only one rule. The account-level policy limits are separate: a source account can replicate to no more than two destination accounts, with one policy for each destination, and an account can serve as the destination for no more than two replication policies.",
+      "wrongOptions": {
+        "B": "A replication rule defines a single source container and a single destination container. Different prefixes don't let one rule map multiple source containers. Misconception: filters create separate container mappings inside one rule. Could be correct when discussing multiple blobs inside the same source container that share a prefix pattern.",
+        "E": "The documentation says each source and destination container can be used in only one rule, so a destination container cannot be reused across many rules in the same policy. Misconception: the uniqueness restriction applies only to source containers. Could be correct only after using a different destination container for each rule.",
+        "F": "Prefix filters match names that start with a specified string. The Azure portal documentation states that wildcard characters aren't supported. Misconception: prefix filters behave like file glob patterns. Could be correct when using a separate tool or script that supports wildcard expansion before selecting objects, but not as an object replication prefix filter."
+      },
+      "plainEnglish": "Think of the policy as the contract between the two accounts and each rule as one lane between one source container and one destination container. You first set up the destination side so Azure can create the contract number. Then you use that same number on the source side. For each lane, you can say, for example, only copy names that start with `reports/` and only copy items created after a certain date. If you need more than ten lanes, don't rely on the portal wizard; use JSON, CLI, PowerShell, or an SDK so you can reach the larger policy limit.",
+      "analogy": "A company opens shipping lanes between warehouses. The receiving warehouse issues the route number first. The sending warehouse must use the same route number. Each lane connects exactly one loading dock to one receiving dock, and the shipping rules can say only boxes with labels beginning `reports/` and packed after a date may travel.\n\n| Analogy | Azure reality |\n|---|---|\n| Route number | Object replication policy ID |\n| Receiving warehouse setup first | Destination policy created first |\n| One loading dock to one receiving dock | One source container to one destination container per rule |\n| Label beginning `reports/` | Prefix filter |\n| Packed after a date | Minimum creation time filter |\n\n**Where the analogy breaks down:** Azure policy IDs, source and destination resource IDs, and rule limits are enforced by the Azure Storage resource provider, not by physical shipping staff.",
+      "jargon": [
+        {
+          "term": "Replication policy",
+          "definition": "The object replication configuration that names the source and destination storage accounts and contains replication rules."
+        },
+        {
+          "term": "Policy ID",
+          "definition": "The identifier assigned to an object replication policy; the source and destination policies must use the same value."
+        },
+        {
+          "term": "Replication rule",
+          "definition": "A rule inside an object replication policy that maps one source container to one destination container and can include filters."
+        },
+        {
+          "term": "Prefix filter",
+          "definition": "A rule filter that replicates only blobs whose names begin with one or more specified strings."
+        },
+        {
+          "term": "Minimum creation time",
+          "definition": "A rule filter that selects blobs created on or after a specified timestamp for replication."
+        },
+        {
+          "term": "Container pair",
+          "definition": "The source container and destination container connected by one replication rule."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's command-line tool for managing Azure resources, including storage account object replication policies."
+        },
+        {
+          "term": "JSON policy definition",
+          "definition": "A JSON file that represents an object replication policy and rules for upload or automation."
+        }
+      ],
+      "watchOut": "- The destination policy comes first in CLI and JSON workflows because it receives the policy ID.\n- The source side must use the same policy ID, not a new independent ID.\n- Prefix filters are not wildcard filters.\n- The portal creation limit of 10 container pairs is not the same as the 1,000 rules-per-policy limit.",
+      "productionTip": {
+        "official": "Microsoft documents destination-first creation for PowerShell and CLI, then associating the same policy with the source account. The object replication overview documents up to 1,000 rules per policy, one source and destination container per rule, and optional prefix and minimum creation time filters.",
+        "recommendation": "For large policies, keep the policy JSON in source control without secrets, review container mappings before applying, and test a prefix with a small sample. Use naming conventions for containers and rules so an operator can trace which business dataset a rule controls."
+      },
+      "memoryTrick": "**Destination defines the ID; rules define the lanes**. This simplifies the process, because the portal can hide some steps when you have access to both accounts.",
+      "examTip": "Look for **more than ten container pairs**, **policy ID**, **prefix**, and **minimum creation time**. The exam often mixes the portal wizard's smaller creation limit with the policy's larger rule limit. A harder version may ask whether wildcard prefixes work; they don't in the object replication prefix filter."
+    },
+    "sources": [
+      {
+        "title": "Object replication overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      },
+      {
+        "title": "Configure object replication - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.3-05",
+    "objective": "D2.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Litware configured object replication from container `raw` in `stsource` to container `raw-copy` in `stdest`. A developer now tries to upload a diagnostic file directly to `raw-copy` while the replication rule is active and receives HTTP 409 Conflict. Reads from `raw-copy` still work.\n\nWhat should you tell the developer?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The destination container is unavailable for reads and writes until the next replication cycle completes"
+      },
+      {
+        "id": "B",
+        "text": "Write operations to a destination container that participates in a replication rule are not permitted; disable or remove the relevant replication rule before writing directly to that container"
+      },
+      {
+        "id": "C",
+        "text": "The error means the destination account is missing blob change feed, so enable change feed on `stdest`"
+      },
+      {
+        "id": "D",
+        "text": "The upload will succeed if the developer changes the destination blob's access tier to archive first"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The object replication policy and rule are active. The developer is attempting a direct client write to the destination container, not a write produced by the replication service.",
+    "sections": {
+      "correctAnswer": "**B. Write operations to a destination container that participates in a replication rule are not permitted; disable or remove the relevant replication rule before writing directly to that container**. Microsoft documents that writes to the destination container fail with 409 Conflict while the replication policy is active, although reads and deletes are permitted.",
+      "technical": "When an object replication rule is active, Azure Storage protects the destination container from direct writes. After the policy is created, write operations to the destination container aren't permitted. Attempts to write directly to that container fail with error code 409 Conflict. This lock is tied to the destination container's role in the replication rule and is meant to preserve the replication relationship.\n\nThe operation behavior is different by operation type. Direct writes to the destination container fail. Reads from the destination container are permitted, so applications can consume replicated data. Delete operations to the destination container are also permitted. Microsoft also documents that you can call Set Blob Tier on a blob in the destination container to move it to the archive tier. That exception does not mean arbitrary writes or uploads are allowed.\n\nThe order of troubleshooting is:\n\n1. Confirm that `raw-copy` is the destination container in an active object replication rule.\n2. If the attempted operation is a direct upload, treat the 409 Conflict as expected behavior.\n3. If direct writes are required, delete the rule for that container or remove the entire replication policy.\n4. After replication is disabled for that container, retry the write with normal authorization and network checks.\n\nThis rule is scoped to the destination container used by the object replication rule. It is not inherited by unrelated containers in the destination account. It also does not mean the entire destination account is down. The account can continue to serve reads, permitted deletes, and operations on containers that are not locked by a replication rule.",
+      "wrongOptions": {
+        "A": "The destination container remains readable while the policy is active. Microsoft states that read and delete operations to the destination container are permitted. Misconception: a write lock makes the entire destination unavailable. Could be correct for a different maintenance event that blocks all access, but not for this object replication behavior.",
+        "C": "The documented change feed prerequisite applies to the source account, not the destination account for this one-way policy. The 409 Conflict is caused by the destination container write restriction, not by missing destination change feed. Misconception: every replication problem comes from prerequisites. Could be correct if the account were acting as a source in a separate policy that required its own change feed.",
+        "D": "Moving a blob to archive doesn't permit a new direct upload into the locked destination container. Archive tiering is a supported operation on existing destination blobs, but it doesn't remove the replication write restriction. Misconception: an access tier change bypasses replication policy locks. Could be correct when the goal is to reduce storage cost for already replicated blobs that no longer need immediate online access."
+      },
+      "plainEnglish": "The destination container is not a normal shared folder while replication is active. Azure treats it as the receiving side of a managed copy relationship. Applications can read from it, and some operations like delete are allowed, but they cannot upload new files directly into it. If Litware needs to manually upload files into `raw-copy`, it must first stop using that container as an active object replication destination by deleting the specific rule or the policy.",
+      "analogy": "A theater has a backstage receiving room where props arrive from the main warehouse. While the show uses an automated receiving process, staff can inspect props in the room, but they cannot drop unrelated props into the same controlled receiving lane. To use the room for manual drop-offs, the automated lane must be closed first.\n\n| Analogy | Azure reality |\n|---|---|\n| Main warehouse | Source container |\n| Receiving room | Destination container |\n| Automated receiving lane | Object replication rule |\n| Inspect props | Read replicated blobs |\n| Manual drop-off blocked | Direct write returns 409 Conflict |\n\n**Where the analogy breaks down:** Azure enforces this behavior through storage service operations and policy locks, not a human staging-room procedure.",
+      "jargon": [
+        {
+          "term": "Destination container",
+          "definition": "The blob container that receives replicated objects under an object replication rule."
+        },
+        {
+          "term": "HTTP 409 Conflict",
+          "definition": "An HTTP response indicating that the requested operation conflicts with the current state of the resource, such as writing to a replication-locked destination container."
+        },
+        {
+          "term": "Write operation",
+          "definition": "An operation that creates or changes blob data or metadata, such as uploading a blob directly."
+        },
+        {
+          "term": "Read operation",
+          "definition": "An operation that retrieves blob data or metadata without changing it."
+        },
+        {
+          "term": "Delete operation",
+          "definition": "An operation that removes a blob or current version; deletes are permitted on object replication destination containers."
+        },
+        {
+          "term": "Set Blob Tier",
+          "definition": "A Blob Storage operation that changes a blob's access tier, such as moving it to archive."
+        },
+        {
+          "term": "Replication rule",
+          "definition": "The part of an object replication policy that maps a source container to a destination container."
+        },
+        {
+          "term": "Disable replication",
+          "definition": "Removing the rule for a container or deleting the policy so the destination container is no longer locked for writes."
+        }
+      ],
+      "watchOut": "- A 409 on the destination can be expected for direct writes when a rule is active.\n- Read access from the destination is still allowed, so don't diagnose it as a full outage.\n- Delete and Set Blob Tier behavior should not be confused with permission to upload new blobs.\n- To write directly to that destination container, remove the rule or the policy first.",
+      "productionTip": {
+        "official": "Microsoft documents that after an object replication policy is created, write operations to the destination container aren't permitted and attempts fail with 409 Conflict. The same section states that read and delete operations to the destination container are permitted, and that Set Blob Tier can move a destination blob to archive.",
+        "recommendation": "Treat replication destination containers as managed read targets, not as mixed-use upload locations. If teams need local files beside replicated files, create a separate container, document the distinction, and use least-privilege RBAC so application identities can't attempt unsupported writes."
+      },
+      "memoryTrick": "**Destination is a display case, not a drop box** while replication is active. The simplification fails for permitted delete and tier operations, so remember the exact operation type.",
+      "examTip": "The clue is **HTTP 409 Conflict** on a **destination container** while the rule is active. Choose the answer about the destination write restriction. A harder version may mention that reads still work; that detail confirms the documented object replication behavior rather than a network or authentication failure."
+    },
+    "sources": [
+      {
+        "title": "Object replication overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      },
+      {
+        "title": "Configure object replication - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.3-06",
+    "objective": "D2.2.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Adatum uses object replication from a hot-tier source account to a cool-tier destination account. A lifecycle management rule later moves some source blobs to the archive tier before they have replicated. After the blobs are rehydrated back to cool, the replication status still does not change until the data is updated again.\n\nWhich explanation is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Object replication supports only hot-to-hot tier combinations, so cool destinations are unsupported"
+      },
+      {
+        "id": "B",
+        "text": "Rehydrating an archived blob always triggers object replication, but the destination account must have change feed enabled"
+      },
+      {
+        "id": "C",
+        "text": "Object replication can use online tiers such as hot, cool, or cold, but replication fails for blobs in archive; rehydrating an archived blob does not trigger object replication until the blob data is updated again"
+      },
+      {
+        "id": "D",
+        "text": "Archive tier replication is supported only when the storage account uses zone-redundant storage"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The source and destination accounts otherwise meet object replication prerequisites. The question focuses on access tier behavior for object replication, not on lifecycle policy syntax.",
+    "sections": {
+      "correctAnswer": "**C. Object replication can use online tiers such as hot, cool, or cold, but replication fails for blobs in archive; rehydrating an archived blob does not trigger object replication until the blob data is updated again**. Microsoft documents online tier support and the archive-tier exception for object replication.",
+      "technical": "Object replication supports source and destination accounts whose blobs are in online access tiers: hot, cool, or cold. The two accounts can be in different online tiers. This lets a workload keep active data in hot storage at the source and replicated analytical or retention data in a cooler tier at the destination.\n\nArchive is different. The archive tier is an offline tier. Microsoft documents that object replication fails if a blob in either the source or destination account is moved to the archive tier. Rehydrating an archived blob doesn't trigger object replication. Object replication is triggered only when the blob data is updated again after rehydration. That means a lifecycle rule that archives source blobs before replication finishes can create a failed replication condition that rehydration alone won't repair.\n\nThe order of operations matters in this scenario:\n\n1. The source blob is eligible while it is in an online tier.\n2. A lifecycle rule moves it to archive before object replication completes.\n3. Object replication fails for that archived blob.\n4. Rehydration moves it back to an online tier, but rehydration itself doesn't count as the blob data update that triggers object replication.\n5. A later update to blob data can trigger replication again if the rule and prerequisites still apply.\n\nThis access-tier rule is separate from account redundancy. Another easily confused fact is that the Azure Storage archive tier has its own redundancy limitations, but object replication's archive problem here is about the blob being offline for replication, not about choosing the right redundancy to make archive replication work.",
+      "wrongOptions": {
+        "A": "Object replication supports online tiers, and source and destination accounts may be in different tiers. A cool destination is not the problem. Misconception: both ends of a replication relationship must use the same access tier. Could be correct in a different feature that requires identical storage classes, but not for object replication online tiers.",
+        "B": "Rehydrating an archived blob does not trigger object replication according to the documentation. Destination change feed is also not the prerequisite for this one-way replication. Misconception: moving a blob out of archive is treated like a new source write for object replication. Could be correct only after an actual blob data update occurs after rehydration.",
+        "D": "Zone-redundant storage does not make archive-tier object replication supported. In fact, archive tier has separate redundancy limitations, and object replication still fails for archived blobs. Misconception: redundancy options override access-tier behavior. Could be correct when choosing redundancy for availability or durability of online blob data, not for replicating archived blobs."
+      },
+      "plainEnglish": "Hot, cool, and cold are online tiers, so Azure can still read and copy blob data for object replication. Archive is offline. If a blob is archived before Azure has copied it, object replication cannot copy it at that time. Bringing it back from archive makes it accessible again, but that rehydration step is not treated as a fresh data change for object replication. To trigger replication again, the blob data must be updated after it is back online.",
+      "analogy": "Imagine a copier service that can copy documents from desks, cabinets, or a nearby records room. Archive is like sending the document to an offsite vault. The copier cannot copy it while it is in the vault. Returning it from the vault puts it back in the building, but the copier won't automatically retry unless a new revision is made and appears in the work queue.\n\n| Analogy | Azure reality |\n|---|---|\n| Desk, cabinet, records room | Hot, cool, and cold online tiers |\n| Offsite vault | Archive tier |\n| Return from vault | Rehydration |\n| New revision | Blob data update after rehydration |\n| Copier queue | Object replication trigger from source changes |\n\n**Where the analogy breaks down:** Azure's trigger is not a physical queue but a service process based on blob operations, versioning, change feed, and rule eligibility.",
+      "jargon": [
+        {
+          "term": "Hot tier",
+          "definition": "An online access tier for frequently accessed or modified blob data."
+        },
+        {
+          "term": "Cool tier",
+          "definition": "An online access tier for infrequently accessed or modified data that still requires immediate availability."
+        },
+        {
+          "term": "Cold tier",
+          "definition": "An online access tier for rarely accessed data that still requires fast retrieval."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "An offline access tier for rarely accessed data with retrieval latency measured in hours."
+        },
+        {
+          "term": "Rehydration",
+          "definition": "The process of moving an archived blob back to an online tier such as hot, cool, or cold."
+        },
+        {
+          "term": "Lifecycle management",
+          "definition": "Azure Blob Storage rules that can automatically move or delete blobs based on age, tier, or other conditions."
+        },
+        {
+          "term": "Replication status",
+          "definition": "Object replication state shown for a source blob, indicating whether replication completed, failed, or is pending."
+        },
+        {
+          "term": "Online tier",
+          "definition": "A blob access tier in which data is immediately readable and writable, unlike archive."
+        }
+      ],
+      "watchOut": "- Hot, cool, and cold can participate in object replication.\n- Archive is the exception; object replication fails if a source or destination blob is moved to archive.\n- Rehydration alone doesn't trigger object replication.\n- Coordinate lifecycle policies with replication progress so data is not archived before it has been copied.",
+      "productionTip": {
+        "official": "Microsoft documents that object replication is supported when source and destination accounts are in any online tier, including hot, cool, or cold, and that replication fails if a blob in either account is moved to archive. The documentation also states that rehydrating an archived blob doesn't trigger object replication.",
+        "recommendation": "Delay archive lifecycle actions until replication metrics and source blob statuses show that copies are complete. For critical data, test lifecycle policies on a small container and add monitoring for failed replication before applying archive movement rules at scale."
+      },
+      "memoryTrick": "**Online tiers replicate; offline archive waits for a real update**. This is a simplification because other failures, such as customer-provided keys or immutability policies, can also block replication.",
+      "examTip": "Watch for **archive**, **rehydrate**, and **does not change status**. The exam is testing that archive is not just a colder version of cool. A harder item may put the archive movement on the destination instead of the source; object replication can still fail when either side's blob is moved to archive."
+    },
+    "sources": [
+      {
+        "title": "Object replication overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      },
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.3-07",
+    "objective": "D2.2.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Tailspin Toys has a source storage account in TenantA and a destination storage account in TenantB. Both accounts were created in 2026. An administrator with sufficient Azure RBAC permissions tries to create an object replication policy across the two tenants, but the request is rejected because cross-tenant object replication is not allowed.\n\nWhat should the administrator check first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Whether the `AllowCrossTenantReplication` property is explicitly allowed on the storage accounts that will participate in the cross-tenant policy"
+      },
+      {
+        "id": "B",
+        "text": "Whether both storage accounts use the same locally redundant storage replication setting"
+      },
+      {
+        "id": "C",
+        "text": "Whether the destination container is public so that TenantA can write to it anonymously"
+      },
+      {
+        "id": "D",
+        "text": "Whether hierarchical namespace is enabled, because cross-tenant policies require hierarchical namespace on both accounts"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The accounts are in different Microsoft Entra tenants and otherwise use supported account kinds and blob prerequisites. The question focuses on the storage account property that controls cross-tenant object replication.",
+    "sections": {
+      "correctAnswer": "**A. Whether the `AllowCrossTenantReplication` property is explicitly allowed on the storage accounts that will participate in the cross-tenant policy**. For accounts created after 15 December 2023, cross-tenant object replication is disabled by default unless it is explicitly allowed.",
+      "technical": "Object replication can be configured between accounts in different Microsoft Entra tenants only when cross-tenant replication is allowed for the participating storage accounts. The security control is the storage account property `AllowCrossTenantReplication`. Microsoft documents that cross-tenant policies are disabled by default for new storage accounts created after 15 December 2023, unless explicitly allowed.\n\nIf the property is set to false on a storage account, that account can't be used as the source or destination in a cross-tenant object replication policy. To permit the cross-tenant design, the administrator must verify the property on the involved accounts and governance policies that might deny setting it to true. For existing accounts created before 15 December 2023, Microsoft documents a different legacy behavior: if the value is null or true, authorized users can configure cross-tenant object replication policies with that account as source or destination. That legacy detail does not help Tailspin's 2026-created accounts because their default is false.\n\nThe order of checks is:\n\n1. Confirm the source and destination accounts are in different Microsoft Entra tenants.\n2. Check `AllowCrossTenantReplication` on each storage account that would participate.\n3. If the business approves cross-tenant replication, explicitly allow it and use full resource IDs in policy definitions where required.\n4. If the security policy prohibits cross-tenant replication, keep the property false and redesign within one tenant or use another governed data movement process.\n\nThe property can also be set to false to remediate risk. If an account already participates in existing cross-tenant object replication policies, setting the property to false isn't permitted until those policies are deleted. Setting the property itself doesn't incur downtime, but policy creation and data movement are security-sensitive changes.",
+      "wrongOptions": {
+        "B": "The account redundancy setting is not the control that permits cross-tenant object replication. LRS, GRS, and related redundancy options address durability and availability, not the tenant boundary for object replication policies. Misconception: storage replication setting controls all kinds of replication. Could be correct when choosing protection against hardware, zone, or regional failures.",
+        "C": "Public container access is unrelated and would be a security risk. Object replication is configured through Azure resource provider policies, not anonymous writes to the destination container. Misconception: cross-tenant access requires making data public. Could be correct only for a public website or intentionally anonymous blob-read scenario, not for object replication.",
+        "D": "Object replication is not supported in accounts with hierarchical namespace enabled, so enabling it would make the design invalid. Misconception: data lake features are required for advanced cross-tenant movement. Could be correct when the workload specifically needs Data Lake Storage Gen2 file-system semantics, but not with object replication."
+      },
+      "plainEnglish": "Cross-tenant replication means one organization's tenant is copying data into or from another tenant. Azure has a storage account switch for that risk. New accounts created after the documented date have that switch off by default. Even if the administrator has permission to configure storage, the policy can still be blocked if the accounts do not allow cross-tenant object replication. Tailspin should check that property and its governance rules before changing anything else.",
+      "analogy": "Two companies want an automatic mail chute between their buildings. Since that crosses company boundaries, each building has a security switch that says whether cross-company chutes are allowed. New buildings have the switch off unless security turns it on.\n\n| Analogy | Azure reality |\n|---|---|\n| Company boundary | Microsoft Entra tenant boundary |\n| Mail chute | Object replication policy |\n| Building security switch | `AllowCrossTenantReplication` property |\n| New building default off | New post-15 Dec 2023 account default false |\n| Security office rules | Azure Policy or governance controls |\n\n**Where the analogy breaks down:** Azure also requires supported account types, versioning, change feed, containers, resource IDs, and authorization; the switch alone is not the whole policy configuration.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra tenant",
+          "definition": "A dedicated identity and access management instance for an organization, formerly associated with the Azure Active Directory name."
+        },
+        {
+          "term": "Cross-tenant replication",
+          "definition": "Object replication where source and destination storage accounts belong to different Microsoft Entra tenants."
+        },
+        {
+          "term": "`AllowCrossTenantReplication`",
+          "definition": "A storage account property that controls whether the account may participate in object replication policies across tenant boundaries."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system that grants actions on Azure resources such as storage accounts."
+        },
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that can audit or deny resource configurations, such as allowing cross-tenant replication."
+        },
+        {
+          "term": "Full resource ID",
+          "definition": "The complete Azure Resource Manager path to a resource, including subscription, resource group, provider, and account name."
+        },
+        {
+          "term": "Source account",
+          "definition": "The account from which object replication reads blob operations."
+        },
+        {
+          "term": "Destination account",
+          "definition": "The account that receives replicated blob operations."
+        }
+      ],
+      "watchOut": "- New storage accounts created after 15 December 2023 default to cross-tenant object replication disabled.\n- The property matters when the account is either the source or the destination.\n- Existing cross-tenant policies must be removed before you can disallow cross-tenant replication on a participating account.\n- Do not make containers public to solve cross-tenant object replication.",
+      "productionTip": {
+        "official": "Microsoft documents that `AllowCrossTenantReplication` set to false prevents future cross-tenant object replication policies with the account as source or destination, and that new accounts created after 15 December 2023 default to false unless explicitly allowed. Existing cross-tenant policies must be deleted before the property can be set to false.",
+        "recommendation": "Keep cross-tenant replication disabled unless there is a documented business requirement, data classification approval, and monitoring plan. Use Azure Policy to audit or deny accounts that allow cross-tenant replication where organizational policy requires same-tenant data movement only."
+      },
+      "memoryTrick": "**Tenant boundary needs the tenant switch**: cross-tenant object replication requires checking `AllowCrossTenantReplication`. This shortcut doesn't replace the normal object replication prerequisites.",
+      "examTip": "Clues are **different tenants**, **accounts created in 2026**, and **not allowed**. Choose the storage account property answer. A harder version may use an older account with a null property value, or may ask how to prevent cross-tenant policies rather than how to allow them."
+    },
+    "sources": [
+      {
+        "title": "Prevent object replication across Microsoft Entra tenants - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-prevent-cross-tenant-policies"
+      },
+      {
+        "title": "Object replication overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      },
+      {
+        "title": "Configure object replication - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.3-08",
+    "objective": "D2.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A project team is choosing among three approaches for moving or protecting blob data. They have these requirements:\n\n| Requirement | Detail |\n|---|---|\n| R1 | Continuously copy only selected block blobs from one container to a container in another storage account by prefix |\n| R2 | Protect the whole storage account against regional disasters by keeping Azure-managed redundant copies in a paired secondary region |\n| R3 | Perform a one-time copy of a container between storage accounts and know that the command has finished copying when it returns |\n\nWhich mapping is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "R1: object replication; R2: geo-redundant storage or geo-zone-redundant storage; R3: AzCopy copy"
+      },
+      {
+        "id": "B",
+        "text": "R1: locally redundant storage; R2: object replication; R3: point-in-time restore"
+      },
+      {
+        "id": "C",
+        "text": "R1: AzCopy sync only; R2: lifecycle management; R3: object replication priority replication"
+      },
+      {
+        "id": "D",
+        "text": "R1: storage account failover; R2: immutable storage; R3: hierarchical namespace"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The question compares commonly confused blob movement and resilience choices. The object replication part assumes supported accounts, block blobs, and prerequisites are in place.",
+    "sections": {
+      "correctAnswer": "**A. R1: object replication; R2: geo-redundant storage or geo-zone-redundant storage; R3: AzCopy copy**. Object replication is the policy-based selective ongoing copy feature, geo-redundant storage protects the account through Azure-managed regional redundancy, and AzCopy can perform an explicit one-time server-to-server copy that is complete when the command returns.",
+      "technical": "These three requirements look similar because they all involve data existing in more than one place, but they are different design patterns.\n\nObject replication is best matched to R1. It asynchronously copies eligible block blob operations from a source container to a destination container in another storage account. Rules can include prefix filters and minimum creation time filters, so it is suitable for continuous, selective replication of specific blob name ranges. It is not a general account failover feature and it does not support every blob type or hierarchical namespace account.\n\nGeo-redundant storage or geo-zone-redundant storage is best matched to R2. Azure Storage redundancy keeps multiple copies of account data for durability and availability. GRS copies data from the primary region to a geographically distant secondary region asynchronously; GZRS combines zone redundancy in the primary region with geo-replication to a secondary region. The redundancy setting applies at the storage account level, not to one prefix in one container.\n\nAzCopy copy is best matched to R3. Microsoft documents AzCopy examples for copying blobs, directories, and containers between storage accounts. AzCopy uses server-to-server APIs so the data moves directly between storage services, and the documented copy examples state that the copy operation is synchronous: when the command returns, the files are copied. That makes it a good administrative or migration tool for one-time or scripted copy jobs.\n\nThe order of selection is to ask what problem you are solving: ongoing selective policy copy, account-level resilience, or explicit transfer job. Precedence is not that one feature is always better; each is scoped differently. For example, GRS may protect the whole account from regional failure but doesn't let you define prefix filters. AzCopy can copy a folder now, but it doesn't keep future changes synchronized unless you run another job or use a sync workflow.",
+      "wrongOptions": {
+        "B": "LRS keeps copies inside one datacenter in the primary region and doesn't continuously copy selected blobs to another storage account. Object replication is not the account-level paired-region redundancy setting, and point-in-time restore isn't a one-time cross-account copy command. Misconception: all storage protection features are interchangeable. Could be correct only if each requirement were rewritten around local durability, selective replication, and recovery to an earlier time.",
+        "C": "AzCopy can copy or synchronize data, but the requirement for ongoing policy-based prefix replication is object replication. Lifecycle management moves or deletes blobs by policy, and priority replication is an enhancement to object replication, not a one-time copy command. Misconception: any automation that moves blobs can replace every replication design. Could be correct when building a custom scheduled copy process, but that is not the native feature mapping here.",
+        "D": "Storage account failover, immutable storage, and hierarchical namespace solve different problems. Failover relates to geo-redundant accounts, immutable storage protects data from modification or deletion, and hierarchical namespace is not supported with object replication. Misconception: advanced storage settings can be mixed into a general replication answer. Could be correct in separate scenarios involving disaster failover, WORM compliance, or data lake analytics."
+      },
+      "plainEnglish": "Use the tool that matches the job. If you want Azure to keep copying certain blobs from one container to another account over time, use object replication. If you want Azure Storage to keep durable regional copies of the whole account for disaster protection, choose an appropriate redundancy option such as GRS or GZRS. If you want to run a command that copies a container once and finishes, use AzCopy. They all make copies, but they are not the same kind of copy.",
+      "analogy": "A business has three separate needs. For selected monthly reports, it sets up an automatic subscription delivery. For disaster protection, it buys insurance and duplicate storage for the whole archive. For a one-time office move, it hires movers for a single day.\n\n| Analogy | Azure reality |\n|---|---|\n| Subscription delivery for selected reports | Object replication with prefix filters |\n| Insurance for the whole archive | GRS or GZRS account redundancy |\n| One-day movers | AzCopy copy job |\n| Report name pattern | Blob prefix |\n| Paired backup city | Azure paired secondary region |\n\n**Where the analogy breaks down:** Azure features have precise support boundaries, costs, authorization models, and consistency behavior; a real-world subscription or insurance policy doesn't model blob versions or asynchronous replication status.",
+      "jargon": [
+        {
+          "term": "Object replication",
+          "definition": "A Blob Storage feature for asynchronous, policy-based replication of eligible block blobs from a source container to a destination container."
+        },
+        {
+          "term": "Prefix filter",
+          "definition": "A filter that selects blobs whose names begin with a specified string."
+        },
+        {
+          "term": "Geo-redundant storage (GRS)",
+          "definition": "An Azure Storage redundancy option that replicates account data to a geographically distant secondary region after local replication in the primary region."
+        },
+        {
+          "term": "Geo-zone-redundant storage (GZRS)",
+          "definition": "An Azure Storage redundancy option that uses zone redundancy in the primary region and geo-replication to a secondary region."
+        },
+        {
+          "term": "AzCopy",
+          "definition": "A Microsoft command-line utility for copying data to, from, and between Azure Storage accounts."
+        },
+        {
+          "term": "Server-to-server copy",
+          "definition": "A copy operation where data moves directly between Azure Storage services rather than through the administrator's computer."
+        },
+        {
+          "term": "Synchronous command",
+          "definition": "A command behavior where completion is reported after the requested copy operation has finished."
+        },
+        {
+          "term": "Account-level redundancy",
+          "definition": "A storage account setting that applies to all storage resources in that account, rather than selected containers or prefixes."
+        }
+      ],
+      "watchOut": "- Object replication is selective and policy based; redundancy is account wide.\n- GRS and GZRS don't provide prefix-level replication rules.\n- AzCopy is excellent for explicit copy jobs, but it isn't the same as an object replication policy.\n- Object replication is asynchronous; AzCopy copy examples report completion when the command returns.",
+      "productionTip": {
+        "official": "Microsoft documents object replication as asynchronous copying of block blobs according to policy rules, redundancy options as account-level replication for durability and availability, and AzCopy as a command-line tool that copies blobs, directories, and containers between storage accounts using server-to-server APIs.",
+        "recommendation": "Use native redundancy for durability first, then add object replication only when you need selective readable copies in another account or region. Use AzCopy for migrations, backfills, and controlled one-time transfers, and log the command output so operators know exactly what was copied."
+      },
+      "memoryTrick": "**Policy, protection, project**: object replication is the policy copy, GRS/GZRS is account protection, and AzCopy is a copy project. This phrase is a simplification because priority replication and scheduled AzCopy jobs can blur operational patterns.",
+      "examTip": "The key words are **selected block blobs by prefix**, **whole storage account regional disaster**, and **one-time copy command**. Match by scope: selected blobs, entire account, or explicit job. A harder question may ask for an initial backfill plus ongoing replication; then you may combine AzCopy for the backfill with object replication for future changes."
+    },
+    "sources": [
+      {
+        "title": "Object replication overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      },
+      {
+        "title": "Configure object replication - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-configure"
+      },
+      {
+        "title": "Data redundancy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+      },
+      {
+        "title": "Copy blobs between Azure storage accounts with AzCopy v10",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-blobs-copy"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

@@ -1,0 +1,1009 @@
+[
+  {
+    "id": "D1.1.5-01",
+    "objective": "D1.1.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a Microsoft Entra tenant. You want to pilot self-service password reset (SSPR) for users in two department groups. A group named `SSPR-Pilot` contains both department groups as nested groups.\n\nYou need to enable SSPR only for the pilot users by using the Microsoft Entra admin center.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set **Self service password reset enabled** to **None**"
+      },
+      {
+        "id": "B",
+        "text": "Set **Self service password reset enabled** to **Selected** and select `SSPR-Pilot`"
+      },
+      {
+        "id": "C",
+        "text": "Set **Self service password reset enabled** to **Selected** and select both department groups separately"
+      },
+      {
+        "id": "D",
+        "text": "Set **Self service password reset enabled** to **All**"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The tenant has required SSPR licensing. `SSPR-Pilot` is a Microsoft Entra group and contains the target users through supported nested group membership.",
+    "sections": {
+      "correctAnswer": "**B. Set **Self service password reset enabled** to **Selected** and select `SSPR-Pilot`**. SSPR scope can be None, Selected, or All; Selected targets one group in the admin center, and nested groups are supported for wider deployment.",
+      "technical": "SSPR scope is configured from **Entra ID** > **Password reset** > **Properties**. Microsoft documents three values: `None`, `Selected`, and `All`. The scope is checked before reset methods are evaluated. If the user is not in scope, having an email address or phone number does not make SSPR available. `Selected` is the least broad pilot setting. The admin center currently supports selecting one Microsoft Entra group for SSPR, so a parent group is the correct design when multiple teams are part of one pilot. Microsoft also documents nested groups as supported for wider SSPR deployment. This scope setting is separate from the Authentication methods policy, which controls which methods a scoped user can register and use.\n\nFor this scenario, evaluate the controls in this order. First, confirm the feature is enabled for the account category being tested; regular users depend on the `None` / `Selected` / `All` property, while administrator accounts have separate reset behavior. Second, resolve group membership for the selected group, including supported nested groups. Third, check whether the user has registered enough methods that are allowed by the applicable method settings. Last, process the reset request and any notifications or writeback settings.\n\nThe selected group is a scope boundary, not a deny list. Users outside `SSPR-Pilot` are not made eligible merely because they can register Security info or because a method is enabled for them in the Authentication methods policy. Conversely, a user inside the selected group can still fail SSPR if they lack the required registered methods or if a hybrid writeback prerequisite is missing. The group setting therefore answers only **who is allowed to try**; it does not answer **how the user proves identity** or **where the new password is written**.",
+      "wrongOptions": {
+        "A": "`None` disables SSPR for regular users, so pilot users could not test reset. Misconception: SSPR registration can be tested while reset is disabled. Could be correct when: the organization is intentionally turning off SSPR",
+        "C": "The admin center supports one selected group, not a list of separate selected groups. Misconception: Selected means any number of groups. Could be correct when: the two groups are first nested under a single selected group A concrete near-miss is an administrator selecting `Sales-AU`, then discovering `Support-AU` users cannot reset because the second group was never actually selected.",
+        "D": "`All` enables every tenant user, which is broader than a pilot. Misconception: method targeting is the normal way to pilot SSPR scope. Could be correct when: the organization is ready for tenant-wide rollout A concrete tenant-wide rollout scenario would include completed user communications, help desk scripts, and a decision that every regular user should be eligible."
+      },
+      "plainEnglish": "SSPR is a self-service way for people to recover a password. Before choosing app, phone, or email methods, you decide who can use the feature at all. For a pilot, you want neither nobody nor everybody. You want one pilot group. Because the pilot group already contains the two department groups, selecting the parent group lets those users participate without changing the SSPR scope for each department.\n\nThink of the pilot group as the guest list for a trial. If your name is on the guest list, you may walk up to the password reset process. If your name is not on the list, it does not matter that you know the building address or have a phone number on file. The system stops you before the method choices matter.\n\nPutting both department groups inside one parent group also gives the identity team one place to control the trial. When Support leaves the pilot, remove that nested group. When Finance joins, add Finance to the parent group. The SSPR Properties page still points to one group, which matches the documented admin center limitation.",
+      "analogy": "A building manager tests a new key-replacement kiosk. The kiosk can be off, open to everyone, or open to one pilot club. The pilot club can contain smaller clubs.\n\n| Analogy | Azure reality |\n|---|---|\n| Kiosk off | SSPR set to `None` |\n| One pilot club | `Selected` group |\n| Smaller clubs inside | Nested groups |\n| Everyone | SSPR set to `All` |\n\n**Where the analogy breaks down:** Microsoft Entra also checks licensing, registration, methods, and administrator policy after scope.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory."
+        },
+        {
+          "term": "SSPR",
+          "definition": "Self-service password reset, a feature for users to reset or change passwords after verifying identity."
+        },
+        {
+          "term": "Microsoft Entra admin center",
+          "definition": "The administration portal at `entra.microsoft.com`."
+        },
+        {
+          "term": "Selected",
+          "definition": "The SSPR scope option that targets one chosen Microsoft Entra group in the admin center."
+        },
+        {
+          "term": "Nested group",
+          "definition": "A group that is a member of another group."
+        },
+        {
+          "term": "Authentication methods policy",
+          "definition": "The centralized Microsoft Entra policy for methods such as Microsoft Authenticator, SMS, voice, and email OTP."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary of users or resources to which a setting applies."
+        },
+        {
+          "term": "Pilot",
+          "definition": "A limited rollout used to test a feature before enabling it broadly."
+        }
+      ],
+      "watchOut": "- `Selected` means one group in the admin center.\n- Use a parent pilot group when several teams are included.\n- SSPR scope and method availability are separate controls.\n- `All` can prompt users before communications and support are ready.\n- Do not confuse a selected SSPR group with Authentication methods policy targeting; both can mention groups, but they answer different questions.\n- A parent group makes the one-group limit manageable, but accidental nested membership can expand the pilot silently.\n- Administrator accounts should not be used to validate this regular-user scope choice because their reset policy is different.",
+      "productionTip": {
+        "official": "Microsoft documents SSPR Properties values of None, Selected, and All. The SSPR tutorial states that only one Microsoft Entra group can currently be selected in the admin center and that nested groups are supported. The reset deep-dive also shows that after the portal collects the user ID, Microsoft Entra checks whether SSPR is enabled for that user before checking method data or on-premises password management.",
+        "recommendation": "Create a clearly named pilot group, nest team groups under it, and review membership before rollout. Track registration and reset success before moving from Selected to All. For a production pilot, export or review the resolved membership of the parent group before launch, and keep the group name tied to the rollout stage so later administrators understand why the tenant is not yet set to All."
+      },
+      "memoryTrick": "Remember **None, one, or all**: off, one selected group, or the whole tenant. This shortcut does not describe the separate administrator SSPR behavior.",
+      "examTip": "Clue words are **pilot**, **only**, and **admin center**. Choose the one-group Selected scope, not All. A harder version may show a user with registered methods but outside the selected group; the user is still blocked because scope is checked before method verification. Rule out `All` whenever the scenario says pilot, staged rollout, or limited test. Rule out multiple selected groups when the wording says the admin center is used. A harder version could place one user directly in `Sales-AU`, another in nested `Support-AU`, and a third only enabled for Authenticator; only membership in the selected group controls initial SSPR eligibility."
+    },
+    "sources": [
+      {
+        "title": "Enable Microsoft Entra self-service password reset",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr"
+      },
+      {
+        "title": "Self-service password reset deep dive",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.5-02",
+    "objective": "D1.1.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a Microsoft Entra tenant that still uses the legacy SSPR Authentication methods page. Users must provide two verification methods to reset a password. You also want Microsoft Authenticator to be available without creating an unsupported or fragile method set.\n\nWhich two settings should you configure? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable Microsoft Authenticator and at least two additional reset methods, such as Email and Mobile phone"
+      },
+      {
+        "id": "B",
+        "text": "Enable Microsoft Authenticator as the only reset method"
+      },
+      {
+        "id": "C",
+        "text": "Set **Number of methods required to reset** to **1**"
+      },
+      {
+        "id": "D",
+        "text": "Enable only Security questions"
+      },
+      {
+        "id": "E",
+        "text": "Set **Number of methods required to reset** to **2**"
+      }
+    ],
+    "correct": [
+      "A",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The tenant has not fully migrated SSPR method management to the Authentication methods policy. The question is for regular users, not privileged administrators.",
+    "sections": {
+      "correctAnswer": "**A. Enable Microsoft Authenticator and at least two additional reset methods, such as Email and Mobile phone and E. Set **Number of methods required to reset** to **2****. The reset count must be two, and Microsoft documents extra legacy SSPR method-selection requirements when Authenticator is included.",
+      "technical": "The SSPR flow checks whether the user is in scope, then whether the user has enough registered data for methods allowed by policy. In legacy SSPR settings, **Number of methods required to reset** can be one or two. If two are required and a user has only one usable registered method, reset fails and the user must contact an administrator. Microsoft also documents a special legacy consideration for Microsoft Authenticator. Authenticator cannot be selected as the only authentication method when only one method is required. Similarly, Authenticator and only one additional method cannot be selected if two methods are required. When two methods are required, select Authenticator plus at least two additional methods so users have enough independent reset paths.\n\nThe important precedence detail is that the method count is evaluated against usable registered methods, not against the number of boxes the administrator selected. A policy with Email, Mobile phone, and Microsoft Authenticator enabled still fails for a user who registered only an email address when two methods are required. Likewise, a method that is disabled after users registered it stops being available for future reset decisions.\n\nThe legacy mobile app wording also matters. Microsoft documents code and notification behavior for the mobile app differently depending on whether one or two methods are required. That is why this question does not simply ask, “Is Authenticator enabled?” It asks whether the configuration remains valid and resilient when two gates are required. Administrator accounts are an exception path: if a covered administrator role is assigned, the administrator reset policy applies instead of the regular user method design.",
+      "wrongOptions": {
+        "B": "Authenticator alone does not satisfy the documented legacy SSPR rule. Misconception: one app always equals multiple independent reset methods. Could be correct when: discussing Authenticator capabilities outside legacy SSPR configuration",
+        "C": "One required method does not meet the requirement for two verification methods. Misconception: enabling several methods automatically forces several gates. Could be correct when: the organization accepts a lower-friction one-gate reset",
+        "D": "Security questions alone do not make Authenticator available and are not the requested modern method design. Misconception: multiple question answers count like multiple authentication methods. Could be correct when: a tenant deliberately keeps security questions for regular users during migration A concrete case where questions might be retained is a short transition where regular users already have answers registered and the organization has not yet completed migration away from legacy SSPR methods."
+      },
+      "plainEnglish": "A password reset can require one checkpoint or two checkpoints. The count setting decides how many checkpoints users must pass. The methods setting decides which tools can be used at those checkpoints. If you want two checkpoints, set the count to two. If you also use Authenticator in the older SSPR page, do not make it the only practical tool. Add enough other methods, such as email and phone, so users are not trapped when one method is unavailable.\n\nA reset method is useful only if the user actually set it up. Imagine a rule that says a student needs two IDs to enter a secure exam room. The school may accept a phone app, email, or a phone call, but a student who only brought an email printout still has just one proof. Selecting more allowed methods helps only after users register them.\n\nThis is why rollout planning and registration reporting matter. The exam option that enables Authenticator alone sounds modern, but it is too narrow for the older SSPR method rules and too fragile for users who lose access to that one device.",
+      "analogy": "A school replaces lost ID cards only after two identity checks. The student app is useful, but the school also wants parent email and phone as backups.\n\n| Analogy | Azure reality |\n|---|---|\n| Two identity checks | Two SSPR methods required |\n| Student app | Microsoft Authenticator |\n| Parent email or phone | Email or mobile phone methods |\n| Locked out student | User lacking enough registered methods |\n\n**Where the analogy breaks down:** Microsoft Entra has different behavior in legacy SSPR policy and Authentication methods policy migration states.",
+      "jargon": [
+        {
+          "term": "SSPR",
+          "definition": "Self-service password reset, a feature for users to reset or change passwords after verifying identity."
+        },
+        {
+          "term": "Microsoft Authenticator",
+          "definition": "A Microsoft mobile app that can provide push notifications, verification codes, passkeys, and passwordless sign-in."
+        },
+        {
+          "term": "Authentication methods policy",
+          "definition": "The centralized Microsoft Entra policy for methods such as Microsoft Authenticator, SMS, voice, and email OTP."
+        },
+        {
+          "term": "Security questions",
+          "definition": "User-provided question and answer data for SSPR; administrator SSPR cannot use it."
+        },
+        {
+          "term": "Registration",
+          "definition": "The process of saving authentication information for later password reset or MFA use."
+        },
+        {
+          "term": "Usable method",
+          "definition": "A registered authentication method that is currently allowed by policy and can satisfy the reset workflow."
+        },
+        {
+          "term": "Legacy SSPR policy",
+          "definition": "The older Password reset settings area used for SSPR method configuration before centralized method management."
+        }
+      ],
+      "watchOut": "- Changing from one required method to two can immediately block users who registered only one method.\n- Authenticator has legacy SSPR caveats.\n- Security questions remain a legacy SSPR method and are not available in the Authentication methods policy migration target yet.\n- Count usable registered methods, not configured checkboxes.\n- A registered method can become unusable if the administrator later disables that method.\n- Covered administrator roles bypass this regular user design and require the administrator reset policy.\n- Security questions may satisfy some regular-user legacy designs, but they are not a substitute for Authenticator in this scenario.",
+      "productionTip": {
+        "official": "Microsoft documents that SSPR can require one or two methods and documents the legacy Authenticator caveat: select extra methods when Authenticator is enabled for one-method or two-method reset policies. The reset deep-dive includes a table showing that moving from one required method to two can make users with only one registered method unable to reset or unlock.",
+        "recommendation": "Require two methods for stronger reset assurance, but first report on registered methods and run user communications. Keep at least one practical fallback for lost or replaced phones. Before changing the reset count to two, identify users with fewer than two usable methods and drive registration through Security info. If Authenticator is part of the design, include non-app fallbacks for people who replace or lose phones."
+      },
+      "memoryTrick": "Two reset gates need two usable paths, not one app with two labels. This is a simplification because policy migration changes method management.",
+      "examTip": "Clue words are **legacy SSPR**, **two verification methods**, and **Microsoft Authenticator**. Pick the reset-count setting and the method set that respects Authenticator's legacy caveat. A harder version may ask what happens to users who registered only email; they cannot reset until they register another enabled method. Rule out any option that sets the count to one because the requirement explicitly says two verification methods. Rule out Authenticator-only because the question says legacy SSPR and asks for a valid method set. A harder version may add the Authentication methods policy migration state; then you must decide whether legacy SSPR method settings, centralized policy settings, or both are respected."
+    },
+    "sources": [
+      {
+        "title": "Self-service password reset deep dive",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks"
+      },
+      {
+        "title": "Microsoft Authenticator authentication method",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-authenticator-app"
+      },
+      {
+        "title": "Manage authentication methods",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-methods-manage"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.5-03",
+    "objective": "D1.1.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You enable SSPR for all users. Users must be prompted to register reset information the next time they sign in, and they must be asked twice per year to confirm that the information is still current.\n\nWhich Registration settings should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set **Require users to register when signing in** to **No** and reconfirmation to `180` days"
+      },
+      {
+        "id": "B",
+        "text": "Set **Require users to register when signing in** to **Yes** and reconfirmation to `0` days"
+      },
+      {
+        "id": "C",
+        "text": "Set **Require users to register when signing in** to **Yes** and reconfirmation to `180` days"
+      },
+      {
+        "id": "D",
+        "text": "Set **Require users to register when signing in** to **No** and send users only to `https://aka.ms/sspr`"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Users sign in with supported modern authentication or browser flows, and the organization wants sign-in prompts rather than only voluntary registration.",
+    "sections": {
+      "correctAnswer": "**C. Set **Require users to register when signing in** to **Yes** and reconfirmation to `180` days**. The sign-in prompt requires the registration setting to be Yes, and 180 days is approximately twice per year.",
+      "technical": "SSPR registration collects security information before the user needs a reset. Microsoft Entra can prompt users during sign-in when **Require users to register when signing in** is set to Yes. If it is No, users can still register manually, but the requested sign-in prompt is not enforced. The reconfirmation setting controls how often users must review existing information. Valid values are 0 through 730 days, and 0 means users are never asked to reconfirm because of that interval. Microsoft documents that reconfirmation is available only when sign-in registration is enabled. The prompt appears when configured conditions are met and only once per interactive session.\n\nThe registration prompt is also scoped. Only users enabled for SSPR, including covered administrator accounts when applicable, see the SSPR registration interruption. Microsoft documents that the interruption can occur for modern authentication or web-browser sign-ins to Microsoft 365, the Microsoft Entra admin center, Access Panel, federated applications, and custom applications that use Microsoft Entra ID.\n\nA user can close or cancel the registration page, but Microsoft documents that the user is prompted again at later sign-ins until registration is complete. Reconfirmation is different from first registration. It asks users who already have information to review it after the configured interval. If SSPR requires more than one method and the user deletes one method, the user is not necessarily forced to reconfirm immediately; the reconfirm prompt follows the configured number of days.",
+      "wrongOptions": {
+        "A": "No disables the sign-in registration prompt. Misconception: reconfirmation alone starts first-time registration. Could be correct when: users are trained to register manually without prompts",
+        "B": "`0` means never reconfirm, not twice per year. Misconception: zero means immediately or continuously. Could be correct when: the organization wants initial registration but no periodic reconfirmation",
+        "D": "The reset portal URL is for password reset, not the registration prompt setting. Misconception: a reset URL replaces registration policy. Could be correct when: writing user instructions after registration is already complete A concrete use for the reset URL is a validation script where the tester has already registered at `aka.ms/ssprsetup` and now needs to simulate a forgotten password."
+      },
+      "plainEnglish": "SSPR needs a spare way to prove identity before a user forgets a password. Setting registration to Yes tells Microsoft Entra to ask enabled users to set up that spare proof during sign-in. The 180-day value is a reminder to check the information about every six months. Setting the number to 0 does not mean ask immediately; it means do not ask users to reconfirm on a schedule.\n\nThere are two separate jobs. The first job is getting users to create recovery information in the first place. That is why the sign-in prompt must be turned on. The second job is keeping that information fresh. A mobile number that was correct last year might belong to someone else today, so Microsoft Entra can periodically ask users to review it.\n\nThe twice-a-year requirement is not written as “six months” in the portal; the setting is a number of days. A value of 180 is the typical exam answer for twice per year. A value of zero is a trap because many people read zero as “right now,” but the documented meaning is “never ask because of this interval.”",
+      "analogy": "A gym asks members for an emergency contact when they enter, then asks them twice a year to confirm it.\n\n| Analogy | Azure reality |\n|---|---|\n| Entry prompt | Register when signing in |\n| Emergency contact | SSPR security information |\n| Six-month check | 180-day reconfirmation |\n| No scheduled reminder | Reconfirmation set to 0 |\n\n**Where the analogy breaks down:** Microsoft Entra prompts depend on sign-in flow, session state, and policy scope.",
+      "jargon": [
+        {
+          "term": "SSPR",
+          "definition": "Self-service password reset, a feature for users to reset or change passwords after verifying identity."
+        },
+        {
+          "term": "Registration",
+          "definition": "The process of saving authentication information for later password reset or MFA use."
+        },
+        {
+          "term": "Reconfirmation",
+          "definition": "A periodic prompt for users to confirm or update registered security information."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory."
+        },
+        {
+          "term": "Access Panel",
+          "definition": "A Microsoft user portal for accessing assigned cloud applications."
+        },
+        {
+          "term": "Modern authentication",
+          "definition": "Sign-in based on modern identity protocols rather than legacy basic authentication."
+        }
+      ],
+      "watchOut": "- `0` means never reconfirm.\n- Reconfirmation depends on sign-in registration being enabled.\n- Users can register manually at `aka.ms/ssprsetup`, but that is not the same as forcing a sign-in prompt.\n- Outdated recovery information can block reset later.\n- Registration prompts occur only for users in scope for SSPR registration conditions.\n- Canceling registration does not complete registration; users can be prompted again.\n- Reconfirmation is review of existing data, not proof that the user has enough methods today.\n- Manual setup links are useful for instructions, but they do not replace the sign-in registration setting.",
+      "productionTip": {
+        "official": "Microsoft documents the registration-at-sign-in option, a reconfirmation range of 0 through 730 days, and that 0 means users are never asked to confirm their authentication information. Microsoft also documents that the registration interruption does not break a user's connection if the user is already signed in.",
+        "recommendation": "Announce the registration prompt before enabling it. Monitor users who remain unregistered and use a reconfirmation period that matches phone-number and workforce turnover. Pair the 180-day setting with reports or spot checks for stale phone numbers after reorganizations. Tell users why the prompt appears so they do not treat it as suspicious phishing behavior."
+      },
+      "memoryTrick": "`Yes` starts setup, `180` checks half-yearly, and `0` means no scheduled check. Manual registration is still separate.",
+      "examTip": "Clue words are **prompted when signing in** and **twice per year**. The answer must combine registration required = Yes with 180 days. A harder question may describe users deleting a method; they are not necessarily prompted again until the reconfirmation interval or another campaign applies. Rule out any option with registration set to No when the prompt must appear at sign-in. Rule out `0` when the scenario asks for periodic review. A harder version may mention a user who can manually visit `aka.ms/ssprsetup`; that is still not the same as requiring registration during normal sign-in."
+    },
+    "sources": [
+      {
+        "title": "Enable Microsoft Entra self-service password reset",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr"
+      },
+      {
+        "title": "Self-service password reset deep dive",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.5-04",
+    "objective": "D1.1.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You configure SSPR notifications. Security requires that users receive an email after their own SSPR password reset and that Global Administrators receive an email when another administrator resets a password by using SSPR.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable only **Notify users on password resets**"
+      },
+      {
+        "id": "B",
+        "text": "Enable only **Notify all admins when other admins reset their password**"
+      },
+      {
+        "id": "C",
+        "text": "Disable both notifications and configure only a custom helpdesk URL"
+      },
+      {
+        "id": "D",
+        "text": "Enable both **Notify users on password resets** and **Notify all admins when other admins reset their password**"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The requirement is for built-in SSPR email notifications, not audit log export or SIEM alerting. Administrator email addresses are populated.",
+    "sections": {
+      "correctAnswer": "**D. Enable both **Notify users on password resets** and **Notify all admins when other admins reset their password****. The two required audiences are controlled by two separate SSPR notification settings.",
+      "technical": "SSPR notification controls improve awareness after reset events; they do not decide whether reset is allowed. **Notify users on password resets** sends email to the user whose password was reset. Microsoft documents that the message goes to primary and alternate email addresses stored in Microsoft Entra ID, and if neither is defined, SSPR attempts notification using the user's user principal name. **Notify all admins when other admins reset their password** is a privileged-account awareness control. When enabled, Global Administrators receive an email at their primary email address when another administrator changes a password by using SSPR. A custom helpdesk link is different: it directs users to support during registration or reset, but it does not send the required notification emails.\n\nDelivery details can affect troubleshooting. Microsoft documents that notification messages come from specific Microsoft Online Services addresses, with different senders for public Azure, Azure operated by 21Vianet, and Azure for US Government. In this scenario the assumption is public Azure, so mail filtering or spam rules should be checked if notifications are not received.\n\nThe administrator setting does not say “notify all roles.” The documented behavior is that Global Administrators receive mail when another administrator resets their password by using SSPR. If a security operations mailbox or a custom administrative distribution list must receive events, that requirement should be met through audit log monitoring or a support customization, not by misreading this built-in switch. The user setting is narrower as well: no one else is notified of the regular user's reset event by that setting.",
+      "wrongOptions": {
+        "A": "This omits administrator notification for admin SSPR resets. Misconception: user notification automatically includes administrators. Could be correct when: only user awareness is required",
+        "B": "This omits notification to users after their own reset. Misconception: admin notification is a tenant-wide reset alert. Could be correct when: only privileged reset awareness is required For example, this would fit a privileged-access monitoring requirement where regular user reset notices are intentionally handled through another channel.",
+        "C": "A helpdesk URL is not an event notification mechanism. Misconception: customization and notification settings are interchangeable. Could be correct when: the requirement is to show a support contact, not email reset alerts"
+      },
+      "plainEnglish": "There are two email switches. One tells a person that their password was reset. The other tells Global Administrators when an administrator account reset happens. Since the requirement names both users and Global Administrators, turn on both switches. A helpdesk link is helpful for getting support, but it is like putting a phone number on a form; it does not send reset emails.\n\nThe two notification choices answer two different questions. First, should the person whose password changed receive a message? That helps the user notice an unexpected reset. Second, should the most privileged administrators know when an administrator account reset happened? That helps watch high-value accounts.\n\nNeither switch is a general security alerting platform. If the security team wants tickets, SIEM alerts, or a mailbox copied on every reset, that is additional monitoring design. The SSPR page only gives the built-in messages described in the options.",
+      "analogy": "A bank sends a customer a PIN-change email and separately alerts bank managers when a manager account changes its PIN.\n\n| Analogy | Azure reality |\n|---|---|\n| Customer PIN email | Notify users on password resets |\n| Manager-account alert | Notify all admins when other admins reset |\n| Bank manager | Global Administrator |\n| Support phone number | Custom helpdesk link |\n\n**Where the analogy breaks down:** Microsoft Entra uses stored email attributes and cloud sender addresses, and audit logging is separate.",
+      "jargon": [
+        {
+          "term": "SSPR",
+          "definition": "Self-service password reset, a feature for users to reset or change passwords after verifying identity."
+        },
+        {
+          "term": "Global Administrator",
+          "definition": "A highly privileged Microsoft Entra administrator role."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory."
+        },
+        {
+          "term": "Primary email address",
+          "definition": "The main email address stored for a user or administrator in Microsoft Entra ID."
+        },
+        {
+          "term": "Custom helpdesk URL",
+          "definition": "An SSPR customization that directs users to an organization-provided support web page or email address."
+        },
+        {
+          "term": "SMTP relay",
+          "definition": "A mail transport service used to send email messages."
+        },
+        {
+          "term": "User principal name",
+          "definition": "The sign-in name for a Microsoft Entra user, often formatted like an email address."
+        }
+      ],
+      "watchOut": "- User and administrator notifications are separate settings.\n- The built-in administrator notification is for Global Administrators.\n- Helpdesk customization is not alerting.\n- Notifications do not replace audit logs or security monitoring.\n- Built-in admin reset notifications are not a universal notification to every administrator role.\n- Spam filtering can hide SSPR mail; check documented sender addresses for the cloud being used.\n- User notifications depend on stored primary, alternate, or UPN-based email delivery.\n- Notification settings do not change whether reset is allowed.",
+      "productionTip": {
+        "official": "Microsoft documents SSPR notifications for user password resets and a separate setting that emails Global Administrators when another administrator resets a password by using SSPR. The SSPR deep-dive states that SSPR email notifications are sent through an SMTP relay service and that message bodies are not stored in SMTP relay logs.",
+        "recommendation": "Enable both built-in settings and separately forward audit logs to monitoring if security operations needs durable alerting. Keep privileged users' primary email addresses current. During rollout, perform a reset with a pilot user and a privileged test account, then confirm mail delivery and sender allow-listing. Use audit logs for durable evidence instead of relying only on recipients noticing email."
+      },
+      "memoryTrick": "Two audiences, two switches: users hear about their own reset; Global Administrators hear about administrator resets.",
+      "examTip": "Clue words are **users receive** and **Global Administrators receive**. Do not pick a single notification setting when two audiences are required. A harder version may ask for a custom support mailbox; that is a customization or monitoring design, not the built-in admin-notification switch. Rule out the helpdesk URL because it changes where users get assistance, not who receives event mail. Rule out one-switch answers because the scenario names two distinct notification outcomes. A harder version may ask how to notify custom administrators; the built-in Global Administrator notification is not sufficient for that requirement."
+    },
+    "sources": [
+      {
+        "title": "Self-service password reset deep dive",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks"
+      },
+      {
+        "title": "Enable Microsoft Entra self-service password reset",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.5-05",
+    "objective": "D1.1.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You are validating SSPR. The regular user policy requires one method and allows security questions. Several test accounts have Microsoft Entra administrator roles.\n\nYou need a test that reflects the regular employee experience, not the administrator reset policy.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Test with a non-administrator account that is in scope for the user SSPR policy"
+      },
+      {
+        "id": "B",
+        "text": "Test with a Global Administrator account because administrators use the same one-method policy"
+      },
+      {
+        "id": "C",
+        "text": "Test with a User Administrator account and security questions only"
+      },
+      {
+        "id": "D",
+        "text": "Disable the Authentication methods policy because administrator SSPR depends on it"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The tenant is not intentionally disabling administrator SSPR by changing the authorization policy. The goal is regular-user validation.",
+    "sections": {
+      "correctAnswer": "**A. Test with a non-administrator account that is in scope for the user SSPR policy**. Administrator accounts have a separate stronger reset policy, so a non-admin account is required to test the employee experience.",
+      "technical": "Microsoft documents administrator reset policy differences for SSPR. Regular users follow the tenant SSPR scope, method count, enabled methods, and registered data. Administrator accounts assigned covered Microsoft Entra roles use a separate strong default two-gate reset policy in common production circumstances. That policy can differ from the user policy and cannot be changed through the regular user SSPR settings. It requires two pieces of authentication data and prohibits security questions. The SSPR administrator policy also does not depend on the Authentication methods policy. Current documentation notes that administrator SSPR can be disabled through the `AllowedToUseSspr` tenant authorization policy property, but that is a separate choice and changes can take up to 60 minutes. Microsoft explicitly recommends testing reset as a user without administrator roles.\n\nThe administrator policy has its own precedence. After the SSPR portal identifies the account, Microsoft Entra checks whether a Microsoft Entra administrator role is assigned. If a covered role is present, the strong administrator reset policy is enforced. That enforcement happens even if the ordinary user policy would require only one method or would allow security questions.\n\nMicrosoft documents circumstances where the two-gate policy applies, including after 30 days in a trial subscription, when a custom domain is configured, or when Microsoft Entra Connect synchronizes identities. It also documents one-gate exceptions for early trial or default-domain-only tenants without synchronization. Those exceptions are why an exam question may include tenant age, custom domain, or synchronization details. This scenario asks for regular employee validation, so the safe test account is one with no administrator role at all.",
+      "wrongOptions": {
+        "B": "Global Administrators do not simply use the regular one-method user policy. Misconception: SSPR policy is identical for all accounts. Could be correct when: the objective is to test privileged administrator recovery",
+        "C": "User Administrator is still a privileged role, and administrator reset prohibits security questions. Misconception: any selected-group member behaves like a regular employee. Could be correct when: the account is non-admin and the tenant intentionally allows security questions for users",
+        "D": "Administrator SSPR does not depend on the Authentication methods policy. Misconception: all SSPR method behavior moved fully to the Authentication methods policy. Could be correct when: troubleshooting regular method targeting during migration A concrete migration troubleshooting case would be a regular user who cannot register SMS because the Authentication methods policy excludes the user's group."
+      },
+      "plainEnglish": "Administrator accounts are special because they can do powerful things. Microsoft gives them stricter password reset rules than ordinary users. Even if employees can reset with one method or use security questions, an administrator may need two proofs and cannot use questions. To see what an employee will see, use an employee-like test account with no administrator role.\n\nA normal employee account and an administrator account are not just two usernames with different permissions. They also have different recovery risk. If an attacker takes over an administrator account, the attacker may control users, policies, or apps. Microsoft therefore makes administrator self-service reset stricter.\n\nBecause the test goal is the regular employee journey, an administrator test would answer the wrong question. It would tell you whether privileged recovery works. It would not tell you whether a warehouse worker, analyst, or salesperson can use the one-method user policy and the methods you selected for regular users.",
+      "analogy": "An office has visitor badges and vault badges. The vault badge requires two checks and cannot use the easy reception trivia question.\n\n| Analogy | Azure reality |\n|---|---|\n| Visitor badge | Regular user account |\n| Vault badge | Administrator account |\n| Two checks | Two-gate admin SSPR |\n| Trivia blocked | Security questions prohibited |\n\n**Where the analogy breaks down:** Microsoft Entra roles, policy propagation, and method migration add details a physical badge cannot show.",
+      "jargon": [
+        {
+          "term": "SSPR",
+          "definition": "Self-service password reset, a feature for users to reset or change passwords after verifying identity."
+        },
+        {
+          "term": "Global Administrator",
+          "definition": "A highly privileged Microsoft Entra administrator role."
+        },
+        {
+          "term": "Two-gate policy",
+          "definition": "A reset policy requiring two pieces of authentication data."
+        },
+        {
+          "term": "Security questions",
+          "definition": "User-provided question and answer data for SSPR; administrator SSPR cannot use it."
+        },
+        {
+          "term": "Authentication methods policy",
+          "definition": "The centralized Microsoft Entra policy for methods such as Microsoft Authenticator, SMS, voice, and email OTP."
+        },
+        {
+          "term": "Authorization policy",
+          "definition": "A Microsoft Entra tenant policy object containing settings such as whether administrators can use SSPR."
+        },
+        {
+          "term": "Custom domain",
+          "definition": "An organization-owned domain name, such as `contoso.com`, configured in a Microsoft Entra tenant."
+        }
+      ],
+      "watchOut": "- Do not test regular SSPR with any covered administrator role.\n- Administrator SSPR blocks security questions.\n- Administrator SSPR can have documented exceptions in early trial or default-domain-only cases.\n- Disabling administrator SSPR is a separate authorization policy change.\n- Covered administrator roles include many roles beyond Global Administrator.\n- A privileged user in the selected SSPR group can still see administrator reset behavior.\n- Trial-age and custom-domain details can change the administrator gate count in edge scenarios.\n- Disabling administrator SSPR does not automatically make an admin account a valid regular-user test.",
+      "productionTip": {
+        "official": "Microsoft documents a separate administrator reset policy, states that it prohibits security questions, and recommends always testing password reset functionality as a user without Microsoft Entra administrator roles. Microsoft lists the affected administrator roles and documents the authorization policy property that can disable administrator SSPR separately from the user password reset policy.",
+        "recommendation": "Maintain separate test scripts for regular users and privileged accounts. Test break-glass and administrator recovery under change control instead of assuming user SSPR results apply to admins. Keep at least one non-admin pilot account per major user population, such as cloud-only, hybrid, frontline, and office workers. Test privileged recovery in a separate runbook with break-glass controls and audit review."
+      },
+      "memoryTrick": "Admins are **two-gate, no questions**; regular users follow the user policy. This shortcut has exceptions documented by Microsoft.",
+      "examTip": "Clue words are **regular employee experience** and **not administrator reset policy**. Any option that uses Global Administrator or User Administrator for the main validation is suspect. A harder version may ask why security questions vanish for admins although enabled for users; the cause is the separate administrator policy. Rule out any option that depends on security questions for an administrator account. Also rule out changing the Authentication methods policy when the question asks about the administrator reset policy, because Microsoft documents that the admin SSPR policy is independent. A harder version could ask which roles are covered; the safest approach is to avoid all Microsoft Entra administrator roles for user-policy testing."
+    },
+    "sources": [
+      {
+        "title": "Self-service password reset policies",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-policy"
+      },
+      {
+        "title": "Enable Microsoft Entra self-service password reset",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr"
+      },
+      {
+        "title": "Manage authentication methods",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-methods-manage"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.5-06",
+    "objective": "D1.1.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have hybrid users synchronized from on-premises Active Directory Domain Services (AD DS) to Microsoft Entra ID by Microsoft Entra Connect. Users must reset passwords from the SSPR portal, and the new passwords must be written back to AD DS.\n\nWhich two actions should you perform? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create inbound firewall rules from Microsoft Entra ID to the domain controllers"
+      },
+      {
+        "id": "B",
+        "text": "Configure only cloud-only SSPR because synchronized users automatically update AD DS"
+      },
+      {
+        "id": "C",
+        "text": "Enable password writeback in Microsoft Entra Connect or Microsoft Entra Connect cloud sync"
+      },
+      {
+        "id": "D",
+        "text": "Enable password writeback in SSPR on the **On-premises integration** page"
+      },
+      {
+        "id": "E",
+        "text": "Reset passwords only from the Microsoft 365 admin center"
+      }
+    ],
+    "correct": [
+      "C",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Hybrid users are synchronized, required licenses are assigned, and documented service-account permissions can be configured.",
+    "sections": {
+      "correctAnswer": "**C. Enable password writeback in Microsoft Entra Connect or Microsoft Entra Connect cloud sync and D. Enable password writeback in SSPR on the **On-premises integration** page**. Hybrid SSPR writeback needs both a connector-side writeback capability and the SSPR on-premises integration setting.",
+      "technical": "For synchronized users, Microsoft Entra checks where the user's password is managed during SSPR. If the password is managed on-premises and writeback is configured, the user can authenticate and reset. If writeback is not deployed, the user is told to contact an administrator. Password writeback can use Microsoft Entra Connect sync or Microsoft Entra Connect cloud sync. With Microsoft Entra Connect sync, enable the **Password writeback** optional feature in the wizard. With cloud sync, enable and configure writeback for the provisioning agent. Then configure **Password reset** > **On-premises integration** so SSPR writes passwords back for synced users. Microsoft documents support for password hash synchronization, pass-through authentication, and AD FS, enforcement of on-premises AD DS password policies, and outbound HTTPS over port 443 without inbound firewall rules.\n\nThe writeback operation also has an evaluation order after the user passes identity proof. Microsoft Entra determines that the password is managed on-premises, verifies that the writeback service is running, lets the user choose a new password, encrypts the reset payload, and sends it through the tenant-specific relay to the on-premises component. The on-premises component then attempts the password set operation in AD DS.\n\nPrecedence for password rules is important. Microsoft documents that on-premises AD DS password policies are enforced for writeback. If the proposed password violates history, complexity, minimum age, password filters, or other AD DS restrictions, the user receives immediate feedback. That means a cloud SSPR screen can reject a password because of a local domain policy even when the cloud tenant settings appear different. Accounts in protected AD DS groups can also be a special case because the writeback service account cannot change passwords for those users.",
+      "wrongOptions": {
+        "A": "Password writeback does not require inbound firewall rules. Misconception: cloud-to-on-premises features always require inbound domain-controller access. Could be correct when: a different application genuinely requires inbound connectivity A concrete false lead is a network team opening domain-controller ports while the real problem is that the Password writeback optional feature was never enabled.",
+        "B": "Directory synchronization does not automatically make password reset write back to AD DS. Misconception: password sync is always bidirectional. Could be correct when: the users are cloud-only and no on-premises password must be updated",
+        "E": "The Microsoft 365 admin center is not the SSPR portal solution and not all admin reset paths support writeback. Misconception: any password reset tool writes back the same way. Could be correct when: resetting cloud-only users where writeback is irrelevant"
+      },
+      "plainEnglish": "Hybrid users have their main password in the local directory. If they change it in the cloud, a secure path must carry the new password back to the local directory. Turning on SSPR alone gives users the reset website; it does not create the writeback path. You need the connector feature and the SSPR on-premises integration setting.\n\nFor a hybrid user, the cloud is not the final place where the password lives. The company still has a local directory, and that directory has the official password rules. Password writeback is the secure bridge between the cloud reset page and the local directory.\n\nIf the bridge is missing, the cloud cannot finish the reset for a locally managed password. If the bridge exists but the local directory rejects the new password, the user still cannot complete the change. So the correct solution has two halves: turn on the bridge technology and tell SSPR to use it.",
+      "analogy": "A company has a cloud front desk and an official file cabinet in head office. A secure courier must update the head-office file when the cloud desk accepts a password change.\n\n| Analogy | Azure reality |\n|---|---|\n| Cloud front desk | SSPR portal |\n| Head-office cabinet | On-premises AD DS |\n| Secure courier | Password writeback |\n| Courier enabled at both ends | Connector plus SSPR integration |\n\n**Where the analogy breaks down:** Password writeback uses encryption, relay communication, and AD DS policy enforcement, not a human courier.",
+      "jargon": [
+        {
+          "term": "AD DS",
+          "definition": "Active Directory Domain Services, Microsoft's on-premises directory service."
+        },
+        {
+          "term": "Microsoft Entra Connect",
+          "definition": "A synchronization tool between AD DS and Microsoft Entra ID."
+        },
+        {
+          "term": "Cloud sync",
+          "definition": "A lightweight Microsoft Entra provisioning-agent sync option."
+        },
+        {
+          "term": "Password writeback",
+          "definition": "Sending cloud password changes or resets back to on-premises AD DS."
+        },
+        {
+          "term": "SSPR",
+          "definition": "Self-service password reset, a feature for users to reset or change passwords after verifying identity."
+        },
+        {
+          "term": "Protected group",
+          "definition": "An AD DS group with special security behavior that can restrict delegated password operations."
+        },
+        {
+          "term": "Password hash synchronization",
+          "definition": "A hybrid identity method that synchronizes password hashes from AD DS to Microsoft Entra ID."
+        }
+      ],
+      "watchOut": "- Synchronized users need writeback for cloud reset to update AD DS.\n- On-premises password policy can reject a password during SSPR.\n- Service-account permissions and minimum password age can block writeback.\n- Cloud sync writeback has cloud-specific support limits documented by Microsoft.\n- On-premises AD DS policy can reject a password selected in the cloud reset flow.\n- Protected AD DS groups can prevent writeback resets for some privileged on-premises accounts.\n- Staged rollout for a security group is documented as not guaranteed for SSPR writeback consistency.\n- Microsoft Entra Connect and cloud sync can be side by side at the domain level, but overlapping same-domain behavior must be planned.",
+      "productionTip": {
+        "official": "Microsoft documents SSPR writeback with Microsoft Entra Connect and cloud sync, SSPR On-premises integration, supported hybrid identity models, AD DS policy enforcement, and outbound port 443 communication. Microsoft's writeback article describes the encrypted service-bus relay flow and notes that no inbound firewall rules are required because communication is outbound over port 443.",
+        "recommendation": "Pilot writeback with synchronized test users. Validate permissions, minimum password age, and failure monitoring before broad rollout so users are not blocked during a real lockout. When troubleshooting, verify the user is in the connector scope, the connector or cloud sync agent is healthy, required AD DS permissions are present, minimum password age is compatible with reset frequency, and the SSPR On-premises integration setting is saved."
+      },
+      "memoryTrick": "Hybrid reset needs **portal plus pipe**: SSPR provides the portal, writeback provides the pipe to AD DS.",
+      "examTip": "Clue words are **synchronized**, **AD DS**, and **written back**. Pick one action for the connector and one for SSPR integration. A harder question might include firewall choices; remember Microsoft documents outbound relay communication, not inbound domain-controller access. Rule out any option that treats synchronization as automatic bidirectional password reset. Rule out inbound firewall answers because Microsoft documents outbound relay communication. A harder version may mention password hash synchronization, pass-through authentication, or federation; all can be supported writeback models when the other prerequisites are satisfied."
+    },
+    "sources": [
+      {
+        "title": "On-premises password writeback with self-service password reset",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-writeback"
+      },
+      {
+        "title": "Enable Microsoft Entra Password Writeback",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr-writeback"
+      },
+      {
+        "title": "Enable Microsoft Entra Connect cloud sync password writeback",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-cloud-sync-sspr-writeback"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.5-07",
+    "objective": "D1.1.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "A company has cloud-only employees who must reset forgotten Microsoft Entra passwords by using SSPR and hybrid employees who must reset forgotten passwords by using SSPR with on-premises writeback. The company owns standalone Microsoft 365 Business Standard licenses only.\n\nWhich licensing change satisfies the hybrid writeback requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "No change is required because Microsoft Entra ID Free includes reset and writeback for all users"
+      },
+      {
+        "id": "B",
+        "text": "Assign Microsoft Entra ID P1 or P2, or Microsoft 365 Business Premium, to users who benefit from hybrid SSPR writeback"
+      },
+      {
+        "id": "C",
+        "text": "Assign only standalone Microsoft 365 Business Standard because it supports on-premises writeback"
+      },
+      {
+        "id": "D",
+        "text": "Assign licenses only to administrators because regular users do not require SSPR licensing"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The question is limited to SSPR licensing. Technical configuration for SSPR and writeback is still required.",
+    "sections": {
+      "correctAnswer": "**B. Assign Microsoft Entra ID P1 or P2, or Microsoft 365 Business Premium, to users who benefit from hybrid SSPR writeback**. Microsoft documents that hybrid password reset or change with on-premises writeback requires Entra ID P1/P2 or Microsoft 365 Business Premium.",
+      "technical": "SSPR licensing depends on the scenario. Microsoft documents cloud-only password change when the user knows the password as available in Microsoft Entra ID Free and higher. Cloud-only forgotten-password reset is available in Microsoft 365 Business Standard or higher and Microsoft Entra ID P1/P2. Hybrid password change or reset with on-premises writeback requires Microsoft 365 Business Premium or Microsoft Entra ID P1/P2. Microsoft also warns that standalone Microsoft 365 Basic and Standard plans do not support SSPR with on-premises writeback. Licensing must cover users intended to benefit from the service, even if some unlicensed users can technically access a tenant service. Licenses alone do not configure SSPR scope, methods, registration, or writeback.\n\nThe licensing table separates “change” from “reset.” A password change means the user knows the old password and chooses a new one. A password reset means the user forgot the password or is locked out and must prove identity by other methods. Hybrid writeback adds another feature on top: the new password must be sent back to AD DS.\n\nThe phrase “users who benefit” matters for compliance and service continuity. Microsoft states that although some unlicensed users may technically access SSPR, a license is required for any user you intend to benefit from the service. Therefore, assigning a premium license only to administrators does not satisfy a plan where employees perform their own hybrid resets. The exam often tests this by mixing a plan name that supports cloud-only reset with a hybrid writeback requirement that needs a higher entitlement.",
+      "wrongOptions": {
+        "A": "Microsoft Entra ID Free does not include forgotten-password reset and writeback for all users. Misconception: password change and forgotten-password reset are the same licensing scenario. Could be correct when: cloud-only known-password change is the only requirement For example, Microsoft Entra ID Free would fit a simpler question where a cloud-only user already knows the password and only needs to change it.",
+        "C": "Standalone Business Standard is documented as not supporting on-premises writeback. Misconception: Business Standard and Business Premium have the same identity features. Could be correct when: the requirement is cloud-only forgotten-password reset without writeback",
+        "D": "Regular users who benefit from SSPR need appropriate licensing. Misconception: SSPR is licensed only for operators. Could be correct when: a different admin-only premium feature is being licensed"
+      },
+      "plainEnglish": "A cloud-only password reset is simpler than a reset that must update the company's local Active Directory. Microsoft requires a higher license for the writeback part. Business Standard can cover some cloud reset scenarios, but hybrid writeback needs Microsoft Entra ID P1 or P2, or Microsoft 365 Business Premium, for the users who benefit from it.\n\nLicensing is not based only on the button the user clicks. It is based on what the service does for that user. A cloud-only employee needs Microsoft Entra to reset a cloud password. A hybrid employee needs Microsoft Entra to reset a password and then update the local AD DS password too. That second step is the premium part.\n\nBusiness Standard sounds close because it is a paid Microsoft 365 plan and can cover some SSPR cases. The word **writeback** is what changes the answer. Writeback means the password must travel back to the on-premises directory, and Microsoft's table puts that in Business Premium or Entra ID P1/P2 territory.",
+      "analogy": "A train ticket to the city is cheaper than a ticket that also includes the regional connection home.\n\n| Analogy | Azure reality |\n|---|---|\n| City-only ticket | Cloud-only reset |\n| Regional connection | On-premises writeback |\n| Higher fare | P1/P2 or Business Premium |\n| Passenger using trip | User benefiting from SSPR |\n\n**Where the analogy breaks down:** Licensing is contractual and feature-based, and technical setup is still required after purchase.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID P1",
+          "definition": "A paid Entra ID plan that includes SSPR reset and writeback capabilities."
+        },
+        {
+          "term": "Microsoft 365 Business Premium",
+          "definition": "A Microsoft 365 plan that includes SSPR writeback licensing."
+        },
+        {
+          "term": "Password writeback",
+          "definition": "Sending cloud password changes or resets back to on-premises AD DS."
+        },
+        {
+          "term": "SSPR",
+          "definition": "Self-service password reset, a feature for users to reset or change passwords after verifying identity."
+        },
+        {
+          "term": "AD DS",
+          "definition": "Active Directory Domain Services, Microsoft's on-premises directory service."
+        },
+        {
+          "term": "Password change",
+          "definition": "A password update where the user knows the current password."
+        },
+        {
+          "term": "Password reset",
+          "definition": "A password recovery operation where the user cannot use the current password and must verify identity another way."
+        }
+      ],
+      "watchOut": "- Do not confuse known-password change with forgotten-password reset.\n- Do not confuse cloud-only reset with hybrid reset plus writeback.\n- Business Standard is not enough for on-premises writeback.\n- Assigning licenses does not enable the feature automatically.\n- The licensing answer changes if the scenario is only known-password cloud change.\n- Standalone Microsoft 365 Basic and Standard are explicitly called out as not supporting on-premises writeback.\n- Trial licenses can be enough for lab tutorials, but production users still need appropriate paid entitlements.\n- Licensing does not configure Microsoft Entra Connect permissions or SSPR scope.",
+      "productionTip": {
+        "official": "Microsoft's SSPR licensing table separates cloud-only change, cloud-only reset, and hybrid writeback. It warns that standalone Microsoft 365 Basic and Standard plans do not support on-premises writeback. The licensing documentation states that basic SSPR features are available in Microsoft 365 Business Standard or higher and Entra ID P1/P2, but the comparison table and warning distinguish on-premises writeback from those basic cloud scenarios.",
+        "recommendation": "Map licensing to the users who will use SSPR. For hybrid users, confirm both entitlements and connector readiness so a licensing fix is not mistaken for a complete deployment. Document which user populations are cloud-only and which are synchronized. License the synchronized population for writeback before enabling the user-facing pilot so help desk reduction is not achieved by exposing an unlicensed feature."
+      },
+      "memoryTrick": "Cloud reset can be standard; hybrid writeback needs premium. Always verify against the current Microsoft licensing table.",
+      "examTip": "Clue words are **hybrid**, **writeback**, and **Business Standard**. The tested distinction is Business Standard for cloud reset versus Business Premium or Entra ID P1/P2 for writeback. A harder version may mix password change with password reset, so read the operation carefully. Underline the operation: change, reset, or reset with writeback. Then match it to the documented licensing row. A harder version may ask for the minimum-cost licensing change across mixed users; cloud-only users and hybrid writeback users may not need the same SKU."
+    },
+    "sources": [
+      {
+        "title": "License self-service password reset",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-licensing"
+      },
+      {
+        "title": "On-premises password writeback with self-service password reset",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-writeback"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.5-08",
+    "objective": "D1.1.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are preparing communications for combined security information registration in a Microsoft Entra tenant that uses SSPR and Microsoft Entra multifactor authentication.\n\nWhich two statements accurately describe the combined registration experience? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Users can register once and use supported methods for both SSPR and multifactor authentication when policy allows"
+      },
+      {
+        "id": "B",
+        "text": "Combined registration means SSPR no longer needs users to be in scope for password reset"
+      },
+      {
+        "id": "C",
+        "text": "Users can manage security information from the Security info experience, and interrupt mode can prompt them during sign-in"
+      },
+      {
+        "id": "D",
+        "text": "If only the SSPR registration policy is enabled, users can never skip the registration prompt"
+      },
+      {
+        "id": "E",
+        "text": "Combined registration lets administrators view users' security question answers"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Combined registration is available. The question is about the user registration experience, not licensing or writeback.",
+    "sections": {
+      "correctAnswer": "**A. Users can register once and use supported methods for both SSPR and multifactor authentication when policy allows and C. Users can manage security information from the Security info experience, and interrupt mode can prompt them during sign-in**. Combined registration provides one security info experience for supported MFA and SSPR methods, with manage and interrupt modes.",
+      "technical": "Before combined registration, users could register similar methods separately for MFA and SSPR. With combined registration, users register security information once and can use supported methods for SSPR and multifactor authentication when the relevant policies allow the method and the user is in scope. Microsoft documents two modes. **Interrupt mode** is a wizard-like experience shown during sign-in when users must register or refresh security info. **Manage mode** is the Security info page where users add, delete, or change methods. Combined registration follows both MFA and SSPR policies. If only SSPR registration is enforced, users can skip the registration interruption indefinitely. Security question answers are stored securely and administrators cannot see, set, or modify another user's question answers.\n\nCombined registration is policy-aware rather than method-blind. If both MFA and SSPR registration are required, the experience asks for the minimum number of methods needed to satisfy both policies. Microsoft documents that methods are shown from most to least secure. For example, when SSPR requires two methods and the tenant enables Authenticator, email, and phone, the user may be guided first toward Authenticator and phone but can choose another allowed method such as email.\n\nThe feature also has method-specific limits and behaviors. Microsoft documents maximum registrations for Authenticator apps and passkeys, phone and alternate phone behavior, and notes such as alternate phone being available only in manage mode. Those details are outside this question's answer, but they explain why communication should point users to Security info rather than older separate pages. Users need to know where to update methods after a phone replacement or email change.",
+      "wrongOptions": {
+        "B": "Registration experience does not replace SSPR scope. Misconception: registering methods automatically enables password reset eligibility. Could be correct when: describing where an already-scoped user manages methods A concrete counterexample is a user who registers Authenticator for MFA but is not in the selected SSPR group; that user still cannot reset through SSPR.",
+        "D": "Microsoft documents that if only SSPR policy is enabled, users can skip indefinitely. Misconception: every registration prompt is mandatory. Could be correct when: MFA registration is enforced by another policy that blocks access until registration",
+        "E": "Administrators cannot view another user's security question answers. Misconception: privileged admins can read all recovery secrets. Could be correct when: admins are viewing method metadata rather than question answers"
+      },
+      "plainEnglish": "Combined registration reduces confusion. Instead of setting up a phone or app once for MFA and again for password reset, users manage security info in one place. The same registered method can help with sign-in verification and password recovery if policy allows it. But registration is not the same as permission to use SSPR; the user still needs to be in the SSPR scope.\n\nCombined registration does not mean “anything registered works everywhere.” It means users have one place to register security information. Policies still decide what counts for MFA and what counts for SSPR. If the company allows email for SSPR but not as an MFA sign-in method, the same Security info page may show it, but its use is limited by policy.\n\nThis distinction is useful for user training. Tell users they are setting up security information once, but avoid promising that every method they add works for every situation. The service decides based on the sign-in or password-reset context.",
+      "analogy": "A company uses one profile page for emergency contacts and building-entry verification instead of two separate forms.\n\n| Analogy | Azure reality |\n|---|---|\n| One profile page | Combined registration |\n| Emergency contact | SSPR method |\n| Building-entry verification | MFA method |\n| Pop-up form | Interrupt mode |\n| Profile settings page | Manage mode |\n\n**Where the analogy breaks down:** Microsoft Entra policies decide exactly which methods appear and when they can be used.",
+      "jargon": [
+        {
+          "term": "Combined registration",
+          "definition": "A user experience for registering security info once for SSPR and MFA."
+        },
+        {
+          "term": "MFA",
+          "definition": "Multifactor authentication, requiring more than a password."
+        },
+        {
+          "term": "Security info",
+          "definition": "The user page for managing authentication methods."
+        },
+        {
+          "term": "SSPR",
+          "definition": "Self-service password reset, a feature for users to reset or change passwords after verifying identity."
+        },
+        {
+          "term": "Registration",
+          "definition": "The process of saving authentication information for later password reset or MFA use."
+        },
+        {
+          "term": "Conditional Access",
+          "definition": "Microsoft Entra policy engine that can require controls such as MFA under specified conditions."
+        },
+        {
+          "term": "Manage mode",
+          "definition": "The Security info experience where users update registered methods outside an interrupt prompt."
+        }
+      ],
+      "watchOut": "- Combined registration does not license or enable SSPR by itself.\n- Users still need SSPR scope and allowed methods.\n- If only SSPR registration is enforced, users can skip the prompt indefinitely.\n- Administrators cannot read security question answers.\n- Combined registration follows both MFA and SSPR policies; it does not erase either policy.\n- Some methods are scenario-limited, such as security questions for password reset rather than general authentication.\n- Users may need fresh MFA before managing Security info in some situations.\n- Phone numbers and app registrations have documented limits and manage-mode details.",
+      "productionTip": {
+        "official": "Microsoft documents that combined registration lets users register once for MFA and SSPR, includes interrupt and manage modes, follows both policies, and protects security question answers from administrator viewing. Microsoft documents that only the converged registration experience is aware of the Authentication methods policy, and users outside that experience may not see the correct methods to register.",
+        "recommendation": "Base user communications on Security info and explain why multiple methods may be requested. Provide screenshots and support links before broad registration enforcement. Update help desk scripts to use `aka.ms/mysecurityinfo` or the current Security info navigation. For rollouts that also enforce MFA, explain that users may be asked to strongly authenticate before changing security info."
+      },
+      "memoryTrick": "Combined registration means **one setup, two uses**. The shortcut fails if the user is not in scope or the method is not allowed by policy.",
+      "examTip": "Clue words are **combined security information** and **SSPR and MFA**. Choose statements about one registration experience and Security info management. Reject statements saying registration overrides SSPR scope or exposes security question answers. A harder version may ask which policies control the methods shown. Rule out answers that make combined registration an authorization feature; SSPR scope still controls eligibility. Rule out answers exposing security question answers because Microsoft explicitly protects them. A harder version may combine SSPR registration with Conditional Access MFA registration and ask which methods the user must register to satisfy both."
+    },
+    "sources": [
+      {
+        "title": "Combined registration for SSPR and Microsoft Entra multifactor authentication",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-registration-mfa-sspr-combined"
+      },
+      {
+        "title": "Manage authentication methods",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-methods-manage"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.5-09",
+    "objective": "D1.1.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Your tenant still has authentication methods configured separately in the legacy MFA policy and the legacy SSPR policy. You need to migrate method management to the Authentication methods policy while minimizing the risk that users lose the ability to sign in or reset passwords.\n\nWhat should you do first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set the migration state to **Migration Complete** immediately and then document old policies"
+      },
+      {
+        "id": "B",
+        "text": "Delete all methods from the legacy MFA and SSPR policies before configuring the Authentication methods policy"
+      },
+      {
+        "id": "C",
+        "text": "Move security questions into the Authentication methods policy and disable the legacy SSPR policy"
+      },
+      {
+        "id": "D",
+        "text": "Audit the current legacy MFA and SSPR method settings, then set **Manage migration** to **Migration in progress** and configure matching methods in the Authentication methods policy"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The tenant has not fully migrated. Some regular users still depend on legacy SSPR methods, including security questions.",
+    "sections": {
+      "correctAnswer": "**D. Audit the current legacy MFA and SSPR method settings, then set **Manage migration** to **Migration in progress** and configure matching methods in the Authentication methods policy**. A safe migration starts with auditing existing settings and using Migration in Progress so old and new policy settings can be validated before cutover.",
+      "technical": "Microsoft announced deprecation of managing methods in the legacy MFA and SSPR policies, with management unavailable in those legacy policies beginning September 30, 2025. The recommended target is the Authentication methods policy. Microsoft documents a migration approach: audit current legacy MFA settings, legacy SSPR settings, and current Authentication methods policy settings; then use **Manage migration**. In **Pre-migration**, the Authentication methods policy is used only for authentication and legacy settings are respected. In **Migration in Progress**, the Authentication methods policy is used for authentication and SSPR and legacy settings are also respected. In **Migration Complete**, only the Authentication methods policy is used and legacy method settings are ignored. Security questions remain managed in the legacy SSPR policy, and the number of methods required to reset and administrator SSPR policy remain active outside full method migration at the time verified.\n\nPrecedence changes across the migration states. In Pre-migration, legacy policy settings can still make a method available even if the centralized policy is not ready for SSPR. In Migration in Progress, both sources can keep users working while the administrator aligns targeting and configuration. In Migration Complete, the legacy method controls no longer save users, so a missing method in the Authentication methods policy becomes a real outage for sign-in or reset.\n\nThe audit step should capture more than on/off method names. Record which groups are targeted, whether exclusions exist, and method-specific configuration such as voice call office-phone settings or Microsoft Authenticator OTP settings. For SSPR, also record the selected SSPR scope and the number of methods required to reset because those are adjacent settings that affect the same user journey even when they are not fully migrated into the centralized method policy.",
+      "wrongOptions": {
+        "A": "Migration Complete ignores legacy methods before you have matched and tested replacement settings. Misconception: Migration Complete automatically copies old settings. Could be correct when: all methods are already configured and validated in the new policy A concrete failure would be completing migration while SMS was enabled only in legacy SSPR; users depending on SMS would suddenly lose that reset method.",
+        "B": "Deleting legacy methods first can break sign-in or SSPR. Misconception: removing old settings is the first migration step. Could be correct when: the equivalent new policy has been validated and you are retiring methods one by one",
+        "C": "Security questions are not yet available in the Authentication methods policy. Misconception: every SSPR method already has a migration target. Could be correct when: Microsoft later adds support and the docs change"
+      },
+      "plainEnglish": "A safe migration is like moving contact lists from old notebooks into a new system. First read the old notebooks. Then copy the needed settings into the new system while the old ones still work. Only after testing should you mark the move complete. Do not assume Migration Complete copies settings. It is a cutover state, and legacy method settings are ignored.\n\nThe safest move is not to throw away the old keys before testing the new keys. First write down what the old policies allow. Then make the new Authentication methods policy match the methods people actually use. During the in-progress state, the tenant can respect both old and new settings, which gives you room to test.\n\nSecurity questions are the exception that trips people. They are old-style SSPR data, but Microsoft says they are not yet managed in the Authentication methods policy. If your users still depend on them, you cannot honestly say “everything moved” just by switching to Migration Complete.",
+      "analogy": "A hospital migrates badge access from an old system to a new one. During transition, both systems may be honored; after cutover, only the new system is honored.\n\n| Analogy | Azure reality |\n|---|---|\n| Old badge system | Legacy MFA and SSPR policies |\n| New badge system | Authentication methods policy |\n| Inventory | Audit current settings |\n| Transition mode | Migration in Progress |\n| Cutover | Migration Complete |\n\n**Where the analogy breaks down:** Microsoft Entra has method-specific exceptions such as security questions and administrator reset policy.",
+      "jargon": [
+        {
+          "term": "Authentication methods policy",
+          "definition": "The centralized Microsoft Entra policy for methods such as Microsoft Authenticator, SMS, voice, and email OTP."
+        },
+        {
+          "term": "Migration in Progress",
+          "definition": "A migration state where the Authentication methods policy and legacy policies are both respected."
+        },
+        {
+          "term": "Migration Complete",
+          "definition": "A migration state where legacy method policies are ignored for authentication and SSPR."
+        },
+        {
+          "term": "Security questions",
+          "definition": "User-provided question and answer data for SSPR; administrator SSPR cannot use it."
+        },
+        {
+          "term": "SSPR",
+          "definition": "Self-service password reset, a feature for users to reset or change passwords after verifying identity."
+        },
+        {
+          "term": "MFA",
+          "definition": "Multifactor authentication, requiring more than a password."
+        },
+        {
+          "term": "Legacy MFA policy",
+          "definition": "The older tenant-wide settings for multifactor authentication methods."
+        },
+        {
+          "term": "Exclusion",
+          "definition": "A policy targeting rule that prevents a group or user set from using a method even when broader targeting enables it."
+        }
+      ],
+      "watchOut": "- September 30, 2025 is the legacy method management date in the fetched Microsoft docs.\n- Migration Complete means legacy settings are ignored, not copied.\n- Security questions remain managed in legacy SSPR today.\n- Test both sign-in and password reset before removing legacy methods.\n- Audit targeting and configuration, not only method names.\n- Removing a legacy method before users register a replacement can break real password resets.\n- Security questions are a current exception and can remain in legacy SSPR.\n- The migration guide migrates tenant policy settings, not individual user settings.",
+      "productionTip": {
+        "official": "Microsoft documents the automated migration guide, manual audit steps, migration states, and the behavior of each state. It also documents that security questions remain in the legacy SSPR policy at the time verified. The migration article says the automated guide audits current MFA and SSPR policy settings and consolidates them in the Authentication methods policy, while noting that individual user settings are not migrated.",
+        "recommendation": "Create a method-by-method migration checklist. Pilot Migration in Progress, validate registered methods and reset success, then remove legacy methods gradually before setting Migration Complete. Build a rollback record before changing migration state, including screenshots or exported settings for legacy MFA, legacy SSPR, and centralized policies. Validate with test users who represent phone-only, app-based, hybrid, and administrator scenarios."
+      },
+      "memoryTrick": "Audit, align, complete: know old settings, match them in the new policy, and only then cut over. Security questions are the big exception.",
+      "examTip": "Clue words are **minimizing risk** and **legacy MFA and SSPR**. The safe first step is audit plus Migration in Progress, not immediate Migration Complete. A harder version may ask which settings remain outside the Authentication methods policy after migration; remember security questions, reset count, and admin SSPR caveats. Rule out answers that start with deletion or immediate completion because they remove fallback before verification. Rule out moving security questions into the centralized policy because Microsoft says they remain in legacy SSPR. A harder version may ask what happens when a method is enabled in any policy before migration is complete; Microsoft Entra can allow registration from multiple policy sources until complete."
+    },
+    "sources": [
+      {
+        "title": "Manage authentication methods",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-methods-manage"
+      },
+      {
+        "title": "How to migrate to the Authentication methods policy",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-authentication-methods-manage"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.5-10",
+    "objective": "D1.1.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You enabled SSPR for a selected pilot group and configured registration and methods. You need to validate the end-user reset experience before broad rollout. The test must not be affected by the special administrator reset policy.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use an InPrivate or incognito browser session, register a non-administrator pilot user at `https://aka.ms/ssprsetup`, and then reset at `https://aka.ms/sspr`"
+      },
+      {
+        "id": "B",
+        "text": "Use your Global Administrator account at `https://aka.ms/sspr`"
+      },
+      {
+        "id": "C",
+        "text": "Ask users to wait until they forget a password because SSPR cannot be tested directly"
+      },
+      {
+        "id": "D",
+        "text": "Test only by resetting the user's password from the Microsoft 365 admin center"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The test user is in the selected SSPR group, has no Microsoft Entra administrator role, and has a known current password.",
+    "sections": {
+      "correctAnswer": "**A. Use an InPrivate or incognito browser session, register a non-administrator pilot user at `https://aka.ms/ssprsetup`, and then reset at `https://aka.ms/sspr`**. Microsoft's SSPR tutorial validates with a non-admin user, registration at the setup link, and reset at the SSPR link.",
+      "technical": "A realistic SSPR validation exercises the same flow that regular users will use. Microsoft lists a non-administrator test user and a group containing that user as prerequisites in the SSPR tutorial. The documented test opens a new InPrivate or incognito browser window, browses to `https://aka.ms/ssprsetup`, signs in as the non-admin user, and registers authentication information. Then the tester opens a new private browser window, browses to `https://aka.ms/sspr`, enters the user's account information and CAPTCHA, and follows the verification steps to reset the password. Private browsing helps avoid cached administrator sessions, but it does not bypass policy. Using a non-admin account avoids the separate administrator two-gate reset policy.\n\nThe test sequence validates different gates. The setup portal confirms that the user can register security information and sees the methods made available by policy. The reset portal then confirms that the user is in SSPR scope, can pass CAPTCHA and identity verification, has the required number of registered methods, and can set a new password. If notifications are enabled, the tester should receive the expected messages. If the user is synchronized and writeback is enabled, the new password should work against the on-premises-backed sign-in path after synchronization or writeback completes.\n\nPrivate browsing is a practical control because Microsoft identity sessions can persist across tabs. Without it, an administrator who is already signed in to the admin center might accidentally test the wrong account or skip a prompt because of existing session state. The private window does not grant permissions; it simply helps the test represent a first-person user journey.",
+      "wrongOptions": {
+        "B": "A Global Administrator uses the administrator SSPR policy, not the regular pilot-user policy. Misconception: higher privilege makes a better test for all users. Could be correct when: the goal is specifically privileged-account recovery",
+        "C": "SSPR can be tested directly with the documented setup and reset portals. Misconception: password reset can be validated only during a real emergency. Could be correct when: continuing to monitor real resets after rollout",
+        "D": "An admin-center reset is not the user's self-service portal experience. Misconception: any password reset validates SSPR. Could be correct when: testing help desk or administrator reset procedures A concrete admin-center test would be appropriate for a help desk procedure where a User Administrator resets an employee password, but it does not validate self-service recovery."
+      },
+      "plainEnglish": "To test a self-service tool, act like the user. Sign in as a normal pilot user, set up recovery information, and then try the reset website. Use a private browser window so your administrator session does not get mixed into the test. Do not use an administrator account because administrators have stricter recovery rules that employees may not see.\n\nRegistration and reset are not the same test. Registration proves the user can set up recovery information. Reset proves the user can use that information when locked out. A good pilot checks both steps, because many failed rollouts happen when users are told SSPR is enabled but have not registered enough methods.\n\nTesting as an ordinary pilot user also finds communication problems. If the user does not understand the prompt, cannot access a phone, or sees a missing method, you discover that before the feature is announced to everyone.",
+      "analogy": "A store tests self-checkout by having someone buy an item like a normal customer, not by using the manager override screen.\n\n| Analogy | Azure reality |\n|---|---|\n| Normal customer | Non-admin pilot user |\n| Self-checkout setup | `aka.ms/ssprsetup` |\n| Self-checkout purchase | `aka.ms/sspr` reset |\n| Manager override | Admin reset policy |\n\n**Where the analogy breaks down:** Browser tokens and Microsoft Entra policies are more complex than a checkout lane.",
+      "jargon": [
+        {
+          "term": "SSPR",
+          "definition": "Self-service password reset, a feature for users to reset or change passwords after verifying identity."
+        },
+        {
+          "term": "InPrivate",
+          "definition": "A private browser mode that avoids using an existing signed-in session."
+        },
+        {
+          "term": "Registration",
+          "definition": "The process of saving authentication information for later password reset or MFA use."
+        },
+        {
+          "term": "Global Administrator",
+          "definition": "A highly privileged Microsoft Entra administrator role."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory."
+        },
+        {
+          "term": "CAPTCHA",
+          "definition": "A challenge used to reduce automated abuse by asking for proof that a human is using the form."
+        },
+        {
+          "term": "Session state",
+          "definition": "Browser and identity data that can keep a user signed in across pages or tabs."
+        }
+      ],
+      "watchOut": "- Register methods before testing reset.\n- Use non-admin accounts for regular SSPR validation.\n- Private browsing prevents testing the wrong cached account.\n- Admin-initiated reset does not prove self-service reset works.\n- `aka.ms/ssprsetup` and `aka.ms/sspr` test different parts of the journey.\n- Existing browser sessions can hide prompts or use the wrong account.\n- A user outside the selected SSPR group can register some methods but still fail reset eligibility.\n- Hybrid tests should include writeback validation, not only the cloud portal success page.",
+      "productionTip": {
+        "official": "Microsoft's SSPR tutorial lists a non-administrator user as a prerequisite and uses `aka.ms/ssprsetup` for registration followed by `aka.ms/sspr` for password reset testing. The tutorial's test section explicitly uses a non-administrator test user in a selected group and instructs the tester to browse first to the setup portal and then to the password reset portal.",
+        "recommendation": "Create a pilot test script that checks scope, registration, reset, notifications, and writeback if hybrid users are included. Use the same script for help desk training. After a successful pilot reset, sign in with the new password to a representative application and, for hybrid users, verify on-premises access or expected writeback behavior. Record exact screens and error messages for support documentation."
+      },
+      "memoryTrick": "Test SSPR with the same kind of user who will use SSPR. Use admin accounts only when testing admin recovery.",
+      "examTip": "Clue words are **end-user**, **pilot group**, and **not affected by administrator policy**. The answer must use a non-admin account and the SSPR setup and reset portals. A harder version may include a user outside the selected group; registration does not make that user eligible if scope is wrong. Rule out administrator accounts for employee validation because their reset policy is stricter. Rule out admin-center resets because they skip the user's self-service path. A harder version may ask why a test user reaches setup but cannot reset; likely causes include not being in SSPR scope, too few methods, or missing writeback for a synchronized account."
+    },
+    "sources": [
+      {
+        "title": "Enable Microsoft Entra self-service password reset",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr"
+      },
+      {
+        "title": "Self-service password reset policies",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-policy"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.5-11",
+    "objective": "D1.1.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Your organization synchronized `mobile` and `telephoneNumber` values from AD DS to Microsoft Entra ID for years. Many users never completed SSPR registration in Security info. After October 5, 2026, some users report that SSPR no longer accepts their directory-sourced phone data for verification.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Tell users to keep relying on `mobilePhone`, `businessPhone`, and `otherMails` because directory-sourced values are always accepted"
+      },
+      {
+        "id": "B",
+        "text": "Disable combined registration because only legacy registration accepts phone numbers"
+      },
+      {
+        "id": "C",
+        "text": "Require affected users to explicitly register enough authentication methods that satisfy the SSPR policy, and monitor users who still lack required methods"
+      },
+      {
+        "id": "D",
+        "text": "Set reconfirmation to `0` days so Microsoft Entra trusts synchronized directory values again"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The organization is following current Microsoft documentation verified in October 2026. Users are regular users, not administrators.",
+    "sections": {
+      "correctAnswer": "**C. Require affected users to explicitly register enough authentication methods that satisfy the SSPR policy, and monitor users who still lack required methods**. Microsoft documents that starting October 5, 2026, SSPR accepts only explicitly registered methods, not unregistered directory-sourced profile values.",
+      "technical": "Prepopulated contact information historically helped bootstrap SSPR. Microsoft documents default Microsoft Entra Connect mappings such as `telephoneNumber` to Office phone and `mobile` to Mobile phone. Current documentation adds important 2026 changes. Starting October 5, 2026, SSPR only accepts explicitly registered authentication methods. Directory-sourced properties such as `mobilePhone`, `businessPhone`, and `otherMails` that were never registered no longer work for SSPR verification. Starting November 9, 2026, if SSPR settings require registration during sign-in and enabled users do not have enough methods to complete SSPR, a registration campaign prompts affected users to register methods ahead of enforcement. The fix is explicit method registration that satisfies the SSPR method count and allowed-method policy.\n\nThe current rule changes the meaning of prepopulation. Synchronized phone and email attributes can still help users see familiar values during registration, and administrators can still review certain user authentication information with the appropriate role. But for SSPR verification after the documented date, the service requires methods that are explicitly registered for authentication. A stale `mobile` value copied from AD DS is not enough by itself.\n\nScope and method count still apply after explicit registration. If the tenant requires two methods, a user who registers only one phone method remains below the reset requirement. If phone methods are enabled but the user's number is badly formatted, the method may not be usable. Microsoft documents phone number format requirements such as including the country code and a space before the phone number for prepopulated phone data. These details turn this from a one-time directory cleanup into a real registration and validation project.",
+      "wrongOptions": {
+        "A": "Current Microsoft documentation says unregistered directory-sourced values no longer work for SSPR verification after the date. Misconception: profile attributes and registered security methods are equivalent forever. Could be correct when: describing historical behavior or profile display only A historical scenario before the documented change could have relied more heavily on prepopulated values, which is why this distractor sounds plausible to experienced administrators.",
+        "B": "Combined registration is the current security info experience, not the cause of the documented requirement. Misconception: new registration experiences broke phone methods. Could be correct when: a separate documented service issue requires a temporary registration workaround",
+        "D": "`0` means never reconfirm; it does not make unregistered values trusted again. Misconception: reconfirmation controls acceptance of directory attributes. Could be correct when: the goal is to stop periodic reconfirmation prompts"
+      },
+      "plainEnglish": "A phone number in a company directory is not the same as a phone number registered as a security method. Microsoft now requires SSPR verification to use explicitly registered methods. If a user never completed Security info registration, their synced work phone may appear on the profile but still not count for reset. Have users register valid methods and verify that they have enough methods for your SSPR policy.\n\nThe old directory phone number is like a contact printed on an employee record. The registered security method is like the employee saying, “Use this phone for account recovery,” and completing the setup process. Microsoft's newer rule trusts the second kind for SSPR verification.\n\nTherefore the fix is not just to clean up AD fields. Cleaning up AD may still be useful, but users must go through Security info registration or another supported registration process so Microsoft Entra has recovery methods recorded as authentication methods. Then the organization must check that users have the right number of methods for the policy.",
+      "analogy": "A school has parent phone numbers in its student system, but pickups now require an approved pickup contact. A number in the old record is not enough unless registered for pickup.\n\n| Analogy | Azure reality |\n|---|---|\n| Student system phone | Directory-sourced property |\n| Approved pickup contact | Explicitly registered method |\n| Two contacts required | Two-method SSPR policy |\n| Reminder campaign | Registration campaign |\n\n**Where the analogy breaks down:** Microsoft Entra stores method objects and evaluates policy during reset; a school record system is less automated.",
+      "jargon": [
+        {
+          "term": "Directory-sourced property",
+          "definition": "A user profile value synchronized from a directory, such as phone or email."
+        },
+        {
+          "term": "Explicitly registered method",
+          "definition": "An authentication method registered for security verification, not merely a directory profile attribute."
+        },
+        {
+          "term": "Security info",
+          "definition": "The user page for managing authentication methods."
+        },
+        {
+          "term": "Registration",
+          "definition": "The process of saving authentication information for later password reset or MFA use."
+        },
+        {
+          "term": "SSPR",
+          "definition": "Self-service password reset, a feature for users to reset or change passwords after verifying identity."
+        },
+        {
+          "term": "Microsoft Entra Connect",
+          "definition": "A synchronization tool between AD DS and Microsoft Entra ID."
+        },
+        {
+          "term": "Authentication method",
+          "definition": "A registered proof option such as phone, app, email, or other supported factor."
+        },
+        {
+          "term": "Phone number format",
+          "definition": "The required way to store a phone number, such as including country code and spacing, so verification systems can use it."
+        }
+      ],
+      "watchOut": "- October 5, 2026 is the key date in the fetched Microsoft documentation.\n- Profile phone data can exist without satisfying SSPR verification.\n- If two methods are required, one registered phone is insufficient.\n- Phone formatting still matters when registering phone methods.\n- Directory cleanup alone does not equal explicit SSPR method registration.\n- A registration campaign helps only users who are in scope and subject to the configured registration conditions.\n- `0` reconfirmation stops scheduled review; it does not preserve old prepopulation behavior.\n- Bad phone formatting can still undermine a phone-based rollout.",
+      "productionTip": {
+        "official": "Microsoft's prepopulation documentation states that starting October 5, 2026, SSPR only accepts explicitly registered methods and that a registration campaign begins November 9, 2026 for enabled users lacking enough methods when registration is required. The same prepopulation article maps `telephoneNumber` to Office phone and `mobile` to Mobile phone under default Microsoft Entra Connect settings, while separately warning that unregistered directory-sourced values stop working for SSPR verification.",
+        "recommendation": "Identify users relying only on directory-sourced values and guide them through Security info registration. Do not assume HR or AD phone fields are valid recovery methods unless explicitly registered. Segment reports into users with no registered methods, users with one method when two are required, and users whose registered methods are weak or phone-only. Use targeted communications rather than a generic tenant-wide email, because the remediation differs by registration state."
+      },
+      "memoryTrick": "A profile phone is not a proof phone unless it is registered. This shortcut allows that profile data may still be visible but not accepted for reset verification.",
+      "examTip": "Clue words are **after October 5, 2026**, **directory-sourced**, and **never completed registration**. The answer is explicit method registration, not changing reconfirmation or disabling combined registration. A harder version may ask about November 9, 2026 and the registration campaign for users lacking methods. Rule out answers that say synchronized profile values are always enough; the date in the prompt is the giveaway. Rule out reconfirmation changes because they affect review prompts, not whether a property counts as an authentication method. A harder version may ask how to prepare before November 9, 2026; enable registration during sign-in and monitor the campaign for users lacking enough methods."
+    },
+    "sources": [
+      {
+        "title": "Prepopulate Contact Information for Self-Service Password Reset",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/howto-sspr-authenticationdata"
+      },
+      {
+        "title": "Combined registration for SSPR and Microsoft Entra multifactor authentication",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-registration-mfa-sspr-combined"
+      },
+      {
+        "title": "Self-service password reset deep dive",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

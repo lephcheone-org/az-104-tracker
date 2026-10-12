@@ -1,0 +1,653 @@
+[
+  {
+    "id": "D3.4.8-01",
+    "objective": "D3.4.8",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains an App Service plan named `asp-web-b1` in the Basic tier. A web app named `app-portal` runs in the plan. The development team wants to create six deployment slots for blue-green releases and quick rollback. You need to choose the lowest tier change that supports the required number of slots without moving the app to another service.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep the App Service plan in the Basic tier and add the six slots to `app-portal`"
+      },
+      {
+        "id": "B",
+        "text": "Scale the App Service plan to a Premium tier and create the slots in the same app"
+      },
+      {
+        "id": "C",
+        "text": "Scale the App Service plan to the Standard tier and create the six slots"
+      },
+      {
+        "id": "D",
+        "text": "Create six extra web apps in the Basic plan and swap them by changing DNS records"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The app is an Azure App Service web app, not an Azure Functions app. The requirement is six nonproduction deployment slots in addition to the production slot, and the plan can be scaled up in its region.",
+    "sections": {
+      "correctAnswer": "**B. Scale the App Service plan to a Premium tier and create the slots in the same app**. Basic supports no staging slots, Standard supports five staging slots per app, and Premium supports 20, so six slots require Premium or higher.",
+      "technical": "Deployment slots are an App Service feature that depends on the App Service plan tier. Microsoft documents that slots are available when the app runs in Standard, Premium, or Isolated. The App Service limits table shows the per-app staging slot limits as blank for Free, Shared, and Basic, five for Standard, and 20 for Premium and Isolated.\n\nThe order of evaluation for this scenario is:\n\n1. Count the required nonproduction slots: six. The default production slot already exists and is not one of the six requested slots.\n2. Check whether the current tier supports slots. Basic has no entry for staging slots, so it cannot meet the requirement.\n3. Compare the next eligible tiers. Standard supports slots, but only five per app, so it still fails for six.\n4. Choose the lowest tier that reaches six. Premium supports 20 staging slots per app, so it satisfies the design.\n\nSlots do not add a separate compute bill by themselves, but they are live apps. The hosting plan documentation says multiple deployment slots for an app run on the same VM instances as the plan. That means a busy staging slot competes for CPU and memory with production unless you scale or isolate workloads. Scaling to Premium solves the slot-count requirement; it does not reserve separate workers for each slot.",
+      "wrongOptions": {
+        "A": "Basic is dedicated compute, but the limits table does not list staging slots for the Basic tier. Misconception: any paid dedicated App Service tier includes deployment slots. Could be correct when the requirement is only to host a single app without slots or when using another feature that Basic supports, such as custom domains.",
+        "C": "Standard is the first tier in the table with staging slots, but it supports only five per app. The scenario asks for six, so Standard is one slot short. Misconception: enabling the slot feature and meeting the slot count are the same decision. Could be correct when the team needs five or fewer staging slots.",
+        "D": "Separate web apps and DNS changes are not deployment slots and do not provide App Service slot swap behavior. DNS changes also depend on client caching and are not the documented slot mechanism. Misconception: a slot is just another app with a different name. Could be correct for a custom multi-app rollout architecture, but not for configuring App Service deployment slots."
+      },
+      "plainEnglish": "A deployment slot is like a second running copy of the same App Service app that Azure knows how to swap with production. The number you can create is controlled by the pricing tier of the App Service plan. Basic can run apps, but it does not provide staging slots. Standard starts the slot feature, yet it allows only five staging slots for one app. Because the team asks for six, the first suitable tier is Premium. After you scale the plan to Premium, the slots are still part of the same app and use the same plan capacity, so they should be treated as real running workloads rather than free empty labels.",
+      "analogy": "Imagine a theater with a main stage and rehearsal rooms. The Basic package rents only the main stage. The Standard package adds five rehearsal rooms. The production needs six rehearsal rooms, so the theater must buy the Premium package.\n\n| Analogy | Azure reality |\n|---|---|\n| Main stage | Production slot |\n| Rehearsal room | Deployment slot |\n| Theater package | App Service plan tier |\n| Shared building utilities | Plan CPU and memory |\n\n**Where the analogy breaks down:** Azure swaps routing and configuration between live web apps; a physical theater does not apply app settings, restart workers, or warm up HTTP endpoints before a release.",
+      "jargon": [
+        {
+          "term": "Azure App Service",
+          "definition": "A platform service for hosting web apps, APIs, mobile back ends, and related workloads without managing the underlying web servers."
+        },
+        {
+          "term": "App Service plan",
+          "definition": "The plan that defines the region, operating system, VM size, instance count, pricing tier, and compute resources used by App Service apps."
+        },
+        {
+          "term": "Basic tier",
+          "definition": "A dedicated compute App Service pricing tier that can host apps but does not provide staging slots in the documented limits table."
+        },
+        {
+          "term": "Standard tier",
+          "definition": "An App Service pricing tier that supports deployment slots, with five staging slots per app in the documented limits table."
+        },
+        {
+          "term": "Premium tier",
+          "definition": "A higher App Service pricing tier that supports 20 staging slots per app in the documented limits table."
+        },
+        {
+          "term": "Isolated tier",
+          "definition": "An App Service tier for apps running in an App Service Environment with network isolation; the limits table lists 20 staging slots per app."
+        },
+        {
+          "term": "Deployment slot",
+          "definition": "A live nonproduction slot associated with an App Service app that has its own hostname and can be swapped with another slot."
+        },
+        {
+          "term": "Production slot",
+          "definition": "The default live slot of an App Service app that normally receives customer traffic."
+        }
+      ],
+      "watchOut": "- Do not count Basic as slot-capable just because it is paid and dedicated.\n- Standard is enough for one to five staging slots, not for six.\n- Slots are live apps, so load tests in staging can affect the plan if capacity is tight.\n- The documented slot count is per app, not a subscription-wide pool that can be borrowed by another app.",
+      "productionTip": {
+        "official": "Microsoft documents that apps and deployment slots in the same App Service plan run on the same VM instances, and the App Service limits table lists five staging slots for Standard and 20 for Premium or Isolated.",
+        "recommendation": "Before scaling only for slot count, estimate the resource cost of running the extra slots. Use access restrictions and lower traffic percentages for test slots, and scale the plan if staging validation or load testing could compete with production."
+      },
+      "memoryTrick": "Remember **S equals small slot set, P equals plenty**: Standard gives five, Premium gives 20. This shortcut fails if Microsoft changes the limits, so check the current App Service limits page for exam-era numbers.",
+      "examTip": "Clue words are **Basic**, **six deployment slots**, and **lowest tier**. Rule out Basic because no staging slot count is listed, then rule out Standard because five is less than six. A harder version may ask about performance isolation; in that case remember that deployment slots share the App Service plan workers unless you use separate plans or capacity controls."
+    },
+    "sources": [
+      {
+        "title": "Set Up Staging Environments - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+      },
+      {
+        "title": "Azure subscription and service limits, quotas, and constraints - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits#azure-app-service-limits"
+      },
+      {
+        "title": "Azure App Service Plans - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.8-02",
+    "objective": "D3.4.8",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a web app named `litwarehr` in the Standard tier. You create a deployment slot named `qa` and clone the configuration from the production slot. A tester asks how to browse the new slot directly and what cloning copied.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The slot uses `https://qa.litwarehr.azurewebsites.net`, and cloning copies all private endpoints"
+      },
+      {
+        "id": "B",
+        "text": "The slot has no URL until a custom domain is assigned, and cloning copies only app content"
+      },
+      {
+        "id": "C",
+        "text": "The slot uses a hostname like `http://litwarehr-qa.azurewebsites.net`, and cloning can copy settings such as app settings, connection strings, framework versions, web sockets, HTTP version, and platform bitness"
+      },
+      {
+        "id": "D",
+        "text": "The slot uses the same hostname as production, and the traffic percentage decides which content appears"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The app name and slot name fit the documented DNS length limits, the default Azure-provided hostname is being discussed, and the question is about creating the slot, not swapping it.",
+    "sections": {
+      "correctAnswer": "**C. The slot uses a hostname like `http://litwarehr-qa.azurewebsites.net`, and cloning can copy settings such as app settings, connection strings, framework versions, web sockets, HTTP version, and platform bitness**. Microsoft documents the slot URL format as `sitename-slotname.azurewebsites.net` and lists those configuration elements as cloneable when a slot is added.",
+      "technical": "A deployment slot is a live App Service app with its own hostname. The documented URL pattern is `http://sitename-slotname.azurewebsites.net`. In this question, the site name is `litwarehr` and the slot name is `qa`, so the natural Azure-provided hostname is `litwarehr-qa.azurewebsites.net`. HTTPS is commonly available through the wildcard certificate for `*.azurewebsites.net`, but the documented slot article uses the `http://` example and the important exam point is the hyphenated app-slot hostname.\n\nCloning a configuration when the slot is created does not copy application code. The new slot has no content even if you clone settings. Microsoft lists cloneable settings such as app settings, connection strings, language framework versions, web sockets, HTTP version, and platform bitness. The same article calls out an exception: a private endpoint is not cloned across slots.\n\nThe sequence is:\n\n1. Add the slot and optionally choose an existing slot to clone configuration from.\n2. Azure creates a separate App Service slot resource and gives it a separate hostname.\n3. You deploy content to that slot through a deployment method such as Git, a pipeline, or a publish profile.\n4. The slot starts with traffic percentage 0 by default, but the direct slot hostname remains reachable unless you restrict access.",
+      "wrongOptions": {
+        "A": "The host name pattern is not `qa.litwarehr.azurewebsites.net`, and the documentation specifically notes that a private endpoint is not cloned across slots. Misconception: a slot becomes a subdomain in front of the app name and every networking feature is duplicated. Could be correct for a custom DNS design you create yourself, not for the default App Service slot hostname.",
+        "B": "A slot is created with its own Azure-provided hostname, and cloning configuration does not copy app content. Misconception: a slot is empty and unreachable until custom DNS is configured. Could be correct only if an organization blocks the default hostname with access controls and requires a custom domain for its own process.",
+        "D": "The slot has a separate hostname. Traffic percentage controls how much production URL traffic is routed to another slot, but it does not erase the slot-specific URL. Misconception: slots are hidden versions behind one hostname only. Could be correct when discussing automatic traffic routing through the production URL after a routing rule is configured."
+      },
+      "plainEnglish": "When you create a slot called `qa`, Azure gives it a separate web address by combining the app name and the slot name with a hyphen. That lets testers visit the slot directly without touching the production address. Cloning from production is a convenience for settings, not a content copy. It can copy things like environment variables, database connection strings, runtime version choices, web socket settings, HTTP version, and whether the platform is 32-bit or 64-bit. You still need to publish the QA version of the application to the new slot.",
+      "analogy": "Think of a restaurant opening a test kitchen next to the main kitchen. The test kitchen gets its own door sign, and the manager can copy the equipment checklist from the main kitchen. The recipes and food still must be brought in separately.\n\n| Analogy | Azure reality |\n|---|---|\n| Main kitchen | Production slot |\n| Test kitchen door sign | Slot hostname |\n| Equipment checklist | Cloned configuration |\n| Recipes and ingredients | Deployed app content |\n| Private loading dock | Private endpoint that is not cloned |\n\n**Where the analogy breaks down:** A web slot is reachable through DNS and HTTP routing, and Azure can later swap content and configuration behavior in ways that a restaurant cannot.",
+      "jargon": [
+        {
+          "term": "Slot hostname",
+          "definition": "The default address Azure assigns to a deployment slot, using the app name, a hyphen, the slot name, and `azurewebsites.net`."
+        },
+        {
+          "term": "Clone configuration",
+          "definition": "The slot creation option that copies selected settings from an existing slot, such as app settings and runtime configuration."
+        },
+        {
+          "term": "App settings",
+          "definition": "Key-value settings exposed to the application as environment variables in App Service."
+        },
+        {
+          "term": "Connection strings",
+          "definition": "Named database or service connection values configured in App Service and exposed to supported application stacks."
+        },
+        {
+          "term": "Language framework version",
+          "definition": "The configured runtime version, such as a .NET, Java, PHP, Python, or Node.js setting used by the app."
+        },
+        {
+          "term": "WebSockets",
+          "definition": "A protocol feature that allows persistent bidirectional communication between client and server."
+        },
+        {
+          "term": "HTTP version",
+          "definition": "The configured version of HTTP behavior for the app, such as HTTP/1.1 or HTTP/2 where supported."
+        },
+        {
+          "term": "Platform bitness",
+          "definition": "Whether the app worker process uses a 32-bit or 64-bit platform setting."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A private network interface for accessing an Azure service through Azure Private Link; the slot documentation says it is not cloned across slots."
+        }
+      ],
+      "watchOut": "- A newly created slot can clone settings but not application content.\n- The default hostname puts the slot after the app name with a hyphen.\n- New slots have 0 percent production traffic by default, which is different from being inaccessible.\n- Private endpoints need separate attention because they are not cloned as part of slot creation.",
+      "productionTip": {
+        "official": "The App Service slot documentation states that a deployment slot has its own host name, the URL format is `sitename-slotname.azurewebsites.net`, and cloning can copy selected configuration while private endpoints are not cloned.",
+        "recommendation": "After creating a slot, verify both configuration and content explicitly. Protect preproduction slots with access restrictions or authentication because the default hostname can expose a test build even when production traffic percentage remains zero."
+      },
+      "memoryTrick": "For the default hostname, read it as **app dash slot**. The trick is only about the Azure-provided name; custom domains and access restrictions can change what users actually type.",
+      "examTip": "Clue words are **create a slot**, **clone configuration**, and **browse directly**. Choose the answer that separates hostname, configuration, and content. A harder item may include private endpoint cloning; the documented exception is that private endpoints are not cloned across slots."
+    },
+    "sources": [
+      {
+        "title": "Set Up Staging Environments - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+      },
+      {
+        "title": "Configure an App Service App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.8-03",
+    "objective": "D3.4.8",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You manage a production web app named `adatum-payments` and a deployment slot named `staging`. You deploy a new build to `staging` and plan to swap it into production. The operations team asks what App Service does during the swap and how to recover if the new production build is unhealthy after the swap finishes.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "App Service changes DNS records first, then warms the former production slot; rollback requires restoring from backup"
+      },
+      {
+        "id": "B",
+        "text": "App Service stops production while it copies the staging files over production; rollback requires redeploying the old package"
+      },
+      {
+        "id": "C",
+        "text": "App Service swaps only app settings and leaves content in the original slots; rollback requires manually editing settings"
+      },
+      {
+        "id": "D",
+        "text": "App Service applies target settings to the source, restarts and warms the source, switches routing rules, and rollback can be done by swapping the same two slots again"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Production is selected as the target slot and staging is the source slot. The app uses the default App Service slot swap mechanism rather than a custom deployment system outside App Service.",
+    "sections": {
+      "correctAnswer": "**D. App Service applies target settings to the source, restarts and warms the source, switches routing rules, and rollback can be done by swapping the same two slots again**. That matches the documented swap flow and the documented rollback method for returning to the last known good site.",
+      "technical": "A slot swap is designed so the target slot, usually production, stays online while the source slot is prepared. Microsoft describes a specific sequence. First, App Service applies selected target-slot settings to every instance of the source slot. These include slot-specific app settings and connection strings, continuous deployment settings if enabled, and App Service authentication settings if enabled. Applying those settings restarts the source slot instances.\n\nSecond, App Service waits for every source instance to restart successfully. If local cache is enabled, it initializes local cache by sending an HTTP request to the application root on each source instance. For warm-up, App Service can run custom application initialization; otherwise it requests the source slot root and treats any HTTP response as warmed up.\n\nThird, after the source slot is warmed, App Service swaps by switching routing rules. The target slot then receives the app that was already prepared in the source slot. The target remains online during preparation, so Microsoft describes the traffic redirection as seamless and says no requests are dropped because of swap operations.\n\nFinally, the old production app now resides in the source slot. If production behaves badly after the completed swap, the documented rollback is to swap the same two slots immediately. That brings the last known good site back into the production target.",
+      "wrongOptions": {
+        "A": "The documented swap does not begin with public DNS record changes, and rollback is not limited to backup restore. Misconception: slot swapping is a DNS cutover. Could be correct for a separate blue-green architecture that uses external DNS, but not for App Service deployment slot swaps.",
+        "B": "The target slot is kept online while the source is prepared and warmed; production is not stopped while files are copied over it. Misconception: App Service performs an in-place overwrite of the production directory. Could be correct for a manual file deployment that replaces production content directly, not for a slot swap.",
+        "C": "Content and many configuration elements participate in slot behavior, and the recovery action is not to manually reverse every setting. Misconception: swaps are only a configuration flip. Could be correct when discussing making one app setting sticky or swappable, but not the overall swap operation."
+      },
+      "plainEnglish": "Before Azure sends customers to the new version, it prepares the staging version as if it were going to run in production. It gives staging the settings that belong to production, restarts staging, warms it up, and only then changes routing so production traffic lands on the warmed staging build. The old production version is not lost; it ends up in the staging slot. If the new version is bad, swapping the same two slots again puts the old version back in front of customers.",
+      "analogy": "Imagine an airport changing gates for a flight. Passengers stay at the current gate while staff prepare the new gate with the right signs, crew, and equipment. Only after the new gate is ready does the airport redirect passengers. If the new gate has a problem, the airport can send the flight back to the previous gate.\n\n| Analogy | Azure reality |\n|---|---|\n| Current passenger gate | Production target slot |\n| New prepared gate | Staging source slot |\n| Signs and crew setup | Target settings applied to source |\n| Gate readiness checks | Warm-up requests |\n| Redirecting passengers | Switching routing rules |\n\n**Where the analogy breaks down:** Azure is moving live application routing and slot configuration, not people, and worker restarts can abandon long-running application operations.",
+      "jargon": [
+        {
+          "term": "Source slot",
+          "definition": "The slot that currently contains the build you want to move into the target, often a staging slot."
+        },
+        {
+          "term": "Target slot",
+          "definition": "The slot that should receive the source build, often the production slot."
+        },
+        {
+          "term": "Swap operation",
+          "definition": "The App Service process that prepares one slot and then switches routing and slot content/configuration state between two slots."
+        },
+        {
+          "term": "Slot-specific setting",
+          "definition": "A setting configured to remain with a slot instead of moving with app content during swap behavior."
+        },
+        {
+          "term": "Warm-up",
+          "definition": "HTTP or application initialization work performed before traffic is routed to a slot."
+        },
+        {
+          "term": "Local cache",
+          "definition": "An App Service feature that can copy site content to local worker storage and is initialized during the documented swap flow when enabled."
+        },
+        {
+          "term": "Routing rules",
+          "definition": "The App Service rules that determine which slot receives requests after a swap or traffic-routing configuration."
+        },
+        {
+          "term": "Rollback",
+          "definition": "Returning to a previous working deployment, in this case by swapping the same two slots again."
+        }
+      ],
+      "watchOut": "- For a production release, production should normally be the target slot.\n- Warm-up occurs before the routing switch, not after customers hit the new build.\n- Former production workers are recycled after swap, so code should tolerate abandoned long-running operations.\n- A failed preparation can revert source-slot changes before the final routing switch happens.",
+      "productionTip": {
+        "official": "The App Service documentation lists the swap steps, says the target slot remains online while the source is prepared, and states that rollback after errors in the target slot is performed by swapping the same two slots immediately.",
+        "recommendation": "Pair slot swaps with health checks, application-level readiness endpoints, and release monitoring. Keep the previous production build in the staging slot until the new build has passed smoke tests, then decide whether to keep it for rollback or redeploy the next candidate."
+      },
+      "memoryTrick": "Think **prepare, warm, route, reverse if needed**. This is a simplified release checklist; it does not replace checking which settings are sticky or whether long-running jobs can survive worker recycling.",
+      "examTip": "Clue words are **swap into production**, **zero downtime**, and **recover after swap**. Pick the answer that prepares the source before routing and uses another swap for rollback. A harder version may ask what happens during the first phase of swap with preview; that phase pauses after target settings are applied to the source."
+    },
+    "sources": [
+      {
+        "title": "Set Up Staging Environments - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.8-04",
+    "objective": "D3.4.8",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a production slot and a staging slot for an App Service app named `woodgrove-api`. The staging build must be tested with the production database connection string only during the final swap preparation. However, an app setting named `FeatureFlags__EnableBeta` must remain different in each slot after every swap.\n\nWhich two actions should you take? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Mark `FeatureFlags__EnableBeta` as a Deployment slot setting on the slots where it must stay different"
+      },
+      {
+        "id": "B",
+        "text": "Mark every app setting as swappable by adding `WEBSITE_OVERRIDE_PRESERVE_DEFAULT_STICKY_SLOT_SETTINGS` only to staging"
+      },
+      {
+        "id": "C",
+        "text": "Leave the database connection string swappable unless it must remain tied to one slot"
+      },
+      {
+        "id": "D",
+        "text": "Put the production database connection string in a custom domain binding"
+      },
+      {
+        "id": "E",
+        "text": "Delete the staging slot before each release so settings cannot move"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The app setting name uses the Linux-friendly double underscore pattern for nested configuration keys. The question is about App Service slot settings, not Azure App Configuration feature flags.",
+    "sections": {
+      "correctAnswer": "**A. Mark `FeatureFlags__EnableBeta` as a Deployment slot setting on the slots where it must stay different** and **C. Leave the database connection string swappable unless it must remain tied to one slot**. App settings and connection strings swap by default, but selecting Deployment slot setting makes a setting slot-specific and therefore not swapped.",
+      "technical": "App Service has two important categories during a swap. Some settings move with the app across the swap. Other settings are slot-specific and stay attached to the named slot. Microsoft lists app settings and connection strings as settings that are swapped, with the important note that they can be configured to stick to a slot. The portal checkbox for this behavior is named **Deployment slot setting**. The Azure CLI equivalents use `--slot-settings` when setting app settings or connection strings.\n\nFor this scenario, the feature flag is meant to remain different in each slot. If it is allowed to swap, the beta flag value from staging could move into production or the production value could move back into staging, defeating the requirement. Marking that app setting as a deployment slot setting keeps each slot's value in place.\n\nThe database connection string has a different requirement. The staging build must be tested with production-like target settings during final swap preparation. Leaving the production database connection string swappable allows the documented swap process to apply target settings to the source slot in the first phase. If a particular connection string must never leave a slot, then it should be sticky; but this question says it is needed during preparation, so do not make it sticky merely because it is sensitive. Protect it with access control and secret handling instead.",
+      "wrongOptions": {
+        "B": "The override app setting is documented for marked default sticky settings and must be applied to every slot if used; it is not the normal way to keep one feature flag different. Misconception: the override is a per-setting checkbox replacement. Could be correct only in a deliberate legacy-behavior design where the documented default sticky group must become swappable as a group.",
+        "D": "A custom domain binding controls hostnames and TLS behavior; it does not store or swap a database connection string. Misconception: production-only values belong in production-facing bindings. Could be correct when assigning a user-friendly hostname to the production slot, not when controlling app configuration.",
+        "E": "Deleting staging removes the environment used for validation and does not explain how production settings are tested safely. Misconception: the safest way to avoid setting movement is to avoid slots. Could be correct only when a slot is no longer needed after a project is retired."
+      },
+      "plainEnglish": "Some values should travel with the application version, and some values should stay with the place where the version is running. A feature flag that should be on in staging and off in production is a place-specific value, so make it a deployment slot setting. A database connection string can be a production setting that Azure temporarily applies to the staging build during swap preparation so you can test the build as it will run after release. The trick is not that all secrets are automatically sticky; the trick is to decide which values belong to the slot and mark only those as slot settings.",
+      "analogy": "Think of moving a food truck between two parking spots. The truck's menu travels with the truck, but the parking spot's sign and local rules stay at the spot. If one parking spot is for beta tasters, that sign should not ride away with the truck.\n\n| Analogy | Azure reality |\n|---|---|\n| Food truck | App build/content |\n| Parking spot | Deployment slot |\n| Menu that moves | Swappable setting |\n| Local sign that stays | Deployment slot setting |\n| Health inspector check before opening | Testing source with target settings |\n\n**Where the analogy breaks down:** App Service applies specific categories of configuration and restarts workers; a food truck does not have environment variables or connection strings.",
+      "jargon": [
+        {
+          "term": "App setting",
+          "definition": "A key-value configuration entry injected into an App Service app as an environment variable at startup."
+        },
+        {
+          "term": "Connection string",
+          "definition": "A named configuration value commonly used by an app to connect to a database or other service."
+        },
+        {
+          "term": "Deployment slot setting",
+          "definition": "The portal checkbox that makes an app setting or connection string slot-specific, meaning it is not swapped."
+        },
+        {
+          "term": "Swappable setting",
+          "definition": "A configuration element that follows the app during a slot swap unless it is configured to stick to a slot."
+        },
+        {
+          "term": "Feature flag",
+          "definition": "A configuration switch used by application code to enable or disable a behavior without redeploying code."
+        },
+        {
+          "term": "Source slot",
+          "definition": "The slot being prepared for the swap, such as staging."
+        },
+        {
+          "term": "Target slot",
+          "definition": "The slot whose settings are applied to the source during swap preparation, commonly production."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's command-line tool for managing Azure resources, including App Service configuration."
+        }
+      ],
+      "watchOut": "- App settings and connection strings are swappable unless you make them slot-specific.\n- The Deployment slot setting checkbox means sticky, not safer encryption.\n- Do not make a setting sticky if the source build must be validated with the target slot's value before swap.\n- Protocol settings, custom domains, scale, managed identities, and virtual network integration are in the documented not-swapped group.",
+      "productionTip": {
+        "official": "The deployment slot documentation lists app settings and connection strings as swapped settings when they are not configured to stick, and it documents the Deployment slot setting checkbox and CLI `--slot-settings` option for making app settings and connection strings unswappable.",
+        "recommendation": "Classify settings before every release: build-specific, environment-specific, and secret. Use slot settings for environment-specific values, use Key Vault references or safer connectivity patterns for secrets where appropriate, and review the swap dialog before starting a production swap."
+      },
+      "memoryTrick": "**Sticky stays, swappable strays with the build.** This mnemonic is safe for app settings and connection strings, but it is not a full list of every configuration category in a slot swap.",
+      "examTip": "Clue words are **remain different in each slot** and **tested with production settings during swap preparation**. Select the sticky action for the feature flag and leave the database connection swappable for this scenario. A harder version may ask about managed identities or virtual network integration; those are in the not-swapped list rather than app-setting checkboxes."
+    },
+    "sources": [
+      {
+        "title": "Set Up Staging Environments - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+      },
+      {
+        "title": "Configure an App Service App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.8-05",
+    "objective": "D3.4.8",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have an App Service app with a production slot and a staging slot. The staging slot contains a new release that must be validated with the production slot's settings before any customer traffic is switched. If validation fails, you must cancel the operation so the source slot returns to its previous configuration. Site authentication is disabled in both slots.\n\nWhat should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A normal slot swap followed immediately by manual traffic routing to 0 percent"
+      },
+      {
+        "id": "B",
+        "text": "Swap with preview, then complete the swap only after validation or cancel it to reapply the original source configuration"
+      },
+      {
+        "id": "C",
+        "text": "Auto swap from staging to production because it pauses for manual validation by default"
+      },
+      {
+        "id": "D",
+        "text": "Deployment Center continuous deployment because it validates target settings before a slot swap"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Site authentication is disabled in both slots, satisfying the documented limitation for swap with preview. The validation is performed by the operations team before customer routing changes.",
+    "sections": {
+      "correctAnswer": "**B. Swap with preview, then complete the swap only after validation or cancel it to reapply the original source configuration**. Swap with preview pauses after the first phase, lets you validate the source slot with target settings, and supports canceling the pending swap.",
+      "technical": "Swap with preview is the App Service feature for a multi-phase swap. Microsoft states that before swapping into production as the target slot, you can validate that the app runs with the swapped settings. The source slot is warmed up before swap completion, which is why this feature is useful for mission-critical applications.\n\nThe documented behavior is precise. App Service performs the same swap operation but pauses after the first step. That first step applies the target slot settings to the source slot and restarts the source. You can then test the source slot while it has the settings it would use after the production swap. If tests pass, you complete the pending swap. If tests fail, you cancel the swap; App Service reapplies configuration elements to the source slot.\n\nThe Azure CLI actions mirror the phases: `--action preview` starts the preview phase, `--action swap` completes it, and `--action reset` cancels it. Azure PowerShell exposes comparable actions through `ApplySlotConfig`, `CompleteSlotSwap`, and `ResetSlotSwap`. The major documented exception is that you cannot use swap with preview when site authentication is enabled in one of the slots. The question removes that blocker by saying site authentication is disabled in both slots.",
+      "wrongOptions": {
+        "A": "A normal swap completes the routing switch rather than pausing for validation with target settings. Setting traffic routing to 0 percent afterward is not the same as canceling a pending preview. Misconception: traffic percentage can undo any swap phase. Could be correct when you only want to stop optional testing-in-production traffic to a slot.",
+        "C": "Auto swap is intended to automatically swap after a code push and warm-up; it does not provide the manual preview pause described in the question. Misconception: automatic release features always include a human approval step. Could be correct when continuous deployment with no pre-swap validation is desired and the app type supports auto swap.",
+        "D": "Deployment Center can configure deployments, but the documented feature for pausing after applying target settings is swap with preview. Misconception: every deployment pipeline feature validates App Service slot settings. Could be correct when the goal is connecting a repository or CI/CD source, not controlling slot swap phases."
+      },
+      "plainEnglish": "The team wants a dress rehearsal. Swap with preview starts the swap but stops before customers are sent to the new release. During the pause, staging is made to look like it will look in production because production settings are applied to it. The team tests that state. If it works, they complete the swap. If it does not, they cancel, and Azure puts the staging slot's configuration back instead of completing the customer-facing change.",
+      "analogy": "A stage crew wants to test a play with the real lighting plan before opening night. They set up the rehearsal stage with the main stage lights, stop, and let the director inspect it. Only after approval do they open the curtain to the audience.\n\n| Analogy | Azure reality |\n|---|---|\n| Rehearsal stage | Source slot |\n| Main stage lighting | Target slot settings |\n| Director inspection | Validation during preview pause |\n| Open the curtain | Complete the swap |\n| Restore rehearsal lights | Cancel the preview swap |\n\n**Where the analogy breaks down:** App Service runs on distributed workers and restarts source instances; a theater lighting plan does not involve HTTP warm-up or slot-specific configuration rules.",
+      "jargon": [
+        {
+          "term": "Swap with preview",
+          "definition": "A multi-phase slot swap that pauses after applying target settings to the source slot so the source can be validated before completion."
+        },
+        {
+          "term": "Pending swap",
+          "definition": "The state after preview starts and before the operator completes or cancels the swap."
+        },
+        {
+          "term": "Site authentication",
+          "definition": "The built-in App Service authentication and authorization feature; the slot documentation says swap with preview cannot be used when it is enabled in one of the slots."
+        },
+        {
+          "term": "Target settings",
+          "definition": "Configuration values from the target slot that App Service applies to the source during swap preparation."
+        },
+        {
+          "term": "Validation",
+          "definition": "Testing the prepared source slot before customer traffic is switched."
+        },
+        {
+          "term": "Azure CLI action preview",
+          "definition": "The `az webapp deployment slot swap --action preview` phase that starts a swap with preview."
+        },
+        {
+          "term": "Azure CLI action reset",
+          "definition": "The `--action reset` option that cancels a pending preview swap."
+        },
+        {
+          "term": "Azure PowerShell",
+          "definition": "Microsoft's PowerShell module family for managing Azure resources, including slot swap preview actions."
+        }
+      ],
+      "watchOut": "- Swap with preview pauses after the first step, not after customers have already been routed.\n- Site authentication enabled in either slot blocks swap with preview.\n- Canceling a pending preview reapplies configuration elements to the source slot.\n- Auto swap is the opposite style: it is designed for automatic release when pre-swap validation is not needed.",
+      "productionTip": {
+        "official": "Microsoft documents swap with preview as a multiple-phase swap that pauses after the first step, allows validation of the source slot with target settings, and supports complete or cancel actions. The same page notes the site-authentication limitation.",
+        "recommendation": "Use swap with preview for high-risk releases that need human or automated smoke tests against target settings. Record a short checklist for complete versus cancel, and ensure incident responders know not to start unrelated slot changes while a pending swap is paused."
+      },
+      "memoryTrick": "Preview means **pause, prove, then proceed or pull back**. The phrase is a simplification because the source has already been changed to target settings during the pause.",
+      "examTip": "Clue words are **validate with production settings before traffic is switched** and **cancel the operation**. Choose swap with preview, then remember the exception about site authentication. A more difficult question may give the CLI command; look for `--action preview`, then `swap` or `reset`."
+    },
+    "sources": [
+      {
+        "title": "Set Up Staging Environments - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.8-06",
+    "objective": "D3.4.8",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You manage a Windows code-based App Service web app in the Premium tier. A deployment slot named `staging` receives builds from an Azure DevOps pipeline. The team wants each successful push to `staging` to move into production automatically after the source slot is warmed. They do not require manual pre-swap validation. A second team asks whether the same design should be used for a Linux container app.\n\nWhich configuration should you recommend?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use auto swap for both apps because deployment slots behave identically for Windows, Linux, and containers"
+      },
+      {
+        "id": "B",
+        "text": "Use auto swap for the Windows code app, but do not choose it for web apps on Linux or Web App for Containers"
+      },
+      {
+        "id": "C",
+        "text": "Use swap with preview because auto swap always requires manual completion"
+      },
+      {
+        "id": "D",
+        "text": "Use traffic routing percentages because they automatically promote builds after warm-up"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The first app is a Windows code-based App Service app and the second app is a web app on Linux or Web App for Containers. The team accepts automatic production promotion after a code push.",
+    "sections": {
+      "correctAnswer": "**B. Use auto swap for the Windows code app, but do not choose it for web apps on Linux or Web App for Containers**. The App Service documentation says auto swap automatically swaps after a code push and warm-up, and it also says auto swap is not supported for web apps on Linux or Web App for Containers.",
+      "technical": "Auto swap is built for continuous deployment scenarios where pre-swap validation is not required. Microsoft describes it as a way to deploy continuously with zero cold starts and zero downtime for customers. When auto swap is enabled from a source slot into production, every code push to that slot causes App Service to automatically swap the app into the target after it is warmed up in the source slot.\n\nThe configuration belongs on the source slot. In the portal, you open the desired source slot, go to **Settings** > **Configuration** > **General settings**, turn **Auto swap enabled** on, and select the auto swap deployment slot. Azure CLI uses `az webapp deployment slot auto-swap --name <app-name> --resource-group <group-name> --slot <source-slot-name>`.\n\nThere is an important support boundary. The documentation notes that auto swap is not supported in web apps on Linux and in Web App for Containers. A Windows code-based app can use this feature if the app tier supports slots and the operational model accepts automatic release. The Linux container team should use another release approach, such as a normal slot swap, swap with preview where supported by the app configuration, or a pipeline-controlled promotion step rather than relying on unsupported auto swap.",
+      "wrongOptions": {
+        "A": "The documentation explicitly excludes web apps on Linux and Web App for Containers from auto swap support. Misconception: once an app supports deployment slots, every slot feature is available to every platform. Could be correct only for a comparison of supported behavior among Windows code apps in compatible tiers.",
+        "C": "Swap with preview is the manual validation feature; auto swap does not require manual completion after every push. Misconception: any safe slot swap must pause for a human. Could be correct when the requirement says the team must validate target settings before traffic is switched.",
+        "D": "Traffic routing percentages send a portion of production URL traffic to a slot for testing, but they do not automatically promote a pushed build after warm-up. Misconception: testing-in-production routing is the same as release automation. Could be correct when the goal is to expose a percentage of users to a slot without swapping it."
+      },
+      "plainEnglish": "Auto swap is the automatic conveyor belt. A build lands in the staging slot, Azure warms it, and then Azure swaps it into the target slot without waiting for someone to press the final button. That matches the Windows code app's requirement because the team does not want a manual preview step. The same answer should not be copied to the Linux container app because Microsoft says auto swap is not supported there. For that app, the team needs a different promotion method.",
+      "analogy": "Imagine a bakery line. For one product, a tray moves from the proofing area to the storefront automatically when it is warmed and ready. For another product line, the conveyor belt does not exist, so a worker must use a different process.\n\n| Analogy | Azure reality |\n|---|---|\n| Proofing area | Source slot |\n| Storefront | Production target slot |\n| Automatic conveyor | Auto swap |\n| Warm bread check | Source slot warm-up |\n| Product line without conveyor | Linux or container app unsupported for auto swap |\n\n**Where the analogy breaks down:** App Service releases are HTTP routing and configuration operations; a bakery conveyor does not enforce platform support limits or restart web workers.",
+      "jargon": [
+        {
+          "term": "Auto swap",
+          "definition": "An App Service feature that automatically swaps a source slot into a target slot after code is pushed and the source slot is warmed."
+        },
+        {
+          "term": "Windows code app",
+          "definition": "An App Service app running application code on Windows workers rather than running a custom container image."
+        },
+        {
+          "term": "Web app on Linux",
+          "definition": "An App Service app running on Linux workers; the slot documentation states auto swap is not supported for this category."
+        },
+        {
+          "term": "Web App for Containers",
+          "definition": "An App Service hosting option that runs a container image; the documentation excludes it from auto swap support."
+        },
+        {
+          "term": "Azure DevOps pipeline",
+          "definition": "An automated build and release workflow that can deploy code to an App Service slot."
+        },
+        {
+          "term": "Source slot",
+          "definition": "The slot receiving the build that auto swap will move toward the selected target slot."
+        },
+        {
+          "term": "Warm-up",
+          "definition": "The readiness step App Service performs before a swap sends traffic to the newly deployed build."
+        },
+        {
+          "term": "Production slot",
+          "definition": "The default customer-facing slot commonly selected as the target for auto swap."
+        }
+      ],
+      "watchOut": "- Auto swap is for cases where pre-swap validation is not needed.\n- The setting is configured from the source slot that receives deployments.\n- Do not use auto swap as an answer for web apps on Linux or Web App for Containers.\n- If a release needs human approval, use swap with preview or a pipeline gate instead of auto swap.",
+      "productionTip": {
+        "official": "The App Service slot documentation says auto swap automatically swaps after code changes are pushed to the source slot and the app is warmed, and it states that auto swap is not supported in web apps on Linux and Web App for Containers.",
+        "recommendation": "Use auto swap only when tests before deployment are strong enough to justify unattended promotion. For excluded platforms or higher-risk releases, let the pipeline deploy to staging, run smoke tests, and invoke a normal or preview swap explicitly."
+      },
+      "memoryTrick": "**Auto means no approval pause, but not all platforms.** The reminder is a simplification because tier, slot availability, and app configuration still have to be checked.",
+      "examTip": "Clue words are **each push**, **automatically**, **after warmed**, and **Linux container**. Pick auto swap for the supported Windows code app and reject it for Linux or container apps. A tougher item may hide the platform in the plan description; always read the operating system and container details before choosing auto swap."
+    },
+    "sources": [
+      {
+        "title": "Set Up Staging Environments - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.8-07",
+    "objective": "D3.4.8",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have an App Service app named `tailspinshop` with a production slot and a slot named `pilot`. The marketing team wants 15 percent of production URL visitors to be randomly routed to `pilot` for feedback. Internal testers also need a link that opts them into the pilot slot even if automatic routing is set to 0 percent later. You need to use App Service deployment slot traffic routing.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set the `pilot` slot Traffic % value to 15 or use `az webapp traffic-routing set --distribution pilot=15`"
+      },
+      {
+        "id": "B",
+        "text": "Create a CNAME record for 15 percent of users and set DNS TTL to one hour"
+      },
+      {
+        "id": "C",
+        "text": "Use `?x-ms-routing-name=pilot` to let a tester opt in to the pilot slot through the production URL"
+      },
+      {
+        "id": "D",
+        "text": "Set `x-ms-routing-name=self` to force all users to the pilot slot"
+      },
+      {
+        "id": "E",
+        "text": "Delete the `x-ms-routing-name` cookie because App Service never pins routed clients to a slot"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The app's tier supports Testing in Production, and the production URL is the entry point for the routed traffic. The slot name is exactly `pilot`.",
+    "sections": {
+      "correctAnswer": "**A. Set the `pilot` slot Traffic % value to 15 or use `az webapp traffic-routing set --distribution pilot=15`** and **C. Use `?x-ms-routing-name=pilot` to let a tester opt in to the pilot slot through the production URL**. App Service supports percentage routing to a slot and manual routing with the `x-ms-routing-name` query parameter.",
+      "technical": "App Service deployment slots include a Testing in Production traffic-routing feature. By default, all production URL requests go to the production slot. You can configure a Traffic % value between 0 and 100 for another slot. Microsoft gives an Azure CLI example using `az webapp traffic-routing set --distribution <slot-name>=15`, which sends 15 percent of production traffic to that slot. After you save a percentage, the specified percentage of clients is randomly routed to the nonproduction slot.\n\nThe feature also pins a routed client. After a client is automatically routed to a slot, it is pinned to that slot for one hour or until cookies are deleted. The browser receives an `x-ms-routing-name` cookie. A request routed to a staging-style slot has a cookie value matching that slot name; a production request uses `x-ms-routing-name=self`.\n\nManual routing uses the same name as a query parameter on the production URL. `?x-ms-routing-name=pilot` opts a user into the `pilot` slot. `?x-ms-routing-name=self` opts the user back into production. Microsoft also documents an advanced case: if a slot has an explicitly set 0 percent routing rule, users can still access it manually with the query parameter even though random automatic routing sends no users there.",
+      "wrongOptions": {
+        "B": "The App Service feature is not implemented by creating DNS records for percentages of users. DNS is not the documented traffic-routing control for deployment slots. Misconception: percentage rollout always means weighted DNS. Could be correct in an architecture using Azure Traffic Manager or another DNS-level load distribution service, but not for App Service slot traffic routing.",
+        "D": "The value `self` means the production slot, not the pilot slot. To opt into the pilot slot, the query parameter must use the slot name. Misconception: self means the user's current alternative route. Could be correct when giving beta users a link to opt out and return to production.",
+        "E": "The documentation says routed clients are pinned for one hour or until cookies are deleted, and the cookie name is `x-ms-routing-name`. Misconception: percentage routing is recalculated independently on every HTTP request. Could be correct only as an instruction to clear the user's browser pin so a new routing decision can occur."
+      },
+      "plainEnglish": "You do not need to change DNS to let a small group try a slot. Azure App Service can take requests that arrive at the normal production address and randomly send a chosen percentage to another slot. If you set `pilot` to 15 percent, about that portion of clients is sent to the pilot slot. Azure also uses a cookie so a person does not bounce between production and pilot on every click. For testers, add `?x-ms-routing-name=pilot` to the production URL, and Azure routes that browser to the pilot slot directly.",
+      "analogy": "A store wants some shoppers to try a new checkout lane. The greeter randomly sends 15 percent of shoppers to the pilot lane and gives each selected shopper a wristband so they keep using that lane for the visit. Staff can also hand a special invitation to a tester that says to use the pilot lane directly.\n\n| Analogy | Azure reality |\n|---|---|\n| Store entrance | Production URL |\n| Pilot checkout lane | Nonproduction slot |\n| Greeter's 15 percent rule | Traffic % routing rule |\n| Wristband | `x-ms-routing-name` cookie |\n| Tester invitation | `x-ms-routing-name` query parameter |\n\n**Where the analogy breaks down:** App Service works through HTTP requests, cookies, and routing rules; human shoppers do not carry signed web cookies or make repeated browser requests.",
+      "jargon": [
+        {
+          "term": "Testing in Production",
+          "definition": "An App Service slot feature that routes a configured percentage of production URL traffic to a nonproduction slot."
+        },
+        {
+          "term": "Traffic %",
+          "definition": "The portal column where you set the percentage of production traffic that should be routed to a slot."
+        },
+        {
+          "term": "`az webapp traffic-routing set`",
+          "definition": "The Azure CLI command used to configure App Service slot traffic distribution from the command line."
+        },
+        {
+          "term": "`x-ms-routing-name` cookie",
+          "definition": "The cookie App Service uses to show and maintain which slot a browser session is pinned to."
+        },
+        {
+          "term": "`x-ms-routing-name` query parameter",
+          "definition": "A URL parameter that manually routes a user to a named slot or back to production with `self`."
+        },
+        {
+          "term": "Production URL",
+          "definition": "The normal customer-facing hostname for the app, used as the entry point for automatic and manual routing."
+        },
+        {
+          "term": "Pinned session",
+          "definition": "A browser session kept on the same slot for the documented period or until cookies are removed."
+        },
+        {
+          "term": "CNAME record",
+          "definition": "A DNS alias record; useful for hostname mapping but not the App Service slot percentage-routing mechanism."
+        }
+      ],
+      "watchOut": "- The percentage is configured on the production app's deployment slots view, not by changing DNS.\n- A routed browser is pinned for one hour or until cookies are removed.\n- `x-ms-routing-name=self` means production. Use the slot name, such as `pilot`, to opt in to that slot.\n- Explicit 0 percent can still allow manual query-parameter access to a slot for advanced testing.",
+      "productionTip": {
+        "official": "Microsoft documents routing a percentage from 0 to 100 to a slot, gives the CLI distribution example, and explains the `x-ms-routing-name` cookie and query parameter for automatic pinning and manual routing.",
+        "recommendation": "Use percentage routing for low-risk feedback, not as a substitute for deployment validation. Combine it with monitoring that distinguishes slot traffic, provide testers with explicit opt-in and opt-out links, and clear the routing cookie when verifying changes from a fresh user perspective."
+      },
+      "memoryTrick": "**Percent picks; cookie sticks; query kicks you to a named slot.** This rhyme is a simplification because access restrictions, authentication, and application state can still affect the user experience.",
+      "examTip": "Clue words are **15 percent**, **production URL**, and **opt in**. Choose the Traffic % or CLI distribution answer, and choose the query parameter with the slot name. A harder question may ask how to return to production; the answer uses `x-ms-routing-name=self`."
+    },
+    "sources": [
+      {
+        "title": "Set Up Staging Environments - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+      },
+      {
+        "title": "Azure subscription and service limits, quotas, and constraints - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits#azure-app-service-limits"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]
+

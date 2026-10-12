@@ -1,0 +1,824 @@
+[
+  {
+    "id": "D2.2.5-01",
+    "objective": "D2.2.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains a storage account named `stfinanceprod`. The account has a blob container named `quarterly` and an Azure file share named `auditshare`.\n\nA contractor must upload files into `quarterly` by using AzCopy from an interactive workstation. The contractor must not receive a storage account key. A separate script must upload one file into a directory inside `auditshare` by using AzCopy. The security team asks you to use Microsoft Entra ID wherever AzCopy supports it and to avoid adding SAS tokens to blob commands.\n\nWhich two actions should you perform? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign the contractor the Azure Resource Manager Reader role only, and then run `azcopy login` before uploading blobs."
+      },
+      {
+        "id": "B",
+        "text": "Assign the contractor a blob data role such as Storage Blob Data Contributor at the container scope, and then run `azcopy login`."
+      },
+      {
+        "id": "C",
+        "text": "Give the contractor one account key because `azcopy login` only authorizes management-plane operations."
+      },
+      {
+        "id": "D",
+        "text": "Use an account SAS signed with the storage account key for the blob upload because `azcopy login` cannot authorize Blob Storage data transfers."
+      },
+      {
+        "id": "E",
+        "text": "For the Azure Files command that targets a file or directory, use Microsoft Entra authorization with an Azure Files data role such as Storage File Data Privileged Contributor."
+      }
+    ],
+    "correct": [
+      "B",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The contractor uploads blob data through the Blob service endpoint. The Azure Files operation targets a file or directory rather than creating the file share itself. The identities are in the same tenant as the storage account.",
+    "sections": {
+      "correctAnswer": "**B. Assign the contractor a blob data role such as Storage Blob Data Contributor at the container scope, and then run `azcopy login`** and **E. For the Azure Files command that targets a file or directory, use Microsoft Entra authorization with an Azure Files data role such as Storage File Data Privileged Contributor**. AzCopy can use an OAuth token obtained by `azcopy login`, but the identity still needs a data-plane role for the specific storage service.",
+      "technical": "AzCopy separates authentication from authorization. The `azcopy login` command signs the user in and stores an OAuth token, but Azure Storage still checks whether that signed-in identity has permission to perform the requested data operation. For Blob Storage uploads, Microsoft documents data roles such as **Storage Blob Data Contributor** or **Storage Blob Data Owner** for write operations. For downloads, a reader role can be enough, but this scenario says the contractor uploads files.\n\nThe Azure Files part has an extra boundary. Microsoft examples for Azure Files often show SAS tokens, but the AzCopy guidance states that commands targeting files and directories can now use Microsoft Entra ID. The same note says a SAS token is still required for commands that target only the file share or the account, such as creating a share with `azcopy make` against the share URL. For upload operations against file or directory paths, the user identity guidance lists **Storage File Data Privileged Contributor** for Azure Files uploads.\n\nThe order is:\n\n1. Assign a data-plane role at the narrowest useful scope.\n2. Let role assignment propagation complete.\n3. Run `azcopy login` or configure an equivalent AzCopy Microsoft Entra sign-in method.\n4. Use service URLs without embedding account keys in the blob command.\n\nA management role such as Reader helps tools discover accounts, but it does not by itself authorize blob writes.",
+      "wrongOptions": {
+        "A": "Reader is a management-plane role that can list or view Azure resources, but it does not grant permission to write blob data. Misconception: signing in plus any Azure role is enough for AzCopy data movement. Could be correct when a user only needs to browse management resources in the portal and has separate data permissions.",
+        "C": "An account key would authorize broad Shared Key access, but the requirement says not to give the contractor a key and to use Microsoft Entra ID wherever supported. Misconception: AzCopy is only a key-based transfer tool. Could be correct in a tightly controlled break-glass transfer where Shared Key is intentionally allowed and no Entra-based method is available.",
+        "D": "An account SAS can authorize storage access, but it is signed with the account key and is not required for an AzCopy blob upload when Microsoft Entra authorization and a proper blob data role are available. Misconception: `azcopy login` is only for management tasks and cannot authorize Blob Storage data transfers. Could be correct when an external client cannot use Microsoft Entra sign-in and needs a carefully scoped delegated URL."
+      },
+      "plainEnglish": "Think of AzCopy as a moving cart. `azcopy login` proves who is pushing the cart, but it does not automatically give that person permission to enter every storeroom. For blob uploads, the person needs a blob data role that allows writing. For Azure Files, recent AzCopy guidance allows Microsoft Entra authorization when the command is working with files and directories, but not for every share-level task. Giving an account key would be like handing over a master key to the whole storage building, which is more access than this contractor needs.",
+      "analogy": "A courier signs in at a reception desk and receives an identity badge. The badge proves the courier's identity, but each room still checks whether the badge is authorized for that room and action.\n\n| Analogy | Azure reality |\n|---|---|\n| Reception sign-in | `azcopy login` |\n| Room write permission | Storage Blob Data Contributor |\n| File cabinet permission | Storage File Data Privileged Contributor |\n| Master building key | Storage account key |\n| One-time visitor slip | SAS token |\n\n**Where the analogy breaks down:** Azure evaluates signed HTTP requests, OAuth tokens, SAS query strings, role scopes, and service-specific data actions. A physical badge system does not model SAS support differences between Blob Storage and Azure Files.",
+      "jargon": [
+        {
+          "term": "AzCopy",
+          "definition": "A Microsoft command-line utility for copying, synchronizing, and managing transfers to, from, or between Azure Storage locations."
+        },
+        {
+          "term": "`azcopy login`",
+          "definition": "An AzCopy command that obtains an OAuth token for a Microsoft Entra identity and stores it for later AzCopy operations."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity platform, formerly named Azure Active Directory, used to authenticate users, applications, and managed identities."
+        },
+        {
+          "term": "Data plane",
+          "definition": "The service endpoint operations that read, write, list, or delete stored data such as blobs and files."
+        },
+        {
+          "term": "Management plane",
+          "definition": "Azure Resource Manager operations that create, list, or configure Azure resources such as storage accounts."
+        },
+        {
+          "term": "Storage Blob Data Contributor",
+          "definition": "An Azure built-in role that grants read, write, and delete access to blob containers and blobs at the assigned scope."
+        },
+        {
+          "term": "Storage File Data Privileged Contributor",
+          "definition": "An Azure built-in role used for privileged read, write, delete, and permission-related operations on Azure file share data."
+        },
+        {
+          "term": "SAS token",
+          "definition": "A shared access signature token appended to a storage URL to delegate limited access for a specified period and permission set."
+        },
+        {
+          "term": "Storage account key",
+          "definition": "A Shared Key credential that can authorize broad access to data in a storage account and should be tightly protected."
+        },
+        {
+          "term": "Azure Files",
+          "definition": "An Azure Storage service that provides cloud file shares accessible through supported protocols and REST APIs."
+        }
+      ],
+      "watchOut": "- Account Owner or Contributor does not automatically mean the same identity can read or write storage data with Microsoft Entra authorization.\n- For Azure Files, check whether the command targets files/directories or the share/account because the AzCopy authorization guidance differs.\n- Role assignments can take several minutes to propagate, so immediate 403 responses after assignment are not always proof of a bad command.\n- A SAS URL and an account key are secrets; avoid placing them in scripts when Entra-based authorization satisfies the scenario.",
+      "productionTip": {
+        "official": "Microsoft documents that AzCopy can be authorized with Microsoft Entra ID or with a SAS token, and that user identities need storage data roles for the intended operations. The Azure Files AzCopy article notes that Microsoft Entra authorization can be used for commands targeting files and directories, while SAS is still required for commands targeting only a share or the account.",
+        "recommendation": "Use container- or share-scoped data roles instead of account-scoped access whenever the job touches a narrow data set. For unattended jobs, prefer a managed identity or service principal with the same least-privilege data role rather than embedding long-lived SAS strings in scripts."
+      },
+      "memoryTrick": "Login proves **who**, data roles decide **what**. This shortcut fails if the command uses a SAS token, because the SAS carries its own delegated permissions instead of relying on the signed-in identity.",
+      "examTip": "Clue words are **must not receive a storage account key**, **AzCopy**, **upload**, and **Microsoft Entra ID**. Eliminate management-only roles for data writes, and remember that Azure Files has special wording: file and directory AzCopy commands can use Entra authorization, but share-level commands may still need SAS."
+    },
+    "sources": [
+      {
+        "title": "Authorize access for AzCopy with a user identity",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-authorize-user-identity"
+      },
+      {
+        "title": "Transfer data to or from Azure Files by using AzCopy v10",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-files"
+      },
+      {
+        "title": "Copy or move data to Azure Storage by using AzCopy v10",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+      },
+      {
+        "title": "Authorize operations for data access - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/authorize-data-access"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.5-02",
+    "objective": "D2.2.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a local folder named `C:\\Exports` and a blob container named `daily`. A nightly job must upload files that changed locally. The destination must not delete blobs when old files are removed from `C:\\Exports`. The storage account contains millions of blobs, and you want to reduce the memory and transaction overhead of scanning both sides before transfer.\n\nWhich AzCopy approach should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Run `azcopy sync \"C:\\Exports\" \"https://stdata.blob.core.windows.net/daily\" --recursive --delete-destination=true`."
+      },
+      {
+        "id": "B",
+        "text": "Run `azcopy sync \"C:\\Exports\" \"https://stdata.blob.core.windows.net/daily\" --recursive --delete-destination=prompt`."
+      },
+      {
+        "id": "C",
+        "text": "Run `azcopy copy \"C:\\Exports\" \"https://stdata.blob.core.windows.net/daily\" --recursive --overwrite=ifSourceNewer`."
+      },
+      {
+        "id": "D",
+        "text": "Run Storage Explorer Folder Statistics before every transfer and then upload the whole folder manually."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The job uses Blob Storage and the destination container already exists. The goal is an online transfer over the network, not offline shipment or continuous managed migration.",
+    "sections": {
+      "correctAnswer": "**C. Run `azcopy copy \"C:\\Exports\" \"https://stdata.blob.core.windows.net/daily\" --recursive --overwrite=ifSourceNewer`**. The copy command can transfer new or newer files without deleting destination blobs, and Microsoft recommends considering copy with `--overwrite=ifSourceNewer` when you do not plan to delete destination files.",
+      "technical": "`azcopy copy` and `azcopy sync` look similar, but their intent is different. `copy` moves data from a source to a destination and can be told how to handle existing files. `sync` is a one-way synchronization operation that compares names and last modified timestamps by default, and it may delete destination files if you set `--delete-destination` to `true` or `prompt`.\n\nMicrosoft documents an important performance and billing clue for this scenario. If you plan to set `--delete-destination` to `prompt` or `false`, consider using `copy` with `--overwrite=ifSourceNewer` instead. The reason is that sync must index source and destination before moving files, which consumes more memory and can incur more storage transactions. With millions of blobs, avoiding that up-front comparison is valuable when the business rule explicitly says not to delete destination-only blobs.\n\nThe command also needs `--recursive` because the source is a folder tree. Without recursive traversal, nested content will not be included in the same way. The selected command uploads the folder contents according to AzCopy's copy behavior, compares source freshness for overwrites, and leaves extra blobs at the destination alone.\n\nA harder design might still choose sync when the destination must be made an exact mirror. That is not the requirement here.",
+      "wrongOptions": {
+        "A": "This command can delete blobs that are no longer present in the local folder because `--delete-destination=true` deletes without prompting. Misconception: sync only uploads changes and never removes destination files. Could be correct when the container must exactly match the local source and soft delete plus testing are in place.",
+        "B": "Prompt mode still uses sync and still prepares for destination deletion decisions, which contradicts the desire to reduce up-front scanning overhead for a no-delete job. Misconception: prompt mode turns sync into a cheap copy operation. Could be correct when a human must review deletions for a deliberate mirror operation.",
+        "D": "Folder Statistics in Storage Explorer can help inspect copied data, but it is not an automated transfer method and does not replace AzCopy's copy or sync logic. Misconception: a visual tool step is enough for a repeatable nightly movement. Could be correct for a one-time manual check after a small transfer."
+      },
+      "plainEnglish": "You do not want the cloud container to become a perfect mirror of the local folder, because perfect mirroring can remove cloud files that disappeared locally. You only want to push new and changed files. In that case, use AzCopy copy with a rule that overwrites only when the source is newer. Sync is better when you want two places to line up, including deletion decisions, but that extra comparison work is unnecessary and risky for this nightly job.",
+      "analogy": "Imagine restocking a warehouse from a delivery truck. The requirement says to add new boxes and replace older boxes, but never throw away boxes that are already on warehouse shelves.\n\n| Analogy | Azure reality |\n|---|---|\n| Delivery truck | `C:\\Exports` local folder |\n| Warehouse shelves | Blob container `daily` |\n| Replace stale boxes | `--overwrite=ifSourceNewer` |\n| Inspect every shelf first | `azcopy sync` indexing source and destination |\n| Throw away shelf-only boxes | `--delete-destination=true` |\n\n**Where the analogy breaks down:** AzCopy uses timestamps, service requests, and transfer plan state. A warehouse worker does not create REST API transactions or compare blob properties at cloud scale.",
+      "jargon": [
+        {
+          "term": "`azcopy copy`",
+          "definition": "The AzCopy command used to copy data from a source location to a destination location."
+        },
+        {
+          "term": "`azcopy sync`",
+          "definition": "The AzCopy command used for one-way synchronization between supported endpoints, comparing source and destination before transfer."
+        },
+        {
+          "term": "`--recursive`",
+          "definition": "A flag that tells AzCopy to include files in subdirectories or child virtual directories."
+        },
+        {
+          "term": "`--overwrite=ifSourceNewer`",
+          "definition": "An AzCopy copy setting that overwrites a destination item only when the source item is newer."
+        },
+        {
+          "term": "`--delete-destination`",
+          "definition": "An AzCopy sync flag that controls whether destination items missing from the source are deleted."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical grouping of blobs in Azure Blob Storage."
+        },
+        {
+          "term": "Last modified timestamp",
+          "definition": "A recorded time value that can be compared to determine whether a source or destination object is newer."
+        },
+        {
+          "term": "Indexing",
+          "definition": "The preparatory scan of source and destination objects that sync performs before it decides what to transfer."
+        },
+        {
+          "term": "Storage transaction",
+          "definition": "A request operation billed and processed by Azure Storage, such as listing or writing objects."
+        }
+      ],
+      "watchOut": "- `sync` is one-way, not bidirectional replication.\n- `--delete-destination=true` deletes without prompting, so enable blob soft delete before using it in production.\n- If you do not use `--compare-hash`, sync depends on accurate last modified times; clock skew can cause confusing results.\n- Use `copy` when destination-only items must survive and the scenario is really incremental upload rather than mirroring.",
+      "productionTip": {
+        "official": "Microsoft documents that sync compares file names and last modified timestamps by default and that `--delete-destination` can delete destination files. The same guidance says to consider `copy` with `--overwrite=ifSourceNewer` when you plan to set delete-destination to prompt or false because copy avoids the up-front indexing cost of sync.",
+        "recommendation": "For nightly jobs, log the exact AzCopy command, keep soft delete enabled on important containers, and test overwrite behavior against a small prefix before pointing the script at the production container. Treat deletion options as change-control items, not routine tuning switches."
+      },
+      "memoryTrick": "Use **copy to add**, use **sync to mirror**. This is a simplification because copy can overwrite and sync can be configured not to delete, but it matches the exam distinction in this scenario.",
+      "examTip": "Clue words are **must not delete**, **millions of blobs**, and **reduce overhead**. Those clues point away from sync deletion behavior and toward copy with `--overwrite=ifSourceNewer`. A harder version may ask for an exact mirror; then `sync` with a carefully chosen `--delete-destination` value becomes the likely answer."
+    },
+    "sources": [
+      {
+        "title": "Synchronize with Azure Blob storage by using AzCopy v10",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-blobs-synchronize"
+      },
+      {
+        "title": "Optimize the performance of AzCopy v10 with Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-optimize"
+      },
+      {
+        "title": "Upload files to Azure Blob storage by using AzCopy v10",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-blobs-upload"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.5-03",
+    "objective": "D2.2.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have two storage accounts named `stsource01` and `stdest01`. Each account is in the same Microsoft Entra tenant and each has a private endpoint that is reachable from a jumpbox VM. You need to copy a blob container named `media` from `stsource01` to `stdest01` by using AzCopy. The copy must avoid downloading the data through the jumpbox disk.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Download the container to the jumpbox with Storage Explorer, and then upload it to `stdest01`."
+      },
+      {
+        "id": "B",
+        "text": "Run `azcopy sync` without access to `stsource01` because server-to-server copy only requires destination authorization."
+      },
+      {
+        "id": "C",
+        "text": "Use Azure Import/Export and ship empty drives to Microsoft for an online account-to-account transfer."
+      },
+      {
+        "id": "D",
+        "text": "Run `azcopy copy` between the two blob container URLs with `--recursive`, after authorizing source and destination by Microsoft Entra ID or SAS as required."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Both accounts use Blob Storage endpoints. Network rules permit the jumpbox to reach both storage accounts so AzCopy can orchestrate the transfer.",
+    "sections": {
+      "correctAnswer": "**D. Run `azcopy copy` between the two blob container URLs with `--recursive`, after authorizing source and destination by Microsoft Entra ID or SAS as required**. AzCopy uses server-to-server APIs for blob account-to-account copy, so the data is copied directly between storage services while the client sets up and monitors the job.",
+      "technical": "AzCopy supports copying blobs, directories, containers, and accounts between storage accounts. The Microsoft documentation states that AzCopy uses server-to-server APIs for these copies, which means data is copied directly between storage servers. The client running AzCopy does not become a staging disk for the payload, although it still needs network access to both accounts to submit and monitor requests.\n\nA container-level pattern is:\n\n```azcopy\nazcopy copy \"https://stsource01.blob.core.windows.net/media\" \"https://stdest01.blob.core.windows.net/media\" --recursive\n```\n\nAuthorization is still required for both sides. When Microsoft Entra authorization is used for both source and destination, Microsoft documents that the accounts must belong to the same Microsoft Entra tenant and the identity needs the proper role assignments for both accounts. Alternatively, SAS tokens can be appended to either or both URLs. A source SAS needs read/list ability, and a destination SAS needs write/create permissions appropriate to the operation.\n\nThe private endpoint detail changes reachability, not the data path. The jumpbox must be able to contact both endpoints because AzCopy must enumerate and coordinate transfers. It does not mean the blobs are read into `C:\\` and then written out again.",
+      "wrongOptions": {
+        "A": "Downloading then uploading would move data through the jumpbox and would be slower and less resilient for a container-scale copy. Misconception: graphical tools always stage data locally. Could be correct for a small manual recovery when no server-to-server route or authorization model can be arranged.",
+        "B": "Server-to-server copy still requires authorization to read the source and write the destination, and sync is not the only command for copying a whole container. Misconception: because storage servers move the bytes, the source account does not check permissions. Could be correct only if a different trusted service already had source access and exposed a permitted source URL.",
+        "C": "Azure Import/Export is for offline transfer by shipping disk drives, not for a same-cloud online copy between two storage accounts. Misconception: any large transfer should use shipped media. Could be correct when network transfer is too slow or impossible and the data is entering or leaving Azure Storage through physical drives."
+      },
+      "plainEnglish": "AzCopy can tell Azure Storage to copy from one storage account to another without first saving every file on the machine where AzCopy runs. The machine is the traffic controller, not the truck carrying the cargo. It still needs permission to read the source and write the destination, and it must be able to reach the storage endpoints. Once the job starts, Azure Storage services move the data between themselves.",
+      "analogy": "A dispatcher phones two warehouses and tells the first warehouse to send crates directly to the second warehouse. The dispatcher does not load the crates into a personal car.\n\n| Analogy | Azure reality |\n|---|---|\n| Dispatcher | AzCopy client on the jumpbox |\n| First warehouse | Source storage account |\n| Second warehouse | Destination storage account |\n| Direct freight lane | Server-to-server copy APIs |\n| Entry permission at both warehouses | Source and destination authorization |\n\n**Where the analogy breaks down:** Azure may schedule many REST operations and requires endpoint connectivity, role scopes, SAS signatures, and service limits. A dispatcher's phone call does not represent blob enumeration or transfer plan state.",
+      "jargon": [
+        {
+          "term": "Server-to-server copy",
+          "definition": "A transfer in which Azure Storage services copy data directly between storage endpoints rather than routing payload bytes through the client disk."
+        },
+        {
+          "term": "AzCopy",
+          "definition": "A Microsoft command-line utility for storage data transfer operations."
+        },
+        {
+          "term": "`azcopy copy`",
+          "definition": "The AzCopy command used for source-to-destination copy jobs, including storage account to storage account blob copies."
+        },
+        {
+          "term": "`--recursive`",
+          "definition": "A flag that includes child blobs or virtual directories when copying a directory or container."
+        },
+        {
+          "term": "Microsoft Entra tenant",
+          "definition": "An identity directory boundary that contains users, groups, applications, and service principals."
+        },
+        {
+          "term": "SAS token",
+          "definition": "A URL token that grants limited access to a storage resource for specified actions and times."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A network interface that exposes an Azure service privately within a virtual network by using Azure Private Link."
+        },
+        {
+          "term": "Jumpbox",
+          "definition": "A controlled virtual machine used by administrators to reach private resources."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A namespace container in Azure Blob Storage that holds blobs and virtual directories."
+        }
+      ],
+      "watchOut": "- The AzCopy client still needs network access to both accounts, even though payload movement is server-to-server.\n- Microsoft Entra authorization for both accounts requires both storage accounts to be in the same tenant.\n- SAS on only one side is insufficient if the other side does not have another valid authorization method.\n- Premium block blob accounts do not support access tiers, so preserve-tier behavior can matter in some copy designs.",
+      "productionTip": {
+        "official": "Microsoft documents that AzCopy copies blobs between storage accounts by using server-to-server APIs and that, with Microsoft Entra authorization for both source and destination, both accounts must belong to the same tenant. The same guidance allows SAS tokens to be appended to source or destination URLs.",
+        "recommendation": "Run the account-to-account job from a VM that can reach both storage endpoints and has stable connectivity for monitoring. Use data-plane roles or short-lived SAS tokens scoped to the involved containers, and capture the AzCopy job ID so failed transfers can be inspected or resumed."
+      },
+      "memoryTrick": "For account-to-account copy, AzCopy is the **coach**, not the **carrier**. This simplification fails when the source or destination is local disk, because local transfers do move bytes through the client.",
+      "examTip": "Clue words are **between accounts**, **avoid downloading through the jumpbox**, and **same tenant**. Choose the server-to-server AzCopy copy option, then verify both source and destination authorization. A harder item may add different tenants; then a SAS on at least one side often becomes necessary."
+    },
+    "sources": [
+      {
+        "title": "Copy blobs between Azure storage accounts with AzCopy v10",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-blobs-copy"
+      },
+      {
+        "title": "Copy or move data to Azure Storage by using AzCopy v10",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+      },
+      {
+        "title": "Synchronize with Azure Blob storage by using AzCopy v10",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-blobs-synchronize"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.5-04",
+    "objective": "D2.2.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You run this AzCopy command from a Windows workstation:\n\n```azcopy\nazcopy copy \"C:\\Projects\" \"https://stapps.blob.core.windows.net/builds\" --include-pattern \"*.zip;*.json\"\n```\n\nThe command uploads matching files from `C:\\Projects`, but it does not include matching files in subfolders such as `C:\\Projects\\release\\v1`. You also want to be able to inspect failures and resume a canceled job without rescanning the original source list.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Replace `--include-pattern` with `--exclude-pattern` because include patterns automatically recurse."
+      },
+      {
+        "id": "B",
+        "text": "Add `--recursive`, and use `azcopy jobs show <job-id> --with-status=Failed` plus `azcopy jobs resume <job-id>` if the transfer fails or is canceled."
+      },
+      {
+        "id": "C",
+        "text": "Use `--include-path \"*.zip;*.json\"` because include paths match file extensions in every folder by default."
+      },
+      {
+        "id": "D",
+        "text": "Move the files to an Azure file share first because Blob Storage does not support recursive AzCopy uploads."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The command is copying from a local Windows directory to Blob Storage. You have authorization to upload to the destination container.",
+    "sections": {
+      "correctAnswer": "**B. Add `--recursive`, and use `azcopy jobs show <job-id> --with-status=Failed` plus `azcopy jobs resume <job-id>` if the transfer fails or is canceled**. Include and exclude patterns filter file names, but recursive traversal is what makes AzCopy walk the directory tree; AzCopy jobs and plan files support viewing failed transfers and resuming work.",
+      "technical": "`--include-pattern` and `--exclude-pattern` are filters, not traversal switches. Microsoft documents that these pattern options apply only to file names and not to other parts of the path. If you want to copy all matching files in a directory tree, use `--recursive` to traverse the tree and then use a pattern such as `*.zip;*.json` to filter names.\n\nThe corrected transfer shape is:\n\n```azcopy\nazcopy copy \"C:\\Projects\" \"https://stapps.blob.core.windows.net/builds\" --recursive --include-pattern \"*.zip;*.json\"\n```\n\nAzCopy also creates a job for each transfer operation. Logs contain entries such as `UPLOADFAILED`, `COPYFAILED`, and `DOWNLOADFAILED`, and `azcopy jobs show <job-id> --with-status=Failed` filters transfers by status. Microsoft notes that the `--with-status` value is case-sensitive. For a failed or canceled job, `azcopy jobs resume <job-id> --source-sas=\"<sas-token>\" --destination-sas=\"<sas-token>\"` can resume when SAS tokens are required, and the plan file tells AzCopy which files were originally selected. That is why resume does not simply start a brand-new scan from scratch.\n\nThe pattern logic and job recovery logic are separate: recursive selection decides what enters the job; plan files and job commands help recover that job later.",
+      "wrongOptions": {
+        "A": "Exclude patterns remove matching file names from consideration; they do not cause traversal into child folders. Misconception: any pattern flag controls both filtering and recursion. Could be correct when you already recurse and want to omit names such as `*.tmp` or `*.bak`.",
+        "C": "`--include-path` is for specific relative paths separated by semicolons, while `--include-pattern` is the documented filter for wildcard file-name patterns. Misconception: path filters and wildcard extension filters behave identically. Could be correct when selecting exact directories or named files such as `photos;documents\\readme.txt`.",
+        "D": "AzCopy supports recursive uploads to Blob Storage from local folders, so moving data to Azure Files first adds an unnecessary service hop. Misconception: virtual directories in Blob Storage prevent tree-style uploads. Could be correct if the destination requirement is specifically an Azure file share rather than a blob container."
+      },
+      "plainEnglish": "The current command says, \"from the files I look at, choose names ending in .zip or .json.\" It does not say, \"walk through every subfolder.\" Add the recursive switch so AzCopy explores the folder tree. If something fails later, AzCopy keeps logs and a plan for the job. You can show failed items and resume the job, which is safer than guessing which files already succeeded.",
+      "analogy": "A librarian is told to collect books whose titles end with certain labels. Unless you also say to visit every aisle and every back room, the librarian only checks the current shelf.\n\n| Analogy | Azure reality |\n|---|---|\n| Visit every aisle | `--recursive` |\n| Pick titles by label | `--include-pattern` |\n| List problem books | `azcopy jobs show --with-status=Failed` |\n| Continue from the work order | `azcopy jobs resume` and the plan file |\n| Storage room map | AzCopy job plan |\n\n**Where the analogy breaks down:** AzCopy records transfer chunks, status, URLs, and plan metadata. A librarian's paper checklist does not deal with expiring SAS tokens or service-side retries.",
+      "jargon": [
+        {
+          "term": "`--include-pattern`",
+          "definition": "An AzCopy filter that includes file or blob names matching semicolon-separated wildcard patterns."
+        },
+        {
+          "term": "`--exclude-pattern`",
+          "definition": "An AzCopy filter that excludes file or blob names matching semicolon-separated wildcard patterns."
+        },
+        {
+          "term": "`--recursive`",
+          "definition": "A flag that makes AzCopy include child folders, directories, or virtual directories during eligible copy operations."
+        },
+        {
+          "term": "`--include-path`",
+          "definition": "An AzCopy option for specifying semicolon-separated relative paths to include."
+        },
+        {
+          "term": "Job ID",
+          "definition": "The identifier AzCopy assigns to a transfer operation so it can be inspected, managed, or resumed."
+        },
+        {
+          "term": "Plan file",
+          "definition": "An AzCopy file that records transfers identified for a job and supports resuming unfinished work."
+        },
+        {
+          "term": "`--with-status`",
+          "definition": "An AzCopy jobs show flag that filters transfer entries by status such as Failed."
+        },
+        {
+          "term": "Virtual directory",
+          "definition": "A blob name prefix that appears like a folder even though Blob Storage stores blobs in a flat namespace unless hierarchical namespace is enabled."
+        },
+        {
+          "term": "SAS token",
+          "definition": "A delegated access token that may need to be supplied again when resuming jobs because AzCopy does not persist it for security reasons."
+        }
+      ],
+      "watchOut": "- Pattern flags match names, not full folder paths.\n- Use semicolons to separate multiple include patterns in AzCopy examples.\n- `--with-status=Failed` uses a case-sensitive status value.\n- Resume may require source or destination SAS values because AzCopy avoids storing SAS secrets in the job plan.",
+      "productionTip": {
+        "official": "Microsoft documents `--include-pattern` and `--exclude-pattern` as file-name filters and says to use recursive traversal to cover a directory tree. The AzCopy troubleshooting documentation explains that every transfer operation creates a job, logs failures, supports `azcopy jobs show <job-id> --with-status=Failed`, and can resume a failed or canceled job from its plan file.",
+        "recommendation": "Capture the job ID in automation output, keep AzCopy log and plan files until validation is complete, and store any SAS tokens in a secure secret store so resume commands can be run without exposing them in tickets or chat transcripts."
+      },
+      "memoryTrick": "Patterns choose **which names**; recursive chooses **how far down**. This is a simplification because include paths and date filters can also narrow scope, but it keeps the common exam trap clear.",
+      "examTip": "Clue words are **subfolders missing**, **include-pattern**, and **resume a canceled job**. The answer must combine recursive traversal with job inspection or resume commands. A harder question may swap Blob Storage for Azure Files; the same include-pattern warning still applies to file names."
+    },
+    "sources": [
+      {
+        "title": "Upload files to Azure Blob storage by using AzCopy v10",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-blobs-upload"
+      },
+      {
+        "title": "Transfer data to or from Azure Files by using AzCopy v10",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-files"
+      },
+      {
+        "title": "Find errors & resume jobs with logs in AzCopy (Azure Storage)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-configure"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.5-05",
+    "objective": "D2.2.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a user named Ana who is assigned the Owner role for a resource group that contains a storage account named `stlogs`. Ana runs `azcopy login` and then tries to upload diagnostic files to a blob container named `raw`. The upload fails with authorization errors.\n\nYou need to grant Ana the least privilege required to upload blobs by using AzCopy with Microsoft Entra authorization. What should you assign?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Storage Blob Data Contributor scoped to the `raw` container"
+      },
+      {
+        "id": "B",
+        "text": "Reader scoped to the subscription"
+      },
+      {
+        "id": "C",
+        "text": "Storage Account Contributor scoped to the resource group only"
+      },
+      {
+        "id": "D",
+        "text": "A storage account access key saved in Ana's user profile"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. Ana needs to upload blob data only to one existing container. No requirement exists to create the storage account, rotate keys, or manage networking.",
+    "sections": {
+      "correctAnswer": "**A. Storage Blob Data Contributor scoped to the `raw` container**. AzCopy data operations authorized by Microsoft Entra ID require a data-plane role, and the container scope is the narrowest listed scope that matches the upload requirement.",
+      "technical": "Azure RBAC contains management-plane roles and data-plane roles. Management roles such as Owner, Contributor, Reader, and Storage Account Contributor control Azure Resource Manager operations. They can let a user view, configure, or administer Azure resources, but they do not automatically grant data access through Microsoft Entra authorization.\n\nThe AzCopy getting-started documentation is explicit: as an owner of a storage account, you are not automatically assigned permissions to access data. Before using AzCopy meaningfully, you must decide how to authorize data access. For an interactive user uploading blobs with `azcopy login`, the documented choices include assigning **Storage Blob Data Contributor** or **Storage Blob Data Owner** for upload operations. Contributor is the least-privileged built-in option in the answers because it grants blob read/write/delete actions without making Ana the data owner.\n\nScope matters. Azure Storage blob data roles can be assigned at subscription, resource group, storage account, or container level. Assigning at the `raw` container limits the blast radius to the data Ana actually uploads. Role assignment propagation can take time, so a test immediately after assignment might still fail temporarily.\n\nSupplying an account key would switch the authorization model to Shared Key and give broad access, which violates least privilege for a single-container upload task.",
+      "wrongOptions": {
+        "B": "Reader lets Ana view management resources but does not grant write access to blobs. Misconception: read access to Azure resources includes read or write access to their stored data. Could be correct when Ana only needs to find the storage account in the portal and has a separate data role.",
+        "C": "Storage Account Contributor is a management role and can include management capabilities such as storage account administration; it is not the least-privilege answer for writing blob data with Entra authorization. Misconception: a role with 'Storage Account' in the name must be the correct data role. Could be correct when Ana must manage account settings rather than upload files.",
+        "D": "An account key grants broad Shared Key access and bypasses the desired Microsoft Entra least-privilege model. Misconception: a failed Entra upload means the only fix is to use keys. Could be correct in a controlled legacy automation design where Shared Key is explicitly accepted and tightly protected."
+      },
+      "plainEnglish": "Ana can own the Azure resource group and still not have permission to put files inside the storage container. Owning the building paperwork is different from having a badge that opens a particular storage room. For an AzCopy upload after `azcopy login`, give Ana a role that is about blob data, not just Azure resource management. Assign it on the one container she needs, so she does not receive unnecessary access elsewhere.",
+      "analogy": "A facilities manager may be allowed to edit the floor plan of a warehouse, but that does not mean they can load boxes into a secure evidence room. The loading permission must be granted for that room.\n\n| Analogy | Azure reality |\n|---|---|\n| Floor plan authority | Management-plane Owner role |\n| Evidence room loading badge | Storage Blob Data Contributor |\n| One room only | Container-scoped role assignment |\n| Master key in a drawer | Storage account access key |\n| Badge activation delay | RBAC propagation time |\n\n**Where the analogy breaks down:** Azure roles are evaluated through tokens, data actions, scopes, and REST authorization checks. A warehouse badge does not distinguish Azure Resource Manager from blob service endpoints.",
+      "jargon": [
+        {
+          "term": "Owner",
+          "definition": "An Azure management role that can manage resources and access assignments but does not automatically grant storage data permissions."
+        },
+        {
+          "term": "Storage Blob Data Contributor",
+          "definition": "An Azure built-in data role that grants read, write, and delete access to blob containers and blobs."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for assigning roles to security principals at scopes."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role assignment applies, such as subscription, resource group, storage account, or container."
+        },
+        {
+          "term": "Container",
+          "definition": "A Blob Storage resource that groups blobs and can be used as an RBAC assignment scope."
+        },
+        {
+          "term": "Microsoft Entra authorization",
+          "definition": "Authorization based on an authenticated Microsoft Entra identity and its role assignments."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "Authorization based on a storage account key rather than an Entra identity."
+        },
+        {
+          "term": "Least privilege",
+          "definition": "The practice of granting only the minimum access needed to complete the task."
+        },
+        {
+          "term": "Data action",
+          "definition": "An RBAC permission that authorizes data operations, such as reading or writing blobs."
+        }
+      ],
+      "watchOut": "- Do not confuse Storage Account Contributor with Storage Blob Data Contributor.\n- Owner can assign roles, but Owner alone is not proof of blob data access through Entra ID.\n- Assign data roles at the container level when only one container is needed.\n- Wait for RBAC propagation before concluding that a corrected assignment failed.",
+      "productionTip": {
+        "official": "Microsoft documents that being an owner of a storage account does not automatically assign permissions to access data with AzCopy. The blob data access guidance shows that Storage Blob Data Contributor can be assigned at container or storage account scope for data operations.",
+        "recommendation": "Create a short-lived group for the upload team, assign the group Storage Blob Data Contributor on the target container, and remove membership when the migration window ends. Avoid distributing account keys to individual users because revocation then requires key rotation and coordination."
+      },
+      "memoryTrick": "Management roles manage the **box**; data roles move the **blobs**. This is a shortcut because some roles can list keys, but key-based access is not the same as Entra data authorization.",
+      "examTip": "Clue words are **Owner**, **azcopy login**, **upload**, and **least privilege**. Pick a Storage Blob Data role at the narrowest scope. A harder version may ask for portal browsing too; then Reader may be needed in addition to the data role, but not instead of it."
+    },
+    "sources": [
+      {
+        "title": "Copy or move data to Azure Storage by using AzCopy v10",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+      },
+      {
+        "title": "Authorize access for AzCopy with a user identity",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-authorize-user-identity"
+      },
+      {
+        "title": "Assign an Azure Role for Blob Data Access - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/assign-azure-role-data-access"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.5-06",
+    "objective": "D2.2.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You use Azure Storage Explorer to support a storage account named `stopsdata`. You need to connect in two different scenarios:\n\n- Scenario 1: You are signed in to Azure and need to browse storage accounts under your subscription.\n- Scenario 2: A partner gives you only a SAS URL for one file share and must not grant you subscription access.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "For Scenario 1, Storage Explorer needs management-layer permission such as Reader to list storage accounts, plus appropriate data-layer permissions to access data."
+      },
+      {
+        "id": "B",
+        "text": "For Scenario 1, Storage Explorer can list all storage accounts if you have only Storage Blob Data Reader on one container."
+      },
+      {
+        "id": "C",
+        "text": "For Scenario 2, attach the file share by using the SAS URL under Local & Attached instead of requiring the partner's subscription to appear in your account tree."
+      },
+      {
+        "id": "D",
+        "text": "For Scenario 2, the partner must send an account key because Storage Explorer cannot attach individual resources by SAS."
+      },
+      {
+        "id": "E",
+        "text": "Storage Explorer uses only Microsoft Entra sign-in and does not support account name and key or SAS connection methods."
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The partner-provided SAS URL has the permissions and expiry needed for the intended file share operations. You are using the current Storage Explorer connection workflows documented by Microsoft.",
+    "sections": {
+      "correctAnswer": "**A. For Scenario 1, Storage Explorer needs management-layer permission such as Reader to list storage accounts, plus appropriate data-layer permissions to access data** and **C. For Scenario 2, attach the file share by using the SAS URL under Local & Attached instead of requiring the partner's subscription to appear in your account tree**. Storage Explorer can discover signed-in subscription resources through management APIs, or it can attach directly to an individual resource by SAS.",
+      "technical": "Storage Explorer has more than one connection model. When you sign in to Azure and select subscriptions, the Explorer tree lists storage accounts associated with those subscriptions. To do that, Storage Explorer must call management endpoints to list subscriptions and storage accounts. Microsoft troubleshooting guidance says that if you do not have a role granting management-layer permissions, Storage Explorer cannot get the information it needs to connect through the subscription tree. The Reader role is the minimal management role commonly used for listing resources, but it does not grant data-layer access by itself.\n\nData access is separate. To open blob containers or file shares with Microsoft Entra credentials, you need the relevant data permissions. In contrast, a direct attached resource can bypass subscription discovery. Microsoft documents attaching individual resources with methods including Microsoft Entra ID, account name and key for storage accounts, SAS connection strings, and SAS URLs. A file share is listed as a resource type that can be attached by SAS URL.\n\nAfter a resource is attached, Storage Explorer displays it under **Local & Attached** rather than under the partner's subscription. The SAS controls what you can do and for how long. If the SAS lacks write permission, Storage Explorer cannot make it write-capable by being signed in to your own subscription.",
+      "wrongOptions": {
+        "B": "A data role on one container does not let Storage Explorer enumerate storage accounts through Azure Resource Manager. Misconception: data-layer access automatically includes subscription discovery. Could be correct only for accessing that one container directly if you attach to the resource with a supported method.",
+        "D": "Storage Explorer can attach certain individual resources, including file shares, by SAS URL, so an account key is not mandatory for the partner scenario. Misconception: Storage Explorer requires full storage account credentials for every connection. Could be correct when the partner intentionally wants to delegate broad account-level access and accepts the key risk.",
+        "E": "Storage Explorer supports several connection methods, including Microsoft Entra sign-in, account name and key for storage accounts, SAS connection strings, and SAS URLs. Misconception: graphical Azure tools are Entra-only. Could be correct as an internal policy statement if an organization disables or forbids key and SAS usage, but not as a product capability claim."
+      },
+      "plainEnglish": "Storage Explorer can work like a directory browser or like a direct bookmark. If you want it to show storage accounts from your subscription, it needs permission to read the subscription's resource list. That is management access. If someone sends you a SAS URL for one file share, you can attach that exact share without seeing their subscription. The SAS is the ticket for that one place, and its permissions decide what actions are available.",
+      "analogy": "One way to enter a campus is to show an employee badge and look up buildings on the campus map. Another way is to receive a guest pass for one specific lab door.\n\n| Analogy | Azure reality |\n|---|---|\n| Campus map | Subscription and storage account tree |\n| Badge that can read the map | Reader management role |\n| Permission inside a lab | Storage data role |\n| Guest pass for one lab | SAS URL attached resource |\n| Separate visitor entrance | Local & Attached node |\n\n**Where the analogy breaks down:** Azure Storage Explorer still sends service requests, validates SAS signatures, and obeys RBAC scopes. A physical campus map does not expire like a SAS URL.",
+      "jargon": [
+        {
+          "term": "Storage Explorer",
+          "definition": "A standalone Microsoft application for working with Azure Storage resources on Windows, macOS, and Linux."
+        },
+        {
+          "term": "Management layer",
+          "definition": "Azure Resource Manager operations used to list or manage subscriptions, resource groups, and storage accounts."
+        },
+        {
+          "term": "Data layer",
+          "definition": "Storage service operations that access containers, blobs, shares, queues, tables, or files."
+        },
+        {
+          "term": "Reader role",
+          "definition": "An Azure management role that grants read-only access to management resources but not storage data."
+        },
+        {
+          "term": "SAS URL",
+          "definition": "A storage resource URL with a shared access signature query string appended to delegate limited access."
+        },
+        {
+          "term": "Local & Attached",
+          "definition": "The Storage Explorer tree area where individually attached resources and local emulator connections appear."
+        },
+        {
+          "term": "File share",
+          "definition": "An Azure Files resource that contains directories and files."
+        },
+        {
+          "term": "Account name and key",
+          "definition": "A Storage Explorer connection method that uses the storage account name and one account key."
+        },
+        {
+          "term": "SAS connection string",
+          "definition": "A connection string containing a shared access signature and service endpoints for a storage account."
+        }
+      ],
+      "watchOut": "- Reader helps Storage Explorer find accounts but does not open private data by itself.\n- A SAS attachment is limited by the SAS resource, permissions, IP rules, protocol, and expiry.\n- Account keys provide broad access and should not be requested when a narrow SAS URL is sufficient.\n- If management permission is denied, direct attachment can be a legitimate workaround for supported resource types.",
+      "productionTip": {
+        "official": "Microsoft documents that Storage Explorer requires both management and data layer permissions for full access after sign-in, and the troubleshooting guide explains why Reader is needed to list storage accounts. The connection documentation lists SAS URL attachment for file shares and other individual resources.",
+        "recommendation": "For partner access, prefer a narrowly scoped SAS URL with a short expiry and only the required operations. For employees, assign Reader for discovery only where needed and pair it with the smallest data role that matches their operational task."
+      },
+      "memoryTrick": "Use **Reader to find**, use **data access to open**, use **SAS to attach directly**. This simplification ignores network restrictions, but it captures the Storage Explorer permission split.",
+      "examTip": "Clue words are **browse storage accounts under your subscription** versus **only a SAS URL**. The first path needs management discovery plus data rights; the second path uses direct attachment. A harder version may ask why the account appears but blobs fail to load, which points to missing data-layer permission."
+    },
+    "sources": [
+      {
+        "title": "Get started with Storage Explorer",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-manage-with-storage-explorer"
+      },
+      {
+        "title": "Azure Storage Explorer troubleshooting guide",
+        "url": "https://learn.microsoft.com/en-us/troubleshoot/azure/azure-storage/blobs/alerts/storage-explorer-troubleshooting"
+      },
+      {
+        "title": "Using Storage Explorer with Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-explorer-files"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.5-07",
+    "objective": "D2.2.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You are signed in to Storage Explorer and can see a blob container named `evidence`. You need to generate a SAS for the container, manage stored access policies for that container, and upload a folder of case files. A teammate also asks you to modify the container's immutability policy from Storage Explorer.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Storage Explorer can perform all four tasks, including modifying the immutability policy."
+      },
+      {
+        "id": "B",
+        "text": "Storage Explorer can only upload and download blobs; SAS generation and access policies require Azure CLI."
+      },
+      {
+        "id": "C",
+        "text": "Storage Explorer can generate the container SAS and manage access policies, but it cannot upload folders."
+      },
+      {
+        "id": "D",
+        "text": "Storage Explorer can generate a SAS, manage access policies, and upload folders, but modifying immutability policies is not supported from Storage Explorer."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. You have the required permissions for the supported Storage Explorer actions. The question is about product capability, not whether your current account has enough RBAC rights.",
+    "sections": {
+      "correctAnswer": "**D. Storage Explorer can generate a SAS, manage access policies, and upload folders, but modifying immutability policies is not supported from Storage Explorer**. The Storage Explorer blob documentation lists SAS generation, access policy management, and folder upload actions, and it explicitly notes that modifying immutability policies is not supported.",
+      "technical": "Storage Explorer is more than a simple upload window. For a blob container, the documented context menu includes **Get Shared Access Signature**, where you specify policy, start and expiration dates, time zone, and access levels. The same article documents **Manage Access Policies** for a blob container, allowing you to add, edit, and remove access policies. In the blob container editor, the upload menu includes **Upload Files** and **Upload Folder**, with an optional target virtual directory.\n\nThe exception in this scenario is immutability policy modification. The Storage Explorer blob article includes a note that modifying immutability policies is not supported from Storage Explorer. That does not mean immutability policies do not exist; it means this tool is not the documented place to modify them. Use a supported management path such as the Azure portal, Azure CLI, PowerShell, REST API, or another documented workflow for immutability settings.\n\nStored access policies are also not the same as immutability policies. Access policies help control service SAS constraints for a container. Immutability policies protect blob data from modification or deletion for compliance scenarios. The exam often places both words near each other to test whether you know which policy belongs to access delegation and which belongs to retention.",
+      "wrongOptions": {
+        "A": "The first three tasks are supported, but Microsoft states that modifying immutability policies is not supported from Storage Explorer. Misconception: if Storage Explorer can manage one kind of blob policy, it can manage every blob policy. Could be correct only after a future documented product change, not under the current documentation verified for this question.",
+        "B": "Storage Explorer can generate SAS tokens for blob containers and manage access policies through documented UI actions. Misconception: only command-line tools can create delegated access settings. Could be correct in an automation requirement where repeatability makes CLI or SDK preferable to a manual UI.",
+        "C": "Storage Explorer supports uploading both files and folders to a blob container. Misconception: folder upload is limited to AzCopy or the portal. Could be correct if a specific organization disables the UI action through policy or if a different unsupported resource type is involved."
+      },
+      "plainEnglish": "Storage Explorer can handle many day-to-day blob tasks: create a limited-access link, manage the access policy behind that link, and upload a folder of files. It is not the tool for changing immutability rules. Immutability is a compliance-style protection that prevents data from being changed or deleted, so Microsoft documents different management paths for it. Do not assume that every setting with the word policy appears in the same Storage Explorer dialog.",
+      "analogy": "A branch office service desk can print visitor passes, update visitor pass rules, and accept boxes for storage. It cannot change the legal vault retention order.\n\n| Analogy | Azure reality |\n|---|---|\n| Visitor pass | SAS |\n| Visitor pass rules | Stored access policies |\n| Accept boxes | Upload files or folders |\n| Legal vault retention order | Immutability policy |\n| Service desk tool | Storage Explorer |\n\n**Where the analogy breaks down:** Azure SAS tokens are signed query strings, and immutability policies are enforced by storage service APIs. A service desk stamp does not model cryptographic authorization or WORM retention states.",
+      "jargon": [
+        {
+          "term": "Shared access signature (SAS)",
+          "definition": "A token in a storage URL that grants limited delegated access for specified permissions and time."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A named policy on a supported storage resource that can define permissions and time constraints for service SAS tokens."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical grouping of blobs in Azure Blob Storage."
+        },
+        {
+          "term": "Upload Folder",
+          "definition": "A Storage Explorer action that uploads a selected local folder's contents to a blob container."
+        },
+        {
+          "term": "Virtual directory",
+          "definition": "A path-like prefix in a blob name that Storage Explorer can present like a folder."
+        },
+        {
+          "term": "Immutability policy",
+          "definition": "A Blob Storage data protection policy used for write-once-read-many retention or legal hold scenarios."
+        },
+        {
+          "term": "Access levels",
+          "definition": "The operations allowed by a SAS, such as read, write, list, or delete depending on resource type."
+        },
+        {
+          "term": "Expiration date",
+          "definition": "The time after which a SAS or access policy no longer grants access."
+        },
+        {
+          "term": "WORM",
+          "definition": "Write Once, Read Many; a retention model that permits reads while preventing changes or deletion during protection."
+        }
+      ],
+      "watchOut": "- Stored access policies and immutability policies solve different problems.\n- Storage Explorer's SAS dialog can use a policy, start and expiry times, and access levels.\n- Folder upload may create a target virtual directory if it does not already exist.\n- Product capability and your personal permissions are separate; having the menu does not guarantee the operation will be authorized.",
+      "productionTip": {
+        "official": "Microsoft documents Storage Explorer actions for getting a SAS on a blob container, managing access policies, and uploading files or folders. The same blob management article states that modifying immutability policies is not supported from Storage Explorer.",
+        "recommendation": "Use Storage Explorer for controlled administrative tasks and small operational transfers, but use scripted tooling for repeatable SAS issuance at scale. Manage immutability through a documented change-controlled path because mistakes can affect retention and deletion behavior."
+      },
+      "memoryTrick": "Storage Explorer can manage **access**, not every **retention** rule. This shortcut is not a full feature matrix, but it separates SAS/access policies from immutability in exam questions.",
+      "examTip": "Clue words are **SAS**, **Manage Access Policies**, **Upload Folder**, and **immutability policy**. The correct answer preserves the supported day-to-day actions and rejects the unsupported immutability change. A harder version may ask which policy can revoke SAS tokens; that points to stored access policy, not immutability."
+    },
+    "sources": [
+      {
+        "title": "Manage Azure Blob Storage resources with Storage Explorer",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-explorer-blobs"
+      },
+      {
+        "title": "Get started with Storage Explorer",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-manage-with-storage-explorer"
+      },
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.5-08",
+    "objective": "D2.2.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Woodgrove Bank has 65 TB of archived video files at a remote branch. The branch has limited network connectivity and must move the data into Azure Storage with minimal impact on the WAN link. The transfer is a one-time bulk migration. The administrator asks whether to use Storage Explorer, AzCopy, Azure Data Box, or Azure Import/Export.\n\nWhich service or tool should you choose first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Storage Explorer, because it is the recommended tool for offline transfers larger than 40 TB."
+      },
+      {
+        "id": "B",
+        "text": "AzCopy, because it is designed for physical shipment when no network bandwidth is available."
+      },
+      {
+        "id": "C",
+        "text": "Azure Data Box, because it is suited for large offline transfers with limited or no network connectivity."
+      },
+      {
+        "id": "D",
+        "text": "Azure Import/Export export jobs, because export jobs move Azure Files data into Azure Blob Storage."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Data is moving from on-premises storage into Azure Storage. The organization can use a Microsoft-provided Data Box device in its region and is not constrained to customer-supplied drives.",
+    "sections": {
+      "correctAnswer": "**C. Azure Data Box, because it is suited for large offline transfers with limited or no network connectivity**. Microsoft describes Data Box as a way to send terabytes of data into or out of Azure by shipping a secure device, and the storage migration guidance recommends Data Box for offline transfer scenarios with low bandwidth or no connectivity.",
+      "technical": "Tool choice depends on data size, connectivity, repeatability, and operational control. AzCopy is excellent for rapid, scripted, online transfers, especially small-to-medium jobs, service-to-service transfers, and cases where HTTPS REST transfer over the network is acceptable. Storage Explorer is a graphical application for browsing and managing storage resources and can perform manual uploads and downloads, but it is not the first choice for a 65 TB offline branch migration.\n\nAzure Data Box is built for the condition in the question: tens of terabytes, limited WAN, and a one-time or seed transfer. Microsoft describes the service as shipping a secure proprietary storage device to your datacenter, letting you copy data locally, and then uploading the data to Azure after the device returns to Microsoft. The current overview describes Data Box devices with large usable capacities, and the use cases include one-time migration, initial bulk transfer followed by network deltas, and periodic large uploads.\n\nAzure Import/Export also involves shipping drives, but the Import/Export article says the jobs are now part of the Azure Data Box resource and describes scenarios using customer-supplied or Microsoft-supplied drives. Given the answer choices, Data Box is the broader and preferred service family for this requirement.",
+      "wrongOptions": {
+        "A": "Storage Explorer is useful for interactive management and smaller manual data tasks, but Microsoft migration guidance points offline, low-bandwidth bulk movement to Data Box rather than the GUI tool. Misconception: a tool that can upload files is automatically suitable for tens of terabytes over poor connectivity. Could be correct for an administrator manually uploading a small folder or inspecting the destination after migration.",
+        "B": "AzCopy transfers over the network using HTTPS REST APIs; it is not the physical shipment service. Misconception: every Azure Storage transfer tool handles offline media. Could be correct for online scripted movement, service-to-service copy, or small-to-medium jobs where network bandwidth is adequate.",
+        "D": "Import/Export export jobs move data from Azure Blob Storage to shipped disks, and the Import/Export article states that Azure Files export is not supported. This scenario is importing on-premises data into Azure, not exporting Azure data. Misconception: the word export means any large transfer direction. Could be correct for sending Azure Blob data out to on-premises disks under an export requirement."
+      },
+      "plainEnglish": "If the branch has a weak network link and the data set is 65 TB, do not try to push everything across the WAN with a desktop tool. Order a Data Box device, copy the files to it locally at the branch, ship it back, and let Microsoft load the data into Azure. AzCopy is better when the network path is good enough. Storage Explorer is better for hands-on management. Import/Export is related to shipped disks, but Data Box is the cleaner answer for this Microsoft-provided offline migration scenario.",
+      "analogy": "Moving 65 TB over a poor WAN is like trying to move a library through a mailbox slot. Data Box is the moving truck that arrives at the branch, gets loaded locally, and drives the books to the new building.\n\n| Analogy | Azure reality |\n|---|---|\n| Mailbox slot | Limited WAN connection |\n| Moving truck | Azure Data Box device |\n| Librarian's cart | Storage Explorer |\n| Courier with a backpack | AzCopy over the network |\n| Customer-provided shipping crates | Azure Import/Export drive workflow |\n\n**Where the analogy breaks down:** Data Box includes encryption, device ordering, Azure portal tracking, supported regions, and ingestion workflows. A truck analogy does not capture storage account targets or compliance controls.",
+      "jargon": [
+        {
+          "term": "Azure Data Box",
+          "definition": "A Microsoft service that transfers large amounts of data into or out of Azure by shipping secure storage devices."
+        },
+        {
+          "term": "Offline transfer",
+          "definition": "Data movement using physical media shipment rather than sending all bytes over a network connection."
+        },
+        {
+          "term": "WAN",
+          "definition": "Wide area network; the network link connecting a branch or datacenter to remote services such as Azure."
+        },
+        {
+          "term": "AzCopy",
+          "definition": "A command-line utility for online Azure Storage transfers over HTTPS REST APIs."
+        },
+        {
+          "term": "Storage Explorer",
+          "definition": "A graphical Microsoft application for connecting to and managing Azure Storage resources."
+        },
+        {
+          "term": "Azure Import/Export",
+          "definition": "An Azure service workflow for importing or exporting data by shipping disk drives, now surfaced as part of Data Box resources."
+        },
+        {
+          "term": "Import job",
+          "definition": "A physical-media workflow that brings on-premises data into Azure Storage."
+        },
+        {
+          "term": "Export job",
+          "definition": "A physical-media workflow that copies Azure Blob data to drives for delivery to an on-premises location."
+        },
+        {
+          "term": "One-time migration",
+          "definition": "A migration performed once rather than as an ongoing synchronization process."
+        }
+      ],
+      "watchOut": "- Choose Data Box when bandwidth is the bottleneck and the data set is large enough to justify device shipment.\n- AzCopy is an online transfer utility; it can be scripted but still consumes network bandwidth.\n- Import/Export export does not support exporting Azure Files, and export direction is not the scenario here.\n- For ongoing migrations after an offline seed, pair the seed with an appropriate online delta tool.",
+      "productionTip": {
+        "official": "Microsoft's storage migration guidance recommends Azure Data Box for offline data transfer when bandwidth is low or network connectivity is unavailable. The Data Box overview says the service lets you send terabytes of data into and out of Azure by shipping a secure device and lists one-time migration and initial bulk transfer as use cases.",
+        "recommendation": "Before ordering, inventory file counts and total bytes, confirm regional Data Box availability, choose the target storage account and container layout, and plan validation after ingestion. If files continue changing after the offline copy, schedule a final network-based delta transfer with a tool such as AzCopy or Storage Mover."
+      },
+      "memoryTrick": "Bad network plus huge data means **ship the box**. This is a simplification because exact thresholds, region availability, and ongoing synchronization needs can change the final architecture.",
+      "examTip": "Clue words are **65 TB**, **remote branch**, **limited connectivity**, and **one-time bulk migration**. Those words eliminate Storage Explorer and AzCopy as first choices and point to Data Box. A harder question may use customer-supplied drives; then Import/Export details become more relevant."
+    },
+    "sources": [
+      {
+        "title": "Azure Storage migration guide",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-migration-overview"
+      },
+      {
+        "title": "Microsoft Azure Data Box overview",
+        "url": "https://learn.microsoft.com/en-us/azure/databox/data-box-overview"
+      },
+      {
+        "title": "Using Azure Import/Export to transfer data to and from Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/import-export/storage-import-export-service"
+      },
+      {
+        "title": "Copy or move data to Azure Storage by using AzCopy v10",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

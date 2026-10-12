@@ -1,0 +1,396 @@
+[
+  {
+    "id": "D4.2.5-01",
+    "objective": "D4.2.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stshared` that hosts Azure Files shares for finance users. A virtual network named `vnet-fin` contains a subnet named `pe-subnet`. You need clients in `vnet-fin` to access the Azure Files service through Azure Private Link. The solution must create the private connectivity for the correct Storage service within the account.\n\nWhat should you create?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A private endpoint in `pe-subnet` that targets the `blob` subresource of `stshared`"
+      },
+      {
+        "id": "B",
+        "text": "A private endpoint in `pe-subnet` that targets the `file` subresource of `stshared`"
+      },
+      {
+        "id": "C",
+        "text": "A `Microsoft.Storage` service endpoint on `pe-subnet` and no private endpoint"
+      },
+      {
+        "id": "D",
+        "text": "A private DNS zone named `privatelink.blob.core.windows.net` and no network interface"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The storage account is a supported storage account type for private endpoints, and clients need Azure Files access rather than Blob Storage, Queue Storage, Table Storage, Data Lake Storage, or static website hosting.",
+    "sections": {
+      "correctAnswer": "**B. A private endpoint in `pe-subnet` that targets the `file` subresource of `stshared`**. A storage private endpoint uses a private IP address from the virtual network, and Storage requires a separate private endpoint target subresource for each storage service you need to access.",
+      "technical": "A private endpoint is a network interface in your virtual network that uses a private IP address from a subnet. For Azure Storage, the private endpoint connects to a specific service within the storage account. Microsoft lists separate target subresources such as `blob`, `dfs`, `file`, `queue`, `table`, and `web`. Because this scenario is about Azure Files shares, the target subresource must be `file`.\n\nCreating a private endpoint for `blob` would not provide private connectivity to Azure Files. The target matters because the storage account is a container for multiple service endpoints, and each service has its own DNS zone pattern and data protocol behavior. For example, Blob private endpoints use `privatelink.blob.core.windows.net`, while Azure Files private endpoints use `privatelink.file.core.windows.net`.\n\nThe basic evaluation path is:\n\n1. Create a private endpoint network interface in an Azure subnet.\n2. Select the storage account as the private-link resource.\n3. Select the target subresource that matches the service, here `file`.\n4. Approve or automatically establish the private endpoint connection.\n5. Configure DNS so the normal file endpoint name resolves to the private endpoint IP from the client network.\n6. Keep using normal storage authentication and the normal service name.\n\nA service endpoint is a different feature. It lets subnet traffic reach the public service endpoint over an optimized path and lets the service firewall recognize the subnet. It does not create a private endpoint NIC and does not require selecting a Storage target subresource. A DNS zone by itself is also not enough, because there must be a private endpoint IP address to resolve to.",
+      "wrongOptions": {
+        "A": "The `blob` target subresource is for Blob Storage, not Azure Files. A storage account can need separate private endpoints for different services. Misconception: one storage private endpoint covers every service in the account. Could be correct when the clients need Blob Storage access through Private Link.",
+        "C": "A `Microsoft.Storage` service endpoint is not a private endpoint. It does not create a private IP network interface for the storage account and does not target the Azure Files subresource. Misconception: service endpoint and private endpoint are two labels for the same configuration. Could be correct when the requirement is subnet-based access to the public Storage endpoint rather than Private Link.",
+        "D": "Private DNS supports name resolution for a private endpoint, but DNS alone does not create private connectivity. The zone name also matches Blob Storage, not Azure Files. Misconception: if the name resolves differently, the private network object must already exist. Could be correct as one part of a Blob private endpoint DNS design, after a Blob private endpoint exists."
+      },
+      "plainEnglish": "A storage account can offer several different services, like files and blobs. A private endpoint is not just a general private door to the whole building; it is a private door to a specific service counter. If finance users need file shares, you create the private endpoint for the file counter. Azure gives that endpoint a private IP address in your subnet, and DNS should guide file-share clients to that private address.\n\nChoosing `blob` would build a private door to the wrong counter. Enabling a service endpoint would use a different Azure networking feature and would not give the storage account a private IP address in your subnet.",
+      "analogy": "A bank branch has separate counters for safe-deposit boxes, wire transfers, and teller services. You ask security to build a private hallway to the safe-deposit counter, not merely to the building sign. If they build the hallway to the teller counter, customers still cannot privately reach safe-deposit boxes.\n\n| Analogy | Azure reality |\n|---|---|\n| Private hallway | Private endpoint network interface |\n| Hallway address inside the branch | Private IP address in `pe-subnet` |\n| Safe-deposit counter | Azure Files `file` subresource |\n| Teller counter | Blob `blob` subresource in this scenario |\n| Direction signs | Private DNS zone and records |\n\n**Where the analogy breaks down:** Storage service protocols, DNS suffixes, connection approval, and authorization are technical checks that a hallway metaphor cannot fully model.",
+      "jargon": [
+        {
+          "term": "Private endpoint",
+          "definition": "A network interface in an Azure virtual network that privately connects clients to a Private Link resource."
+        },
+        {
+          "term": "Private Link",
+          "definition": "Azure technology that enables private connectivity to supported Azure PaaS services and customer services over Microsoft's backbone."
+        },
+        {
+          "term": "Network interface",
+          "definition": "A virtual networking object with private IP configuration; for private endpoints it is created and managed for the endpoint lifecycle."
+        },
+        {
+          "term": "Target subresource",
+          "definition": "The specific service endpoint inside a Private Link resource that a private endpoint connects to, such as `blob`, `file`, or `sites`."
+        },
+        {
+          "term": "Azure Files",
+          "definition": "The Azure Storage file service that provides managed file shares accessible through supported protocols and APIs."
+        },
+        {
+          "term": "Blob Storage",
+          "definition": "The Azure Storage service for object data such as block blobs and append blobs."
+        },
+        {
+          "term": "Private DNS zone",
+          "definition": "An Azure DNS zone linked to virtual networks to resolve private names, commonly used with private endpoints."
+        },
+        {
+          "term": "Service endpoint",
+          "definition": "A subnet feature that provides direct connectivity to supported Azure services but does not create a private IP endpoint for the service."
+        }
+      ],
+      "watchOut": "- For Storage private endpoints, pick the subresource for the protocol or API the application uses.\n- Blob and file private endpoints are separate targets with different recommended private DNS zones.\n- A private endpoint creates a network interface with a private IP; a service endpoint does not.\n- Clients should normally use the standard storage service name, with DNS resolving it to the private IP from private networks.",
+      "productionTip": {
+        "official": "Microsoft documents that a private endpoint uses a network interface with a private IP address from your virtual network. The Azure Storage private endpoint documentation states that you must specify the storage service to which the endpoint connects and lists `file` as the target subresource for the File service.",
+        "recommendation": "Create one private endpoint per storage service actually used by the workload and document the matching DNS zone beside it. Avoid creating unused subresource endpoints, because they add DNS and approval objects without reducing risk for applications that never use those protocols."
+      },
+      "memoryTrick": "For Storage private endpoints, **service used equals subresource chosen**. The simplification fails when a feature requires paired endpoints, such as some Data Lake Storage operations that may also need Blob connectivity.",
+      "examTip": "The key clue is **Azure Files**. Do not pick Blob just because both services live in one storage account. A harder question may mention Data Lake Storage and Blob API redirects; then you must know whether `dfs`, `blob`, or both endpoints are needed for the operation set."
+    },
+    "sources": [
+      {
+        "title": "What is a private endpoint?",
+        "url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+      },
+      {
+        "title": "Use private endpoints - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+      },
+      {
+        "title": "Azure Private Endpoint private DNS zone values",
+        "url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.2.5-02",
+    "objective": "D4.2.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You create a private endpoint for the `blob` subresource of a storage account named `stimages` in `vnet-app`. A VM in `vnet-app` still resolves `stimages.blob.core.windows.net` to a public Storage address and cannot reach the account after public network access is disabled. You need the VM to keep using the normal storage account URL while connecting through the private endpoint.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A public DNS CNAME that changes `stimages.blob.core.windows.net` to `stimages.file.core.windows.net`"
+      },
+      {
+        "id": "B",
+        "text": "A service endpoint policy that lists `stimages` as an allowed storage account"
+      },
+      {
+        "id": "C",
+        "text": "A private DNS zone named `privatelink.blob.core.windows.net` linked to `vnet-app`, with an A record for `stimages` that maps to the private endpoint IP"
+      },
+      {
+        "id": "D",
+        "text": "An IP network rule on `stimages` that allows the VM's private IP address"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The private endpoint connection is approved, the VM uses Azure-provided DNS or a DNS configuration that can use Azure Private DNS zones, and the storage account public network access has been disabled as stated in the scenario.",
+    "sections": {
+      "correctAnswer": "**C. A private DNS zone named `privatelink.blob.core.windows.net` linked to `vnet-app`, with an A record for `stimages` that maps to the private endpoint IP**. Private endpoint clients should continue using the standard Storage name, but DNS inside the private network must resolve the `privatelink` name to the private endpoint address.",
+      "technical": "Private endpoint connectivity depends on both the network interface and name resolution. Azure Storage applications should use the same connection string and standard service endpoint name, such as `stimages.blob.core.windows.net`. Microsoft specifically warns not to connect to the storage account by using the `privatelink` subdomain URL. Instead, DNS resolution should make the standard name follow the CNAME chain to a private A record from inside the virtual network.\n\nFor Blob Storage, the recommended private DNS zone is `privatelink.blob.core.windows.net`. In a typical configuration, `stimages.blob.core.windows.net` is a CNAME to `stimages.privatelink.blob.core.windows.net`, and the private DNS zone contains an A record mapping `stimages` to the private endpoint IP address. The zone must be linked to the virtual network used by clients, or custom DNS must forward or resolve that zone correctly.\n\nThe failure in the question is consistent with missing private DNS. Public network access is disabled, so a public-address connection is rejected by the service front door even though the name exists in public DNS. The private endpoint may be healthy, but the VM never reaches it because DNS does not return the private endpoint IP.\n\nThe operating order is:\n\n1. Client asks for the normal storage hostname.\n2. Public DNS provides the public CNAME to the `privatelink` hostname.\n3. The linked private DNS zone overrides the private-link hostname with the private endpoint A record.\n4. The client connects to the private IP.\n5. Storage authorization is still enforced after the network path succeeds.",
+      "wrongOptions": {
+        "A": "Changing the blob endpoint to the file endpoint points clients at the wrong Storage service and does not create private endpoint DNS. The storage service name should remain the normal blob hostname. Misconception: any DNS rewrite that avoids the public blob name is private connectivity. Could be correct only if the application actually needed Azure Files and the private endpoint and DNS were configured for `file`.",
+        "B": "A service endpoint policy filters Storage traffic over service endpoints. It does not make a private endpoint's DNS name resolve to the private IP. Misconception: endpoint policies control name resolution for every endpoint feature. Could be correct when the design uses service endpoints and needs to restrict a subnet to selected storage accounts.",
+        "D": "Storage IP network rules are for public endpoint network access and use allowed network sources. They do not solve the private DNS problem, and public network access is disabled in this scenario. Misconception: the VM's private IP can be placed into a public endpoint firewall rule to reach a private endpoint. Could be correct for certain public endpoint scenarios with valid public IP ranges, not for Private Link DNS."
+      },
+      "plainEnglish": "The private endpoint is like a private door, but the VM still needs directions to that door. The application should keep asking for `stimages.blob.core.windows.net`; you do not rewrite the app to call a strange `privatelink` URL. DNS inside the virtual network must answer that normal name in a way that leads to the private endpoint IP address.\n\nIf DNS still points the VM to a public Storage address and public access is disabled, the service refuses the connection. Linking the right private DNS zone to the VNet gives the VM private directions while leaving application connection strings familiar.",
+      "analogy": "A building keeps its official mailing address, but employees inside a secure campus should be guided to a private side entrance. The map system must translate the official address into the side entrance location for campus users. If the map still sends them to the public lobby after that lobby is closed, they cannot get in.\n\n| Analogy | Azure reality |\n|---|---|\n| Official mailing address | `stimages.blob.core.windows.net` |\n| Private side entrance | Private endpoint IP address |\n| Campus map override | Private DNS zone link |\n| Side entrance label | `stimages.privatelink.blob.core.windows.net` A record |\n| Closed public lobby | Public network access disabled |\n\n**Where the analogy breaks down:** DNS uses CNAME and A records, and Azure Storage also checks endpoint approval, routing, TLS names, and authorization after resolution.",
+      "jargon": [
+        {
+          "term": "A record",
+          "definition": "A DNS record that maps a name to an IPv4 address."
+        },
+        {
+          "term": "CNAME",
+          "definition": "A DNS canonical name record that aliases one hostname to another hostname."
+        },
+        {
+          "term": "FQDN",
+          "definition": "Fully qualified domain name; the complete DNS name for a resource, such as `stimages.blob.core.windows.net`."
+        },
+        {
+          "term": "`privatelink.blob.core.windows.net`",
+          "definition": "The recommended private DNS zone name for Azure Storage Blob private endpoints in Azure public cloud."
+        },
+        {
+          "term": "Virtual network link",
+          "definition": "A connection between an Azure Private DNS zone and a virtual network so resources in the VNet can resolve records in the zone."
+        },
+        {
+          "term": "Public network access",
+          "definition": "A service setting that controls whether clients can connect through the public service endpoint."
+        },
+        {
+          "term": "Private endpoint IP",
+          "definition": "The private address assigned to the private endpoint network interface in an Azure subnet."
+        },
+        {
+          "term": "Connection string",
+          "definition": "Application configuration text that tells a client which storage account endpoint and credentials or identity method to use."
+        }
+      ],
+      "watchOut": "- Do not configure applications to call the `privatelink` URL directly for Storage; use the normal account endpoint.\n- A private endpoint without correct DNS often looks like a firewall problem.\n- The private DNS zone must match the subresource, such as `blob` versus `file`.\n- Custom or on-premises DNS servers need forwarding or records for the private-link zone.",
+      "productionTip": {
+        "official": "Microsoft documents that private endpoint DNS must resolve the storage account endpoint to the private endpoint IP from the private network. The Storage private endpoint documentation says to use the same connection string as usual and not to connect by using the `privatelink` subdomain URL.",
+        "recommendation": "Validate private DNS before disabling public access by running name resolution from every client network. For hub-and-spoke environments, centralize DNS forwarding to the private zones so that all spokes and connected sites receive the same answer for the storage account name."
+      },
+      "memoryTrick": "Private endpoint success is **endpoint plus DNS**. This is simplified because route reachability, approval state, and identity permissions must also be correct.",
+      "examTip": "Clue words are **normal URL**, **resolves to public**, and **public network access disabled**. The answer is DNS for the private endpoint, not a storage firewall IP rule or a service endpoint policy. A harder version may include a custom DNS server; then choose forwarding or conditional resolution for the private zone."
+    },
+    "sources": [
+      {
+        "title": "Use private endpoints - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+      },
+      {
+        "title": "Azure Private Endpoint private DNS zone values",
+        "url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.2.5-03",
+    "objective": "D4.2.5",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Litware has an App Service app named `portal-prod`. Users in a datacenter must access the app privately over ExpressRoute private peering. Litware also wants to eliminate public inbound exposure to the app. A hub virtual network contains Azure DNS Private Resolver and is linked to the required private DNS zone.\n\nWhich three actions should you perform? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a private endpoint for `portal-prod` that targets the `sites` subresource"
+      },
+      {
+        "id": "B",
+        "text": "Enable a `Microsoft.Storage` service endpoint on the App Service subnet"
+      },
+      {
+        "id": "C",
+        "text": "Create a storage private endpoint that targets the `blob` subresource"
+      },
+      {
+        "id": "D",
+        "text": "Disable public network access for `portal-prod` after private access is validated"
+      },
+      {
+        "id": "E",
+        "text": "Rely on App Service access restriction rules to evaluate requests that arrive through the private endpoint"
+      },
+      {
+        "id": "F",
+        "text": "Configure on-premises DNS to forward the App Service private-link zone to the Azure DNS resolution path"
+      }
+    ],
+    "correct": [
+      "A",
+      "D",
+      "F"
+    ],
+    "assumptions": "Azure public cloud. The App Service plan supports private endpoints, the private endpoint connection is approved, and Litware has routing between the datacenter and the virtual network over ExpressRoute private peering.",
+    "sections": {
+      "correctAnswer": "**A. Create a private endpoint for `portal-prod` that targets the `sites` subresource**, **D. Disable public network access for `portal-prod` after private access is validated**, and **F. Configure on-premises DNS to forward the App Service private-link zone to the Azure DNS resolution path**. App Service private endpoints use the `sites` subresource, public access can coexist until you disable it, and hybrid clients need DNS that resolves the app name to the private endpoint IP.",
+      "technical": "For Azure App Service, a private endpoint provides inbound private connectivity to the app. Microsoft lists `Microsoft.Web/sites` with the `sites` subresource for private endpoint support, and the App Service private endpoint documentation explains that each app slot is configured separately. In this scenario the production app needs a private endpoint for the app's `sites` subresource.\n\nThe private endpoint alone does not eliminate public exposure. App Service documentation states that private endpoints and public access can coexist, and to ensure isolation you should disable public network access after enabling private endpoints. That order matters in production: validate the private path first, then close the public path so users do not lose access because of a DNS or routing mistake.\n\nHybrid access over ExpressRoute also depends on name resolution. App Service private endpoint DNS uses `privatelink.azurewebsites.net` for the app hostname and also has SCM considerations. The user should still browse to the normal app name, such as `portal-prod.azurewebsites.net` or a validated custom domain, but the datacenter resolver must learn the private endpoint IP. With Azure DNS Private Resolver in the hub, on-premises DNS can forward the relevant private-link zone to Azure so the answer returned to datacenter clients is the private address.\n\nAccess restrictions are a trap. App Service documentation says access restriction rules are not evaluated for traffic through the private endpoint. Network security must therefore rely on the private endpoint path, DNS, routing, NSGs where appropriate, identity, and the disabled public endpoint rather than expecting App Service access restrictions to filter Private Link traffic.",
+      "wrongOptions": {
+        "B": "A `Microsoft.Storage` service endpoint is unrelated to inbound access to an App Service app. It is for Storage service endpoint traffic from a subnet. Misconception: any PaaS private access task starts by adding a service endpoint to a subnet. Could be correct when a subnet's compute resources need service endpoint access to Azure Storage.",
+        "C": "A Blob private endpoint targets a storage account's Blob service, not an App Service app. The app's private endpoint target is `sites`. Misconception: private endpoint target subresources are universal across Azure services. Could be correct if the workload also needed private access to Blob Storage for content or data.",
+        "E": "App Service access restriction rules are not evaluated for traffic through the private endpoint. Misconception: the same public endpoint access rules filter all inbound paths. Could be correct for requests that arrive through App Service public inbound endpoints, not for requests using Private Link."
+      },
+      "plainEnglish": "Litware needs three pieces working together. First, build the private doorway to the web app itself, using the App Service `sites` target. Second, make sure datacenter computers can find that doorway by forwarding the private DNS name to Azure DNS. Third, after the private doorway is tested, shut the public doorway so internet clients cannot use it.\n\nDo not add a Storage service endpoint; the target is a web app, not a storage account. Also do not depend on App Service access restrictions for the private endpoint path. Private endpoint traffic uses a different inbound path, so the public access restriction feature is not the filter being tested here.",
+      "analogy": "A company moves a customer portal behind a staff-only entrance connected to a private shuttle route from headquarters. The facilities team must build the entrance to the portal, update headquarters maps so employees go to that entrance, and then lock the old street-facing door. Rules posted on the old public door do not screen people already inside the staff entrance.\n\n| Analogy | Azure reality |\n|---|---|\n| Staff-only entrance | App Service private endpoint |\n| Portal service desk | `sites` subresource |\n| Headquarters map update | On-premises DNS forwarding |\n| Old street-facing door | Public network access |\n| Door poster rules | App Service access restrictions for public traffic |\n\n**Where the analogy breaks down:** App Service also involves TLS hostnames, slot-specific configuration, Kudu/SCM DNS records, approval states, and Azure networking limits that a building-door story does not cover.",
+      "jargon": [
+        {
+          "term": "App Service",
+          "definition": "Azure's managed hosting platform for web apps, APIs, and some function app scenarios."
+        },
+        {
+          "term": "`sites` subresource",
+          "definition": "The Private Link target subresource used for Azure Web Apps and Function Apps under `Microsoft.Web/sites`."
+        },
+        {
+          "term": "ExpressRoute private peering",
+          "definition": "ExpressRoute connectivity for private IP communication between an on-premises network and Azure virtual networks."
+        },
+        {
+          "term": "Azure DNS Private Resolver",
+          "definition": "An Azure DNS service that can resolve and forward DNS queries between on-premises networks and Azure private DNS zones."
+        },
+        {
+          "term": "`privatelink.azurewebsites.net`",
+          "definition": "The private DNS zone used for Azure App Service private endpoint name resolution in Azure public cloud."
+        },
+        {
+          "term": "Public network access",
+          "definition": "An App Service setting that controls whether the app can be reached through public inbound endpoints."
+        },
+        {
+          "term": "Access restriction rules",
+          "definition": "App Service rules that filter inbound requests to the app's public endpoint; they are not evaluated for private endpoint traffic."
+        },
+        {
+          "term": "SCM endpoint",
+          "definition": "The source control management endpoint for App Service, often using a `scm` hostname for Kudu and deployment operations."
+        }
+      ],
+      "watchOut": "- App Service private endpoints are inbound only; outbound traffic uses other features such as virtual network integration.\n- Disable public network access only after DNS and private routing are proven.\n- The private endpoint target for the production app is `sites`; deployment slots use slot-specific subresource names.\n- For Kudu or SCM access through Private Link, plan the second DNS record mentioned in the App Service documentation.",
+      "productionTip": {
+        "official": "Microsoft documents that App Service private endpoints use an IP address from the virtual network and can be reached from on-premises networks connected by VPN or ExpressRoute. The same documentation says private endpoints and public access can coexist, access restriction rules are not evaluated for private endpoint traffic, and App Service DNS uses `privatelink.azurewebsites.net`.",
+        "recommendation": "Perform the rollout in a maintenance window with a staged DNS test from the datacenter, a browser test to the default hostname, and a separate deployment-path test for SCM if self-hosted agents are used. After public access is disabled, monitor failed public requests to confirm the old path is actually closed."
+      },
+      "memoryTrick": "For web apps, remember **sites, DNS, then shut public**. This is a simplification because slots, custom domains, and SCM endpoints may require extra records.",
+      "examTip": "Look for **App Service**, **on-premises**, **disable public exposure**, and **DNS forwarding**. The correct answer combines the `sites` private endpoint, public access disablement, and hybrid DNS. Distractors often mix in Storage subresources or service endpoint language from a different objective."
+    },
+    "sources": [
+      {
+        "title": "Use Private Endpoints for Apps",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-private-endpoint"
+      },
+      {
+        "title": "What is a private endpoint?",
+        "url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+      },
+      {
+        "title": "Azure Private Endpoint private DNS zone values",
+        "url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.2.5-04",
+    "objective": "D4.2.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Tailspin Toys has a storage account named `stdesigns` that stores confidential product files. The security requirements are:\n\n- Developers in an Azure virtual network must access the account without using public source IP allowlists.\n- Engineers in an on-premises datacenter must access the same account over VPN.\n- Public network access to the storage account should be disabled after the private path is working.\n\nWhich networking option best meets the requirements?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable a `Microsoft.Storage` service endpoint on the developers' subnet and tell on-premises engineers to use the same virtual network rule"
+      },
+      {
+        "id": "B",
+        "text": "Create an IP network rule for the developers' VM private addresses and another IP rule for the datacenter private addresses"
+      },
+      {
+        "id": "C",
+        "text": "Create a service endpoint policy that allows `stdesigns` and then remove all Storage authentication requirements"
+      },
+      {
+        "id": "D",
+        "text": "Create a private endpoint for the required Storage subresource, configure private DNS for all client networks, and disable public network access after validation"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The storage account supports private endpoints, the required Storage service is known to the implementer, and VPN routing between the datacenter and the virtual network is already available or will be configured separately.",
+    "sections": {
+      "correctAnswer": "**D. Create a private endpoint for the required Storage subresource, configure private DNS for all client networks, and disable public network access after validation**. Private endpoints provide a private IP address in the virtual network, support access from on-premises networks connected by VPN or ExpressRoute, and continue working even when Storage public network access is disabled.",
+      "technical": "This question is testing the private endpoint versus service endpoint distinction. A service endpoint is useful for Azure subnet traffic to a PaaS public endpoint, and it can remove the need for public source IP allowlists for resources in that subnet. However, service endpoints cannot be used for traffic from on-premises services. They also do not create a private IP address for the storage account.\n\nA private endpoint creates a network interface with a private IP address from the virtual network. Azure Storage documentation says private endpoints can securely connect to storage accounts from on-premises networks that connect to the virtual network by VPN or ExpressRoute. It also says creating a private link does not automatically block connections on the public endpoint, so you manually configure public network access or the storage firewall to deny or control public endpoint access. When a private endpoint is configured, traffic from the associated virtual network is always allowed even if public network access is disabled on the storage account.\n\nDNS is the hinge. Developers and on-premises engineers should keep using the normal storage account name, but their DNS path must resolve the appropriate private-link hostname to the private endpoint IP. For Storage, that means choosing the private DNS zone that matches the target subresource, such as `privatelink.blob.core.windows.net` for Blob or `privatelink.file.core.windows.net` for Files. On-premises DNS commonly forwards the private-link zone to Azure DNS infrastructure or to a resolver that can query the linked private zone.\n\nThe safe implementation order is:\n\n1. Create the private endpoint for the actual Storage subresource.\n2. Configure and test private DNS from Azure and on-premises clients.\n3. Confirm authentication and application behavior over the private IP.\n4. Disable public network access or set the public firewall posture to deny.\n5. Monitor both successful private traffic and rejected public attempts.\n\nThis preserves storage authorization; Private Link is a network path, not a data permission system.",
+      "wrongOptions": {
+        "A": "A service endpoint can help developers in an Azure subnet, but Microsoft states that service endpoints cannot be used for traffic from on-premises services to Azure services. It also leaves the Storage public endpoint model in place. Misconception: VPN-connected computers can reuse an Azure subnet's service endpoint identity. Could be correct for an Azure-only workload where no on-premises access or private endpoint requirement exists.",
+        "B": "Storage IP network rules are not written for arbitrary private client addresses, and they do not meet the goal of disabling public network access. On-premises access through public IP rules would use public NAT addresses, not private datacenter ranges. Misconception: any source IP visible to a client can be pasted into a PaaS firewall rule. Could be correct when allowing known public NAT IP ranges to a public Storage endpoint.",
+        "C": "A service endpoint policy can restrict which Storage accounts a subnet may reach over service endpoints, but it does not provide on-premises access and does not remove Storage authentication. Misconception: network allowlisting is equivalent to identity and data authorization. Could be correct as an additional exfiltration control for Azure subnet workloads using service endpoints."
+      },
+      "plainEnglish": "Private endpoint is the better fit because it gives the storage service a private address that your Azure network and connected datacenter can reach. Developers and engineers still use the normal storage name, but DNS sends them to the private address. After you prove that path works, you can close the public network path.\n\nA service endpoint is more limited. It helps resources already inside an Azure subnet reach a PaaS service over Azure's backbone, but it does not give the datacenter a private route through that subnet. IP rules keep using public endpoint thinking, and endpoint policies only narrow Storage destinations for subnet traffic. None of those options matches all three requirements together.",
+      "analogy": "Tailspin wants a confidential design vault reachable from the main office and the factory over a private corridor, then wants to lock the street entrance. Building a service endpoint is like giving only the main office a preferred lane to the street entrance. A private endpoint is like installing a vault door inside the private campus route and posting directions to that door for both sites.\n\n| Analogy | Azure reality |\n|---|---|\n| Private campus vault door | Storage private endpoint |\n| Door inside the network | Private IP address in a subnet |\n| Directions for both sites | Private DNS for Azure and on-premises clients |\n| Locking the street entrance | Disabling public network access |\n| Preferred lane to street entrance | Service endpoint |\n\n**Where the analogy breaks down:** Azure Private Link uses approved endpoint connections, DNS records, routing, and service authorization rather than literal corridors or vault keys.",
+      "jargon": [
+        {
+          "term": "VPN",
+          "definition": "A private network connection, often encrypted, between an on-premises network and an Azure virtual network."
+        },
+        {
+          "term": "Public network access disabled",
+          "definition": "A PaaS setting that blocks connections through the service's public network endpoint while private endpoint traffic can still be allowed where supported."
+        },
+        {
+          "term": "Storage subresource",
+          "definition": "The specific Storage service target for a private endpoint, such as `blob`, `file`, `queue`, `table`, `dfs`, or `web`."
+        },
+        {
+          "term": "Private DNS forwarding",
+          "definition": "DNS configuration that sends queries for private-link zones from one network, such as on-premises, to a resolver that knows the private endpoint records."
+        },
+        {
+          "term": "Public source IP allowlist",
+          "definition": "A firewall approach that permits traffic from known public IP ranges, commonly used for on-premises NAT addresses."
+        },
+        {
+          "term": "Service endpoint policy",
+          "definition": "A subnet policy that filters Azure Storage traffic over service endpoints to specified storage resources."
+        },
+        {
+          "term": "Authentication",
+          "definition": "The process of proving identity or possession of credentials, such as Microsoft Entra credentials, account keys, or SAS tokens for Storage."
+        },
+        {
+          "term": "Authorization",
+          "definition": "The decision about what an authenticated principal or token is allowed to do with storage data."
+        }
+      ],
+      "watchOut": "- Creating a private endpoint does not automatically disable the public endpoint; close public access intentionally after validation.\n- Private DNS must work from every network that should use the private endpoint, including on-premises.\n- Service endpoints are not hybrid private access for datacenters.\n- A private endpoint chooses a subresource; pick the Storage service the application actually uses.\n- Private network access does not grant data-plane rights by itself.",
+      "productionTip": {
+        "official": "Microsoft documents that Storage private endpoints use a private IP address from the virtual network, can be used from on-premises networks connected by VPN or ExpressRoute, and do not automatically block public endpoint connections. Storage documentation also states that traffic from the associated virtual network is allowed even when public network access is disabled.",
+        "recommendation": "Treat public-access disablement as the final cutover step, not the first step. Verify DNS from a developer VM and an on-premises host, confirm that the private IP is used, and keep a rollback plan in case an application uses another Storage subresource that needs its own private endpoint."
+      },
+      "memoryTrick": "If the requirement says **on-premises plus disable public**, think **private endpoint** before service endpoint. This is a simplification because some public endpoint designs with NAT IP rules are still valid when private access is not required.",
+      "examTip": "This is a best-fit comparison question. Service endpoint answers often satisfy the Azure-subnet part but fail the on-premises and disable-public parts. The private endpoint answer should mention the specific subresource, DNS, and closing public access only after the private route is confirmed."
+    },
+    "sources": [
+      {
+        "title": "Use private endpoints - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-private-endpoints"
+      },
+      {
+        "title": "What is a private endpoint?",
+        "url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
+      },
+      {
+        "title": "Azure virtual network service endpoints",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-service-endpoints-overview"
+      },
+      {
+        "title": "Azure Private Endpoint private DNS zone values",
+        "url": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

@@ -1,0 +1,724 @@
+[
+  {
+    "id": "D2.1.2-01",
+    "objective": "D2.1.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a storage account named `stfinance` that stores monthly invoice blobs. A partner application outside Azure must download selected blobs for three hours. The security team prefers Microsoft Entra-based authorization whenever possible and does not want any solution that requires handing out a storage account key.\n\nWhich type of SAS should you create?",
+    "options": [
+      {
+        "id": "A",
+        "text": "An account SAS signed with the storage account key"
+      },
+      {
+        "id": "B",
+        "text": "A user delegation SAS signed with a user delegation key"
+      },
+      {
+        "id": "C",
+        "text": "A service SAS signed with the storage account key"
+      },
+      {
+        "id": "D",
+        "text": "A stored access policy without a SAS token"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The data to share is in Blob Storage. The user or application creating the SAS can sign in with Microsoft Entra ID and has an Azure RBAC role that includes the user delegation key action at an appropriate scope.",
+    "sections": {
+      "correctAnswer": "**B. A user delegation SAS signed with a user delegation key**. A user delegation SAS is secured with Microsoft Entra credentials instead of the storage account key, and Microsoft recommends it when a SAS is required.",
+      "technical": "Azure Storage supports three SAS types, and the signing key is the main exam distinction.\n\n| SAS type | Signing method | Main scope/use | Stored access policy support |\n|---|---|---|---|\n| User delegation SAS | User delegation key obtained with Microsoft Entra credentials | Delegated access to storage data, including Blob Storage | Not supported |\n| Service SAS | Storage account key | A resource in one Azure Storage service, such as one blob, queue, table, or file share | Supported for service SAS only |\n| Account SAS | Storage account key | One or more storage services and some service-level operations | Not supported |\n\nA user delegation SAS is created from a user delegation key. To request that key, the Microsoft Entra security principal needs an Azure RBAC role that includes `Microsoft.Storage/storageAccounts/blobServices/generateUserDelegationKey` or the corresponding service action. The client that later uses the SAS does not need the storage account key; it presents the SAS URI and Azure Storage checks the signature and SAS constraints.\n\nA service SAS and an account SAS both depend on Shared Key authorization because they are signed with the storage account key. They can be useful in supported designs, but they do not meet the security team's requirement to avoid account-key-based SAS. A stored access policy is not itself a SAS token; it is a policy object that a service SAS can reference for constraints.",
+      "wrongOptions": {
+        "A": "An account SAS is signed with the storage account key. It can cover multiple services or service-level operations, but it violates the requirement to avoid account-key-based signing. Misconception: Account SAS means Microsoft Entra account. Could be correct when you deliberately need account-level SAS capabilities, such as access to more than one storage service, and Shared Key authorization is allowed.",
+        "C": "A service SAS can target a single blob or container, but it is also signed with the storage account key. That does not satisfy the preference for Microsoft Entra-based authorization. Misconception: A service SAS is safer simply because it targets one service. Could be correct when you need a SAS for one service and your design permits Shared Key or a stored access policy.",
+        "D": "A stored access policy cannot by itself grant access to a client. It can define constraints for one or more service SAS tokens, but the client still needs a SAS URI. Misconception: The policy object is the credential. Could be correct when paired with a service SAS so that changing or deleting the policy can affect related service SAS tokens."
+      },
+      "plainEnglish": "A SAS is like a temporary ticket to data in a storage account. The important question is who signs the ticket. A user delegation SAS is signed using Microsoft Entra-based credentials, so you avoid sharing or depending on the storage account's master key. A service SAS and an account SAS are still signed with the storage account key.\n\nThe partner only needs temporary download access to blobs. A user delegation SAS lets your trusted Azure identity create a limited ticket for the partner. The partner uses the ticket URL, but never receives the account key and does not need to become a user in your tenant.",
+      "analogy": "Imagine a secure records room. A user delegation SAS is a temporary visitor pass issued by the identity desk after checking an employee's badge. A service SAS or account SAS is a pass stamped with the building's master seal.\n\n| Analogy | Azure reality |\n|---|---|\n| Visitor pass | SAS token |\n| Identity desk checks employee badge | Microsoft Entra credentials request a user delegation key |\n| Building master seal | Storage account key |\n| Records room file | Blob |\n\n**Where the analogy breaks down:** Azure validates cryptographic signatures and query parameters, not paper stamps. The analogy also does not show RBAC, POSIX ACL checks, or SAS expiry logic.",
+      "jargon": [
+        {
+          "term": "SAS",
+          "definition": "Shared access signature, a token appended to a storage resource URI to delegate limited access."
+        },
+        {
+          "term": "User delegation SAS",
+          "definition": "A SAS signed with a user delegation key that was obtained using Microsoft Entra credentials."
+        },
+        {
+          "term": "Service SAS",
+          "definition": "A SAS signed with the storage account key that delegates access to a resource in one Azure Storage service."
+        },
+        {
+          "term": "Account SAS",
+          "definition": "A SAS signed with the storage account key that can cover resources in one or more storage services and some service-level operations."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory."
+        },
+        {
+          "term": "Storage account key",
+          "definition": "A Shared Key secret for a storage account; a SAS signed with it depends on Shared Key authorization."
+        },
+        {
+          "term": "User delegation key",
+          "definition": "A temporary key returned by Azure Storage for a Microsoft Entra security principal and used to sign user delegation SAS tokens."
+        }
+      ],
+      "watchOut": "- The word `account` in account SAS does not mean Microsoft Entra account.\n- User delegation SAS is recommended when a SAS is required, but the SAS still must be protected like a secret.\n- Stored access policies do not work with user delegation SAS or account SAS.\n- A SAS grants whoever possesses it the allowed access until it expires or is otherwise invalidated.\n- Do not confuse the identity that creates the SAS with the external client that uses the SAS URL.",
+      "productionTip": {
+        "official": "Microsoft documents that a user delegation SAS is secured with Microsoft Entra credentials, while service SAS and account SAS are signed with the account key. The docs also caution that any SAS should be protected and distributed only over secure connections.",
+        "recommendation": "Prefer user delegation SAS for blob-sharing workflows, keep expiry short, restrict permissions to exactly what the client needs, require HTTPS, and avoid placing account keys in application code or scripts."
+      },
+      "memoryTrick": "User delegation equals Entra delegation; service and account SAS equal account key. This is a simplification because all SAS types still include permissions, expiry, and a signature.",
+      "examTip": "Look for the clue `Microsoft Entra` or `avoid account key`. That points to user delegation SAS. If the question asks for service-level operations or multiple services in one token, account SAS becomes more plausible, but it is still Shared Key-based."
+    },
+    "sources": [
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      },
+      {
+        "title": "Create a user delegation SAS",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/create-user-delegation-sas"
+      },
+      {
+        "title": "Use Azure CLI to create a user delegation SAS for a container or blob",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.2-02",
+    "objective": "D2.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stmedia`. A developer generated several user delegation SAS URLs for blobs in a private container. One SAS URL was accidentally posted in a public chat channel. The SAS was not created from a stored access policy and was not signed with an account key.\n\nYou need to invalidate the leaked SAS as quickly as possible without rotating storage account keys. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Regenerate `key1` for the storage account"
+      },
+      {
+        "id": "B",
+        "text": "Delete the blob container's stored access policy"
+      },
+      {
+        "id": "C",
+        "text": "Set the container public access level to Private"
+      },
+      {
+        "id": "D",
+        "text": "Run `az storage account revoke-delegation-keys` for the storage account"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The leaked token is a user delegation SAS for Blob Storage. The goal is emergency revocation of existing user delegation keys for the storage account, and you understand that Azure Storage may cache keys and role assignments briefly.",
+    "sections": {
+      "correctAnswer": "**D. Run `az storage account revoke-delegation-keys` for the storage account**. User delegation SAS tokens are signed with user delegation keys, and the Azure CLI revocation command invalidates SAS tokens associated with those keys.",
+      "technical": "Revocation depends on what signed the SAS.\n\n1. A user delegation SAS is signed with a user delegation key obtained through Microsoft Entra credentials. The Azure CLI command `az storage account revoke-delegation-keys` revokes all user delegation keys associated with the storage account, invalidating SAS tokens that depend on those keys.\n2. A service SAS or account SAS is signed with a storage account key. For an ad hoc service SAS or account SAS, rotating the signing account key invalidates SAS tokens signed with that key, but it can also affect applications that use that key.\n3. A service SAS can optionally reference a stored access policy. Changing or deleting that stored access policy can affect SAS tokens tied to it, without regenerating account keys.\n\nThe prompt states that the leaked SAS is a user delegation SAS and not account-key-signed, so rotating `key1` is the wrong revocation mechanism. It also says the SAS was not created from a stored access policy, and stored access policies do not apply to user delegation SAS anyway. Setting container public access to Private changes anonymous public access settings; it does not invalidate a valid SAS. Microsoft also notes that both user delegation keys and Azure role assignments are cached by Azure Storage, so there can be a delay between initiating revocation and an existing user delegation SAS becoming invalid.",
+      "wrongOptions": {
+        "A": "Regenerating a storage account key can invalidate SAS tokens signed with that account key, but this SAS is signed with a user delegation key. Misconception: Every SAS is revoked by rotating account keys. Could be correct when the compromised token is an ad hoc service SAS or account SAS signed with the regenerated key and you can handle dependent application impact.",
+        "B": "A stored access policy can help revoke or change constraints for a service SAS that references it, but the leaked SAS is a user delegation SAS and is not policy-based. Misconception: Stored access policies control all SAS types. Could be correct when the compromised token is a service SAS explicitly associated with that stored access policy.",
+        "C": "Private container access blocks anonymous public access, not access through a valid SAS. A SAS is an authorization token with its own permissions and expiry. Misconception: Private containers reject every request except signed-in Azure users. Could be correct when the risk is anonymous public container access rather than a leaked SAS URL."
+      },
+      "plainEnglish": "To cancel a leaked ticket, you need to cancel the thing that signed the ticket. This SAS was not signed with the storage account key, so changing the account key is like changing the wrong lock. It was signed with a user delegation key, so you revoke the delegation keys for the storage account.\n\nMaking the container private does not help because the SAS is itself a temporary permission. A person with the valid SAS URL can still use it until the SAS expires or the signing key is invalidated.",
+      "analogy": "A museum gave a contractor a temporary badge printed from a special badge machine. If a badge is leaked, the museum disables the badge machine's active batch, not the building's master keys.\n\n| Analogy | Azure reality |\n|---|---|\n| Temporary badge | User delegation SAS |\n| Badge machine batch | User delegation key |\n| Disable active batch | Revoke delegation keys |\n| Building master key | Storage account key |\n| Door marked staff only | Private container |\n\n**Where the analogy breaks down:** Azure revocation can have caching delay, and a storage account may have many simultaneously issued SAS tokens with different constraints.",
+      "jargon": [
+        {
+          "term": "User delegation SAS",
+          "definition": "A SAS signed with a user delegation key obtained using Microsoft Entra credentials."
+        },
+        {
+          "term": "User delegation key",
+          "definition": "The temporary signing material used to create user delegation SAS tokens."
+        },
+        {
+          "term": "`az storage account revoke-delegation-keys`",
+          "definition": "An Azure CLI command that revokes user delegation keys for a storage account."
+        },
+        {
+          "term": "Storage account key",
+          "definition": "A Shared Key secret used to sign service SAS and account SAS tokens and authorize Shared Key requests."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A policy on a container, queue, table, or file share that can define constraints for service SAS tokens."
+        },
+        {
+          "term": "Private container",
+          "definition": "A container access setting that prevents anonymous public access to blobs."
+        }
+      ],
+      "watchOut": "- Revocation method follows the signing method.\n- User delegation SAS: revoke user delegation keys or wait for expiry.\n- Service SAS with stored access policy: modify or delete the policy.\n- Ad hoc service SAS or account SAS: rotate the signing account key or wait for expiry.\n- Private container access is not a SAS revocation control.",
+      "productionTip": {
+        "official": "The Azure CLI documentation states that `az storage account revoke-delegation-keys` revokes all user delegation keys for a storage account and invalidates SAS tokens associated with those keys. Microsoft also warns that cached keys and role assignments can delay invalidation.",
+        "recommendation": "Keep SAS lifetimes short, record which application issued each SAS, prefer user delegation SAS, and rehearse separate revocation playbooks for user delegation SAS, policy-based service SAS, and account-key-signed SAS."
+      },
+      "memoryTrick": "Revoke the signer: delegation key for user delegation SAS, stored policy for policy-based service SAS, account key for account-key SAS. This shortcut fails if the SAS is already expired or blocked by another account setting.",
+      "examTip": "The exam often hides the answer in phrases such as `user delegation`, `not signed with an account key`, or `stored access policy`. Match those words to the revocation mechanism before choosing a key rotation answer."
+    },
+    "sources": [
+      {
+        "title": "Use Azure CLI to create a user delegation SAS for a container or blob",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+      },
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.2-03",
+    "objective": "D2.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You are reviewing the following SAS URL for a blob named `report.csv`.\n\n```text\nhttps://stdata.blob.core.windows.net/exports/report.csv?sv=2024-11-04&sr=b&sp=r&st=2026-10-06T01:00:00Z&se=2026-10-06T05:00:00Z&spr=https&sip=203.0.113.10-203.0.113.20&sig=<signature>\n```\n\nWhich statement correctly describes the access granted by this SAS?",
+    "options": [
+      {
+        "id": "A",
+        "text": "It allows read and list access to all blobs in the `exports` container over HTTP or HTTPS."
+      },
+      {
+        "id": "B",
+        "text": "It allows write access to `report.csv` from any public IPv4 address until the expiry time."
+      },
+      {
+        "id": "C",
+        "text": "It allows read access to the blob over HTTPS from the specified IPv4 range during the signed time window."
+      },
+      {
+        "id": "D",
+        "text": "It allows read access only to users who are assigned the Reader role on the storage account."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The signature is valid, the request targets Blob Storage, the client uses a supported service version, and no storage firewall or other network control separately blocks the request.",
+    "sections": {
+      "correctAnswer": "**C. It allows read access to the blob over HTTPS from the specified IPv4 range during the signed time window**. The token has `sr=b`, `sp=r`, `st` and `se` times, `spr=https`, and an inclusive `sip` range.",
+      "technical": "A SAS URL is the storage resource URI plus query parameters. Azure Storage verifies the signature and then checks the constraints represented by those parameters. Key fields in the sample are:\n\n| Parameter | Meaning in this URL |\n|---|---|\n| `sv=2024-11-04` | Signed service version used for authorization and handling requests |\n| `sr=b` | Signed resource is a blob, not the whole container |\n| `sp=r` | Signed permission is read |\n| `st=2026-10-06T01:00:00Z` | SAS is not valid before this UTC start time |\n| `se=2026-10-06T05:00:00Z` | SAS becomes invalid after this UTC expiry time |\n| `spr=https` | Requests must use HTTPS |\n| `sip=203.0.113.10-203.0.113.20` | Requests must originate from that inclusive IPv4 range |\n| `sig=<signature>` | Cryptographic signature used to authorize the token |\n\nThe `sp` value is not `l`, so it does not grant list permission. The `sr` value is `b`, so the SAS applies to the named blob resource, not every blob in the container. `spr=https` excludes HTTP. The SAS itself authorizes whoever possesses it; the client does not also need the Azure Reader role just because the permission is named read. If this were a user delegation SAS, the creator's RBAC permissions would matter when creating and authorizing the SAS, but the URL shown does not require the later caller to hold Reader.",
+      "wrongOptions": {
+        "A": "The token grants read only, not list, because `sp=r` lacks `l`. It targets a blob because `sr=b`, and `spr=https` does not allow HTTP. Misconception: A container path in the URL means container-wide access. Could be correct when `sr=c`, `sp=rl`, and `spr=https,http` or omitted/defaulted appropriately.",
+        "B": "The token lacks write permission because `sp` does not include `w`, and it restricts source IP addresses with `sip`. Misconception: Any SAS URL to a blob permits upload or overwrite. Could be correct when `sp=w` or another write-capable permission is present and no restrictive IP field is set.",
+        "D": "A SAS authorizes the request by its signed token constraints. The caller possessing the SAS does not need the Azure Reader role to use the SAS. Misconception: Every Azure Storage read requires an Azure RBAC Reader assignment. Could be correct when the client is accessing blobs directly with Microsoft Entra authorization instead of presenting a SAS."
+      },
+      "plainEnglish": "The part after the question mark is the temporary permission ticket. It says what object the ticket is for, what action is allowed, when the ticket starts and expires, which network addresses can use it, and whether HTTPS is required. Here the ticket is for one blob and says read only. It also says the caller must use HTTPS and must come from one of the listed public IPv4 addresses.\n\nIt does not say the caller can list the whole container, upload a replacement file, or use ordinary HTTP.",
+      "analogy": "A concert ticket says: seat 14A, entry between 7 PM and 11 PM, front gate only, and must enter from the east entrance group. If any detail does not match, entry fails.\n\n| Analogy | Azure reality |\n|---|---|\n| Seat 14A | `sr=b` and the blob URL |\n| Entry privilege | `sp=r` read permission |\n| 7 PM to 11 PM | `st` and `se` UTC validity window |\n| Front gate only | `spr=https` |\n| East entrance group | `sip` IPv4 range |\n\n**Where the analogy breaks down:** A SAS uses cryptographic signatures and storage service versions, while a paper ticket does not include a signed string-to-sign or protocol rules.",
+      "jargon": [
+        {
+          "term": "SAS URL",
+          "definition": "A storage resource URL with a SAS token appended as query parameters."
+        },
+        {
+          "term": "`sv`",
+          "definition": "Signed version, the storage service version used to authorize and handle SAS requests."
+        },
+        {
+          "term": "`sr`",
+          "definition": "Signed resource. For Blob Storage, `b` indicates a blob and `c` indicates a container."
+        },
+        {
+          "term": "`sp`",
+          "definition": "Signed permissions, such as `r` for read or `l` for list."
+        },
+        {
+          "term": "`st`",
+          "definition": "Signed start time, the earliest UTC time when the SAS is valid."
+        },
+        {
+          "term": "`se`",
+          "definition": "Signed expiry time, the UTC time after which the SAS is invalid."
+        },
+        {
+          "term": "`spr`",
+          "definition": "Signed protocol, which can restrict requests to HTTPS."
+        },
+        {
+          "term": "`sip`",
+          "definition": "Signed IP address or inclusive IPv4 range from which requests are accepted."
+        }
+      ],
+      "watchOut": "- `r` is read; list requires `l`.\n- `sr=b` means blob; `sr=c` means container for Blob Storage.\n- `sip` supports IPv4 ranges and is inclusive.\n- `spr=https` is more restrictive than the default that can allow HTTP and HTTPS for some SAS types.\n- Time values in SAS parameters are UTC, not local time.",
+      "productionTip": {
+        "official": "Microsoft documents SAS parameters including signed permissions, signed resource, signed start, signed expiry, signed IP, signed protocol, signed version, and signature. It also states that HTTPS should be used to create, distribute, and use SAS URIs.",
+        "recommendation": "Before distributing a SAS URL, decode and review its query string. Confirm the resource scope, permissions, expiry, protocol, and IP range match the business request, then record who received it and why."
+      },
+      "memoryTrick": "Read SAS like a checklist: `sr` where, `sp` what, `st/se` when, `spr/sip` how and from where. It is a simplification because some SAS types add more fields.",
+      "examTip": "When the exam shows a SAS URL, do not panic over the long signature. Ignore `sig` details and interpret readable fields. The answer usually turns on one letter such as `r` versus `rl`, or `b` versus `c`."
+    },
+    "sources": [
+      {
+        "title": "Create a service SAS",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas"
+      },
+      {
+        "title": "Create an account SAS",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/create-account-sas"
+      },
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.2-04",
+    "objective": "D2.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A web app generates short-lived SAS URLs for customers to download exported reports. The code sets the SAS start time to the current UTC time and the expiry time to 30 minutes later. Some customers receive intermittent authorization failures during the first few minutes after the URL is issued, but the same URL works later.\n\nWhat should you change?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Omit the start time, or set it at least 15 minutes in the past"
+      },
+      {
+        "id": "B",
+        "text": "Add the List permission to the SAS"
+      },
+      {
+        "id": "C",
+        "text": "Change the signed resource from blob to container"
+      },
+      {
+        "id": "D",
+        "text": "Regenerate the storage account key before issuing each SAS"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The SAS signature, expiry time, permissions, resource URI, and network restrictions are otherwise correct. The issue occurs immediately after token creation and then disappears without changing the token.",
+    "sections": {
+      "correctAnswer": "**A. Omit the start time, or set it at least 15 minutes in the past**. Microsoft warns that setting a SAS start time to the current time can fail intermittently because of clock skew between machines.",
+      "technical": "A SAS validity interval is controlled mainly by `st` and `se`. `st` is the signed start time, and `se` is the signed expiry time. If `st` is omitted, the current UTC time is used as the effective start time by the service, making the SAS valid immediately for normal cases.\n\nClock skew means two systems may disagree slightly about the current time. If the SAS creator sets `st` to exactly now, Azure Storage or an intermediate client may evaluate the request when its clock is still before that start time. The request can fail even though the URL looks correct. Microsoft recommends setting the start time at least 15 minutes in the past or omitting it. The same general caution applies around expiry time because skew can be observed in either direction.\n\nAdding unrelated permissions, widening the resource scope, or rotating account keys does not fix a not-yet-valid token. Those changes either overgrant access or add operational risk. The least-privilege fix is to keep the same resource and permissions, but make the validity window tolerant of small clock differences.",
+      "wrongOptions": {
+        "B": "List permission does not affect whether a single blob download SAS is already valid. It would also grant extra access if the SAS targets a container. Misconception: Authorization failures are always missing permissions. Could be correct when the failing operation is listing blobs in a container and the SAS lacks `l`.",
+        "C": "Changing `sr` from blob to container would broaden the resource scope and still would not fix a start time that is in the future relative to the service. Misconception: Container-level SAS is more reliable than blob-level SAS. Could be correct when the customer must list or read multiple blobs in the container and the permissions are intentionally scoped that way.",
+        "D": "Regenerating the account key before issuing each SAS is unnecessary and disruptive. The symptom points to clock skew, not a compromised or stale signing key. Misconception: Key regeneration is a normal step in every SAS creation flow. Could be correct as part of emergency revocation for account-key-signed SAS tokens, with careful application impact planning."
+      },
+      "plainEnglish": "The ticket says it starts at exactly noon. If one computer thinks it is noon and another thinks it is 11:59:30, the second computer may reject the ticket as too early. A few minutes later, the same ticket works because everyone agrees the start time has passed.\n\nThe practical fix is to not put a start time on the ticket, or to set the start time a little earlier than now. You still keep a short expiry time so the ticket does not last too long.",
+      "analogy": "A train ticket printed at 10:00 says valid starting 10:00. The station clock is slow, so the gate thinks it is 9:58 and rejects the ticket. Printing the ticket as valid from 9:45 avoids that small clock mismatch.\n\n| Analogy | Azure reality |\n|---|---|\n| Printed valid-from time | SAS `st` |\n| Ticket expiration | SAS `se` |\n| Station clock is slow | Clock skew |\n| Valid from 9:45 | Start time set in the past or omitted |\n\n**Where the analogy breaks down:** Azure uses UTC timestamps and cryptographic signatures, not local station clocks or paper tickets.",
+      "jargon": [
+        {
+          "term": "Clock skew",
+          "definition": "A difference between the current time reported by different machines or services."
+        },
+        {
+          "term": "`st`",
+          "definition": "The SAS signed start time that defines when the token becomes valid."
+        },
+        {
+          "term": "`se`",
+          "definition": "The SAS signed expiry time that defines when the token becomes invalid."
+        },
+        {
+          "term": "UTC",
+          "definition": "Coordinated Universal Time, the time basis used for SAS date-time values."
+        },
+        {
+          "term": "Authorization failure",
+          "definition": "A rejected request because the service could not validate the identity, signature, permission, time, protocol, IP, or other access condition."
+        },
+        {
+          "term": "Least privilege",
+          "definition": "Granting only the minimum permissions and scope needed for a task."
+        }
+      ],
+      "watchOut": "- A SAS that starts `now` can be too early from another system's point of view.\n- Omitting `st` is often safer for immediate-use SAS tokens.\n- Do not add permissions to solve a time-window problem.\n- Use UTC date-time values and include seconds where required by tools.\n- Keep expiry short, but allow operational tolerance for clock skew and retries.",
+      "productionTip": {
+        "official": "Microsoft's SAS best practices warn that setting the start time to the current time can cause intermittent failures for the first few minutes because of clock skew, and they suggest setting it at least 15 minutes in the past or omitting it.",
+        "recommendation": "For download links generated on demand, omit `st` unless a delayed start is truly needed. If policy requires a start value, set it slightly in the past and keep `se` close to the required business duration."
+      },
+      "memoryTrick": "If a brand-new SAS fails, think `start time in the future`. Backdate or omit `st`. This is a simplification because bad signatures, IP restrictions, and missing permissions can also cause 403 errors.",
+      "examTip": "Clue words are `works later`, `first few minutes`, and `start time set to current time`. These point to clock skew. Do not choose broader permissions or key rotation unless the scenario mentions the operation or key is wrong."
+    },
+    "sources": [
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      },
+      {
+        "title": "Create a service SAS",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.2-05",
+    "objective": "D2.1.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You manage a storage account named `stcontracts`. The security team requires that SAS tokens for the account have a maximum validity interval of two days. Requests that use a SAS outside the allowed interval must be denied, not merely logged.\n\nYou enable the storage account's SAS expiration policy and set the upper limit to two days. Which two statements are true? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "The policy applies only to account SAS tokens."
+      },
+      {
+        "id": "B",
+        "text": "Set the SAS expiration action to `Block` to deny out-of-policy SAS requests."
+      },
+      {
+        "id": "C",
+        "text": "A SAS without a signed start time is always compliant if its expiry is within two days."
+      },
+      {
+        "id": "D",
+        "text": "The validity interval is calculated from the signed start time to the signed expiry time."
+      },
+      {
+        "id": "E",
+        "text": "The policy extends user delegation SAS tokens so they can last longer than seven days."
+      }
+    ],
+    "correct": [
+      "B",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The storage account supports the SAS expiration policy setting. Diagnostic logging details are not required for the answer. The requirement is enforcement rather than audit-only monitoring.",
+    "sections": {
+      "correctAnswer": "**B. Set the SAS expiration action to `Block` to deny out-of-policy SAS requests** and **D. The validity interval is calculated from the signed start time to the signed expiry time**. The policy can log or block out-of-policy SAS use, and compliance is based on `se - st`.",
+      "technical": "A SAS expiration policy is configured on a storage account and defines an upper validity interval for SAS tokens. The policy can apply to user delegation SAS, service SAS, and account SAS. Compliance is calculated by subtracting the signed start time from the signed expiry time. If the interval is less than or equal to the upper limit, the SAS is in compliance.\n\nThe action determines enforcement. `Log` is the default and allows requests while writing policy status to logs when logging is configured. `Block` denies requests made with out-of-policy SAS tokens. Out-of-policy includes a SAS with a missing signed start field or a validity interval longer than the upper limit. Therefore, when an expiration policy is in effect, the signed start field is required for every SAS.\n\nA user delegation SAS also has an independent maximum expiry interval of seven days. Setting the storage account SAS expiration policy to more than seven days does not extend a user delegation SAS beyond that maximum. If the user delegation key expires, SAS tokens signed by that key become invalid.",
+      "wrongOptions": {
+        "A": "The policy can apply to user delegation SAS, service SAS, and account SAS, not only account SAS. Misconception: A storage-account setting named SAS policy controls only account-level SAS. Could be correct for a different feature that is explicitly documented as account SAS-only, but not this expiration policy.",
+        "C": "When a SAS expiration policy is in effect, the signed start field is required. A missing start time is treated as out-of-policy. Misconception: Expiry alone is enough for policy compliance. Could be correct only in a general SAS creation scenario without an account SAS expiration policy requiring a start field.",
+        "E": "A user delegation SAS has a maximum expiry interval of seven days regardless of the SAS expiration policy. The policy does not extend that limit. Misconception: The account policy overrides all SAS type-specific limits upward. Could be correct if the statement said a stricter policy can make an allowed interval shorter, subject to support and action settings."
+      },
+      "plainEnglish": "The storage account can have a rule that says temporary access tickets should not last longer than two days. The rule checks the time between the ticket's start time and end time. If the ticket has no start time, the account cannot calculate the interval properly for the policy, so that is outside the policy.\n\nIf you choose `Log`, Azure lets the request through and records the issue. If you choose `Block`, Azure rejects the request. The security team asked for rejection, so choose `Block`.",
+      "analogy": "A building sets a rule that visitor badges may be valid for at most two days. Security checks both the printed start date and the printed end date. If the badge lasts three days or has no start date, the guard either records it or refuses entry depending on the enforcement mode.\n\n| Analogy | Azure reality |\n|---|---|\n| Visitor badge | SAS token |\n| Start date | Signed start `st` |\n| End date | Signed expiry `se` |\n| Two-day badge rule | SAS expiration policy upper limit |\n| Guard logs or refuses entry | `Log` or `Block` action |\n\n**Where the analogy breaks down:** Azure policy is evaluated by the storage service on requests, and some service-specific exceptions or unsupported cases can apply.",
+      "jargon": [
+        {
+          "term": "SAS expiration policy",
+          "definition": "A storage account setting that defines an upper validity interval for SAS tokens."
+        },
+        {
+          "term": "Validity interval",
+          "definition": "The time span between the SAS signed start and signed expiry values."
+        },
+        {
+          "term": "`Log` action",
+          "definition": "The policy action that allows out-of-policy SAS requests and records policy status when logging is configured."
+        },
+        {
+          "term": "`Block` action",
+          "definition": "The policy action that denies requests made with out-of-policy SAS tokens."
+        },
+        {
+          "term": "Out-of-policy SAS",
+          "definition": "A SAS that lacks a signed start time or exceeds the configured upper validity interval."
+        },
+        {
+          "term": "User delegation SAS",
+          "definition": "A SAS signed with a user delegation key obtained using Microsoft Entra credentials."
+        }
+      ],
+      "watchOut": "- `Log` is useful for discovery but does not enforce denial.\n- `Block` is the strict enforcement choice.\n- A missing `st` is out-of-policy when the expiration policy is in effect.\n- User delegation SAS maximum validity remains seven days.\n- For service SAS and account SAS, account key creation times may need to exist before configuring the policy.",
+      "productionTip": {
+        "official": "Microsoft documents that SAS expiration policy supports `Log` and `Block`, calculates interval from signed start to signed expiry, and requires signed start when the policy is in effect. It also documents the seven-day maximum interval for user delegation SAS.",
+        "recommendation": "Start with `Log` in production to discover current SAS usage, then move to `Block` after owners fix long-lived tokens. Communicate the required start and expiry fields before enforcing the policy."
+      },
+      "memoryTrick": "SAS policy math is `se minus st`; enforcement is `Log` versus `Block`. This shortcut omits special cases such as user delegation's separate seven-day cap.",
+      "examTip": "The phrase `must be denied, not merely logged` points directly to `Block`. The phrase `maximum validity interval` points to comparing `st` and `se`, not just checking the expiry timestamp by itself. A harder question may ask what happens when `st` is omitted: with the expiration policy in effect, that SAS is out-of-policy."
+    },
+    "sources": [
+      {
+        "title": "Configure an expiration policy for shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/sas-expiration-policy"
+      },
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.2-06",
+    "objective": "D2.1.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a storage account named `stsecure`. You set `AllowSharedKeyAccess` to `false` to require Microsoft Entra-based authorization where possible. Several applications use SAS URLs to access blobs and queues.\n\nWhich SAS behavior should you expect after the change?",
+    "options": [
+      {
+        "id": "A",
+        "text": "All SAS requests are denied because every SAS uses Shared Key authorization."
+      },
+      {
+        "id": "B",
+        "text": "Service SAS and account SAS requests are permitted, but user delegation SAS requests are denied."
+      },
+      {
+        "id": "C",
+        "text": "User delegation SAS requests to Blob Storage are permitted, while service SAS and account SAS requests are denied."
+      },
+      {
+        "id": "D",
+        "text": "Only account SAS requests are denied; service SAS requests continue because they target one service."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The storage account property is explicitly set to disallow Shared Key access. The user delegation SAS requests are valid and target Blob Storage. Other network and firewall controls are not blocking the requests.",
+    "sections": {
+      "correctAnswer": "**C. User delegation SAS requests to Blob Storage are permitted, while service SAS and account SAS requests are denied**. Disallowing Shared Key blocks SAS types authorized with account keys, but a user delegation SAS is authorized with Microsoft Entra ID.",
+      "technical": "The `AllowSharedKeyAccess` property controls whether a storage account accepts requests authorized with Shared Key. When it is `false`, Azure Storage rejects requests authorized with account access keys. This directly affects SAS types because SAS tokens are authorized differently:\n\n| SAS type | Authorization type | Behavior when Shared Key access is disallowed |\n|---|---|---|\n| User delegation SAS | Microsoft Entra ID | Permitted for supported Blob Storage requests |\n| Service SAS | Shared Key | Denied for Azure Storage services |\n| Account SAS | Shared Key | Denied for Azure Storage services |\n\nThis is why user delegation SAS is preferred where supported: it avoids account-key authorization. A service SAS still uses Shared Key even if it targets only one service. An account SAS also uses Shared Key and may cover multiple services or service-level operations. The default state can be confusing. If `AllowSharedKeyAccess` is null or true, the account permits Shared Key. The question explicitly sets it to false, so applications using service SAS or account SAS must migrate to Microsoft Entra authorization or user delegation SAS where supported before the setting is enforced.",
+      "wrongOptions": {
+        "A": "Not every SAS uses Shared Key. A user delegation SAS is authorized with Microsoft Entra ID and can still be permitted for Blob Storage. Misconception: SAS always means account-key authorization. Could be correct only in an environment where every issued SAS is a service SAS or account SAS and no user delegation SAS is used.",
+        "B": "This reverses the documented behavior. Service SAS and account SAS use Shared Key and are denied when Shared Key access is disallowed. Misconception: Newer security settings block Microsoft Entra-based tokens. Could be correct if the setting instead blocked user delegation SAS through a separate user-bound policy, which is not the setting in this question.",
+        "D": "A service SAS is still signed with the storage account key, even though it targets one service. It is denied when Shared Key access is disallowed. Misconception: Single-service scope changes the authorization method. Could be correct if Shared Key remained allowed and only an account SAS-specific design rule were being enforced outside this setting."
+      },
+      "plainEnglish": "Turning off Shared Key is like saying, `Do not accept passes stamped with the account master key.` Service SAS and account SAS passes use that master key stamp, so they stop working. A user delegation SAS uses Microsoft Entra-based signing, so it can keep working for supported blob scenarios.\n\nThis setting is powerful because older tools and services may still depend on Shared Key. You need to test before turning it on for production accounts.",
+      "analogy": "A company stops accepting paper passes signed with the old master stamp and accepts only identity-system passes. Visitors holding the new identity-system pass can enter; visitors holding old stamped passes cannot.\n\n| Analogy | Azure reality |\n|---|---|\n| Old master stamp | Storage account key / Shared Key |\n| Identity-system pass | User delegation SAS |\n| Paper pass for one room | Service SAS |\n| Paper pass for many rooms | Account SAS |\n| Reject old stamps | `AllowSharedKeyAccess=false` |\n\n**Where the analogy breaks down:** Azure also has service compatibility details, metrics, resource logs, and per-service support limits that a simple pass system does not show.",
+      "jargon": [
+        {
+          "term": "`AllowSharedKeyAccess`",
+          "definition": "A storage account property that controls whether requests authorized with Shared Key are permitted."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "Authorization using the storage account access key."
+        },
+        {
+          "term": "User delegation SAS",
+          "definition": "A Microsoft Entra-authorized SAS signed with a user delegation key."
+        },
+        {
+          "term": "Service SAS",
+          "definition": "A Shared Key-authorized SAS for a resource in one Azure Storage service."
+        },
+        {
+          "term": "Account SAS",
+          "definition": "A Shared Key-authorized SAS that can cover one or more storage services and service-level operations."
+        },
+        {
+          "term": "Microsoft Entra-based authorization",
+          "definition": "Authorization based on identities and tokens from Microsoft Entra ID rather than storage account keys."
+        }
+      ],
+      "watchOut": "- `AllowSharedKeyAccess=false` denies service SAS and account SAS.\n- User delegation SAS can remain valid because it uses Microsoft Entra authorization.\n- Metrics may show `SAS` broadly, so use logs and design knowledge to identify SAS type.\n- Some Azure tools or services may still require Shared Key for certain workloads.\n- The null default permits Shared Key until you explicitly set the property to false.",
+      "productionTip": {
+        "official": "Microsoft documents a table showing that when `AllowSharedKeyAccess` is false, user delegation SAS requests are permitted for Blob Storage while service SAS and account SAS requests are denied for Azure Storage services.",
+        "recommendation": "Inventory SAS traffic before disabling Shared Key. Migrate blob workloads to user delegation SAS or direct Microsoft Entra authorization, and test tools such as Storage Explorer, Azure CLI, AzCopy, and Azure Files workflows."
+      },
+      "memoryTrick": "Turn off Shared Key, lose Shared-Key SAS. User delegation is the Entra exception. This is a simplification because service support and compatibility still matter.",
+      "examTip": "The exam distinction is authorization type, not SAS name length or scope. Service SAS and account SAS are Shared Key; user delegation SAS is Microsoft Entra. Pick the behavior that follows that table."
+    },
+    "sources": [
+      {
+        "title": "Prevent authorization with Shared Key",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/shared-key-authorization-prevent"
+      },
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.2-07",
+    "objective": "D2.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You need to provide a vendor with access to download a single blob named `invoice-778.pdf` from a private container for the next six hours. The vendor must not list the container, upload data, delete data, or use HTTP.\n\nWhich SAS settings provide the least privilege?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`sr=b`, `sp=r`, `se` six hours from now, and `spr=https`"
+      },
+      {
+        "id": "B",
+        "text": "`sr=c`, `sp=rl`, `se` six hours from now, and `spr=https`"
+      },
+      {
+        "id": "C",
+        "text": "`sr=b`, `sp=rw`, `se` seven days from now, and `spr=https,http`"
+      },
+      {
+        "id": "D",
+        "text": "`sr=c`, `sp=rwdl`, no expiry, and `spr=https`"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The SAS is validly signed, the vendor only needs a direct download of the named blob, and six hours is enough for the business process. No IP restriction is required by the scenario.",
+    "sections": {
+      "correctAnswer": "**A. `sr=b`, `sp=r`, `se` six hours from now, and `spr=https`**. This targets the single blob, grants only read permission, limits the lifetime to the required duration, and requires HTTPS.",
+      "technical": "Least privilege for SAS means minimizing four dimensions: resource, permissions, time, and protocol or network constraints.\n\nFor a single blob download, `sr=b` is the correct Blob Storage signed resource because it grants access to the named blob, not the whole container. `sp=r` grants read access. It does not grant list, write, delete, create, or add. `se` six hours from now matches the required time window. `spr=https` requires HTTPS, which Microsoft recommends for SAS operations and distribution.\n\nA container-scoped SAS (`sr=c`) can be correct when the client must list or access multiple blobs in a container, but it is broader than required for one known blob URL. Adding `l` would allow listing. Adding `w` or `d` would allow modifications or deletion. Allowing `https,http` increases exposure because a SAS intercepted over HTTP can be used by whoever obtains it. Long expiry increases the damage window if the URL is leaked.\n\nYou could optionally add an appropriate `sip` range if the vendor has a stable public outbound IPv4 address. The scenario does not require it, so the core least-privilege answer is the one with blob scope, read-only permission, short expiry, and HTTPS only.",
+      "wrongOptions": {
+        "B": "This grants container scope and list permission. The vendor only needs one known blob, so listing the container is unnecessary. Misconception: Downloading from a container requires list permission. Could be correct when the vendor must browse or enumerate multiple blobs in the container.",
+        "C": "This grants write permission, lasts seven days instead of six hours, and permits HTTP as well as HTTPS. It is broader in action, time, and protocol. Misconception: Read/write is a harmless convenience for download links. Could be correct only for a controlled upload/update workflow that truly requires write and has accepted the longer lifetime.",
+        "D": "This grants container-wide read, write, delete, and list with no expiry, which violates every least-privilege requirement in the prompt. Misconception: A private container stays safe even if a broad SAS exists. Could be correct in almost no vendor-download scenario; a broad administrative SAS might be used temporarily in a tightly controlled internal operation, but it would still need expiry."
+      },
+      "plainEnglish": "The vendor needs one file for six hours. So the ticket should name that one file, allow only reading, stop working after six hours, and work only over HTTPS. Giving access to the whole folder, letting the vendor list files, allowing uploads, or making the ticket last a week all increase risk without helping the task.\n\nA SAS URL is often bearer-style access: whoever has it can use it. That is why a small, short-lived ticket is safer.",
+      "analogy": "A courier needs to pick up one envelope today. Give the courier a pass for that envelope only, valid today only, and require the secure entrance. Do not give a warehouse pass, a shelf inventory list, or permission to add and remove boxes.\n\n| Analogy | Azure reality |\n|---|---|\n| One envelope | One blob |\n| Pick up only | Read permission `r` |\n| Today only | Short `se` expiry |\n| Secure entrance | HTTPS-only `spr=https` |\n| Warehouse pass | Container-scoped SAS |\n\n**Where the analogy breaks down:** Azure SAS permissions are encoded in signed query parameters and can include protocol, IP, version, and cryptographic signature checks.",
+      "jargon": [
+        {
+          "term": "Least privilege",
+          "definition": "The practice of granting only the minimum access needed for a task."
+        },
+        {
+          "term": "`sr=b`",
+          "definition": "A Blob Storage SAS signed resource value indicating a blob."
+        },
+        {
+          "term": "`sr=c`",
+          "definition": "A Blob Storage SAS signed resource value indicating a container."
+        },
+        {
+          "term": "`sp=r`",
+          "definition": "A SAS signed permission value for read access."
+        },
+        {
+          "term": "`sp=rl`",
+          "definition": "A SAS permission combination for read and list."
+        },
+        {
+          "term": "`se`",
+          "definition": "The SAS signed expiry time."
+        },
+        {
+          "term": "`spr=https`",
+          "definition": "A SAS protocol restriction requiring requests to use HTTPS."
+        },
+        {
+          "term": "Bearer-style access",
+          "definition": "A pattern where possession of the token is enough to use the access it grants, subject to its constraints."
+        }
+      ],
+      "watchOut": "- Downloading a known blob does not require list permission.\n- Container scope is broader than blob scope.\n- Write and delete permissions are dangerous in vendor scenarios.\n- Avoid long-lived SAS URLs; expiry limits the damage window.\n- HTTPS only protects the SAS from exposure during transport.",
+      "productionTip": {
+        "official": "Microsoft recommends granting the least possible privileges with SAS, using read-only SAS when possible, granting access to the fewest resources, and using HTTPS for operations and distribution.",
+        "recommendation": "Use a small SAS-generation service that creates per-request, read-only, HTTPS-only URLs for exact blob names. Add IP restriction only when the client's stable public outbound IPv4 range is known and tested."
+      },
+      "memoryTrick": "One blob, one verb, one short window: `sr=b`, `sp=r`, short `se`. The shortcut fails when the user must enumerate a container or write data.",
+      "examTip": "The clue words `single blob`, `download`, `must not list`, and `must not use HTTP` map directly to blob scope, read permission, no list permission, and HTTPS only. Eliminate any option with `c`, `l`, `w`, `d`, long expiry, or HTTP."
+    },
+    "sources": [
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      },
+      {
+        "title": "Create a service SAS",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas"
+      },
+      {
+        "title": "Create an account SAS",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/create-account-sas"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.1.2-08",
+    "objective": "D2.1.2",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You sign in to Azure CLI with Microsoft Entra credentials. You need to generate a user delegation SAS URL for a blob named `audit.csv`. The SAS must be created with Microsoft Entra authorization, not with an account key.\n\nWhich two Azure CLI options are required on `az storage blob generate-sas` to request a user delegation SAS this way? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "`--auth-mode login`"
+      },
+      {
+        "id": "B",
+        "text": "`--as-user`"
+      },
+      {
+        "id": "C",
+        "text": "`--account-key <key>`"
+      },
+      {
+        "id": "D",
+        "text": "`--policy-name <stored-policy>`"
+      },
+      {
+        "id": "E",
+        "text": "`--permissions acdrw` for every blob SAS"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The signed-in principal has an Azure RBAC role at storage account, resource group, or subscription scope that includes the generate user delegation key action. The expiry time is within the user delegation key validity limits.",
+    "sections": {
+      "correctAnswer": "**A. `--auth-mode login`** and **B. `--as-user`**. Azure CLI requires `--auth-mode login` to authorize with Microsoft Entra credentials and `--as-user` to return a user delegation SAS.",
+      "technical": "For Azure CLI, `az storage blob generate-sas` can generate a SAS for a blob. To create a user delegation SAS, the command must use Microsoft Entra credentials and identify that the returned SAS should be user delegation. Microsoft documents both required switches:\n\n```azurecli\naz storage blob generate-sas \\\n    --account-name <storage-account> \\\n    --container-name <container> \\\n    --name audit.csv \\\n    --permissions r \\\n    --expiry <date-time> \\\n    --auth-mode login \\\n    --as-user \\\n    --full-uri\n```\n\n`--auth-mode login` tells Azure CLI to authorize requests to Azure Storage using the signed-in Microsoft Entra credentials. `--as-user` indicates that the SAS returned should be a user delegation SAS. The CLI implicitly creates the user delegation key used to sign the SAS. The signed-in principal must have a role that includes `Microsoft.Storage/storageAccounts/blobServices/generateUserDelegationKey`, scoped at the storage account, resource group, or subscription. The start and expiry times specified for the SAS are also used for the user delegation key, and the user delegation key validity interval can be up to seven days.\n\n`--account-key` would instead use Shared Key-style signing. Stored access policies are not supported for user delegation SAS. Permissions should match the required operation; `acdrw` is an example set, not a requirement for every blob SAS and would overgrant for read-only download.",
+      "wrongOptions": {
+        "C": "`--account-key` uses the storage account key and is the opposite of the Microsoft Entra-based requirement. Misconception: The account key is required for every SAS. Could be correct when intentionally generating a service SAS signed with Shared Key and Shared Key authorization is allowed.",
+        "D": "Stored access policies are not supported for a user delegation SAS, and the required CLI switches are `--auth-mode login` and `--as-user`. Misconception: Every SAS should reference a stored policy. Could be correct when generating a service SAS that is meant to inherit constraints from a stored access policy.",
+        "E": "Permissions should be the least set needed. `acdrw` grants add, create, delete, read, and write, which is excessive for a read-only SAS. Misconception: The documented example permission string is mandatory. Could be correct only when the client genuinely needs all those operations on the blob for the defined time window."
+      },
+      "plainEnglish": "You are telling Azure CLI two things. First, `--auth-mode login` says, `Use the identity I signed in with, not an account key.` Second, `--as-user` says, `Make this a user delegation SAS.` Together they create the Entra-based SAS type.\n\nThe other options either use the account key, apply to stored policies that user delegation SAS does not support, or grant too many permissions.",
+      "analogy": "When printing a temporary badge, the clerk must choose the identity desk as the authority and choose the visitor-delegation badge type. If the clerk instead uses the master-key stamp, the badge is not identity-delegated.\n\n| Analogy | Azure reality |\n|---|---|\n| Identity desk authority | `--auth-mode login` |\n| Visitor-delegation badge type | `--as-user` |\n| Master-key stamp | `--account-key` |\n| Badge permissions | `--permissions` |\n| Expiration printed on badge | `--expiry` |\n\n**Where the analogy breaks down:** Azure CLI also needs RBAC permissions to request a user delegation key, and the generated SAS is a cryptographic query string, not a visible badge.",
+      "jargon": [
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's cross-platform command-line tool for managing Azure resources."
+        },
+        {
+          "term": "`az storage blob generate-sas`",
+          "definition": "Azure CLI command that generates a SAS token or URI for a blob."
+        },
+        {
+          "term": "`--auth-mode login`",
+          "definition": "Azure CLI option that uses the signed-in Microsoft Entra credentials for authorization."
+        },
+        {
+          "term": "`--as-user`",
+          "definition": "Azure CLI option indicating that the returned SAS should be a user delegation SAS."
+        },
+        {
+          "term": "`--full-uri`",
+          "definition": "Azure CLI option that returns the full blob URI with the SAS token appended."
+        },
+        {
+          "term": "Generate user delegation key action",
+          "definition": "The Azure RBAC permission needed to request the key used to sign a user delegation SAS."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A resource policy that can define constraints for service SAS tokens, but not user delegation SAS tokens."
+        }
+      ],
+      "watchOut": "- `--auth-mode login` and `--as-user` are both needed for the CLI user delegation SAS flow.\n- The returned token may not include the `?` delimiter unless `--full-uri` is used.\n- User delegation SAS does not support stored access policies.\n- The creator needs RBAC permission to generate the user delegation key.\n- Do not copy broad example permissions into production if the client only needs read.",
+      "productionTip": {
+        "official": "Microsoft's Azure CLI guidance states that `--auth-mode login` and `--as-user` are required when creating a user delegation SAS, and that the signed-in account needs a role including the generate user delegation key action.",
+        "recommendation": "Wrap SAS generation in reviewed scripts or services that calculate expiry, use `--permissions r` for read-only downloads, include `--full-uri` when the caller needs a complete link, and avoid logging the resulting SAS URL."
+      },
+      "memoryTrick": "CLI user delegation needs `login` plus `as-user`: login tells who signs in; as-user tells what SAS type to make. This does not replace the need for RBAC permission or a valid expiry.",
+      "examTip": "If the question says `Azure CLI`, `Microsoft Entra credentials`, and `user delegation SAS`, select `--auth-mode login` and `--as-user`. Eliminate `--account-key` immediately because that is Shared Key-based."
+    },
+    "sources": [
+      {
+        "title": "Use Azure CLI to create a user delegation SAS for a container or blob",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli"
+      },
+      {
+        "title": "Create a user delegation SAS",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/create-user-delegation-sas"
+      },
+      {
+        "title": "Grant limited access to data with shared access signatures (SAS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

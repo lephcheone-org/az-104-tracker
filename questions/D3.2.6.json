@@ -1,0 +1,696 @@
+[
+  {
+    "id": "D3.2.6-01",
+    "objective": "D3.2.6",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains an availability set named `aset-payroll` in Australia East. The set uses managed disks. You plan to deploy eight identical payroll web VMs into the set. The operations team wants the VMs spread for both unplanned hardware failures and planned Azure platform maintenance.\n\nWhich statement correctly describes how Azure uses fault domains and update domains for this availability set?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Fault domains are used only during planned host updates, and update domains isolate VMs that share power and networking hardware"
+      },
+      {
+        "id": "B",
+        "text": "Fault domains isolate common power and network hardware, while update domains group VMs that can be restarted together during planned maintenance"
+      },
+      {
+        "id": "C",
+        "text": "Fault domains can be increased to 20 after the set is created, while update domains are fixed at three per region"
+      },
+      {
+        "id": "D",
+        "text": "Fault domains and update domains are selected separately for each VM after the VM is deployed"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The VMs use managed disks and are deployed into the availability set during VM creation. Region-specific fault-domain support is checked before deployment.",
+    "sections": {
+      "correctAnswer": "**B. Fault domains isolate common power and network hardware, while update domains group VMs that can be restarted together during planned maintenance**. Azure assigns both values to VMs in an availability set so a related application tier is not unnecessarily concentrated on one physical failure boundary or one maintenance batch.",
+      "technical": "An availability set is a regional placement feature for two or more VMs that run the same application tier. Azure assigns each VM in the set to a fault domain and an update domain. Fault domains model shared physical infrastructure: VMs in the same fault domain can share a power source and network switch. Spreading VMs across fault domains reduces the blast radius of a rack, power, or network-hardware event. Update domains are different; they model planned maintenance sequencing. VMs in the same update domain can be restarted at the same time, and Microsoft documents that only one update domain is restarted at a time during planned maintenance.\n\nThe limits are chosen at the availability set level. Microsoft documents up to three fault domains and up to twenty update domains, with the number of managed-disk fault domains varying by region as either two or three. Documentation examples and common defaults use five update domains; if more than five VMs are configured with five update domains, the sixth VM is placed with the first update domain, the seventh with the second, and the rotation continues. These settings cannot be changed after the availability set is created.\n\nManaged availability sets also align VM managed disks with disk fault domains. That alignment matters because the operating system and data disks should not silently remove the protection that the compute placement was supposed to provide. The practical sequence is: create the availability set with the required domain counts, verify the region's supported `Aligned` fault-domain count when needed, and create the VMs in the set. Do not stop the first VM before deploying the second if you are trying to avoid a documented shared-fault-domain edge case.",
+      "wrongOptions": {
+        "A": "This reverses the two concepts. Fault domains are about shared physical infrastructure, and update domains are about planned restart batches. Misconception: The word update sounds like hardware replacement, so the two names can be swapped. Could be correct when describing a deliberately simplified classroom diagram, but not when answering how Azure availability sets are documented.",
+        "C": "The maximum counts are not as stated. Microsoft documents up to three fault domains and up to twenty update domains, and the settings cannot be changed after the availability set is created. Misconception: Every placement setting remains editable like a tag or display name. Could be correct only for a new availability set design before deployment, not for changing an existing set after creation.",
+        "D": "Azure assigns the domains as part of availability-set placement; administrators do not pick a separate domain for every VM after deployment. Misconception: Fault domains are manual labels that can be edited per VM later. Could be correct when checking the resulting domain columns in the portal, but viewing the value is not the same as choosing it after the VM exists."
+      },
+      "plainEnglish": "Imagine you run eight cash registers for a store. You do not want all registers plugged into one power strip, and you do not want a maintenance worker to reboot all of them at lunch time. Fault domains are the power-strip idea: spread machines so one rack, power feed, or network switch problem affects only part of the group. Update domains are the maintenance schedule: split machines into restart groups so Azure maintenance touches only one group at a time. A VM belongs to both kinds of grouping. Together they help keep enough copies of the application running, but they do not fix a bug inside the application or Windows or Linux itself.",
+      "analogy": "A theatre has eight ticket scanners. The manager places scanners near different electrical panels and also writes a cleaning rota.\n\n| Analogy | Azure reality |\n|---|---|\n| Electrical panel group | Fault domain |\n| Cleaning rota batch | Update domain |\n| Ticket scanner | Virtual machine |\n| Theatre ticketing tier | Application tier in one availability set |\n| Scanner storage drawer | Managed disk aligned to the VM's fault domain |\n\n**Where the analogy breaks down:** Azure placement is performed by a distributed cloud platform, not by a person walking around a theatre. The domain counts depend on region and availability-set configuration, and the cloud service can still be affected by failures outside a neat panel-and-rota story.",
+      "jargon": [
+        {
+          "term": "Availability set",
+          "definition": "A logical grouping for VMs that tells Azure to distribute related instances across fault domains and update domains."
+        },
+        {
+          "term": "Fault domain",
+          "definition": "A placement boundary for VMs that share physical infrastructure such as power and network switching."
+        },
+        {
+          "term": "Update domain",
+          "definition": "A maintenance grouping that indicates which VMs and underlying hardware can be restarted together."
+        },
+        {
+          "term": "Managed disk",
+          "definition": "An Azure-managed block storage disk used as an operating system disk or data disk for a VM."
+        },
+        {
+          "term": "Aligned availability set",
+          "definition": "An availability set SKU for managed disks that aligns compute and disk fault domains."
+        },
+        {
+          "term": "Planned maintenance",
+          "definition": "Azure platform maintenance events that can require controlled restarts of VM hosts or related infrastructure."
+        },
+        {
+          "term": "Power source",
+          "definition": "Electrical infrastructure that can be shared by hardware in one fault domain."
+        },
+        {
+          "term": "Network switch",
+          "definition": "Networking equipment that can be common to VMs in the same documented fault-domain boundary."
+        }
+      ],
+      "watchOut": "- Do not swap the meanings of fault domain and update domain.\n- Availability sets reduce correlated infrastructure outages, but they do not repair guest operating system or application failures.\n- Check regional support because managed-disk fault domains vary by region.\n- Create the set with the right domain counts because those settings are not editable afterward.",
+      "productionTip": {
+        "official": "Microsoft documents that availability sets distribute VMs across fault domains and update domains, support up to three fault domains and twenty update domains, and align managed disks with disk fault domains in managed availability sets.",
+        "recommendation": "For a real payroll tier, deploy at least two instances, keep the VM size family consistent enough for capacity, and verify the `Aligned` fault-domain count with `az vm list-skus` before promising a particular spread to auditors."
+      },
+      "memoryTrick": "**Fault is physical; update is scheduled.** That shortcut works for the exam, but still remember that both values are set-level placement characteristics rather than per-VM knobs edited later.",
+      "examTip": "Look for the words **power source**, **network switch**, and **planned maintenance**. Power and switch clues point to fault domains; restart sequencing points to update domains. A harder version may add managed disks and ask why `Aligned` matters, or it may ask what happens when a sixth VM is placed into a five-update-domain set."
+    },
+    "sources": [
+      {
+        "title": "Availability sets overview - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+      },
+      {
+        "title": "Availability options for Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.6-02",
+    "objective": "D3.2.6",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank is deploying two stateless API VMs in a region that supports availability zones. The business requirement says: `The API must keep serving requests if one datacenter location in the region loses power or cooling.` You can deploy a load balancer and a second VM, but you must stay within a single Azure region for data residency.\n\nWhich deployment choice best matches the requirement?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Deploy both VMs as regional VMs without selecting zones, and rely on Azure to place them wherever capacity is available"
+      },
+      {
+        "id": "B",
+        "text": "Deploy both VMs into one availability set because availability sets have lower VM-to-VM latency"
+      },
+      {
+        "id": "C",
+        "text": "Deploy the VMs as zonal VMs in different availability zones and route traffic to healthy instances"
+      },
+      {
+        "id": "D",
+        "text": "Deploy one larger VM in a proximity placement group to reduce the chance of inter-zone latency"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The selected VM size is available in at least two zones in the target region. The application is stateless or replicates any needed state outside the individual VM.",
+    "sections": {
+      "correctAnswer": "**C. Deploy the VMs as zonal VMs in different availability zones and route traffic to healthy instances**. Availability zones are physically separate datacenter groups inside a region, so spreading replicated VMs across zones addresses the stated datacenter-loss requirement better than an availability set.",
+      "technical": "Availability zones are separated groups of datacenters within an Azure region. Microsoft documents that each zone has independent power, cooling, and networking, and that replicated VMs in zones can protect applications from the loss of a datacenter. For Azure VMs, an individual zonal VM is pinned to one zone; it is not, by itself, resilient to a zone outage. The resilient pattern is to deploy multiple VMs, place them in different zones, and use traffic routing such as Azure Load Balancer or Application Gateway so clients reach healthy instances.\n\nAvailability sets solve a narrower placement problem. They spread VMs across fault domains and update domains and are especially useful in regions that do not support availability zones. Microsoft also notes that availability sets provide lower VM-to-VM latency because VMs are physically closer, but they remain susceptible to shared infrastructure failures such as datacenter-level network outages. That makes them the wrong primary answer when the requirement explicitly says a datacenter location can fail.\n\nRegional, nonzonal VMs are also risky for this scenario. Learn states that a regional VM might be in any zone and that a failure in any zone has the potential to bring down a regional VM. You did not choose the placement, so you cannot prove that two regional VMs are separated across datacenter groups. Availability zones keep data inside the same region while offering stronger isolation than a set, which fits the single-region data-residency constraint.",
+      "wrongOptions": {
+        "A": "Regional placement does not give you control or proof that the two VMs land in separate zones, and a regional VM can be affected by a zone outage. Misconception: Not choosing a zone means Azure automatically spreads every VM safely. Could be correct for a noncritical single VM where placement control is not part of the requirement.",
+        "B": "Availability sets are useful, but Microsoft says they do not provide the same resiliency as availability zones and can still be exposed to datacenter-level failures. Misconception: Any Azure availability feature survives any facility outage. Could be correct in a region without availability zones or for a requirement focused on rack failures and planned maintenance.",
+        "D": "A proximity placement group optimizes closeness, not datacenter-loss survival, and one larger VM creates a single application instance. Misconception: Lower latency equals higher availability. Could be correct when the leading requirement is very low latency between multiple VMs rather than surviving a zone or datacenter failure."
+      },
+      "plainEnglish": "The bank is not merely asking for two machines. It is asking that a whole building-sized location can fail and the API still runs. An availability zone is Azure's way of separating resources into different datacenter groups inside the same region. If VM 1 is in zone 1 and VM 2 is in zone 2, a power or cooling problem in one zone should not remove both compute instances. A load balancer or another routing layer then sends users to the remaining healthy VM. An availability set is still helpful for smaller local hardware failures, but it does not give the same datacenter-level separation.",
+      "analogy": "A bank wants two call-center desks for the same hotline. Putting both desks in one office but on different power strips helps with a tripped breaker. Putting one desk in Building A and another in Building B helps if Building A loses cooling.\n\n| Analogy | Azure reality |\n|---|---|\n| Building A and Building B | Different availability zones |\n| Two call-center desks | Two API VMs |\n| Hotline routing | Load balancer or application gateway |\n| Different power strips in one office | Availability set fault domains |\n| City boundary | Azure region boundary |\n\n**Where the analogy breaks down:** Azure zones are logical selections mapped to physical facilities, and different subscriptions can map logical zone numbers differently. The application must still handle state, health checks, and failover behavior.",
+      "jargon": [
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate group of one or more datacenters within an Azure region, with independent power, cooling, and networking."
+        },
+        {
+          "term": "Zonal VM",
+          "definition": "A VM deployed into one selected availability zone."
+        },
+        {
+          "term": "Regional VM",
+          "definition": "A nonzonal VM for which Azure can place the resource anywhere in the region."
+        },
+        {
+          "term": "Availability set",
+          "definition": "A VM grouping for fault-domain and update-domain distribution inside a region."
+        },
+        {
+          "term": "Load balancer",
+          "definition": "A network service that distributes client traffic across healthy backend instances."
+        },
+        {
+          "term": "Data residency",
+          "definition": "A requirement that data remains within an approved geographic or regional boundary."
+        },
+        {
+          "term": "Stateless application",
+          "definition": "An application design that does not depend on one VM retaining unique session or transaction state."
+        },
+        {
+          "term": "Datacenter failure",
+          "definition": "An outage affecting a facility or zone, such as loss of power, networking, or cooling."
+        }
+      ],
+      "watchOut": "- A single zonal VM is pinned to one zone and can be down if that zone fails.\n- Zone resiliency for VM workloads requires multiple instances in multiple zones plus routing or failover logic.\n- Availability sets are not obsolete for every case; they remain relevant where zones are unavailable.\n- Logical zone numbers can differ between subscriptions, so cross-subscription designs need extra care.",
+      "productionTip": {
+        "official": "Microsoft Learn describes availability zones as physically separate zone groups with independent power, cooling, and networking, and states that multiple VMs in different zones can protect applications from the loss of a datacenter.",
+        "recommendation": "For a production API, combine zonal VMs with a zone-redundant load balancer, health probes, automated deployment to at least two zones, and application-level retry handling so clients recover from terminated in-flight requests."
+      },
+      "memoryTrick": "**Zone means building-level separation; set means hardware-spread grouping.** The phrase is a simplification because a zone can contain more than one datacenter, but it points you to the correct exam feature.",
+      "examTip": "The clue phrase is **one datacenter location loses power or cooling**. That wording is about availability zones, not only fault domains. A harder item may hide the same requirement under `survive a zone outage`, or it may ask what else is needed; the answer then includes traffic routing and replicated application state."
+    },
+    "sources": [
+      {
+        "title": "Availability options for Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+      },
+      {
+        "title": "What are Azure Availability Zones?",
+        "url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+      },
+      {
+        "title": "Reliability in Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-virtual-machines"
+      },
+      {
+        "title": "Availability sets overview - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.6-03",
+    "objective": "D3.2.6",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "A compliance reviewer asks you to justify the availability design for three VM-based services. Service A is one VM with Premium SSD storage. Service B has two VMs in one availability set. Service C has two VMs deployed across two availability zones. You are allowed to cite only Microsoft Learn pages in the study app explanation.\n\nWhich two statements should you use? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Microsoft Learn states that two or more VMs in an availability set help meet the 99.95% Azure SLA"
+      },
+      {
+        "id": "B",
+        "text": "Microsoft Learn states that an availability set provides the same resiliency level as availability zones"
+      },
+      {
+        "id": "C",
+        "text": "Microsoft Learn states that a single Premium SSD VM receives the same SLA treatment as two VMs across zones"
+      },
+      {
+        "id": "D",
+        "text": "Microsoft Learn says the VM SLA percentage increases when two or more VMs are deployed across two or more availability zones or into an availability set"
+      },
+      {
+        "id": "E",
+        "text": "Microsoft Learn says exact current SLA percentages never depend on the formal SLA terms for online services"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The question is about what can be supported from Microsoft Learn content fetched for the study app, not a legal interpretation of the separate Microsoft SLA contract.",
+    "sections": {
+      "correctAnswer": "**A. Microsoft Learn states that two or more VMs in an availability set help meet the 99.95% Azure SLA** and **D. Microsoft Learn says the VM SLA percentage increases when two or more VMs are deployed across two or more availability zones or into an availability set**. Those statements match Learn's availability-set and VM reliability articles without overclaiming percentages that the Learn reliability page sends to the formal SLA page.",
+      "technical": "For AZ-104 design questions, use the availability feature that matches the stated risk and be careful with SLA wording. Microsoft Learn's availability-set overview explicitly states that two or more VMs within an availability set help keep applications highly available and meet the 99.95% Azure service-level agreement. The same page also says availability sets provide lower VM-to-VM latency than zones but do not offer the same level of resiliency as availability zones.\n\nThe VM reliability guide discusses the SLA at a higher level. It explains that the VM SLA provides a base level of availability and that the uptime percentage defined in the SLA increases when you have two or more VMs deployed across two or more availability zones, or when you configure those VMs in an availability set. The guide points readers to the online services SLA for detailed terms. That means a study question can safely teach the relative ordering and the availability-set 99.95 statement from Learn, while avoiding unsupported Learn-only claims about every exact single-VM storage-backed percentage.\n\nThe design order is: first identify whether the workload has one VM or multiple instances; second identify whether those instances are in a set, across zones, or merely regional; third check the formal SLA terms if a contract-level percentage is being used in production documentation. Availability zones normally provide stronger failure isolation than sets because zones are separate datacenter groups. Availability sets are still a documented way to increase availability for multi-VM tiers, especially where zones are not available.",
+      "wrongOptions": {
+        "B": "The availability-set overview says the opposite: availability sets do not offer the same level of resiliency as availability zones. Misconception: All high-availability VM placement features are interchangeable. Could be correct only if the question asked whether both are Azure availability options, not whether their resiliency levels are equal.",
+        "C": "The fetched Learn reliability page does not state that a single Premium SSD VM has the same SLA treatment as a two-zone multi-VM deployment. Misconception: Premium storage alone replaces multi-instance architecture. Could be correct only in a separate contract discussion if the formal SLA terms say something specific for a single-instance configuration, and even then it would not equal the zone-resilient design statement in this question.",
+        "E": "The reliability guide explicitly directs readers to the SLA for online services for more information, so exact contract terms remain relevant. Misconception: A Learn article is the complete legal SLA document. Could be correct when answering a narrow training question that asks only for conceptual design, not legal SLA percentages."
+      },
+      "plainEnglish": "The safest way to explain this is not to pretend that every percentage is printed on every Learn page. Learn clearly says that two VMs in an availability set help meet 99.95%. Learn also says the SLA percentage goes up when two or more VMs are either spread across two or more zones or placed in an availability set. For the single VM with Premium SSD, the exact legal percentage belongs to the separate SLA terms, so this study item should not invent a Learn citation that was not there. The exam often rewards knowing the relative idea: one VM is the baseline, an availability set improves a multi-VM tier, and zones are the stronger facility-failure design.",
+      "analogy": "A company handbook says that two guards in separate guard posts qualify for a named internal reliability target. A separate contract contains the legal wording for every building-security plan. If a reviewer asks what the handbook itself says, quote the handbook and do not invent contract numbers.\n\n| Analogy | Azure reality |\n|---|---|\n| Handbook | Microsoft Learn article |\n| Legal contract | Online services SLA terms |\n| Two guards in separate posts | Two VMs in an availability set |\n| Guards in separate buildings | VMs across availability zones |\n| One guard with better equipment | Single VM with premium storage |\n\n**Where the analogy breaks down:** Azure SLAs are measured service commitments with defined exclusions and conditions, not informal security promises. Production teams must read the current SLA terms before using percentages in customer contracts.",
+      "jargon": [
+        {
+          "term": "SLA",
+          "definition": "Service-level agreement; the formal availability commitment and conditions for a service."
+        },
+        {
+          "term": "Premium SSD",
+          "definition": "An Azure managed disk storage option often used for production VM workloads needing predictable performance."
+        },
+        {
+          "term": "Ultra Disk",
+          "definition": "A high-performance Azure managed disk option whose exact SLA treatment should be checked in current SLA terms."
+        },
+        {
+          "term": "Availability set",
+          "definition": "A VM placement group that distributes instances across fault and update domains."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate datacenter grouping within a supported Azure region."
+        },
+        {
+          "term": "Uptime percentage",
+          "definition": "The availability percentage used by an SLA to describe expected service availability under defined conditions."
+        },
+        {
+          "term": "Formal SLA terms",
+          "definition": "The contract text Microsoft publishes for service commitments, referenced by Learn but not fully reproduced in every article."
+        },
+        {
+          "term": "Base level of availability",
+          "definition": "The starting SLA posture for a VM before the article's multi-VM set or zone conditions increase it."
+        }
+      ],
+      "watchOut": "- Do not claim Learn-restated percentages you did not verify on Learn.\n- Availability set and availability zone designs both improve the SLA posture for two or more VMs, but they are not equally resilient.\n- A legal SLA discussion needs the current SLA terms, not memory from an old exam guide.\n- SLA does not replace application health probes, backups, monitoring, or data replication.",
+      "productionTip": {
+        "official": "Microsoft Learn documents the 99.95% availability-set statement and separately says the VM uptime percentage increases for two or more VMs across zones or in an availability set, while linking to the SLA for online services for detailed terms.",
+        "recommendation": "When writing customer-facing architecture documents, cite the formal SLA page for exact percentages and cite Learn for design behavior. Keep proof of the deployment pattern, because the SLA posture depends on how VMs are actually placed."
+      },
+      "memoryTrick": "**Learn for design, SLA page for contract numbers.** This is a simplification because Learn does include one availability-set percentage, but it helps you avoid inventing unsupported exact percentages.",
+      "examTip": "When answer choices mix percentages and placement features, prefer the statement you can directly support. The exam may use `two or more VMs`, `availability set`, or `two or more zones` as clues. If it asks for a legal percentage for a single VM with a specific disk type, verify the current SLA terms rather than relying on a stale memorized number."
+    },
+    "sources": [
+      {
+        "title": "Availability sets overview - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+      },
+      {
+        "title": "Reliability in Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-virtual-machines"
+      },
+      {
+        "title": "Availability options for Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.6-04",
+    "objective": "D3.2.6",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Fabrikam has an existing VM named `vm-web-01` that was created as a regional VM. The administrator now creates an availability set named `aset-web` and wants to add `vm-web-01` to the set without rebuilding the VM. The application owner asks for the least disruptive supported approach that gives the web tier availability-set placement.\n\nWhat should you tell the administrator?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Open the availability set and edit the Fault Domain column for `vm-web-01`"
+      },
+      {
+        "id": "B",
+        "text": "Stop and start `vm-web-01`; Azure automatically moves it into `aset-web`"
+      },
+      {
+        "id": "C",
+        "text": "Attach the existing OS disk to the availability set as a shared disk resource"
+      },
+      {
+        "id": "D",
+        "text": "Recreate the VM in the availability set, reusing recoverable configuration and disks where the migration plan allows"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The requirement is to place the VM in an availability set, not merely to back it up or resize it. Downtime and data preservation must be planned by the operator.",
+    "sections": {
+      "correctAnswer": "**D. Recreate the VM in the availability set, reusing recoverable configuration and disks where the migration plan allows**. Microsoft Learn's availability-set tutorial states that VMs must be created within the availability set and that an existing VM cannot be added after it is created.",
+      "technical": "Availability-set membership is a placement decision made when a VM is created. The Linux availability-set tutorial says VMs must be created within the availability set to be correctly distributed across hardware, and that an existing VM cannot be added to an availability set after it is created. This is not a cosmetic property because Azure uses the availability set to allocate the VM across fault domains and update domains.\n\nThe supported remediation is a rebuild or migration plan, not a portal edit. In practice, the plan usually includes recording the VM size, network interface settings, NSG rules, extensions, identity, diagnostics settings, disks, backup state, and application dependencies. Depending on the workload, you might create a replacement VM in the availability set from a captured image, redeploy from infrastructure as code, or delete and recreate a VM object while preserving disks only when the procedure is appropriate and tested. The important AZ-104 point is that you cannot add the existing VM resource to the set in place.\n\nStopping and starting a VM can move it to different physical hardware in some scenarios, but it does not assign it to an availability set. Editing a fault-domain column is also not how Azure works; that column is an observed placement result. Availability sets should be planned before deploying the related VMs. If the region supports availability zones and the requirement is facility-level protection, you should also consider whether a zone redesign is better than retrofitting an availability set.",
+      "wrongOptions": {
+        "A": "The fault-domain column is not an editable migration control, and changing a displayed column would not recreate the VM in the availability set. Misconception: Portal placement information is a user-editable schedule. Could be correct when you are only inspecting which domain Azure assigned after deployment.",
+        "B": "A stop-start cycle does not attach an existing VM to a newly created availability set. Misconception: Deallocation causes Azure to re-evaluate every placement property. Could be correct when trying to release compute capacity or apply some host-level changes, not when changing availability-set membership.",
+        "C": "An OS disk is not added to an availability set by itself; the VM resource must be created with the availability-set placement. Misconception: Because managed disks align to fault domains, the disk owns the set membership. Could be correct when attaching a disk to a replacement VM as part of a tested rebuild plan."
+      },
+      "plainEnglish": "The administrator missed a choice that must be made when the VM is born. An availability set is not like adding a machine to a folder after the fact. Azure uses the set while placing the VM on hardware, so an already created VM cannot simply be dragged into the set. The fix is to create a replacement VM that is in the set from the beginning and then move the workload to it carefully. That might reuse disks or an image, but the existing VM object itself does not magically gain availability-set placement.",
+      "analogy": "A hotel wants rooms on different fire-alarm circuits. If a guest already checked into room 415, writing that guest's name on the `separate circuit` list does not move the room. The hotel must book a new room that is actually on the intended circuit and move the guest.\n\n| Analogy | Azure reality |\n|---|---|\n| Guest already in room 415 | Existing VM |\n| Fire-alarm circuit plan | Availability set placement |\n| New room booking | Recreated VM in the set |\n| Moving luggage carefully | Migrating disks, app data, and configuration |\n| Room directory note | Portal display that cannot change placement by itself |\n\n**Where the analogy breaks down:** Azure VM migration can involve disks, NICs, identities, extensions, backup, and application cutover; a hotel room move is far simpler and usually does not require infrastructure-as-code validation.",
+      "jargon": [
+        {
+          "term": "Existing VM",
+          "definition": "A virtual machine resource that has already been created with its placement properties."
+        },
+        {
+          "term": "Availability-set membership",
+          "definition": "The association between a VM and an availability set used for fault-domain and update-domain placement."
+        },
+        {
+          "term": "Regional VM",
+          "definition": "A VM that was not deployed into a selected availability zone and is not necessarily in an availability set."
+        },
+        {
+          "term": "OS disk",
+          "definition": "The managed disk containing the virtual machine operating system."
+        },
+        {
+          "term": "Network interface",
+          "definition": "The Azure resource that connects a VM to a virtual network subnet and IP configuration."
+        },
+        {
+          "term": "Infrastructure as code",
+          "definition": "Declarative or scripted deployment of resources, often with Bicep, ARM templates, Terraform, or similar tooling."
+        },
+        {
+          "term": "Cutover",
+          "definition": "The controlled switch from the old VM to the replacement VM or service endpoint."
+        },
+        {
+          "term": "Deallocate",
+          "definition": "A stopped VM state that releases compute resources but does not alter all immutable placement choices."
+        }
+      ],
+      "watchOut": "- Choose an availability set during VM creation.\n- Rebuild plans must include networking, identities, extensions, monitoring, and backup, not just the disk.\n- Do not promise zero downtime unless the application architecture actually supports it.\n- Consider availability zones instead if the real requirement is datacenter-failure protection.",
+      "productionTip": {
+        "official": "Microsoft Learn states that VMs must be created within an availability set and that an existing VM cannot be added to an availability set after creation.",
+        "recommendation": "Use repeatable deployment templates for web-tier VMs so placement is not forgotten. Before recreating a production VM, take backups, rehearse the cutover in a nonproduction subscription, and confirm application owners have a rollback path."
+      },
+      "memoryTrick": "**Set at birth, not after birth.** That phrase is intentionally simple; a migration can reuse parts of the old VM, but the placement membership is decided when the replacement VM is created.",
+      "examTip": "If a question says **existing VM** and **add to availability set**, rule out in-place edits. The likely answer is recreate or redeploy the VM with the availability set specified. A harder version may offer moving disks to a new VM; that can be part of the plan, but the new VM must still be created in the set."
+    },
+    "sources": [
+      {
+        "title": "Deploy VMs in an availability set using Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/previous-versions/azure/virtual-machines/linux/tutorial-availability-sets"
+      },
+      {
+        "title": "Availability sets overview - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+      },
+      {
+        "title": "Availability options for Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.6-05",
+    "objective": "D3.2.6",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are deploying three internet-facing VMs named `vm-app-1`, `vm-app-2`, and `vm-app-3` into availability zones 1, 2, and 3 in West Europe. Each VM must have a public endpoint during a migration, and later all three VMs will sit behind one public load balancer. You need the network resources to support availability zones.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use Basic SKU public IP addresses because Basic supports zonal and zone-redundant public IPs"
+      },
+      {
+        "id": "B",
+        "text": "Use Standard SKU public IP addresses because Standard public IPs support zonal and zone-redundant configurations"
+      },
+      {
+        "id": "C",
+        "text": "Use a Basic Load Balancer because Basic is compatible with availability zones for small applications"
+      },
+      {
+        "id": "D",
+        "text": "Create one availability set and add the three zonal VMs to the set after deployment"
+      },
+      {
+        "id": "E",
+        "text": "Use a Standard Load Balancer with a zone-redundant frontend when the public endpoint should remain available across zone failures"
+      }
+    ],
+    "correct": [
+      "B",
+      "E"
+    ],
+    "assumptions": "Azure public cloud in a region that supports availability zones. Basic public IP and Basic Load Balancer retirement notes are current as represented on Microsoft Learn pages fetched in October 2026.",
+    "sections": {
+      "correctAnswer": "**B. Use Standard SKU public IP addresses because Standard public IPs support zonal and zone-redundant configurations** and **E. Use a Standard Load Balancer with a zone-redundant frontend when the public endpoint should remain available across zone failures**. Microsoft Learn documents availability-zone support for Standard public IPs and Standard Load Balancer frontends, while Basic networking SKUs do not provide that zone support.",
+      "technical": "Zonal VM design must include the resources attached to the VM, not only the compute setting. When you create a VM in an availability zone, Microsoft Learn shows the managed disk in the same zone and demonstrates public IP resources with zone information. The current public IP documentation says Standard public IPs can be nonzonal, zonal, or zone-redundant, while Basic public IPs don't have zones and are nonzonal. The same page also notes Basic SKU public IP retirement, which makes Standard the correct SKU for new zone-aware designs.\n\nFor the later load-balancer stage, use the Load Balancer SKU that supports zones. Microsoft Learn's Load Balancer SKU comparison says Standard Load Balancer supports zone-redundant or zonal frontend IP configurations, while Basic Load Balancer is not compatible with availability zones. The reliability guide explains that a zone-redundant frontend uses independent infrastructure in multiple zones and continues to receive and distribute traffic during a zone failure.\n\nThe important dependency is that the frontend and backend are different concerns. A zone-redundant load balancer can keep the frontend reachable, but the application still needs healthy backend VMs in more than one zone. If all backend VMs are in one zone, the frontend can survive but the application can still be unavailable. For public load balancers, the frontend's zone behavior follows the associated public IP configuration.",
+      "wrongOptions": {
+        "A": "Basic public IPs do not support availability zones according to the current public IP documentation. Misconception: Basic means simpler but still good enough for zone features. Could be correct only for a legacy nonzonal design that is being retired or replaced, not for a new zone-aware deployment.",
+        "C": "The SKU comparison states that Basic Load Balancer is not compatible with availability zones, and Basic Load Balancer has been retired. Misconception: A small application can use a smaller SKU without losing core resiliency features. Could be correct for historical exam context before retirement, but not for the current zone requirement.",
+        "D": "Availability set membership is not an after-deployment property, and the question is about zonal VMs rather than a set design. Misconception: You can layer every VM availability feature together later. Could be correct if you were creating new regional VMs directly inside an availability set instead of using zones."
+      },
+      "plainEnglish": "A VM in a zone is only part of the story. If the VM has a public address, that public address must also understand zones. Standard public IPs support zone choices; Basic public IPs do not. When the design moves to one public load balancer, the load balancer should also use a zone-aware frontend so clients do not depend on a single zone's frontend. The backend VMs still need to be spread across zones, because a strong front door cannot serve an app if every server behind it is down.",
+      "analogy": "A company opens three service counters in three separate buildings. The signs and front-door queueing system also need to work if one building closes. A modern central queue board can keep sending customers to open buildings; an old sign attached to one building cannot.\n\n| Analogy | Azure reality |\n|---|---|\n| Separate buildings | Availability zones |\n| Service counters | Zonal VMs |\n| Modern central queue board | Standard Load Balancer zone-redundant frontend |\n| Building-specific sign | Zonal public IP |\n| Old non-zone sign | Basic public IP or Basic Load Balancer |\n\n**Where the analogy breaks down:** Azure networking uses public IP resources, frontend configurations, health probes, and backend pools. A sign analogy does not show SKU matching rules or the retirement status of older Basic resources.",
+      "jargon": [
+        {
+          "term": "Standard public IP",
+          "definition": "A public IP SKU that supports static allocation and availability-zone configurations, including zonal and zone-redundant options."
+        },
+        {
+          "term": "Basic public IP",
+          "definition": "An older public IP SKU that Microsoft Learn marks as retired and not availability-zone capable."
+        },
+        {
+          "term": "Standard Load Balancer",
+          "definition": "The Azure Load Balancer SKU that supports zone-redundant or zonal frontend IP configurations."
+        },
+        {
+          "term": "Frontend IP configuration",
+          "definition": "The load balancer address and port-facing configuration that receives client traffic."
+        },
+        {
+          "term": "Backend pool",
+          "definition": "The collection of VM or IP endpoints to which a load balancer can send traffic."
+        },
+        {
+          "term": "Zone-redundant",
+          "definition": "A resource configuration that uses infrastructure across multiple zones to survive a single zone failure."
+        },
+        {
+          "term": "Zonal",
+          "definition": "A resource configuration tied to one selected availability zone."
+        },
+        {
+          "term": "Health probe",
+          "definition": "A load balancer check used to decide whether a backend instance should receive traffic."
+        }
+      ],
+      "watchOut": "- A zonal VM with a non-zone-aware public endpoint can leave a hidden weak spot.\n- Public Load Balancer and public IP SKUs must match.\n- A zone-redundant frontend does not make single-zone backends highly available.\n- Basic public IP and Basic Load Balancer retirement notes make them poor choices for new designs.",
+      "productionTip": {
+        "official": "Microsoft Learn documents that Standard public IPs support availability zones and that Standard Load Balancer supports zonal or zone-redundant frontend IP configurations, while Basic Load Balancer is not compatible with availability zones.",
+        "recommendation": "Build the migration with Standard public IPs from the start, then move clients to a zone-redundant Standard Load Balancer endpoint. Use health probes and deployment tests that intentionally stop one zone's backend before declaring the design resilient."
+      },
+      "memoryTrick": "**Zone-aware compute needs zone-aware networking.** The rule of thumb can fail for private-only designs with different front doors, but it is reliable for the public IP and Load Balancer choices in this scenario.",
+      "examTip": "When a question mentions zonal VMs plus public access, inspect the public IP and load balancer SKUs. Standard is the zone-capable path. A harder version may ask why clients still fail even with a zone-redundant frontend; check whether all backend VMs were accidentally placed in one zone."
+    },
+    "sources": [
+      {
+        "title": "Create zonal VMs with the Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/create-portal-availability-zone"
+      },
+      {
+        "title": "Create a zoned VM with the Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/create-cli-availability-zone"
+      },
+      {
+        "title": "Public IP addresses in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/public-ip-addresses"
+      },
+      {
+        "title": "Azure Load Balancer SKUs",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+      },
+      {
+        "title": "Reliability in Azure Load Balancer",
+        "url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-load-balancer"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.6-06",
+    "objective": "D3.2.6",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A trading analytics application uses four VMs that exchange many small messages per second. The performance team says latency between the VMs is more important than surviving a datacenter outage. The region supports availability zones, but the team wants the VMs physically as close together as Azure can place them.\n\nWhat should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Place the four VMs in four different regions from the same Azure region pair"
+      },
+      {
+        "id": "B",
+        "text": "Deploy each VM to a different availability zone and avoid any placement constraints"
+      },
+      {
+        "id": "C",
+        "text": "Deploy the VMs by using a proximity placement group, optionally with an availability set if that suits the tier"
+      },
+      {
+        "id": "D",
+        "text": "Use a zone-redundant public IP address on each VM because public IP zones reduce VM-to-VM latency"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The workload owner explicitly prioritizes latency over zone-outage resiliency for this tier, and the selected VM sizes can be allocated under the placement constraint.",
+    "sections": {
+      "correctAnswer": "**C. Deploy the VMs by using a proximity placement group, optionally with an availability set if that suits the tier**. A proximity placement group is the Azure feature Microsoft documents for placing compute resources physically close together to achieve the lowest possible latency.",
+      "technical": "A proximity placement group is a colocation constraint for Azure compute resources. Microsoft Learn says it is useful for workloads where low latency is a requirement, including low latency between stand-alone VMs, VMs in one availability set, and resources across application tiers. You create the group first and specify it when creating compute resources, or you can move an existing resource into a group after deallocating it so Azure can redeploy it to satisfy the constraint.\n\nThis feature is different from availability zones. Zones improve fault isolation by separating resources into physically distinct datacenter groups. That separation can add inter-zone network distance compared with placing resources close together. The proximity placement group article explicitly says that if latency is the first priority, put VMs in a proximity placement group and keep the solution in an availability zone; if resiliency is the top priority, spread instances across multiple availability zones because a single proximity placement group cannot span zones.\n\nThere are operational tradeoffs. A proximity placement group can cause allocation failures because it asks Azure to fit the requested VM sizes into the same datacenter. The `intent` parameter can list VM sizes and a zone to improve placement selection, but it is not a capacity reservation or guarantee. Planned maintenance or hardware decommissioning can also disrupt alignment. So the right answer meets the stated latency priority, but production teams must monitor colocation status and be ready to deallocate and restart affected resources to realign them.",
+      "wrongOptions": {
+        "A": "Multiple regions increase geographic distance and are used for disaster recovery patterns, not the lowest intra-VM latency. Misconception: Region pairs are always better for every reliability or performance problem. Could be correct when the leading requirement is region-wide disaster recovery rather than chatty low-latency traffic.",
+        "B": "Different zones improve datacenter fault isolation, but they do not place the VMs as close together as possible. Misconception: More separation always helps performance. Could be correct when the business requirement is to survive a zone failure and the app can tolerate inter-zone latency.",
+        "D": "Public IP zone configuration affects the public IP resource's zone behavior, not the physical closeness of VM hosts for private VM-to-VM traffic. Misconception: Any zonal network setting reduces latency between servers. Could be correct when the problem is public endpoint resilience, not internal message latency."
+      },
+      "plainEnglish": "The team is asking for the VMs to sit near each other, like traders at adjacent desks shouting prices quickly. Availability zones intentionally separate resources into different places so one place can fail without taking down everything. That is excellent for resilience, but not the best answer when closeness is the main demand. A proximity placement group tells Azure to try to put the VMs close together. It can be combined with other choices, such as an availability set for a tier, but the key feature for low latency is proximity placement.",
+      "analogy": "A newsroom wants reporters who constantly pass notes to sit at neighboring desks. Putting one reporter on each floor helps if a floor closes, but it slows the note passing. A desk-cluster request improves fast collaboration.\n\n| Analogy | Azure reality |\n|---|---|\n| Neighboring desks | Proximity placement group |\n| Reporters passing notes | VMs exchanging frequent messages |\n| Separate floors | Availability zones |\n| Seating chart constraint | Colocation constraint |\n| Full floor outage | Zone or datacenter failure |\n\n**Where the analogy breaks down:** Azure placement depends on capacity, VM size support, deallocation state, and datacenter selection. A newsroom manager can often move chairs instantly; Azure might return allocation errors when the requested sizes cannot fit together.",
+      "jargon": [
+        {
+          "term": "Proximity placement group",
+          "definition": "An Azure resource that constrains supported compute resources to be physically close for lower latency."
+        },
+        {
+          "term": "Colocation constraint",
+          "definition": "A placement request that limits where Azure can allocate resources so they remain near each other."
+        },
+        {
+          "term": "Intent",
+          "definition": "An optional proximity placement group setting that lists desired VM sizes and optionally a zone to help Azure choose a suitable datacenter."
+        },
+        {
+          "term": "Allocation failure",
+          "definition": "A deployment or start failure when Azure cannot satisfy size, capacity, or placement constraints."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate datacenter group used primarily for isolation and resiliency."
+        },
+        {
+          "term": "Availability set",
+          "definition": "A logical group that can distribute VMs across fault and update domains within a tier."
+        },
+        {
+          "term": "Latency",
+          "definition": "The time it takes for a message or network packet to travel between components."
+        },
+        {
+          "term": "Deallocate",
+          "definition": "Stop a VM and release its compute allocation so Azure can later place it again."
+        }
+      ],
+      "watchOut": "- A single proximity placement group cannot span zones.\n- Proximity placement reduces distance but can reduce placement flexibility.\n- Intent helps Azure choose a datacenter but does not reserve capacity.\n- If resilience becomes the top priority later, redesign across multiple zones rather than stretching one placement group.",
+      "productionTip": {
+        "official": "Microsoft Learn documents proximity placement groups as the feature for physically locating compute resources close to each other and notes that if resiliency is the priority, instances should be spread across multiple availability zones instead.",
+        "recommendation": "Use proximity placement only for tiers that genuinely need it. Keep deployment templates listing required VM sizes, enable accelerated networking when appropriate, and test restart procedures because deallocated VMs might fail to realign if capacity changes."
+      },
+      "memoryTrick": "**Proximity is for performance, zones are for separation.** This is not an absolute law, but it quickly points you to the right feature when the scenario says `lowest latency`.",
+      "examTip": "The key words are **many small messages** and **physically close**. Choose proximity placement group. A harder question may ask for the tradeoff: a PPG can improve latency but might create allocation constraints and does not provide multi-zone resilience by itself."
+    },
+    "sources": [
+      {
+        "title": "Proximity placement groups - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/co-location"
+      },
+      {
+        "title": "Reliability in Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-virtual-machines"
+      },
+      {
+        "title": "What are Azure Availability Zones?",
+        "url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.6-07",
+    "objective": "D3.2.6",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Contoso plans a two-VM line-of-business application in Italy North. A junior engineer proposes this design: `Deploy both VMs across availability zones in Italy North, and because Italy North has no paired region, the zone design automatically provides disaster recovery for a full regional outage.`\n\nWhich response is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Reject the conclusion; availability zones help inside a region, but a full regional outage requires a multiregion disaster recovery design"
+      },
+      {
+        "id": "B",
+        "text": "Accept the conclusion because nonpaired regions use availability zones as complete replacements for all multiregion recovery"
+      },
+      {
+        "id": "C",
+        "text": "Move the VMs to one availability set because region pairs work only with availability sets"
+      },
+      {
+        "id": "D",
+        "text": "Deploy one VM without any zone so Azure can automatically move it to a paired region during an outage"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. Italy North is treated as a region that supports availability zones and is listed as nonpaired on the fetched Microsoft Learn region-pair documentation.",
+    "sections": {
+      "correctAnswer": "**A. Reject the conclusion; availability zones help inside a region, but a full regional outage requires a multiregion disaster recovery design**. Microsoft Learn distinguishes zones within a region from region pairs and multiregion strategies; zones do not protect a VM workload from the loss of the entire region.",
+      "technical": "Availability zones and region pairs solve different scopes of failure. Availability zones are separated datacenter groups within a single Azure region. They help a workload continue when one zone has a power, cooling, network, rack, or cluster problem, provided the workload is actually deployed across multiple zones and can route traffic to healthy instances. They keep the deployment inside the regional boundary.\n\nRegions are larger units. Microsoft Learn explains that a region contains one or more datacenters and that regions can differ in their resiliency options. Some regions have paired regions, and many newer regions are nonpaired and use availability zones as their primary means of redundancy. That statement does not mean zones replace disaster recovery for a full regional outage. The VM reliability guide says VMs are single-region resources and that if the region becomes unavailable, the VM is also unavailable. For multiregion resilience, you deploy or replicate resources into another region and implement failover processes.\n\nRegion pairs can help some Azure services with geo-replication, update sequencing, or recovery ordering, but the region-pair article warns that deploying resources to a region in a pair does not automatically make them more resilient or provide automatic failover. Therefore the correct response is to keep the zone design for in-region high availability, but add a separate DR plan if the business needs to survive all of Italy North becoming unavailable.",
+      "wrongOptions": {
+        "B": "Nonpaired regions often rely on zones as a primary in-region redundancy feature, but zones are not a complete replacement for multiregion disaster recovery. Misconception: `Primary means of redundancy` means every failure scope is covered. Could be correct only for a requirement limited to a single-zone outage inside the same region.",
+        "C": "Availability sets do not create region-pair behavior, and they provide less resiliency than zones for datacenter-level failures. Misconception: Region-pair features are tied to VM availability sets. Could be correct in a non-zonal region where the requirement is hardware fault and maintenance isolation within one region.",
+        "D": "A nonzonal VM can be placed somewhere in the region, but Azure does not automatically move it to a paired region during an outage. Misconception: Leaving placement unspecified enables hidden disaster recovery. Could be correct only for a service that has its own documented geo-failover feature, not for a standard VM resource."
+      },
+      "plainEnglish": "Zones are like separate buildings in the same city. They are very useful if one building has a power problem. A region is the whole city area for this cloud service. If the whole region is unavailable, VMs that live only in that region are unavailable too. A paired region is another city that some Azure services use for certain replication or recovery behavior, but simply having or not having a pair does not give a VM automatic failover. If Contoso needs true regional disaster recovery, it must design for another region on purpose.",
+      "analogy": "A hospital has three separate wings in one campus and a second campus in another city. Putting staff in different wings helps if one wing loses power. It does not help if the entire campus is closed by a flood.\n\n| Analogy | Azure reality |\n|---|---|\n| Hospital wing | Availability zone |\n| Hospital campus | Azure region |\n| Second city campus | Another Azure region |\n| Wing-level continuity plan | Multi-zone high availability |\n| Campus evacuation plan | Multiregion disaster recovery |\n\n**Where the analogy breaks down:** Azure region pairs are service-specific planning constructs, not guaranteed evacuation buses. Each Azure service has its own replication, failover, and operational requirements.",
+      "jargon": [
+        {
+          "term": "Azure region",
+          "definition": "A geographic area containing datacenters and networking infrastructure where regional Azure resources are deployed."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A separated group of datacenters within a region, used for in-region fault isolation."
+        },
+        {
+          "term": "Region pair",
+          "definition": "A Microsoft-associated pair of regions used by some Azure services for geo-replication, update sequencing, or recovery planning."
+        },
+        {
+          "term": "Nonpaired region",
+          "definition": "A region that Microsoft Learn lists without an associated paired region."
+        },
+        {
+          "term": "Disaster recovery",
+          "definition": "A plan to restore or continue service after a large outage, often by using another location."
+        },
+        {
+          "term": "Multiregion design",
+          "definition": "An architecture that deploys or replicates components across two or more Azure regions."
+        },
+        {
+          "term": "Data residency",
+          "definition": "A requirement controlling the geography or region where data may be stored or processed."
+        },
+        {
+          "term": "Failover",
+          "definition": "The process of directing service from a failed primary location to a healthy secondary location."
+        }
+      ],
+      "watchOut": "- Zones protect against single-zone failures, not complete regional outages.\n- Region pairs do not automatically fail over ordinary VMs.\n- Many newer regions are nonpaired and still can support highly resilient designs if you plan them.\n- A multiregion design must consider replication, DNS or traffic routing, recovery time, data consistency, and cost.",
+      "productionTip": {
+        "official": "Microsoft Learn states that VMs are single-region resources and unavailable if their region becomes unavailable. It also documents that many newer regions are nonpaired and use availability zones as their primary redundancy approach, while multiregion solutions remain a separate design choice.",
+        "recommendation": "Use availability zones for high availability inside Italy North, then document whether the business accepts regional-outage downtime. If not, design a secondary-region pattern with tested replication, failover runbooks, and data-residency approval before production launch."
+      },
+      "memoryTrick": "**Zones are within; regions are beyond.** This reminder is simplified, but it keeps you from treating an in-region feature as a full disaster recovery plan.",
+      "examTip": "Watch for scope words: **zone**, **region**, **paired region**, and **regional outage**. If the outage is one zone, multi-zone VMs are relevant. If the outage is the whole region, think multiregion replication or disaster recovery rather than an availability set or unspecified regional placement."
+    },
+    "sources": [
+      {
+        "title": "What are Azure Availability Zones?",
+        "url": "https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview"
+      },
+      {
+        "title": "What are Azure regions?",
+        "url": "https://learn.microsoft.com/en-us/azure/reliability/regions-overview"
+      },
+      {
+        "title": "Azure region pairs and nonpaired regions",
+        "url": "https://learn.microsoft.com/en-us/azure/reliability/regions-paired"
+      },
+      {
+        "title": "Reliability in Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/reliability/reliability-virtual-machines"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

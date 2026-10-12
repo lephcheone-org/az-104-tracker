@@ -1,0 +1,944 @@
+[
+  {
+    "id": "D1.1.2-01",
+    "objective": "D1.1.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a Microsoft Entra tenant that contains a cloud-only user named `Adele Vance`. Adele moved to Finance and now reports to `Diego Siciliani`. Her profile card must show the new job title, department, manager, and country/region used by Microsoft services. You need to update the properties by using the least privileged built-in role. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign the Groups Administrator role and edit Adele from the group membership page."
+      },
+      {
+        "id": "B",
+        "text": "Assign the User Administrator role and edit Adele's **Job information** and **Settings** profile categories."
+      },
+      {
+        "id": "C",
+        "text": "Assign the License Administrator role and change only the product license options."
+      },
+      {
+        "id": "D",
+        "text": "Assign the Helpdesk Administrator role and reset Adele's password first."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Adele is cloud-only and is not synchronized from Windows Server Active Directory. No custom directory role is available.",
+    "sections": {
+      "correctAnswer": "**B. Assign the User Administrator role and edit Adele's Job information and Settings profile categories**. User Administrator is the documented least-privilege role for user administration, and those profile categories contain the requested job and location fields.",
+      "technical": "Microsoft Entra user profile data is managed from **Entra ID** > **Users** > the selected user > **Edit properties** or **Properties**. The useful order is: confirm the account is cloud-only, open the user object, update job-related values such as job title, department, and manager in **Job information**, update country or usage/global location in **Settings**, and save. These are directory user properties, not Azure resource permissions. The User Administrator role is the least-privilege built-in role Microsoft lists for user creation and general user administration tasks. Groups Administrator manages groups and membership; License Administrator manages product licenses; Helpdesk Administrator is for support tasks such as password operations. Exception: if the user were synchronized from Windows Server Active Directory, many identity, contact, and job values would be changed on-premises and then synchronized.\n\nA practical evaluation order for this scenario is to separate **who may edit** from **what is being edited**. First, choose a directory role that can manage user objects; that is why User Administrator is relevant. Second, identify the profile category. Job information covers the employment-facing attributes, while Settings covers sign-in and global location. Third, check source of authority. Because Adele is cloud-only, Microsoft Entra ID can accept the edits directly; there is no on-premises sync process expected to overwrite them. Fourth, consider downstream impact: department and manager values can be consumed by address books, profile cards, dynamic group rules, and business processes, so the change should be treated as identity data, not merely cosmetic text.",
+      "wrongOptions": {
+        "A": "Groups Administrator manages group objects, owners, and members, not a user's job title, department, manager, or usage location. Misconception: every identity-related change is a group administration task. Could be correct when the request is to add owners or members to a group.",
+        "C": "License Administrator is for assigning or fixing licenses, not editing profile data such as department or manager. Misconception: usage location makes every related task licensing-only. Could be correct when the profile data is already correct and only product licenses must change.",
+        "D": "Resetting a password does not update profile information, and Helpdesk Administrator is not the least-privilege role for these edits. Misconception: help desk roles are general user-profile editors. Could be correct for password reset or sign-in recovery tasks."
+      },
+      "plainEnglish": "A user's profile is the directory record that tells Microsoft services who the person is and how to describe them. If Adele changes teams, you update her user record, not a group page or a license page. Job title, department, and manager are job details. The country or region value lives with user settings. User Administrator is the role meant for this kind of user maintenance without giving a tenant-wide super-admin role.\n\nThe key idea is that a user record is not one flat note. It has sections, and each section is edited by people with the right directory role. Adele's new team and manager belong on her person record so other Microsoft services can show the same identity information consistently.",
+      "analogy": "Think of Microsoft Entra ID as the company staff directory.\n\n| Analogy | Azure reality |\n|---|---|\n| Staff card | User profile |\n| Job section | Job information |\n| Country field | Usage/global location setting |\n| Directory clerk | User Administrator |\n| Club secretary | Groups Administrator |\n\n**Where the analogy breaks down:** profile fields can feed automated systems such as licensing and dynamic groups, while a paper staff card usually does not change access automatically.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly called Azure Active Directory, for users, groups, devices, and directory settings."
+        },
+        {
+          "term": "Cloud-only user",
+          "definition": "A user whose authoritative account is in Microsoft Entra ID rather than on-premises Active Directory."
+        },
+        {
+          "term": "User Administrator",
+          "definition": "A built-in Microsoft Entra role for many user-management tasks."
+        },
+        {
+          "term": "Groups Administrator",
+          "definition": "A built-in role for group creation, ownership, settings, and membership."
+        },
+        {
+          "term": "Usage location",
+          "definition": "A user country or region setting used by Microsoft services and licensing scenarios."
+        },
+        {
+          "term": "Profile card",
+          "definition": "The user information shown across Microsoft 365 experiences such as Outlook and Teams."
+        }
+      ],
+      "watchOut": "- Do not edit group membership when the question asks for profile fields.\n- Always check whether the account is cloud-only or synchronized.\n- Usage location is often tested because it appears with settings and affects licensing.\n- Directory roles are separate from Azure RBAC roles on subscriptions.\n- If the account later becomes synchronized from an on-premises directory, the same-looking fields may need a different update path.\n- Manager is a relationship to another user object, so choose the correct Diego account in tenants with duplicate names.\n- Changing department can immediately affect any dynamic group rule that uses `user.department`.",
+      "productionTip": {
+        "official": "Microsoft documents profile categories including Identity, Job information, Contact info, Settings, and On-premises, and lists User Administrator as the least-privilege role for user creation and related user administration tasks. Microsoft also documents that the user profile appears across Microsoft products including Outlook, Teams, and Windows, so profile changes can be visible beyond the Entra admin center. The documented edit flow requires selecting the user, editing properties, saving the update, and using least-privileged directory roles where possible.",
+        "recommendation": "Keep HR-driven values such as department and manager sourced consistently. Before changing profile attributes, check whether dynamic groups, administrative units, licensing, or applications depend on those attributes. Recommendation: verify the target user's source of authority and object ID before editing, then spot-check one dependent experience such as the Microsoft 365 profile card. For least privilege, grant User Administrator only to the operators who need user maintenance instead of using Global Administrator for routine profile changes."
+      },
+      "memoryTrick": "People fields usually go to the People role: User Administrator. This shortcut fails for synchronized users whose source of authority is on-premises.",
+      "examTip": "Clue words are **job title**, **department**, **manager**, **global location**, and **least privileged**. Rule out group, license, and help desk roles unless the action is membership, licensing, or password support. A harder version may make the account synchronized, changing where edits must occur. The wrong answers each confuse a nearby administration area with user-profile maintenance: groups for membership, licensing for product entitlement, and help desk for password support. A more difficult item could include a synchronized user, a duplicate manager name, or a dynamic group that changes membership after the department field is saved."
+    },
+    "sources": [
+      {
+        "title": "How to manage user profile information in the Microsoft Entra admin center",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-to-manage-user-profile-info"
+      },
+      {
+        "title": "Least privileged roles by task",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/delegate-by-task"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.2-02",
+    "objective": "D1.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a Microsoft Entra tenant synchronized from an on-premises Windows Server Active Directory forest. A synchronized user named `Ben Smith` has the wrong department and office phone number in Microsoft Entra ID. The user also has no usage location set, which is causing license assignment problems. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Update the department, phone number, and usage location directly in Microsoft Entra ID because all visible properties are cloud-editable."
+      },
+      {
+        "id": "B",
+        "text": "Delete and recreate Ben as a cloud-only user, then reassign all memberships manually."
+      },
+      {
+        "id": "C",
+        "text": "Update the department and phone number in Windows Server Active Directory, wait for synchronization, and update the usage location in Microsoft Entra ID."
+      },
+      {
+        "id": "D",
+        "text": "Convert Ben to a guest account and invite him again with the correct properties."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Ben is synchronized from Windows Server Active Directory and the on-premises account remains authoritative.",
+    "sections": {
+      "correctAnswer": "**C. Update the department and phone number in Windows Server Active Directory, wait for synchronization, and update the usage location in Microsoft Entra ID**. Microsoft says synchronized identity, contact, and job information should be changed on-premises, while Microsoft Entra-only attributes such as Usage Location can be changed in the cloud.",
+      "technical": "Synchronized users have a source-of-authority distinction. For users whose source of authority is Windows Server Active Directory, Microsoft documents that identity, contact info, and job info should be updated in Windows Server Active Directory, and then administrators should wait for the next synchronization cycle. Department is job information, and an office phone number is contact information, so those values belong on-premises. Usage location is a Microsoft Entra ID attribute and can be edited directly in the Microsoft Entra admin center. Some synchronized properties such as User Principal Name, On Premises Immutable ID, and Account Enabled can be updated in Microsoft Entra ID for on-premises managed users, but Microsoft says this is not recommended except for emergency purposes. This scenario is normal data correction plus a licensing prerequisite, not emergency identity repair.\n\nThink of the properties in two buckets. **Synchronized profile properties** are mastered where the synchronized account is mastered; for Ben, that is Windows Server Active Directory. **Cloud service properties** are maintained in Microsoft Entra ID; usage location is in this bucket and is commonly needed before license assignment succeeds. The precedence rule is that the authoritative source wins on the next sync. If an administrator somehow changes a synchronized job or contact value in the cloud, the next sync can reapply the on-premises value or create an unsupported state. The supported process is therefore not just a convenience; it avoids fighting the synchronization engine.",
+      "wrongOptions": {
+        "A": "Direct cloud edits to synchronized department and contact info can be blocked or overwritten by synchronization. Misconception: if a property is visible in Microsoft Entra ID, it is authoritative there. Could be correct for cloud-only users or Microsoft Entra-only attributes such as usage location.",
+        "B": "Recreating the user is disruptive and creates a different object identity. Misconception: a new account with the same name is equivalent to the synchronized account. Could be correct only in a planned migration or unrecoverable identity rebuild.",
+        "D": "A guest account is for external collaboration, not for fixing an internal synchronized employee account. Misconception: reinviting a user refreshes their internal profile. Could be correct when the person is truly an external B2B collaborator."
+      },
+      "plainEnglish": "Ben's cloud account is a copy of important information mastered in the company's local directory. If the local directory is the original, you fix the original for department and phone number, then let sync update the cloud copy. Usage location is different because Microsoft documents it as a cloud-side attribute. So the work is split: on-premises for synced job/contact values, Microsoft Entra ID for usage location.\n\nThis is like having two forms for the same employee: an original HR form and a cloud service form. You fix department and phone on the original because those values are copied upward. You fix usage location in the cloud because that value is specifically used by the cloud service to decide which licenses and services can be applied.",
+      "analogy": "A restaurant prints menus from a central recipe book. If the recipe is wrong, fix the recipe book, not one printed menu.\n\n| Analogy | Azure reality |\n|---|---|\n| Recipe book | Windows Server Active Directory |\n| Printed menu | Microsoft Entra synchronized user |\n| Recipe category and phone | Department and contact info |\n| Sticker after printing | Usage location |\n| New print run | Sync cycle |\n\n**Where the analogy breaks down:** identity sync has matching rules and object identifiers; a printed menu does not.",
+      "jargon": [
+        {
+          "term": "Synchronized user",
+          "definition": "A Microsoft Entra user object synchronized from an on-premises directory."
+        },
+        {
+          "term": "Windows Server Active Directory",
+          "definition": "Microsoft's traditional on-premises directory service."
+        },
+        {
+          "term": "Source of authority",
+          "definition": "The system that owns the official value for a property."
+        },
+        {
+          "term": "Directory synchronization",
+          "definition": "The process that copies selected identity data from on-premises to Microsoft Entra ID."
+        },
+        {
+          "term": "Usage Location",
+          "definition": "A Microsoft Entra country or region setting used in licensing and service availability checks."
+        },
+        {
+          "term": "User Principal Name",
+          "definition": "A sign-in name that often looks like an email address."
+        }
+      ],
+      "watchOut": "- Visibility in the cloud portal does not prove cloud authority.\n- On-premises-sourced job and contact values can be overwritten.\n- Usage location is a common Microsoft Entra-side exception.\n- Do not delete and recreate synchronized users for routine property corrections.\n- Do not assume the Edit properties button means every field is safely cloud-authored.\n- License troubleshooting should check usage location without also making unsupported edits to synced contact data.\n- If the on-premises user is deleted, synchronization behavior can affect whether the cloud user remains, deletes, or rematches.",
+      "productionTip": {
+        "official": "Microsoft's profile guidance states that synchronized users should have identity, contact, and job information updated in Windows Server Active Directory, while Microsoft Entra ID attributes such as Usage Location can be updated directly in Microsoft Entra ID. The Microsoft profile article explicitly separates on-premises sourced identity, contact, and job information from Microsoft Entra ID attributes such as Usage Location. The group licensing documentation also verifies that users without a specific location can encounter location-related licensing behavior.",
+        "recommendation": "Document which fields are mastered by HR, on-premises AD, and Microsoft Entra ID. For licensing failures, check usage location first, but do not start editing synchronized job fields in the cloud. Recommendation: maintain a field-ownership matrix for hybrid tenants. Give help desk staff a clear rule: correct AD-mastered fields in the on-premises tool, correct usage location in Entra ID, and then verify the sync timestamp or resulting license state before closing the ticket."
+      },
+      "memoryTrick": "Synced job and contact data go back to the source; usage location lives in the cloud. This is a simplification for normal administration, not emergency recovery.",
+      "examTip": "Clue words are **synchronized**, **Windows Server Active Directory**, **department**, **phone number**, and **usage location**. The exam is testing source of authority. A harder version may include Account Enabled or User Principal Name and emergency wording. To rule out distractors, ask whether the option respects the master copy. The delete/recreate answer is excessive because the account still exists; the guest answer changes identity type; the cloud-only edit answer ignores synchronization precedence. A harder version could mention an emergency Account Enabled change, where Microsoft allows a cloud edit but does not recommend it as routine management."
+    },
+    "sources": [
+      {
+        "title": "How to manage user profile information in the Microsoft Entra admin center",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-to-manage-user-profile-info"
+      },
+      {
+        "title": "Assign or unassign licenses to a group in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-group-licenses?view=o365-worldwide"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.2-03",
+    "objective": "D1.1.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "A Microsoft Entra user named `Ravi Narayan` might be compromised. You need to prevent Ravi from signing in while preserving the account object and group memberships for investigation. Which user property should you change?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Remove Ravi from every Microsoft Entra group immediately."
+      },
+      {
+        "id": "B",
+        "text": "Clear Ravi's department and job title values."
+      },
+      {
+        "id": "C",
+        "text": "Change Ravi's usage location to a country where services are unavailable."
+      },
+      {
+        "id": "D",
+        "text": "Set **Block sign in** by changing the user's sign-in setting in the profile Settings category."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Ravi is an internal user. Conditional Access and Identity Protection response actions are outside this property-management question.",
+    "sections": {
+      "correctAnswer": "**D. Set Block sign in by changing the user's sign-in setting in the profile Settings category**. The Settings category includes whether the user can sign in to the tenant, so it prevents authentication without deleting the user or erasing memberships.",
+      "technical": "The Microsoft Entra user profile Settings category includes deciding whether a user can sign in to the Microsoft Entra tenant and specifying the user's global location. For a suspected compromise where evidence and memberships must remain visible, the property-level containment action is to block sign-in. This differs from deleting the user, which moves the account to a deleted state, and from group cleanup, which changes authorization after sign-in rather than authentication itself. Clearing department or job title might change dynamic group results later, but it is not a direct account lock. Changing usage location affects service and licensing behavior; it is not a sign-in control. For synchronized users, Microsoft notes Account Enabled can be changed in Microsoft Entra ID for emergency purposes, but normal source-of-authority rules still matter.\n\nThe evaluation order is containment first, cleanup second. Blocking sign-in changes whether the account can authenticate at all. Group membership affects authorization after authentication, so it has lower priority for the stated goal. Deleting the user would also stop sign-in, but it changes object state, starts the deletion lifecycle, and can disturb licenses and recovery processes. Profile text changes have no precedence over the sign-in control. In production, blocking sign-in might not instantly end every existing session in every workload; that is why incident response commonly pairs the property change with token/session review, password reset, and audit investigation, even though the exam objective here is user-property management.",
+      "wrongOptions": {
+        "A": "Removing groups may reduce access but does not directly stop authentication, and it destroys useful investigation context. Misconception: authorization cleanup is the same as disabling sign-in. Could be correct later as part of access remediation.",
+        "B": "Department and job title are descriptive profile attributes, not sign-in controls. Misconception: changing profile fields reliably disables accounts. Could be correct when the issue is wrong profile display or a dynamic group rule based on those values.",
+        "C": "Usage location is for country/region and licensing scenarios, not blocking authentication. Misconception: making services unavailable equals blocking sign-in. Could be correct when fixing license assignment errors caused by missing or wrong location."
+      },
+      "plainEnglish": "Blocking sign-in is like turning off Ravi's badge while keeping the employee file. You can still inspect the account, memberships, and history, but the account cannot be used to sign in. Removing groups is like taking away some room keys after the person already enters the building. It may be useful later, but it is not the main lock on the front door.\n\nImagine someone may have stolen Ravi's password. You do not start by rewriting Ravi's department label or removing every team he belongs to. You first stop the account from being used to log in. Keeping the account in place helps investigators see what Ravi belonged to and what might have been touched.",
+      "analogy": "A security desk suspects an employee badge is stolen, so it deactivates the badge without shredding the employee file.\n\n| Analogy | Azure reality |\n|---|---|\n| Badge | Sign-in ability |\n| Deactivate badge | Block sign in |\n| Employee file | User object |\n| Room access list | Group membership |\n| Country label | Usage location |\n\n**Where the analogy breaks down:** cloud sign-in can involve tokens, sessions, passwords, and Conditional Access, which a simple badge story does not fully represent.",
+      "jargon": [
+        {
+          "term": "Block sign in",
+          "definition": "A user setting that prevents the account from signing in to the Microsoft Entra tenant."
+        },
+        {
+          "term": "Authentication",
+          "definition": "Proving identity during sign-in."
+        },
+        {
+          "term": "Authorization",
+          "definition": "Deciding what an authenticated user can access."
+        },
+        {
+          "term": "Group membership",
+          "definition": "The groups to which a user belongs, often used for access."
+        },
+        {
+          "term": "Usage location",
+          "definition": "A user country or region setting, not a sign-in block."
+        },
+        {
+          "term": "Conditional Access",
+          "definition": "Microsoft Entra policy that can apply controls based on users, devices, risk, and other conditions."
+        }
+      ],
+      "watchOut": "- Blocking sign-in is not the same as deleting the user.\n- Removing groups can reduce permissions but may not stop authentication.\n- Usage location and job fields are not containment controls.\n- Incident response may also require password reset and token/session actions.\n- Blocking sign-in preserves the account for review; deleting it moves the object into the deleted-user lifecycle.\n- Existing app sessions may need separate handling depending on the service and incident process.\n- If a dynamic group uses `accountEnabled`, changing sign-in state can also alter access indirectly.\n- For synchronized users, understand whether the disable action should also be made in the on-premises directory.",
+      "productionTip": {
+        "official": "Microsoft's user profile guidance places the sign-in permission setting in the Settings category, alongside global location. That documented location matters because both fields are visible in the same profile area but have different purposes. Microsoft documents that the Settings profile category controls whether the user can sign in to the tenant. The deleted-user documentation separately confirms that deletion has its own 30-day recoverable state, showing why deletion is a different action from blocking sign-in.",
+        "recommendation": "For suspected compromise, block sign-in first to contain the account, then follow the incident runbook for password reset, token revocation, device review, and audit investigation. Recommendation: create a compromise checklist that starts with blocking sign-in, records the reason, captures group and role memberships for evidence, and then performs password, token, device, and audit-log steps. Delegate this through the least privileged help desk or user administration roles approved by the organization."
+      },
+      "memoryTrick": "Block sign-in blocks the door; groups decide which rooms are available after entry. The mnemonic is a simplification because policies and sessions can add more controls.",
+      "examTip": "Look for **prevent signing in**, **do not delete**, and **preserve memberships**. Those words point to the sign-in setting, not group cleanup. A harder version may involve a synchronized account and ask whether the cloud change is emergency-only or normal source-of-authority management. The most tempting wrong answer is removing group memberships because it sounds security-focused. Rule it out by separating authentication from authorization. A harder question might ask which additional action revokes sessions, or it may include a synced account where the on-premises disabled state can later flow to Microsoft Entra ID."
+    },
+    "sources": [
+      {
+        "title": "How to manage user profile information in the Microsoft Entra admin center",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-to-manage-user-profile-info"
+      },
+      {
+        "title": "Restore or permanently remove recently deleted user",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/users-restore"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.2-04",
+    "objective": "D1.1.2",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have 45 cloud-only users in Microsoft Entra ID. All 45 moved to the `Research` department and now work from the `Sydney` office. No manager changes are required. You need to minimize administrative effort. Which two actions should you perform? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Select the 45 users on the **All users** page and choose **Edit**."
+      },
+      {
+        "id": "B",
+        "text": "Open each user profile individually because bulk edit supports only license changes."
+      },
+      {
+        "id": "C",
+        "text": "Use bulk group member import because it can update any user property from a CSV file."
+      },
+      {
+        "id": "D",
+        "text": "Use the manager field in bulk edit to force the department change indirectly."
+      },
+      {
+        "id": "E",
+        "text": "Use **Edit properties** to update **Department** and **Office location** for the selected users."
+      }
+    ],
+    "correct": [
+      "A",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The users are cloud-only. The Microsoft Entra admin center bulk edit behavior is the current behavior documented for up to 60 selected users.",
+    "sections": {
+      "correctAnswer": "**A. Select the 45 users on the All users page and choose Edit** and **E. Use Edit properties to update Department and Office location for the selected users**. Microsoft documents bulk editing up to 60 selected users and lists Department and Office location as supported properties.",
+      "technical": "The documented bulk-edit workflow is to browse to **Entra ID** > **Users**, select the users, choose **Edit**, choose an available action, and use **Edit properties** for supported attributes. Microsoft states that the Microsoft Entra admin center can edit certain user attributes in bulk by selecting up to 60 users at a time. The allowed list includes City, Company name, Country or region, Department, Employee hire date, Employee type, Job title, Office location, State or province, Street address, Usage location, and ZIP or postal code. This scenario has 45 users, so it is within the limit, and both required fields are supported. Bulk group member import is a different operation: it adds members to a group from a CSV file by UPN or object ID. It does not update profile attributes. Unsupported user properties must be edited in specific user profiles or another supported interface.\n\nThe scope of the operation is the selected set of user objects, not the whole tenant and not a group. The documented 60-user limit is important because it determines whether one portal operation can cover all 45 users. The property list is also a gate: if the requested fields were manager, photo, or a custom value outside the bulk list, selecting the users would not be sufficient. Because both Department and Office location are in the documented list, the edit is both supported and smaller in scope than scripting a broader update. The result should be verified by checking a few user profiles and any dynamic groups that use department or office-like values.",
+      "wrongOptions": {
+        "B": "Opening each user individually wastes effort because the count is within the documented 60-user limit and both fields are supported. Misconception: bulk operations are only for user creation or licenses. Could be correct when the needed property is not available in bulk edit.",
+        "C": "Bulk group member import changes group membership, not user profile fields. Misconception: any CSV bulk operation can update any directory property. Could be correct when the task is adding multiple users to a group.",
+        "D": "Manager does not indirectly set department or office location, and manager is not the requested property. Misconception: reporting relationships rewrite other profile fields. Could be correct when the actual task is changing a manager by a supported method."
+      },
+      "plainEnglish": "You need to change the same two fields for 45 people. Microsoft Entra lets an administrator select a batch of users and edit certain shared fields at once. Department and office location are on that list, and 45 is less than 60. A group-import CSV is like adding names to a club roster; it does not change each person's office or department on their staff profile.\n\nBulk edit is useful when many people need the same safe change. Here every selected user gets the same new department and office location. You are not importing a file of different values for each person; you are applying two shared values to the selected users. That distinction is why the group-member CSV tool is irrelevant.",
+      "analogy": "A school moves 45 students to a new homeroom and classroom. The student system has a batch edit screen.\n\n| Analogy | Azure reality |\n|---|---|\n| Student records | User profiles |\n| Batch edit | Select users and choose Edit |\n| Homeroom | Department |\n| Classroom | Office location |\n| Club roster import | Bulk group member import |\n\n**Where the analogy breaks down:** Microsoft Entra attributes can drive access, licensing, and dynamic groups; a school homeroom field usually does not.",
+      "jargon": [
+        {
+          "term": "Bulk edit",
+          "definition": "Changing supported properties for multiple selected objects in one operation."
+        },
+        {
+          "term": "All users page",
+          "definition": "The Microsoft Entra admin center list of users in the tenant."
+        },
+        {
+          "term": "Department",
+          "definition": "A user profile field for organizational department."
+        },
+        {
+          "term": "Office location",
+          "definition": "A user profile field for office or work location."
+        },
+        {
+          "term": "UPN",
+          "definition": "User principal name, usually an email-style sign-in name."
+        },
+        {
+          "term": "CSV",
+          "definition": "Comma-separated values, a text format used by some bulk operations."
+        }
+      ],
+      "watchOut": "- Bulk user edit supports only listed attributes.\n- The documented selection limit is up to 60 users.\n- Bulk group member import is for memberships, not user profile values.\n- Source of authority still matters for synchronized accounts.\n- Selecting 61 users would exceed the documented bulk edit count and require splitting the work.\n- Bulk edit is not a universal profile editor; unsupported fields still need another method.\n- Updating Department can change dynamic group membership and therefore app access or licensing.\n- For hybrid users, bulk cloud edits might not be authoritative even if the UI allows selection.",
+      "productionTip": {
+        "official": "Microsoft documents the Microsoft Entra admin center ability to select up to 60 users and bulk edit certain attributes, including Department and Office location. The Microsoft profile guidance lists the exact bulk-editable fields and states that administrators can select up to 60 users at a time. The group member import article confirms that its CSV template expects member object IDs or UPNs, which is membership input rather than profile-property input.",
+        "recommendation": "Before bulk updates, export or record current values for rollback and check whether dynamic groups, administrative units, or licensing automation depend on the attributes being changed. Recommendation: perform large attribute changes in batches with a before-and-after export of the affected users. For least privilege, use User Administrator for profile updates and avoid granting Groups Administrator or Global Administrator merely because many users are selected."
+      },
+      "memoryTrick": "Bulk edit is for shared profile fields; bulk import members is for rosters. This shortcut fails if the property is not in the supported bulk-edit list.",
+      "examTip": "Clue words are **45 users**, **same department**, **same office**, and **minimize administrative effort**. Because 45 is below 60 and both fields are supported, choose bulk user edit. A harder version may ask for a property that requires opening each profile. The two correct choices form a sequence: select the users, then choose the supported edit action. Eliminate any answer that changes group membership or claims bulk edit is license-only. A harder version could ask for 75 users, which would require multiple batches, or for a property such as manager that is not in the documented bulk-edit list."
+    },
+    "sources": [
+      {
+        "title": "How to manage user profile information in the Microsoft Entra admin center",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-to-manage-user-profile-info"
+      },
+      {
+        "title": "Bulk add group members by uploading a CSV file",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-bulk-import-members"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.2-05",
+    "objective": "D1.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A security group named `App-Approvers` is assigned access to an internal application. The application team lead, Marta, must be able to add and remove users from `App-Approvers` without receiving a tenant-wide administrator role. Marta does not need the application access herself. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Add Marta as a member of `App-Approvers`."
+      },
+      {
+        "id": "B",
+        "text": "Add Marta as an owner of `App-Approvers`."
+      },
+      {
+        "id": "C",
+        "text": "Assign Marta the Global Administrator role."
+      },
+      {
+        "id": "D",
+        "text": "Change `App-Approvers` to a Microsoft 365 group."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. `App-Approvers` is a cloud security group, not synchronized from on-premises Active Directory and not role-assignable.",
+    "sections": {
+      "correctAnswer": "**B. Add Marta as an owner of `App-Approvers`**. Owners manage supported group properties and membership, while members receive the access assigned to the group.",
+      "technical": "Microsoft Entra groups separate members from owners. Members are the principals that receive the access, application assignment, policy, or permission granted to the group. Owners are principals that can manage the group object, including properties, ownership, and membership, within the limits of the group type and tenant settings. The group overview explains that a resource or directory owner can grant group management rights to someone, allowing that person to add and remove members. Default user permissions also state that users can manage properties, ownership, and membership of groups they own. The correct order is to keep application access assigned to the group, add Marta as an owner for roster management, and add Marta as a member only if she also needs the app. Avoid Global Administrator because it is far broader than one group. Group type cannot be changed after creation.\n\nThere are two independent relationships on a group. The first is **ownership**, which gives management responsibility for the group object. The second is **membership**, which is usually consumed by applications, resources, or policies to grant access. Access inheritance flows from the application assignment to the group and then to the group's members; it does not flow to owners merely because they are owners. Management authority flows to owners over the group; it does not require the owner to be a member. This separation is the reason Marta can maintain the roster without receiving the internal application permission. Exceptions include groups whose management source is outside Microsoft Entra admin center, such as on-premises synchronized groups or some mail-enabled group scenarios.",
+      "wrongOptions": {
+        "A": "Membership would give Marta the application access assigned to the group but is not the right management delegation. Misconception: member and owner both mean responsible for a group. Could be correct if Marta also needed the app access.",
+        "C": "Global Administrator is far broader than required and violates least privilege. Misconception: only tenant-wide admins can change group rosters. Could be correct only for carefully controlled tenant-wide emergency administration.",
+        "D": "Changing group type is not needed and group type cannot be changed after creation. Misconception: owners work only on Microsoft 365 groups. Could be correct if creating a new collaboration group for Teams or SharePoint workloads."
+      },
+      "plainEnglish": "A group has two important lists. The member list is who gets the benefits or access. The owner list is who can manage the group. Marta needs to manage the list, not necessarily get the application access. Make her an owner. Making her a member is like giving her an event ticket instead of letting her manage the guest list.\n\nThe person who manages a guest list does not have to be a guest. Marta needs the clipboard, not a seat at the event. If you add her as a member, she gets whatever access `App-Approvers` grants. If you add her as an owner, she can maintain who is on the list while staying outside the application's access group.",
+      "analogy": "A private event has guests and organizers.\n\n| Analogy | Azure reality |\n|---|---|\n| Guest list | Group members |\n| Organizer | Group owner |\n| Event entry | Application access |\n| Master key | Global Administrator |\n| Event type | Group type |\n\n**Where the analogy breaks down:** Microsoft Entra access can be affected by app assignments, policies, and synchronized sources, not just a simple event list.",
+      "jargon": [
+        {
+          "term": "Security group",
+          "definition": "A Microsoft Entra group type commonly used to manage access to resources."
+        },
+        {
+          "term": "Member",
+          "definition": "A principal included in a group, usually receiving group-assigned access."
+        },
+        {
+          "term": "Owner",
+          "definition": "A principal designated to manage a group and its membership within supported limits."
+        },
+        {
+          "term": "Global Administrator",
+          "definition": "A highly privileged Microsoft Entra role with broad tenant administration rights."
+        },
+        {
+          "term": "Least privilege",
+          "definition": "Granting only the permissions needed for the task."
+        },
+        {
+          "term": "Microsoft 365 group",
+          "definition": "A collaboration-focused group type used by workloads such as Teams and SharePoint."
+        }
+      ],
+      "watchOut": "- Owners manage the group; members receive group access.\n- Do not grant Global Administrator for a single group roster task.\n- Some synced or mail-enabled groups are managed outside the Microsoft Entra admin center.\n- Group type cannot be changed after creation.\n- Owners of sensitive access groups can add members, so owner review is a security control.\n- Group ownership is not the same as application ownership.\n- A group can have service principals as owners in supported scenarios, but the question uses a human team lead.\n- If default user self-service group creation is restricted, ownership delegation still needs to follow tenant settings and group type limits.",
+      "productionTip": {
+        "official": "Microsoft documentation separates group members and owners and shows separate management actions for each. Default permissions documentation says users can manage properties, ownership, and membership of groups they own. Microsoft documents that resource or directory owners can grant group management rights so a person can add and remove members. The group management article separately shows Members and Owners as distinct pages and warns that some groups are not managed in the Microsoft Entra admin center.",
+        "recommendation": "Assign at least two suitable owners to important groups and review owners as carefully as members. For sensitive access groups, combine owner delegation with logging and access reviews. Recommendation: for least privilege, delegate ownership of only the specific access group and avoid broad directory roles. Require at least two trained owners, alert on owner changes for sensitive groups, and periodically compare owners with the business application owner list."
+      },
+      "memoryTrick": "Members get access; owners manage access. The shortcut depends on group type, tenant settings, and where the group is mastered.",
+      "examTip": "Clue words are **add and remove users**, **without tenant-wide administrator**, and **does not need access herself**. Those point to owner, not member. A harder version may use a synchronized group, where on-premises management can override cloud-side changes. Rule out the member option by asking whether Marta should receive access. Rule out Global Administrator by applying least privilege. Rule out changing group type because group type is not mutable after creation and does not solve delegation. A harder version may involve a role-assignable group, where ownership and membership changes have additional privileged-access implications."
+    },
+    "sources": [
+      {
+        "title": "Learn About Groups, Group Membership, and Access",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/concept-learn-about-groups"
+      },
+      {
+        "title": "How to manage groups - Microsoft Entra",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-to-manage-groups"
+      },
+      {
+        "title": "How to manage user profile information in the Microsoft Entra admin center",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-to-manage-user-profile-info"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.2-06",
+    "objective": "D1.1.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A cloud security group named `SG-Finance-Apps` uses assigned membership for application access. You want Microsoft Entra ID to add users automatically when `department` is `Finance` and remove them when the department changes. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep assigned membership and ask each group owner to review members weekly."
+      },
+      {
+        "id": "B",
+        "text": "Enable **Microsoft Entra roles can be assigned to the group** so membership becomes automatic."
+      },
+      {
+        "id": "C",
+        "text": "Change the membership type to **Dynamic User** and configure `user.department -eq \"Finance\"`."
+      },
+      {
+        "id": "D",
+        "text": "Change the group type from Security to Microsoft 365 and keep assigned membership."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The group is a cloud group, is not role-assignable, and the tenant has the required Microsoft Entra ID P1 licensing for dynamic membership users.",
+    "sections": {
+      "correctAnswer": "**C. Change the membership type to Dynamic User and configure `user.department -eq \"Finance\"`**. Dynamic membership groups add and remove users based on attributes, and `department` is a supported user property.",
+      "technical": "Assigned membership means owners or administrators explicitly add and remove group members. Dynamic user membership means Microsoft Entra ID evaluates a membership rule against user attributes. Microsoft documents that when user or device attributes change, rules for dynamic membership groups are processed; objects satisfying the rule are added and objects no longer satisfying it are removed. You cannot manually add or remove a member of a dynamic membership group. The supported rule syntax is property, operator, and value; `user.department -eq \"Finance\"` uses the supported user property `department` and the equals operator. Exceptions matter: if **Microsoft Entra roles can be assigned to the group** is enabled, membership type cannot be changed and assigned membership is automatically selected. Dynamic membership also requires the organization to possess qualifying P1 or Intune for Education licenses for covered users.\n\nChanging from assigned to dynamic also changes the membership authority. With assigned membership, the stored member list is the authority. With dynamic membership, the rule and the referenced attributes are the authority. During processing, Microsoft Entra evaluates the user object attributes against the rule, adds matching users, and removes users that no longer match. Group owners do not override this by manually adding a user who fails the rule. The scope is the group, but the evaluation considers relevant users in the tenant. Precedence inside the expression is simple here because there is one equality comparison; more complex expressions require attention to documented operator precedence and parentheses. The main exception in this scenario is role-assignable groups: those use assigned membership and cannot be switched as described.",
+      "wrongOptions": {
+        "A": "Weekly manual review preserves ongoing manual effort and does not meet the automatic requirement. Misconception: dynamic groups are only for reporting. Could be correct when human approval is required before access changes.",
+        "D": "Group type cannot be changed after creation and Microsoft 365 group type does not automatically manage members. Misconception: Microsoft 365 means automatic membership. Could be correct when creating a new collaboration group for Microsoft 365 workloads.",
+        "B": "Role-assignable group capability is for assigning Microsoft Entra roles and uses assigned membership; it does not make app membership automatic. Misconception: role-assignable means automatically assigned. Could be correct for privileged role assignment groups that must remain assigned."
+      },
+      "plainEnglish": "Assigned membership is a hand-written list. Dynamic membership is a rule. If the rule says department equals Finance, Microsoft Entra keeps the list updated when department values change. The tradeoff is that you stop manually adding individual members. If someone's department field is wrong or loosely controlled, the group membership can also be wrong.\n\nAfter the change, access is no longer controlled by a person typing names into the group. It is controlled by the statement 'department equals Finance.' If Maria moves out of Finance and her department value changes, the system removes her from the group. If Chen moves into Finance and the field is updated, the system adds Chen.",
+      "analogy": "A building can use either a handwritten access list or a rule saying everyone with a Finance badge may enter.\n\n| Analogy | Azure reality |\n|---|---|\n| Handwritten list | Assigned membership |\n| Finance badge | `user.department -eq \"Finance\"` |\n| Automatic door list | Dynamic user group |\n| Wrong badge | Incorrect user attribute |\n| Guard rule engine | Dynamic membership processing |\n\n**Where the analogy breaks down:** dynamic processing is asynchronous and has licensing, syntax, and special-group restrictions.",
+      "jargon": [
+        {
+          "term": "Assigned membership",
+          "definition": "A group membership model where members are explicitly added and removed."
+        },
+        {
+          "term": "Dynamic User",
+          "definition": "A membership type maintained by rules based on user attributes."
+        },
+        {
+          "term": "Membership rule",
+          "definition": "A Boolean expression deciding whether an object belongs in a dynamic group."
+        },
+        {
+          "term": "Department",
+          "definition": "A user attribute supported in dynamic membership rules."
+        },
+        {
+          "term": "`-eq`",
+          "definition": "The equals operator in Microsoft Entra dynamic membership syntax."
+        },
+        {
+          "term": "Role-assignable group",
+          "definition": "A special group that can receive Microsoft Entra role assignments and must use assigned membership."
+        }
+      ],
+      "watchOut": "- Dynamic groups do not allow manual member add or remove.\n- A rule can target users or devices, not both in one group.\n- Role-assignable groups cannot be changed to dynamic membership.\n- Attribute write permissions matter when dynamic groups control access.\n- A dynamic group can surprise application owners if the department attribute is changed by HR or synchronization.\n- Rule processing is not the same as instant human approval; monitor status after saving.\n- The tenant needs enough qualifying licenses for unique dynamic group users.\n- Do not use dynamic membership for privileged role-assignable groups because those require assigned membership.",
+      "productionTip": {
+        "official": "Microsoft documents dynamic membership behavior, supported rule syntax and properties, the inability to manually edit dynamic members, and the special membership restriction for groups enabled for Microsoft Entra role assignment. Microsoft documents that dynamic group members are added or removed when attributes satisfy or stop satisfying the rule, that manual member edits are not allowed, and that role-assignable groups automatically use Assigned membership and cannot change membership type.",
+        "recommendation": "Use dynamic access groups only when the source attributes are governed. Audit who can change `department`, test expected members, and monitor rule processing status before assigning sensitive apps. Recommendation: before converting an access group, export the current assigned members, simulate the rule against representative users, and confirm who can write the `department` attribute. For least privilege, let Groups Administrators manage the group but restrict attribute-write permissions to trusted identity processes."
+      },
+      "memoryTrick": "Assigned means typed in; dynamic means ruled in. The shortcut fails when licensing, special group restrictions, or untrusted attributes make dynamic membership inappropriate.",
+      "examTip": "Clue words are **automatically add**, **remove when department changes**, and **least ongoing manual effort**. Choose dynamic user membership and the supported department rule. A harder version may include role-assignable groups, where dynamic membership is blocked. The best answer changes the source of membership from a manual list to a rule. Reject the weekly review answer because it leaves humans in the loop; reject the Microsoft 365 answer because group type is not the automation mechanism; reject role-assignable because it points in the opposite direction. A harder version could ask what happens to a manually added exception user after conversion: if the user does not match, the dynamic rule wins."
+    },
+    "sources": [
+      {
+        "title": "How to manage groups - Microsoft Entra",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-to-manage-groups"
+      },
+      {
+        "title": "Manage rules for dynamic membership groups in Microsoft Entra ID",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-dynamic-membership"
+      },
+      {
+        "title": "Create or Edit a Dynamic Membership Group and Get Its Processing Status",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-create-rule"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.2-07",
+    "objective": "D1.1.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You need a dynamic user group named `Sydney-Engineering`. It must include only users whose department is `Engineering` and usage location is `AU`. Which rule follows Microsoft Entra dynamic membership syntax?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`(device.department -eq \"Engineering\") -and (device.usageLocation -eq \"AU\")`"
+      },
+      {
+        "id": "B",
+        "text": "`user.department = \"Engineering\" AND user.usageLocation = \"AU\"`"
+      },
+      {
+        "id": "C",
+        "text": "`(user.department -contains \"Engineering\") -or (user.usageLocation -eq \"AU\")`"
+      },
+      {
+        "id": "D",
+        "text": "`(user.department -eq \"Engineering\") -and (user.usageLocation -eq \"AU\")`"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. This is a user-based dynamic membership group, the relevant attributes are populated, and the tenant is licensed for dynamic membership groups.",
+    "sections": {
+      "correctAnswer": "**D. `(user.department -eq \"Engineering\") -and (user.usageLocation -eq \"AU\")`**. Dynamic rules use `object.property operator value` syntax; `department` and `usageLocation` are supported user properties, and both conditions must be true.",
+      "technical": "A dynamic membership rule returns true or false for each evaluated object. The simple expression format is property, operator, and value, with a prefix such as `user.` for user properties. Microsoft lists `department` and `usageLocation` as supported user string properties. Usage location uses a two-letter country or region code, and `AU` is the scenario's code. Because the group must include only users matching both requirements, the connector must be `-and`. `-or` would include users who meet either condition and would be too broad. `-eq` is the equals operator; SQL-style `=` and `AND` are not the documented Microsoft Entra dynamic membership syntax. A device rule cannot use user attributes, and Microsoft states a dynamic group can be created for users or devices, not both.\n\nRule evaluation starts by choosing the object type. Because the group is a dynamic **user** group, each expression must reference user properties. Next, each comparison is evaluated: `user.department -eq \"Engineering\"` is true only for users whose department attribute exactly equals Engineering, and `user.usageLocation -eq \"AU\"` is true only for users with that two-letter usage location. Then the logical operator is applied. `-and` requires both comparisons to be true, so it matches the phrase **only users whose department is Engineering and usage location is AU**. If the expression used `-or`, either half would be enough and the group would be overinclusive. If it used `device.`, the rule would be for the wrong object family. Microsoft also documents that the rule builder supports up to five expressions for user-based groups, but the text box is used for more advanced syntax. This two-expression rule fits the builder model.",
+      "wrongOptions": {
+        "A": "This uses `device.` properties even though the group must evaluate users and user attributes. Misconception: user and device prefixes are interchangeable. Could be correct for a device dynamic group using supported device properties.",
+        "B": "This uses SQL-like syntax instead of Microsoft Entra operators such as `-eq` and `-and`. Misconception: all filters use standard SQL operators. Could be correct in another query language, not here.",
+        "C": "This uses `-or`, which includes too many users, and `-contains`, which is broader than exact department equality. Misconception: broader matching is safer. Could be correct when either Engineering or AU membership is intentionally enough."
+      },
+      "plainEnglish": "The rule is a filter. You want people who are in Engineering and whose location code is AU. Both things must be true, so the rule uses two user properties joined by `-and`. Using `device.` would test device objects. Using `-or` would make the group too large because it includes anyone who matches either half.\n\nA dynamic group rule is a yes-or-no test. For each person, Microsoft Entra asks two questions: is this person's department Engineering, and is this person's usage location AU? Only if both answers are yes should the person be included. The exact symbols matter because Microsoft Entra is not reading ordinary English; it is reading its own rule language.",
+      "analogy": "A conference organizer wants badges only for people who are both engineers and assigned to Australia.\n\n| Analogy | Azure reality |\n|---|---|\n| Person's department | `user.department` |\n| Australia code | `user.usageLocation -eq \"AU\"` |\n| Both checkboxes | `-and` |\n| Either checkbox | `-or` |\n| Device form | `device.` properties |\n\n**Where the analogy breaks down:** Microsoft Entra rules require exact syntax and supported properties; humans may interpret forms more flexibly.",
+      "jargon": [
+        {
+          "term": "Dynamic user group",
+          "definition": "A group whose user membership is maintained by a user-attribute rule."
+        },
+        {
+          "term": "Membership rule",
+          "definition": "The expression that decides inclusion in a dynamic group."
+        },
+        {
+          "term": "`user.department`",
+          "definition": "The rule property for the user's department."
+        },
+        {
+          "term": "`user.usageLocation`",
+          "definition": "The rule property for the user's two-letter usage location."
+        },
+        {
+          "term": "`-eq`",
+          "definition": "The equals comparison operator."
+        },
+        {
+          "term": "`-and`",
+          "definition": "A logical operator requiring both expressions to be true."
+        }
+      ],
+      "watchOut": "- Use `user.` for user groups and `device.` for device groups.\n- Use `-and` when all requirements must be true.\n- Property names are case sensitive, so copy documented names carefully.\n- Avoid broad operators such as `-contains` unless a partial match is required.\n- `AU` is a usage-location code in the scenario, not proof that the user physically signed in from Australia.\n- `-contains` performs broader string matching and can include values you did not intend.\n- `-or` often creates access sprawl in exam questions that say **only**.\n- User and device dynamic groups use different property sets, and one rule cannot mix both.\n- If a supported property is empty, an equality comparison to Engineering or AU will not match that user.",
+      "productionTip": {
+        "official": "Microsoft's dynamic membership documentation lists `department`, `usageLocation`, operators such as `-eq`, logical operators, and operator precedence for membership rules. Microsoft documents the single-expression structure, supported user properties including `department` and `usageLocation`, supported operators including `-eq`, and logical operators including `-and` and `-or`. The same documentation states that a dynamic group can be for users or devices, not both.",
+        "recommendation": "Start dynamic access rules with exact matches on governed attributes, then validate expected and unexpected members before assigning sensitive application or resource access. Recommendation: store dynamic group rules in change records with the business owner, the attribute owner, and sample included and excluded users. For least privilege, allow group rule edits only to administrators who understand both the syntax and the access impact of overbroad logical operators."
+      },
+      "memoryTrick": "Read the rule as a sentence: user department equals Engineering AND user location equals AU. The mnemonic still requires exact Microsoft Entra syntax.",
+      "examTip": "Clue words are **only users**, **department is Engineering**, and **usage location is AU**. Eliminate device rules, SQL-style syntax, and `-or`. A harder version may test operator precedence or parentheses with mixed `-and` and `-or`. Focus on three clues: **dynamic user group**, **only**, and **both conditions**. Those clues eliminate `device.`, SQL syntax, and `-or`. A harder version may remove parentheses and ask how operator precedence treats a mixed `-and` and `-or` expression, or it may include a null check for users missing a location."
+    },
+    "sources": [
+      {
+        "title": "Manage rules for dynamic membership groups in Microsoft Entra ID",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-dynamic-membership"
+      },
+      {
+        "title": "Create or Edit a Dynamic Membership Group and Get Its Processing Status",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-create-rule"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.2-08",
+    "objective": "D1.1.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Your company lets users create Microsoft 365 groups from Teams and Outlook. Administrators want all new group names to include a department suffix and want to block restricted words such as `Payroll` in group names and aliases. Administrators need exceptions when required. What should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A Microsoft Entra group naming policy with a prefix-suffix rule and a custom blocked words list."
+      },
+      {
+        "id": "B",
+        "text": "A Microsoft 365 group expiration policy with a 30-day lifetime."
+      },
+      {
+        "id": "C",
+        "text": "A dynamic membership rule based on `user.department`."
+      },
+      {
+        "id": "D",
+        "text": "An administrative unit containing all group owners."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The target groups are Microsoft 365 groups, and the organization possesses the required Microsoft Entra ID P1 or Microsoft Entra Basic EDU licenses for covered Microsoft 365 group members.",
+    "sections": {
+      "correctAnswer": "**A. A Microsoft Entra group naming policy with a prefix-suffix rule and a custom blocked words list**. Naming policy is the documented feature for Microsoft 365 group prefixes, suffixes, and blocked words in names and aliases.",
+      "technical": "Microsoft Entra group naming policy applies to Microsoft 365 groups created or edited across workloads such as Outlook, Microsoft Teams, SharePoint, Exchange, and Planner. It has two major features. A prefix-suffix naming policy adds fixed strings or supported user attributes around `[GroupName]`. A custom blocked words list blocks exact words or phrases in group names and aliases. Supported user attributes for naming include values such as Department, Company, Office, StateOrProvince, CountryOrRegion, and Title. Microsoft documents that some administrator roles, including Global Administrator and User Administrator, are exempt from group naming policy, which provides an exception path but must be governed. Licensing also matters: the organization must possess, not necessarily assign, Microsoft Entra ID P1 or Microsoft Entra Basic EDU licenses for each unique user who is a member of one or more Microsoft 365 groups. Existing groups are not immediately renamed when a policy is configured.\n\nThe scope of naming policy is important. It is designed for Microsoft 365 groups, not for every possible Microsoft Entra group type. Enforcement happens when users create or edit Microsoft 365 groups across supported Microsoft 365 workloads. Prefixes and suffixes can use fixed strings or supported attributes from the user who creates the group; unsupported attributes are treated as fixed strings, and extension or custom attributes are not supported for this feature. The custom blocked words list is comma-separated and exact-match based rather than substring based. Precedence is not about multiple policies because this feature is configured as a tenant group setting; instead, the notable exception is role exemption. Certain admins can create groups outside the naming policy, so administrative process matters.",
+      "wrongOptions": {
+        "B": "Expiration policy controls lifecycle and deletion of unused Microsoft 365 groups, not names or blocked words. Misconception: all group governance is expiration policy. Could be correct when the goal is automatic deletion unless owners renew.",
+        "C": "A dynamic membership rule controls who belongs to a group, not what the group is called. Misconception: using `department` in a rule stamps the group name. Could be correct when membership should follow department attributes.",
+        "D": "Administrative units scope delegated management; they do not enforce naming in Teams or Outlook. Misconception: putting owners in a container controls the names they choose. Could be correct when help desk management must be limited to certain users or groups."
+      },
+      "plainEnglish": "The company wants a rule about group names, not a rule about membership or deletion. Naming policy is made for this. It can automatically add text such as a department suffix and reject blocked words in names and aliases. Certain administrators are exempt, which is useful for exceptions but also means the process must be controlled.\n\nThis feature is like an automatic label maker for Microsoft 365 collaboration groups. A normal user types a group name, and Microsoft can add the required department text around it. If the typed name contains a prohibited exact word, the user sees an error. The policy does not go hunt through every existing group and rename it immediately, and it does not control who belongs to a group.",
+      "analogy": "A filing system requires every new folder to include a department and forbids sensitive words in ordinary folder names.\n\n| Analogy | Azure reality |\n|---|---|\n| Folder naming standard | Group naming policy |\n| Department suffix | Prefix-suffix rule |\n| Forbidden titles | Custom blocked words |\n| Senior records exception | Exempt admin roles |\n| Old folders unchanged | Existing groups not immediately renamed |\n\n**Where the analogy breaks down:** Microsoft 365 groups are created through multiple workloads and each app can show policy previews or errors differently.",
+      "jargon": [
+        {
+          "term": "Microsoft 365 group",
+          "definition": "A collaboration group type used by Teams, Outlook, SharePoint, Planner, and related workloads."
+        },
+        {
+          "term": "Group naming policy",
+          "definition": "A Microsoft Entra feature enforcing naming conventions and blocked words for Microsoft 365 groups."
+        },
+        {
+          "term": "Prefix-suffix policy",
+          "definition": "A rule that adds configured text or supported user attributes before or after `[GroupName]`."
+        },
+        {
+          "term": "Custom blocked words",
+          "definition": "A list of words or phrases users cannot use in Microsoft 365 group names or aliases."
+        },
+        {
+          "term": "Group alias",
+          "definition": "The mail or address-style alias associated with a Microsoft 365 group."
+        },
+        {
+          "term": "Microsoft Entra ID P1",
+          "definition": "A paid license edition required for this naming policy coverage."
+        }
+      ],
+      "watchOut": "- Naming policy applies to Microsoft 365 groups, not every mail or distribution-list scenario.\n- Blocked words are exact matches and are not case sensitive.\n- Some admin roles are exempt.\n- Existing groups are not immediately renamed.\n- `[GroupName]` must be included in prefix-suffix settings.\n- Naming policy is for Microsoft 365 groups, not a universal rule for every group object.\n- Blocked words use exact matching; do not expect substring filtering.\n- Prefixes and suffixes can differ between display name and alias if characters are not alias-supported.\n- Exempt administrator roles can bypass the naming policy, so exceptions must be auditable.\n- Existing groups become subject to the policy when edited, not at the instant the policy is first configured.",
+      "productionTip": {
+        "official": "Microsoft documents prefix-suffix naming, custom blocked words, workload enforcement, licensing requirements, and administrator role exemptions for Microsoft 365 group naming policy. Microsoft documents prefix-suffix structure, supported attributes, custom blocked words, role exemptions, licensing requirements, and behavior across workloads such as Teams, Outlook, SharePoint, Planner, and others.",
+        "recommendation": "Design naming rules that users can understand, test them in Teams and Outlook, keep blocked words targeted, and publish an exception process because exempt roles can bypass the policy. Recommendation: test the proposed format with users from departments that have long names because the prefix and suffix plus group name share character limits. Publish examples of acceptable names, and monitor group creations by exempt roles so exception use does not become a hidden bypass."
+      },
+      "memoryTrick": "Names need naming policy; members need membership rules; stale groups need expiration. This shortcut does not replace checking group type and licensing.",
+      "examTip": "Clue words are **group names**, **aliases**, **department suffix**, **blocked words**, and **Teams or Outlook**. These point to group naming policy. A harder version may ask which attributes are supported or which roles are exempt. The correct feature is selected by the managed object property: the question manages the **name and alias**, so choose naming policy. Expiration manages age, dynamic membership manages roster, and administrative units manage delegated administration. A harder version may ask whether a blocked word match is substring based, or whether Global Administrator is exempt."
+    },
+    "sources": [
+      {
+        "title": "Enforce a group naming policy in Microsoft Entra ID",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-naming-policy"
+      },
+      {
+        "title": "Learn About Groups, Group Membership, and Access",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/concept-learn-about-groups"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.2-09",
+    "objective": "D1.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Your organization has many Microsoft 365 groups created by project teams. Unused project groups should be deleted automatically unless renewed. Groups with recent activity in Teams or SharePoint should renew automatically as expiration approaches. Owners must be able to restore a group shortly after deletion. Which feature should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A custom blocked words list in the group naming policy."
+      },
+      {
+        "id": "B",
+        "text": "A Microsoft 365 group expiration policy in Microsoft Entra ID."
+      },
+      {
+        "id": "C",
+        "text": "A dynamic membership rule using `user.accountEnabled -eq true`."
+      },
+      {
+        "id": "D",
+        "text": "A bulk import job for group owners."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The target objects are Microsoft 365 groups. The organization possesses Microsoft Entra ID P1 or P2 licenses for members of all groups to which the expiration policy applies.",
+    "sections": {
+      "correctAnswer": "**B. A Microsoft 365 group expiration policy in Microsoft Entra ID**. Expiration policy is the lifecycle feature for Microsoft 365 groups; active groups can auto-renew, inactive groups can be deleted, and deleted groups can be restored within 30 days.",
+      "technical": "Microsoft Entra ID supports expiration policy only for Microsoft 365 groups. After a group is set to expire, groups with user activity are automatically renewed as expiration nears, owners are notified to renew groups that are not automatically renewed, unrenewed groups are deleted, and deleted Microsoft 365 groups can be restored within 30 days by owners or administrators. Configuration limits are part of the tested behavior: only one expiration policy can be configured for all Microsoft 365 groups in a Microsoft Entra organization; the policy can apply to all groups, selected groups, or none; the group lifetime must be 30 days or more; and selected-group expiration can include up to 500 groups in the selected list. Activity-based renewal can use activity in SharePoint, Outlook, Teams, and Viva Engage. Microsoft states the 30-day group restoration period is not customizable.\n\nExpiration has a lifecycle order. First, the policy defines which Microsoft 365 groups are in scope and the lifetime. Second, Microsoft Entra observes qualifying activity and can mark a group for automatic renewal when expiration approaches. Third, if the group is not automatically renewed, owners receive renewal notifications before deletion. Fourth, an unrenewed group is deleted after expiration, and then the 30-day restore window applies. The policy scope is tenant-level in the sense that only one expiration policy exists, but the policy setting can target all Microsoft 365 groups, selected groups, or none. Retention and legal hold can affect underlying data after deletion, but users no longer see the expired group or its content in the normal group experience.",
+      "wrongOptions": {
+        "A": "Blocked words control names and aliases, not lifecycle, renewal, deletion, or restore. Misconception: naming policy is the main group governance feature for every requirement. Could be correct when restricted words in group names must be blocked.",
+        "C": "Dynamic membership controls who belongs to a group, not whether the group expires. Misconception: any automatic group behavior is dynamic membership. Could be correct when the goal is adding enabled users automatically.",
+        "D": "Bulk importing owners can help governance but does not create expiration, auto-renewal, notifications, or restore behavior. Misconception: owners alone make lifecycle policy happen. Could be correct when many owners or members must be added to a group."
+      },
+      "plainEnglish": "Project teams often create groups and forget them. Expiration policy is like a recurring checkup. If the group is active, Microsoft can renew it. If it is inactive, owners are warned. If nobody renews it, the group is deleted, but there is a documented 30-day window to restore it. Naming policy controls names; expiration controls whether old groups stay around.\n\nThe policy is a cleanup system for collaboration groups. It asks, 'Has this project group been used recently, or has an owner renewed it?' If yes, the group stays alive. If no, the group is removed so old projects do not clutter the tenant forever. There is a recovery window, so an accidental expiration is not immediately permanent.",
+      "analogy": "A library has project rooms. Active rooms get bookings extended; inactive rooms get reminders; unrenewed bookings are canceled but restorable briefly.\n\n| Analogy | Azure reality |\n|---|---|\n| Room booking | Microsoft 365 group lifecycle |\n| Room use | Teams or SharePoint activity |\n| Reminder | Owner notification |\n| Canceled booking | Deleted group |\n| Grace period | 30-day restore window |\n\n**Where the analogy breaks down:** Microsoft 365 groups can include mailbox, SharePoint, Planner, and Teams resources, and restoring all content can take time.",
+      "jargon": [
+        {
+          "term": "Expiration policy",
+          "definition": "A Microsoft Entra feature that sets a lifetime for Microsoft 365 groups."
+        },
+        {
+          "term": "Microsoft 365 group",
+          "definition": "A collaboration group used by Teams, Outlook, SharePoint, Planner, and other services."
+        },
+        {
+          "term": "Automatic renewal",
+          "definition": "Renewal based on documented group activity as expiration approaches."
+        },
+        {
+          "term": "Group owner",
+          "definition": "A user or service principal responsible for group management and renewal notifications."
+        },
+        {
+          "term": "Restore window",
+          "definition": "The period after deletion when recovery is available."
+        },
+        {
+          "term": "Viva Engage",
+          "definition": "A Microsoft community service whose activity can count for renewal."
+        }
+      ],
+      "watchOut": "- Expiration policy applies only to Microsoft 365 groups.\n- Only one expiration policy exists for all Microsoft 365 groups in a tenant.\n- Lifetime must be 30 days or more.\n- Selected groups have a 500-group list limit.\n- The 30-day restore period is not customizable.\n- Microsoft never deletes a group before the last expiration email is sent, according to the expiration documentation.\n- Ownerless groups need an alternate notification email so someone sees renewal messages.\n- A restored dynamic group is treated as new and repopulates by rule, which can take time.\n- Expiration for selected groups has a 500-group list limit.\n- Retention policy can preserve data while the group itself is no longer visible to users.",
+      "productionTip": {
+        "official": "Microsoft documents Microsoft 365 group expiration policy, including automatic renewal from activity, owner notifications, deletion of unrenewed groups, licensing requirements, and 30-day restore behavior. Microsoft documents automatic renewal activities, owner email notifications 30, 15, and 1 day before expiration, deletion after expiration, restore within 30 days, and the policy options for all, selected, or no Microsoft 365 groups.",
+        "recommendation": "Configure an alternate notification email for ownerless groups, review owner coverage, and pilot expiration with selected groups before applying it to all groups in a large tenant. Recommendation: identify ownerless groups before enabling expiration, configure the alternate notification mailbox, and review audit logs for automatic renewals. Use selected groups for a pilot, then decide whether the 500 selected-group limit means moving to an all-groups policy."
+      },
+      "memoryTrick": "Expiration answers 'should this old group live?' Naming answers 'what may this group be called?' The shortcut still requires checking group type and licensing.",
+      "examTip": "Clue words are **unused project groups**, **renewed**, **activity in Teams or SharePoint**, and **restore after deletion**. Choose Microsoft 365 group expiration policy. A harder version may test the one-policy limit, selected-group limit, or minimum lifetime. The answer is driven by lifecycle words: **unused**, **renewed**, **activity**, **deleted**, and **restore**. Naming and dynamic membership do not delete stale groups. A harder version could include selected 700 groups, requiring recognition that selected scope supports up to 500 and all-groups scope avoids that particular limit."
+    },
+    "sources": [
+      {
+        "title": "Set expiration for Microsoft 365 groups",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-lifecycle"
+      },
+      {
+        "title": "Restore a deleted Microsoft 365 group or cloud security group",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-restore-deleted"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.2-10",
+    "objective": "D1.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A help desk administrator accidentally deleted a cloud-only user named `Nora Lopez` yesterday. Nora needs her account restored with its organizational information. No permanent delete action has been performed. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a new user with the same display name and user principal name immediately."
+      },
+      {
+        "id": "B",
+        "text": "Restore a Microsoft 365 group with the same name as the user."
+      },
+      {
+        "id": "C",
+        "text": "Open **Deleted users** in the Microsoft Entra admin center and select **Restore user**."
+      },
+      {
+        "id": "D",
+        "text": "Wait 30 days for Microsoft Entra ID to restore the user automatically."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Nora is a cloud-only user deleted less than 30 days ago. The administrator has at least the User Administrator role.",
+    "sections": {
+      "correctAnswer": "**C. Open Deleted users in the Microsoft Entra admin center and select Restore user**. A deleted user remains in a suspended recoverable state for 30 days, and Microsoft documents that the account can be restored with its properties during that window.",
+      "technical": "Microsoft Entra ID has a soft-delete period for deleted users. After deletion, a user account remains in a suspended state for 30 days. During that 30-day window, the user can be restored along with all its properties. The documented portal path is **Entra ID** > **Users** > **Deleted users**, select the deleted user, and choose **Restore user**. Deleted yesterday is inside the recoverable period, and no permanent delete action has occurred. Creating a new user is not equivalent because it creates a different object and requires manually entering previous information. After the 30-day window passes, permanent deletion starts automatically and cannot be stopped. Microsoft also notes that restored users regain licenses assigned at deletion time even if no licenses are available, which could temporarily affect license compliance. Synchronized users add source-of-authority considerations, but Nora is cloud-only.\n\nUser deletion has states. An active user can sign in if allowed. A deleted user is hidden from normal active-user lists and placed in a suspended, recoverable state. A permanently deleted user is beyond administrator and Microsoft Support recovery. Nora is in the second state because deletion happened yesterday and no permanent delete occurred. The restore action returns the original object and its preserved organization information. The restore process is different from group restore, which applies to Microsoft 365 groups and supported cloud security groups. It is also different from license reassignment: Microsoft documents that licenses assigned at deletion are restored with the user even if no licenses are available, so administrators should check compliance afterward.",
+      "wrongOptions": {
+        "A": "A new user with the same name is a different object and does not restore all original properties. Misconception: matching the sign-in name recreates the same identity. Could be correct only after permanent deletion when no recoverable object remains.",
+        "D": "The 30-day period is for recovery before permanent deletion, not automatic restoration. Misconception: soft delete is a delayed undo. Could be correct only if the intended outcome is permanent removal after the retention period.",
+        "B": "Group restore recovers a group, not a user account. Misconception: all deleted directory objects use the same restore action. Could be correct if the deleted object is a Microsoft 365 group or supported cloud security group."
+      },
+      "plainEnglish": "Deleted users are not erased immediately. For 30 days, Microsoft Entra keeps them in a recoverable area. Since Nora was deleted yesterday, restore her from Deleted users. That brings back the same account record and its saved information. Creating a new user may look similar, but it is a different identity behind the scenes.\n\nThink of the deleted users area as a recycle bin for user accounts. Nora's account is still in that bin. Restoring it brings back the same account, with the same saved details, instead of inventing a new account that only happens to have the same name. Waiting does not help because the account will move toward permanent deletion, not automatic recovery.",
+      "analogy": "A receptionist accidentally moves Nora's employee file to the recycle bin. The file is still there, just inactive.\n\n| Analogy | Azure reality |\n|---|---|\n| File in recycle bin | Deleted user suspended state |\n| Restore the file | Restore user |\n| 30-day recycle window | Soft-delete period |\n| Shredded file | Permanently deleted user |\n| New blank file | Newly created user |\n\n**Where the analogy breaks down:** user objects have identifiers, licenses, memberships, and service relationships that a paper file does not show.",
+      "jargon": [
+        {
+          "term": "Deleted users",
+          "definition": "The Microsoft Entra admin center area for recently deleted user accounts."
+        },
+        {
+          "term": "Soft delete",
+          "definition": "A recoverable deletion state before permanent removal."
+        },
+        {
+          "term": "Permanent deletion",
+          "definition": "Irreversible removal after which the user cannot be restored."
+        },
+        {
+          "term": "User Administrator",
+          "definition": "A role that can perform user-management tasks including restore and permanent delete."
+        },
+        {
+          "term": "User principal name",
+          "definition": "The user's sign-in name, often email-style."
+        },
+        {
+          "term": "Cloud-only user",
+          "definition": "A user mastered directly in Microsoft Entra ID."
+        }
+      ],
+      "watchOut": "- Deleted users are recoverable for 30 days; permanently deleted users are not.\n- Restoring is not the same as creating a new user.\n- Restored licenses can create a temporary compliance issue if no licenses are available.\n- Synchronized users may be restored by sync if the on-premises account still exists.\n- The restore window is 30 days from deletion; after that, permanent deletion starts and cannot be stopped.\n- Permanently deleting a user early removes the restore option.\n- Restored licenses can exceed purchased license counts temporarily.\n- For hybrid users, deleting only the cloud object may be reversed by the next synchronization cycle if the on-premises account still exists.\n- A restored user may still need password, MFA, or access review steps depending on why deletion happened.",
+      "productionTip": {
+        "official": "Microsoft documents the Deleted users page, Restore user action, 30-day suspended state, restoration of organization information, and restored-license behavior. Microsoft documents that a deleted user remains suspended for 30 days, can be restored with all properties during that window, and can be permanently deleted from the Deleted users page. The same article warns that permanently deleted users cannot be restored by anyone, including Microsoft Support.",
+        "recommendation": "Restrict permanent-delete permissions, monitor deletion audit events, and require the help desk to check Deleted users before recreating accounts manually. Recommendation: train operators to search Deleted users before recreating an account, and require a second approval for Delete permanently. After restoring, verify sign-in status, licenses, group memberships, and any manager or dynamic group effects that business applications depend on."
+      },
+      "memoryTrick": "Restore before recreate: if the user is still in Deleted users, bring back the original object. This fails after permanent deletion.",
+      "examTip": "Clue words are **deleted yesterday**, **cloud-only**, **restore with properties**, and **no permanent delete**. Pick Deleted users and Restore user. A harder version may involve a synchronized user and the next sync cycle. The timing clue **yesterday** is decisive: use restore, not recreate. Rule out waiting because 30 days leads toward permanent deletion; rule out group restore because the object is a user. A harder version may say the user was permanently deleted, in which case creating a new user is the only remaining administrative option."
+    },
+    "sources": [
+      {
+        "title": "Restore or permanently remove recently deleted user",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/users-restore"
+      },
+      {
+        "title": "Restore a deleted Microsoft 365 group or cloud security group",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-restore-deleted"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.2-11",
+    "objective": "D1.1.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "A Microsoft Entra administrative unit named `AU-Sales` contains a security group named `Sales-All`. The individual users who are members of `Sales-All` are not direct members of the administrative unit. You assign Priya the User Administrator role scoped to `AU-Sales`. Priya must reset passwords and update profile properties for the Sales users. Which two statements are true? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Priya can manage user properties for members of `Sales-All` because group membership automatically places those users in the administrative unit scope."
+      },
+      {
+        "id": "B",
+        "text": "Administrative units remove all default directory browsing permissions outside the administrative unit."
+      },
+      {
+        "id": "C",
+        "text": "Administrative units can be nested, so create a child administrative unit for the users under `AU-Sales`."
+      },
+      {
+        "id": "D",
+        "text": "Adding `Sales-All` to `AU-Sales` lets Priya manage properties of the group itself, such as group name or membership."
+      },
+      {
+        "id": "E",
+        "text": "To let Priya manage the Sales users, add the individual user objects directly to `AU-Sales` or otherwise scope those users into the administrative unit."
+      }
+    ],
+    "correct": [
+      "D",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. Priya has an administrative unit-scoped role assignment and licensing for administrative unit administrators is available as documented.",
+    "sections": {
+      "correctAnswer": "**D. Adding `Sales-All` to `AU-Sales` lets Priya manage properties of the group itself** and **E. To let Priya manage the Sales users, add the individual user objects directly to `AU-Sales` or otherwise scope those users into the administrative unit**. Adding a group to an administrative unit scopes the group object, not its members.",
+      "technical": "Administrative units scope Microsoft Entra role permissions to selected directory objects. They can contain users, groups, or devices. Microsoft documents a critical distinction: adding a group to an administrative unit brings the group itself into the management scope, but not the members of the group. A User Administrator scoped to an administrative unit containing a group can manage the group's name and membership. The same scoped admin cannot manage user properties, authentication methods, or reset passwords for individual members of that group unless those user objects are separately added to the administrative unit. Administrative units cannot be nested, so child administrative units are not a solution. Microsoft also notes that administrative units scope management permissions; they do not prevent members or administrators from using default user permissions to browse other users, groups, or resources outside the administrative unit.\n\nThe precedence issue is object membership in the administrative unit, not group membership expansion. Microsoft Entra evaluates Priya's scoped role against the object being managed. If the object is the `Sales-All` group, that group is inside `AU-Sales`, so supported group management is in scope. If the object is a user who merely belongs to `Sales-All`, the user object is not inside the administrative unit, so user management tasks such as password reset and profile editing are out of scope. There is no inheritance from group membership to administrative unit membership. Adding users directly, or using supported dynamic administrative unit membership for users, changes the object scope. Administrative units also do not form a hierarchy, so there is no child unit inheritance model to rely on.",
+      "wrongOptions": {
+        "A": "Group members are not automatically in scope when the group object is added to an administrative unit. Misconception: group containers are recursively expanded for administrative unit management. Could be correct only if the users themselves are separately added or dynamically scoped into the administrative unit.",
+        "C": "Administrative units cannot be nested. Misconception: they work like nested organizational units in classic directories. Could be correct in a different directory system with nested OUs, not Microsoft Entra administrative units.",
+        "B": "Administrative units scope management permissions but do not remove all default browsing permissions outside the unit. Misconception: administrative units are a complete visibility boundary. Could be correct only if a separate feature or policy restricted browsing permissions."
+      },
+      "plainEnglish": "An administrative unit is like giving Priya responsibility for a specific drawer in the directory. If you put a group card in the drawer, Priya can manage that card. But the people listed on the card do not magically move into the drawer. If Priya needs to reset passwords for people, the people records must be in the administrative unit too.\n\nPriya's permission is attached to a boundary. The boundary contains a group card, not the people cards. She can work on the group card because it is inside the boundary. She cannot work on the people just because their names are written on that group card. To manage the people, put the people themselves into the boundary.",
+      "analogy": "A manager can manage files in one cabinet. You place a folder labeled `Sales-All` in the cabinet, but the employee files named inside are still elsewhere.\n\n| Analogy | Azure reality |\n|---|---|\n| Cabinet | Administrative unit |\n| Folder | Group object |\n| Names in folder | Group members |\n| Employee files | User objects |\n| Delegated manager | AU-scoped role assignment |\n\n**Where the analogy breaks down:** Microsoft Entra permissions are evaluated by role assignments and supported operations, and default read permissions may still exist outside the cabinet.",
+      "jargon": [
+        {
+          "term": "Administrative unit",
+          "definition": "A Microsoft Entra container used to scope supported role permissions to selected users, groups, or devices."
+        },
+        {
+          "term": "User Administrator",
+          "definition": "A role that can manage users, and can be scoped to an administrative unit for supported tasks."
+        },
+        {
+          "term": "Scoped role assignment",
+          "definition": "A role assignment limited to a specific scope rather than the whole tenant."
+        },
+        {
+          "term": "Security group",
+          "definition": "A group type commonly used for access control and membership management."
+        },
+        {
+          "term": "Group object",
+          "definition": "The directory object representing a group itself."
+        },
+        {
+          "term": "Group member",
+          "definition": "A separate object included in a group, such as a user or device."
+        }
+      ],
+      "watchOut": "- Adding a group to an administrative unit does not add the group's members.\n- Administrative units cannot be nested.\n- Administrative units scope management, not every form of directory visibility.\n- To manage user passwords or properties, the user objects must be in scope.\n- Do not confuse group nesting or group membership with administrative unit membership.\n- A scoped User Administrator can manage supported user tasks only for users in scope.\n- Adding groups dynamically to administrative units is not the same as dynamically adding group members.\n- Administrative units are not a substitute for Azure RBAC scope over subscriptions or resource groups.\n- Default directory read behavior can still allow browsing unless separate restrictions apply.",
+      "productionTip": {
+        "official": "Microsoft documents that administrative units can contain users, groups, or devices; adding a group scopes the group object but not its members; and administrative units cannot be nested. Microsoft documents exactly what an administrative unit-scoped User Administrator can and cannot do when the administrative unit contains a group: manage the group's name and membership, but not user properties, authentication methods, or passwords for the group's members unless those users are separately added.",
+        "recommendation": "Design administrative units around the actual objects admins must manage. If regional help desk staff reset passwords, put the user objects in scope and test with a pilot account before broad rollout. Recommendation: build administrative units from the objects administrators actually support, then test a sample password reset and profile edit using a non-global pilot account. For least privilege, assign Priya only the role and administrative unit scope needed for Sales support, not tenant-wide User Administrator."
+      },
+      "memoryTrick": "AU contains the object you add, not everything the object points to. This is especially important for groups because members do not come along automatically.",
+      "examTip": "Clue words are **AU contains a group**, **members are not direct members**, and **reset passwords for users**. Choose answers that distinguish group object scope from user object scope. A harder version may ask about dynamic administrative unit membership or Microsoft 365 admin center support. The trap is treating the group as a container whose members inherit administrative unit scope. Rule it out by asking, 'Which object is Priya trying to manage?' A harder version may combine this with dynamic administrative units or ask whether the same scope limits Intune device management, which Microsoft documents separately."
+    },
+    "sources": [
+      {
+        "title": "Administrative units in Microsoft Entra ID",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/administrative-units"
+      },
+      {
+        "title": "How to manage groups - Microsoft Entra",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-to-manage-groups"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

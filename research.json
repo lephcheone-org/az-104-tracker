@@ -1,0 +1,48 @@
+{
+  "checkedOn": "October 2026",
+  "intro": "Everything here is taken from Microsoft Learn pages checked in October 2026, with links. Recommendations are labelled as such.",
+  "facts": [
+    { "label": "Credential", "value": "Microsoft Certified: Azure Administrator Associate (exam AZ-104), intermediate level" },
+    { "label": "Skills outline version", "value": "Skills measured as of April 17, 2026" },
+    { "label": "Exam time", "value": "100 minutes to answer (Microsoft lists 120 minutes of seat time for associate exams without labs, which includes instructions and the candidate agreement)" },
+    { "label": "Number of questions", "value": "Not published for AZ-104. Microsoft says most certification exams have **40 to 60** questions. This app's full practice exam uses 50." },
+    { "label": "Passing score", "value": "**700** or more on a scale of 1 to 1000. It is a scaled score, so it may not equal 70% of the points." },
+    { "label": "Scoring rules", "value": "No penalty for guessing; wrong answers just earn no points. Questions with several parts usually give one point per correct part. Some unscored questions may be included. (This app marks multiple-answer questions all-or-nothing, which is stricter.)" },
+    { "label": "Question formats", "value": "The exam can include interactive components. Microsoft's exam sandbox shows formats such as multiple choice, drag and drop, hot area, case studies and problem-solution (Yes/No) sets." },
+    { "label": "Microsoft Learn during the exam", "value": "Available on associate and expert role-based exams (whole learn.microsoft.com except Q&A, practice assessments and your profile). The timer keeps running and no extra time is added." },
+    { "label": "Breaks", "value": "Unscheduled breaks are allowed and the clock keeps running. After a break you **cannot return** to questions you saw before it. No breaks inside labs or problem-solution sets." },
+    { "label": "Languages", "value": "English, Chinese (Simplified), Korean, Japanese, French, Spanish, German, Portuguese (Brazil), Chinese (Traditional), Italian" },
+    { "label": "Retakes", "value": "First retake after 24 hours; later retakes have longer waits (see the retake policy)" },
+    { "label": "Renewal", "value": "Every 12 months, free, by passing an online renewal assessment on Microsoft Learn" },
+    { "label": "Price", "value": "Varies by the country or region where the exam is proctored" }
+  ],
+  "learningPaths": [
+    { "title": "AZ-104: Prerequisites for Azure administrators", "url": "https://learn.microsoft.com/en-us/training/paths/az-104-administrator-prerequisites/", "note": "Cloud Shell, PowerShell, CLI, ARM templates" },
+    { "title": "AZ-104: Manage identities and governance in Azure", "url": "https://learn.microsoft.com/en-us/training/paths/az-104-manage-identities-governance/", "note": "Domain 1" },
+    { "title": "AZ-104: Implement and manage storage in Azure", "url": "https://learn.microsoft.com/en-us/training/paths/az-104-manage-storage/", "note": "Domain 2" },
+    { "title": "AZ-104: Deploy and manage Azure compute resources", "url": "https://learn.microsoft.com/en-us/training/paths/az-104-manage-compute-resources/", "note": "Domain 3" },
+    { "title": "AZ-104: Configure and manage virtual networks for Azure administrators", "url": "https://learn.microsoft.com/en-us/training/paths/az-104-manage-virtual-networks/", "note": "Domain 4" },
+    { "title": "AZ-104: Monitor and back up Azure resources", "url": "https://learn.microsoft.com/en-us/training/paths/az-104-monitor-backup-resources/", "note": "Domain 5" },
+    { "title": "Course AZ-104T00: Microsoft Azure Administrator", "url": "https://learn.microsoft.com/en-us/training/courses/az-104t00", "note": "Instructor-led course page that groups the paths above" }
+  ],
+  "plan": [
+    { "title": "Baseline.", "detail": "Take one full practice exam here with feedback at the end, before studying. Note your weakest domains on the Progress page." },
+    { "title": "One domain at a time.", "detail": "Work through the matching Microsoft Learn path, including its sandbox exercises, then run Domain practice (study mode) for that domain until every question is marked complete." },
+    { "title": "Do it for real.", "detail": "AZ-104 tests hands-on administration. Repeat each task in your own subscription with the portal, Azure CLI and Az PowerShell. (Practice labs per domain will be added later.)" },
+    { "title": "Weight your time.", "detail": "Spend most time on Domain 1 and Domain 3 (20-25% each), then Storage and Networking (15-20%), then Monitor and maintain (10-15%)." },
+    { "title": "Mixed review.", "detail": "Use the Question bank filter *Last attempt wrong* and re-read the Watch Out and Exam Tip sections for those questions." },
+    { "title": "Readiness check.", "detail": "Take full practice exams in exam style and Microsoft's free practice assessment. Recommendation: book when you score 80% or more here on fresh questions, consistently, across all domains." },
+    { "title": "Exam week.", "detail": "Try the exam sandbox so the interface is familiar, and practise finding pages quickly on Microsoft Learn since you can open it during the exam." }
+  ],
+  "technique": "#### Reading the question\n- Read the **last sentence first** to see what is being asked (\"What should you do first?\", \"Which role...\", \"minimise administrative effort\").\n- Underline constraints: *least privilege*, *minimise cost*, *without downtime*, *same region*, *existing resources*. Most wrong answers break exactly one constraint.\n- Check the scope: tenant, management group, subscription, resource group or resource. Many AZ-104 traps are scope traps.\n\n#### Ruling out options\n1. Remove options that use the wrong service or feature family.\n2. Remove options that would work but break a stated constraint.\n3. Between the last two, prefer the built-in, managed or least-privilege option unless the scenario rules it out.\n\n#### Time management\n- 100 minutes for roughly 40-60 items is about 2 minutes each, but case studies and any labs take longer. Recommendation: do a quick first pass and flag hard items.\n- Use Microsoft Learn in the exam only for specific lookups (limits, command syntax). The clock keeps running.\n- Problem-solution (Yes/No) sets cannot be revisited once you move on, and you cannot return to questions seen before a break.\n\n#### No penalty for guessing\n- Microsoft does not deduct marks for wrong answers, so answer every question.",
+  "links": [
+    { "title": "Certification page: Azure Administrator Associate", "url": "https://learn.microsoft.com/en-us/credentials/certifications/azure-administrator/" },
+    { "title": "Official AZ-104 study guide (skills measured)", "url": "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-104" },
+    { "title": "Free official practice assessment", "url": "https://learn.microsoft.com/en-us/credentials/certifications/azure-administrator/practice/assessment?assessment-type=practice&assessmentId=21", "note": "Microsoft's own sample questions" },
+    { "title": "Exam sandbox (question formats)", "url": "https://aka.ms/examdemo" },
+    { "title": "Exam duration and exam experience", "url": "https://learn.microsoft.com/en-us/credentials/support/exam-duration-exam-experience" },
+    { "title": "Exam scoring and score reports", "url": "https://learn.microsoft.com/en-us/credentials/certifications/exam-scoring-reports" },
+    { "title": "Renew your certification", "url": "https://learn.microsoft.com/en-us/credentials/certifications/renew-your-microsoft-certification" }
+  ],
+  "methodology": "- **Original questions.** Real exam items are confidential under the Microsoft exam agreement, and exam dumps break it. Every question here is newly written against the official skills outline. None is copied or reconstructed from real exams or dumps.\n- **Coverage.** Every objective in the skills outline (skills measured as of April 17, 2026) has its own set of questions. Each question in a set tests a different sub-concept, and more questions are given to heavier domains.\n- **Sources.** Facts were checked against learn.microsoft.com in October 2026, and each question lists the pages it relies on. Azure changes often. If a question disagrees with current documentation, the documentation wins.\n- **Answer structure.** Every answer has the same 10 sections: Correct Answer, Technical Explanation, Why Every Other Option Is Wrong, In Plain English, Real-World Analogy, Jargon Buster, Watch Out / Good to Know, Real-World Production Tip (official behaviour kept separate from recommendations), Memory Trick and Exam Tip. Assumptions are stated for each question.\n- **Limits.** Only single-choice and multiple-answer formats are included. The real exam may also have case studies, drag-and-drop, hot-area items and labs. Scores here are a guide to readiness, not a prediction of your scaled exam score."
+}

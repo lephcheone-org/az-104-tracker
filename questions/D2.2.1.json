@@ -1,0 +1,864 @@
+[
+  {
+    "id": "D2.2.1-01",
+    "objective": "D2.2.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Tailspin Toys needs one Azure storage account for application images in blobs, SMB file shares for an operations team, application messages in queues, and reference data in tables. The team does not require premium SSD performance.\n\nWhich storage account type should you create?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Premium block blobs"
+      },
+      {
+        "id": "B",
+        "text": "Standard general-purpose v2"
+      },
+      {
+        "id": "C",
+        "text": "Premium file shares"
+      },
+      {
+        "id": "D",
+        "text": "Premium page blobs"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The scenario chooses an account type only; redundancy, encryption, and network rules are separate objectives.",
+    "sections": {
+      "correctAnswer": "**B. Standard general-purpose v2**. Standard GPv2 supports Blob Storage, Azure Files, Queue Storage, and Table Storage, so it is the only listed type that can host all four workloads in one account.",
+      "technical": "Storage account type is the first filter. Microsoft lists standard general-purpose v2 as the standard account type for blobs, file shares, queues, and tables. Premium choices are narrower. Premium block blob accounts support Blob Storage for block blobs and append blobs. Premium file share accounts support Azure Files only. Premium page blob accounts support page blobs only.\n\n| Account type | Services that matter here | Fit |\n|---|---|---|\n| Standard GPv2 | Blobs, files, queues, tables | Supports the whole mixed workload |\n| Premium block blobs | Block blobs and append blobs | Misses files, queues, and tables |\n| Premium file shares | Azure Files | Misses blobs, queues, and tables |\n| Premium page blobs | Page blobs | Misses the ordinary mixed services |\n\nThe order of reasoning is service support first, then performance, then other settings. A premium account can be the best production choice for one specialized workload, but it is not a universal upgrade from GPv2. If the file workload later requires premium Azure Files, you normally create a separate premium file share account instead of forcing every service into that account type. The exception is not redundancy or encryption; those settings do not add missing storage services to a specialized account.",
+      "wrongOptions": {
+        "A": "Premium block blobs are SSD-backed for low-latency blob workloads, but they do not host Azure Files, queues, or tables for this design. Misconception: premium means every storage service becomes available. Could be correct when the workload is only block blobs or append blobs and requires premium blob performance.",
+        "C": "Premium file shares are for Azure Files workloads, not a mixed account with blob, queue, and table services. Misconception: because the question mentions SMB, the account must be FileStorage. Could be correct for a dedicated high-performance Azure Files design.",
+        "D": "Premium page blobs support page blobs only. They are not the correct account for images, shares, queues, and tables. Misconception: all blob-related names support every blob workload. Could be correct for page blob workloads such as random read/write VHD-style data."
+      },
+      "plainEnglish": "A storage account type decides what kinds of storage rooms the account contains. Tailspin needs four rooms: object files, shared files, messages, and simple tables. Standard GPv2 is the general building with all four rooms. The premium options are specialist buildings. They may be faster for one room, but they do not include every room that Tailspin listed.",
+      "analogy": "Tailspin is choosing a workshop. A general workshop has a photo bench, filing cabinet, mail slot, and ledger desk. A specialist photo lab, specialist file vault, or specialist disk bench cannot replace that whole workshop.\n\n| Analogy | Azure reality |\n|---|---|\n| General workshop | Standard GPv2 account |\n| Photo bench | Blob Storage |\n| Filing cabinet | Azure Files |\n| Mail slot | Queue Storage |\n| Ledger desk | Table Storage |\n\n**Where the analogy breaks down:** Azure account type also affects billing, endpoints, performance targets, protocols, and feature compatibility. A workshop does not model API limits or DNS names.",
+      "jargon": [
+        {
+          "term": "Storage account",
+          "definition": "Top-level Azure Storage resource that contains services and exposes account-level settings."
+        },
+        {
+          "term": "Standard general-purpose v2",
+          "definition": "Recommended standard account type for most scenarios; supports blobs, file shares, queues, and tables."
+        },
+        {
+          "term": "Blob Storage",
+          "definition": "Object storage for unstructured data such as images and documents."
+        },
+        {
+          "term": "Azure Files",
+          "definition": "Managed file shares available through file protocols such as SMB."
+        },
+        {
+          "term": "Queue Storage",
+          "definition": "Storage service for asynchronous application messages."
+        },
+        {
+          "term": "Table Storage",
+          "definition": "NoSQL key-value storage service in Azure Storage."
+        },
+        {
+          "term": "Premium block blobs",
+          "definition": "Premium account type for block blobs and append blobs."
+        },
+        {
+          "term": "Premium file shares",
+          "definition": "Premium account type for Azure Files only."
+        },
+        {
+          "term": "Premium page blobs",
+          "definition": "Premium account type for page blobs only."
+        },
+        {
+          "term": "SMB",
+          "definition": "Server Message Block, a common file sharing protocol."
+        }
+      ],
+      "watchOut": "- Check supported services before choosing a premium-sounding option.\n- Standard GPv2 is the mixed workload answer for blobs, files, queues, and tables.\n- Premium file shares are not a premium version of all GPv2 services.\n- Page blobs and block blobs are different blob types.",
+      "productionTip": {
+        "official": "Microsoft documents the supported services for each account type and says standard GPv2 is recommended for most scenarios. It also documents that premium account types are specialized for block blobs, file shares, or page blobs.",
+        "recommendation": "Separate workloads into multiple accounts when their performance, security boundary, ownership, or lifecycle differs. Keep this mixed account standard unless one workload has a verified premium-only requirement."
+      },
+      "memoryTrick": "**GPv2 is the general store**: blobs, files, queues, and tables are all on the shelves. This shortcut fails when a workload specifically needs a premium-only account type.",
+      "examTip": "Clue words are **one account** and the list **blobs, file shares, queues, tables**. The exam is testing service support, not speed. A harder version may say file shares need NFS or premium latency; then a separate premium file share account may appear in the answer."
+    },
+    "sources": [
+      {
+        "title": "Storage Account Overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+      },
+      {
+        "title": "Create an Azure Storage Account - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+      },
+      {
+        "title": "Premium block blob storage accounts",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-block-blob-premium"
+      },
+      {
+        "title": "Overview of Azure page blobs",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-pageblob-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.1-02",
+    "objective": "D2.2.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You created a standard general-purpose v2 storage account named `stappshared`. Months later, the application team asks you to convert the same account into a premium file shares account because the file share workload needs lower latency. The account also contains active blobs, queues, and tables.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Change the Performance setting from Standard to Premium on the existing account"
+      },
+      {
+        "id": "B",
+        "text": "Run `az storage account update --set kind=FileStorage` against the existing account"
+      },
+      {
+        "id": "C",
+        "text": "Enable large file shares and keep all workloads in the same account"
+      },
+      {
+        "id": "D",
+        "text": "Create a new premium file shares account and migrate only the file share workload"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The account already exists as standard GPv2, and the new requirement is specifically for premium Azure Files performance.",
+    "sections": {
+      "correctAnswer": "**D. Create a new premium file shares account and migrate only the file share workload**. Microsoft states that you cannot change a storage account to a different type after creation; moving to another type requires a new account and data copy.",
+      "technical": "The account type choice is durable after creation. Microsoft documents that you cannot change a storage account to a different type after it is created. To move data to a different account type, create the target account and copy data to it.\n\nHere, `stappshared` is standard GPv2. It can host blobs, files, queues, and tables. A premium file shares account uses the FileStorage kind and is for Azure Files. That target is useful for the file workload but cannot become the home for the old queue and table services.\n\nA clean migration sequence is: create the FileStorage account, configure file share identity and networking, create matching shares, copy or synchronize file data, update clients to the new file endpoint, and leave blobs, queues, and tables in GPv2 unless another requirement exists.\n\nLarge file share capacity is a separate concept. Azure Files scale documentation notes that pay-as-you-go file shares can grow up to 100 TiB, and the large file share feature is a legacy setting for older accounts. Capacity does not convert media tier or account kind. The exception to the no-conversion idea is the documented upgrade from legacy GPv1 or BlobStorage to GPv2; that does not mean GPv2 can transform into FileStorage.",
+      "wrongOptions": {
+        "A": "The portal Performance choice is not a supported conversion from existing GPv2 to premium file shares. Misconception: standard and premium are just a mutable speed switch. Could be correct only while creating a new account and selecting its type.",
+        "B": "Changing the kind to FileStorage on an existing mixed account is not the documented migration path and would not preserve queues and tables in that account. Misconception: ARM properties can transform any storage account kind. Could be correct when creating a new premium file shares account with the FileStorage kind.",
+        "C": "Large file shares address capacity behavior, not premium latency or account type conversion. Misconception: bigger shares are the same as premium shares. Could be correct for an older standard account that only needs larger pay-as-you-go Azure Files capacity."
+      },
+      "plainEnglish": "You cannot turn the whole account into a different kind of account after it already exists. The file share area needs a special high-performance building, but the blobs, messages, and tables still belong in the general building. Build a premium file-share building and move that one workload instead of trying to remodel the existing account into something it cannot become.",
+      "analogy": "The original account is a mixed warehouse with shelves, file cabinets, mail bins, and record drawers. Later, the file cabinets need a climate-controlled vault. You build the vault and move those cabinets; you do not make the whole warehouse become a vault.\n\n| Analogy | Azure reality |\n|---|---|\n| Mixed warehouse | Standard GPv2 account |\n| Climate-controlled vault | Premium file shares account |\n| Moving file cabinets | Migrating Azure Files data |\n| Mail bins and drawers | Queues and tables staying in GPv2 |\n\n**Where the analogy breaks down:** Azure migrations require endpoint updates, identity permissions, copy validation, and client cutover. A warehouse metaphor does not represent account kind restrictions.",
+      "jargon": [
+        {
+          "term": "GPv2",
+          "definition": "General-purpose v2, the recommended standard storage account type for mixed services."
+        },
+        {
+          "term": "FileStorage",
+          "definition": "Storage account kind used for premium file share accounts."
+        },
+        {
+          "term": "Premium file shares",
+          "definition": "SSD-backed Azure Files account type for high-performance file shares."
+        },
+        {
+          "term": "Azure Files",
+          "definition": "Azure service that provides managed file shares."
+        },
+        {
+          "term": "Account type",
+          "definition": "The kind and SKU family that determine supported storage services."
+        },
+        {
+          "term": "Migration",
+          "definition": "Copying data and moving clients from a source service to a target service."
+        },
+        {
+          "term": "Large file shares",
+          "definition": "Azure Files capacity capability historically used to exceed earlier 5 TiB limits."
+        },
+        {
+          "term": "Endpoint",
+          "definition": "DNS name clients use to reach a storage service."
+        },
+        {
+          "term": "Blob",
+          "definition": "Object in Azure Blob Storage."
+        },
+        {
+          "term": "Queue",
+          "definition": "Message storage object in Queue Storage."
+        }
+      ],
+      "watchOut": "- Existing account type is not a casual switch.\n- FileStorage is not a replacement for GPv2 mixed services.\n- Capacity settings do not create premium latency.\n- GPv1 to GPv2 upgrade is a special legacy path, not proof that every conversion exists.",
+      "productionTip": {
+        "official": "Microsoft documents that storage account type cannot be changed after creation and that moving to another type requires a new account and data copy. Azure Files scale documentation separates account kind, SKU, capacity, IOPS, and throughput limits.",
+        "recommendation": "Plan account type per workload before production. During a file migration, test identity, SMB or NFS behavior, backups, private endpoints, and DNS cutover before changing application connection strings."
+      },
+      "memoryTrick": "**Different type, different account**. The mnemonic is safe for GPv2-to-premium moves, but remember GPv1-to-GPv2 has a special documented upgrade path.",
+      "examTip": "Clue words are **convert the same account**, **premium file shares**, and **also contains blobs, queues, and tables**. Rule out mutation answers. A harder version may ask for the GPv1 upgrade command; that is an update to StorageV2, not this migration."
+    },
+    "sources": [
+      {
+        "title": "Storage Account Overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+      },
+      {
+        "title": "Create an Azure Storage Account - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+      },
+      {
+        "title": "Azure Files Scale and Performance Targets",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-scale-targets"
+      },
+      {
+        "title": "az storage account",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/storage/account?view=azure-cli-latest"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.1-03",
+    "objective": "D2.2.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank plans to create a standard-endpoint storage account named `woodgroveops7`. A developer will upload `audit.csv` to a blob container named `exports` and asks for the resulting Blob service URL.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "The name `woodgroveops7` is valid only if it is globally unique within Azure"
+      },
+      {
+        "id": "B",
+        "text": "The account can be named `WoodgroveOps7` because storage names are case-insensitive"
+      },
+      {
+        "id": "C",
+        "text": "The blob URL is `https://woodgroveops7.blob.core.windows.net/exports/audit.csv`"
+      },
+      {
+        "id": "D",
+        "text": "The blob URL is `https://exports.blob.core.windows.net/woodgroveops7/audit.csv`"
+      },
+      {
+        "id": "E",
+        "text": "The account name may contain hyphens if the total length is no more than 24 characters"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The account uses standard endpoints, not Azure DNS zone endpoints or a custom domain.",
+    "sections": {
+      "correctAnswer": "**A. The name `woodgroveops7` is valid only if it is globally unique within Azure** and **C. The blob URL is `https://woodgroveops7.blob.core.windows.net/exports/audit.csv`**. Storage account names use 3-24 lowercase letters and numbers, must be unique, and appear as the subdomain in standard endpoints.",
+      "technical": "Storage account naming and endpoint construction are linked. Microsoft documents that storage account names must be between 3 and 24 characters, contain only lowercase letters and numbers, and be unique within Azure. `woodgroveops7` meets the length and character rules, but it still must pass the global uniqueness check.\n\nFor standard endpoints, the account name is the subdomain and the service name is in the fixed domain. The Blob endpoint format is `https://<storage-account>.blob.core.windows.net`. A blob URL appends the container and blob name as path segments.\n\n```text\nhttps://woodgroveops7.blob.core.windows.net/exports/audit.csv\n```\n\nUse this order on exam items: check length, check allowed characters, check global uniqueness, identify endpoint type, then append resource path. The standard service endpoint table also includes file, queue, table, web, and dfs endpoint formats. A custom domain can change the visible Blob URL, and Azure DNS zone endpoints have a different preview format, but the prompt specifies standard endpoints. Microsoft recommends standard endpoints and identifies Azure DNS zone endpoints as preview with retirement information, so avoid that preview format unless the question explicitly names it.",
+      "wrongOptions": {
+        "B": "Uppercase letters are not allowed in storage account names. Misconception: DNS case-insensitivity means uppercase creation is accepted. Could be correct when discussing how some DNS lookups compare names, not Azure's creation rule.",
+        "D": "This puts the container where the account name belongs. Misconception: the container is the host and the account is a folder. Could be correct for a different product with bucket-first URLs, not Azure standard Blob endpoints.",
+        "E": "Hyphens are invalid in Azure Storage account names. Misconception: many Azure resource names allow hyphens, so this one must also. Could be correct for resource groups or other resources with different naming rules."
+      },
+      "plainEnglish": "The storage account name becomes part of the internet address. Azure keeps that name simple: lowercase letters and numbers only, 3 to 24 characters long, and nobody else in Azure can already have it. For a standard blob address, write the account first, then `.blob.core.windows.net`, then the container and file name.",
+      "analogy": "The account name is like a worldwide mailbox label. Only one mailbox can have the label, and the post office allows only simple lowercase labels. To find a package, you write the mailbox, the department, the box, and the package name.\n\n| Analogy | Azure reality |\n|---|---|\n| Worldwide mailbox label | Storage account name |\n| Blob department | `.blob.core.windows.net` |\n| Box in the mailbox | Container |\n| Package | Blob |\n\n**Where the analogy breaks down:** Azure addresses are DNS names and HTTPS URLs. A mailbox analogy does not cover authorization, firewalls, private endpoints, or custom domains.",
+      "jargon": [
+        {
+          "term": "Storage account name",
+          "definition": "Globally unique name assigned to an Azure Storage account."
+        },
+        {
+          "term": "Standard endpoint",
+          "definition": "Default endpoint format using `<account>.<service>.core.windows.net`."
+        },
+        {
+          "term": "Blob service",
+          "definition": "Azure Storage endpoint for blob objects."
+        },
+        {
+          "term": "Container",
+          "definition": "Logical grouping of blobs in Blob Storage."
+        },
+        {
+          "term": "Blob",
+          "definition": "Object stored in Azure Blob Storage."
+        },
+        {
+          "term": "DNS",
+          "definition": "Internet naming system used by service endpoints."
+        },
+        {
+          "term": "Globally unique",
+          "definition": "No other Azure storage account can use the same name."
+        },
+        {
+          "term": "Custom domain",
+          "definition": "Customer-owned DNS name mapped to a storage endpoint."
+        },
+        {
+          "term": "DFS endpoint",
+          "definition": "Data Lake Storage endpoint that uses `.dfs.core.windows.net`."
+        },
+        {
+          "term": "HTTPS",
+          "definition": "Encrypted web protocol used to access storage endpoints."
+        }
+      ],
+      "watchOut": "- Account names allow lowercase letters and numbers only.\n- Hyphens are common in Azure, but not storage account names.\n- Account name comes before `.blob.core.windows.net`.\n- Standard endpoint questions should not use preview Azure DNS zone endpoint syntax.",
+      "productionTip": {
+        "official": "Microsoft documents the 3-24 lowercase-letter-and-number name rule, global uniqueness, and standard endpoint formats for Blob, Data Lake Storage, File, Queue, Table, and static website endpoints.",
+        "recommendation": "Use deterministic naming with a safe suffix, and check name availability before deployments. Avoid business-sensitive words in globally visible account names because they appear in URLs and logs."
+      },
+      "memoryTrick": "**Account first, service second, path last**: `<account>.blob.core.windows.net/<container>/<blob>`. This assumes standard endpoints and no custom domain.",
+      "examTip": "Clue words are **standard-endpoint**, **account name**, and **Blob service URL**. Validate characters before choosing the URL. A harder version might ask for the Data Lake endpoint, where the service part becomes `dfs` instead of `blob`."
+    },
+    "sources": [
+      {
+        "title": "Storage Account Overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+      },
+      {
+        "title": "Create an Azure Storage Account - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.1-04",
+    "objective": "D2.2.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Fabrikam is creating a new analytics storage account for Spark workloads. The workloads require Azure Data Lake Storage capabilities, directory-level operations, and the Data Lake Storage endpoint. No data has been loaded yet, and the team wants the least risky path.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a standard GPv2 or premium block blob account and enable hierarchical namespace during creation"
+      },
+      {
+        "id": "B",
+        "text": "Create a premium file shares account and enable hierarchical namespace after the first share is created"
+      },
+      {
+        "id": "C",
+        "text": "Create a standard GPv2 account now and add hierarchical namespace later with no validation"
+      },
+      {
+        "id": "D",
+        "text": "Create a legacy BlobStorage account because Data Lake accounts must start as BlobStorage"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. This is a new account for analytics data, not an in-place upgrade of a populated production Blob Storage account.",
+    "sections": {
+      "correctAnswer": "**A. Create a standard GPv2 or premium block blob account and enable hierarchical namespace during creation**. Those account types support Data Lake Storage capabilities, and enabling hierarchical namespace at creation avoids a later one-way migration.",
+      "technical": "Data Lake Storage capabilities are unlocked by hierarchical namespace. Microsoft states that to use those capabilities, create a storage account that has hierarchical namespace enabled. The supported account types are standard general-purpose v2 and premium block blob.\n\nFor a new account, the least risky sequence is simple: choose a supported account type, open the Advanced options during creation, and enable hierarchical namespace before data ingestion. Because the account is empty, you avoid the migration checks that apply to existing accounts.\n\nExisting accounts can be upgraded, but the upgrade is one-way and cannot be reverted. Microsoft says to review feature support, remove page blobs, ensure every blob path segment is named, prevent write activity, validate, and then upgrade. Some features, including blob snapshots, encryption scopes, immutable storage, blob soft delete, and container soft delete, can block the upgrade process until addressed. Write operations are disabled while the upgrade runs.\n\nThe scope and precedence are: account type must support Data Lake Storage first; hierarchical namespace must be enabled on the storage account; clients can then use the Blob endpoint or the DFS endpoint depending on the tool. Premium file shares are for Azure Files and do not support hierarchical namespace in the account type table.",
+      "wrongOptions": {
+        "B": "Premium file shares are for Azure Files and do not support hierarchical namespace for Data Lake Storage in the documented account table. Misconception: every premium storage account can be a lake. Could be correct for high-performance file shares, not Spark analytics over Blob/Data Lake Storage.",
+        "C": "Existing-account upgrade requires validation and is one-way. Misconception: hierarchical namespace is a harmless toggle that can be added anytime. Could be correct only as a planned migration after validation, not the least risky path for a new empty account.",
+        "D": "Data Lake Storage does not require the legacy BlobStorage kind. Microsoft lists standard GPv2 and premium block blob as supported account types. Misconception: because Data Lake is built on Blob Storage, the old BlobStorage account kind is required. Could be correct only when assessing a specific existing legacy account for migration."
+      },
+      "plainEnglish": "Data Lake Storage needs a folder-aware layout. If Fabrikam already knows it needs that layout and the account is brand new, turn it on while creating the account. Waiting until after data exists can still be possible, but Azure has to validate the account, and the change cannot be undone. Starting correctly is less risky than retrofitting later.",
+      "analogy": "Fabrikam is building a warehouse for analytics forklifts. If the forklifts need real aisles and signs, install that layout before boxes arrive. Retrofitting a full warehouse can work, but every shelf and open delivery must be checked.\n\n| Analogy | Azure reality |\n|---|---|\n| Aisle layout | Hierarchical namespace |\n| Empty warehouse | New storage account |\n| Retrofitting | Existing-account upgrade |\n| Analytics forklifts | Spark workloads |\n| Separate doors | Blob and DFS endpoints |\n\n**Where the analogy breaks down:** Azure uses APIs, endpoint names, access control lists, and feature compatibility rules. A warehouse does not show one-way account migration behavior.",
+      "jargon": [
+        {
+          "term": "Hierarchical namespace",
+          "definition": "Account capability that organizes blob data into directories and enables Data Lake Storage features."
+        },
+        {
+          "term": "Azure Data Lake Storage",
+          "definition": "Big-data analytics capabilities built on Azure Blob Storage."
+        },
+        {
+          "term": "Standard GPv2",
+          "definition": "Standard account type that can support Data Lake Storage when hierarchical namespace is enabled."
+        },
+        {
+          "term": "Premium block blob",
+          "definition": "Premium Blob Storage account type that can support Data Lake Storage capabilities."
+        },
+        {
+          "term": "Premium file shares",
+          "definition": "Azure Files-only premium account type."
+        },
+        {
+          "term": "DFS endpoint",
+          "definition": "Data Lake Storage endpoint, usually `https://<account>.dfs.core.windows.net`."
+        },
+        {
+          "term": "Blob endpoint",
+          "definition": "Blob Storage endpoint, usually `https://<account>.blob.core.windows.net`."
+        },
+        {
+          "term": "Spark",
+          "definition": "Distributed analytics engine often used with data lakes."
+        },
+        {
+          "term": "One-way upgrade",
+          "definition": "Migration that cannot be reverted after completion."
+        },
+        {
+          "term": "Validation",
+          "definition": "Pre-upgrade check for unsupported features and path problems."
+        }
+      ],
+      "watchOut": "- Enable hierarchical namespace at creation for a new analytics account.\n- Existing upgrades are one-way and require validation.\n- Page blobs must be removed before an existing account can be upgraded.\n- Standard GPv2 and premium block blob support Data Lake Storage; premium file shares do not.",
+      "productionTip": {
+        "official": "Microsoft documents hierarchical namespace as required for Data Lake Storage capabilities and lists standard GPv2 and premium block blob as supported types. Microsoft also documents existing-account upgrade prerequisites and the one-way nature of the upgrade.",
+        "recommendation": "Decide on hierarchical namespace before ingestion. If conversion is unavoidable, rehearse on nonproduction data, freeze writers, and test both Blob and DFS endpoint clients after migration."
+      },
+      "memoryTrick": "**Lake layout before lake data**. Turn on hierarchical namespace before loading the lake when analytics requires it. The shortcut does not replace validation for existing accounts.",
+      "examTip": "Clue words are **new account**, **analytics**, **directory-level operations**, and **least risky**. Choose creation-time hierarchical namespace on a supported account type. A harder item may list incompatible existing features and ask which one blocks upgrade."
+    },
+    "sources": [
+      {
+        "title": "Create a storage account for Data Lake Storage - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/create-data-lake-storage-account"
+      },
+      {
+        "title": "Upgrade Azure Blob Storage with Azure Data Lake Storage capabilities",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/upgrade-to-data-lake-storage-gen2-how-to"
+      },
+      {
+        "title": "Create an Azure Storage Account - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+      },
+      {
+        "title": "Storage Account Overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.1-05",
+    "objective": "D2.2.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are creating a storage account for Adatum. Security requires REST requests to use HTTPS and requires clients using old TLS versions to be rejected. You also need to choose settings that Azure Storage can enforce today.\n\nWhich two settings should you configure? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set `--https-only true` or enable Secure transfer required"
+      },
+      {
+        "id": "B",
+        "text": "Set the minimum TLS version to `TLS1_2`"
+      },
+      {
+        "id": "C",
+        "text": "Set the minimum TLS version to `TLS1_3` because Azure Storage can enforce TLS 1.3 as the minimum"
+      },
+      {
+        "id": "D",
+        "text": "Disable secure transfer so clients can negotiate encryption independently"
+      },
+      {
+        "id": "E",
+        "text": "Use `AllowBlobPublicAccess` to control whether HTTPS is required"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The requirement is about storage account transport settings for Azure Storage REST requests, not private endpoints or customer-managed keys.",
+    "sections": {
+      "correctAnswer": "**A. Set `--https-only true` or enable Secure transfer required** and **B. Set the minimum TLS version to `TLS1_2`**. Secure transfer rejects insecure HTTP REST requests, and TLS 1.2 is the recommended enforceable minimum for Azure Storage accounts.",
+      "technical": "Two account properties work together. Secure transfer required controls whether REST API requests must use HTTPS. When enabled, HTTP requests are rejected. Microsoft documents that secure transfer is enabled by default when you create a storage account and can be managed through `enableHttpsTrafficOnly`, Azure CLI `--https-only`, or PowerShell `-EnableHttpsTrafficOnly`.\n\nMinimum TLS version controls which TLS protocol versions are accepted for HTTPS traffic. Microsoft documents that Azure Storage supports TLS 1.2 and 1.3, but enforcing TLS 1.3 as the account minimum is not currently supported. The recommended minimum is TLS 1.2. CLI and PowerShell examples use `--min-tls-version TLS1_2` and `-MinimumTlsVersion TLS1_2`.\n\nEvaluation happens in layers. First, if the request is plain HTTP and secure transfer is required, it fails. Second, if HTTPS is used, TLS negotiation must meet the configured minimum. Third, authorization and the storage operation are evaluated.\n\nFor Azure Files, Microsoft documents independent SMB and NFS encryption requirements. When those are enabled, the Secure transfer required property applies only to REST/HTTPS traffic for Azure file shares. The prompt says REST requests, so the HTTPS-only and minimum TLS settings are the tested controls.",
+      "wrongOptions": {
+        "C": "Azure Storage can support TLS 1.3 negotiation, but Microsoft states that enforcing TLS 1.3 as the minimum is not currently supported. Misconception: support and enforceability are identical. Could be correct in the future if Microsoft adds enforceable TLS 1.3 minimum support.",
+        "D": "Disabling secure transfer permits insecure HTTP requests and contradicts the requirement. Misconception: clients will always choose encryption on their own. Could be correct only for a deliberate legacy exception, not for this security policy.",
+        "E": "`AllowBlobPublicAccess` controls anonymous blob read access, not HTTPS or TLS. Misconception: every security property controls transport security. Could be correct when the requirement is to prevent public anonymous blob reads."
+      },
+      "plainEnglish": "HTTPS and TLS are related but not the same setting. HTTPS-only says the request must travel through an encrypted web connection. Minimum TLS says the encrypted connection must use a modern enough security protocol. For Adatum, turn on HTTPS-only and require TLS 1.2. Do not choose TLS 1.3 as the enforced minimum because Azure Storage can negotiate it but cannot currently require it as the account minimum.",
+      "analogy": "Adatum is setting courier rules. Every package must use an armored truck, and the truck must meet at least the approved safety standard. Newer trucks may appear, but the guard cannot yet make the newest model mandatory.\n\n| Analogy | Azure reality |\n|---|---|\n| Armored truck | HTTPS / secure transfer |\n| Old truck rejected | Minimum TLS enforcement |\n| Approved safety standard | TLS 1.2 |\n| Newest model | TLS 1.3 negotiated when available |\n| Delivery pass | Authorization after transport checks |\n\n**Where the analogy breaks down:** TLS is cryptographic negotiation, not vehicle inspection. Azure Files protocols can also have per-protocol encryption settings.",
+      "jargon": [
+        {
+          "term": "Secure transfer required",
+          "definition": "Storage account property that rejects insecure connections for REST requests."
+        },
+        {
+          "term": "HTTPS",
+          "definition": "HTTP protected by TLS encryption."
+        },
+        {
+          "term": "HTTP",
+          "definition": "Unencrypted web protocol unless paired with TLS."
+        },
+        {
+          "term": "TLS",
+          "definition": "Transport Layer Security, the protocol family securing HTTPS."
+        },
+        {
+          "term": "TLS 1.2",
+          "definition": "Recommended minimum TLS version for Azure Storage accounts."
+        },
+        {
+          "term": "TLS 1.3",
+          "definition": "Newer TLS version that Azure Storage can support but cannot currently enforce as the minimum."
+        },
+        {
+          "term": "`--https-only`",
+          "definition": "Azure CLI parameter for allowing HTTPS traffic only."
+        },
+        {
+          "term": "`--min-tls-version`",
+          "definition": "Azure CLI parameter for setting minimum TLS version."
+        },
+        {
+          "term": "REST API",
+          "definition": "Web API style used by Azure Storage over HTTP or HTTPS."
+        },
+        {
+          "term": "AllowBlobPublicAccess",
+          "definition": "Property controlling whether containers can be configured for anonymous blob access."
+        }
+      ],
+      "watchOut": "- Secure transfer and minimum TLS solve different transport problems.\n- TLS 1.3 support does not mean TLS 1.3 minimum enforcement.\n- CLI or template creation may leave MinimumTlsVersion unset unless specified.\n- SMB and NFS for Azure Files can have additional encryption requirements.",
+      "productionTip": {
+        "official": "Microsoft documents Secure transfer required, the CLI `--https-only true` setting, TLS 1.2 as the recommended minimum, TLS 1.3 support, and the current inability to enforce TLS 1.3 as the minimum for Azure Storage accounts.",
+        "recommendation": "Before enforcing TLS settings on production accounts, enable diagnostics and query client TLS versions. Then set TLS 1.2, keep HTTPS-only enabled, and update clients that still depend on older TLS libraries."
+      },
+      "memoryTrick": "**HTTPS is the secure road; TLS is the road standard**. Use HTTPS-only plus TLS 1.2. The mnemonic is simplified because Azure Files protocols can add their own encryption controls.",
+      "examTip": "Clue words are **REST**, **HTTPS**, **old TLS**, and **enforce today**. Pick one protocol setting and one TLS-version setting. A harder version will tempt you with TLS 1.3; remember support is not the same as enforceable minimum."
+    },
+    "sources": [
+      {
+        "title": "Require secure transfer to ensure secure connections - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-require-secure-transfer"
+      },
+      {
+        "title": "Enforce a Minimum Required Version of Transport Layer Security (TLS)",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/transport-layer-security-configure-minimum-version"
+      },
+      {
+        "title": "az storage account",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/storage/account?view=azure-cli-latest"
+      },
+      {
+        "title": "New-AzStorageAccount (Az.Storage)",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.storage/new-azstorageaccount?view=azps-16.3.0"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.1-06",
+    "objective": "D2.2.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stpublicmedia` with a blob container named `logos`. The container access level is set to Blob. A security review requires you to ensure that no container in the account can be read anonymously, even if a container-level setting is changed later.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set `AllowBlobPublicAccess` to `false` on the storage account"
+      },
+      {
+        "id": "B",
+        "text": "Set the account default access tier to Cool"
+      },
+      {
+        "id": "C",
+        "text": "Set the `logos` container access level to Blob again"
+      },
+      {
+        "id": "D",
+        "text": "Set the minimum TLS version to `TLS1_2` on the storage account"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The requirement is account-level prevention of anonymous blob reads, not blocking authorized users or private network traffic.",
+    "sections": {
+      "correctAnswer": "**A. Set `AllowBlobPublicAccess` to `false` on the storage account**. Disallowing anonymous access at the account level overrides container access settings and prevents anonymous read access to blob data in the account.",
+      "technical": "Azure Blob anonymous read access has two gates. The storage account has an account-level property, `AllowBlobPublicAccess`, that allows or disallows anonymous access for the account. Each container also has an anonymous access level: Private, Blob, or Container.\n\nThe account setting has precedence. Microsoft documents that if anonymous access is disallowed for the storage account, no container in the account can be read anonymously. This remains true if a container is configured as Blob or Container. If anonymous access is allowed at the account, data is still private by default until a container is explicitly configured for anonymous access.\n\nEvaluation order is: check the account setting; if disallowed, anonymous requests fail account-wide; if allowed, check the container access level; Private blocks anonymous reads, Blob allows anonymous blob reads without container listing, and Container allows anonymous blob reads plus listing.\n\nThe security review asks for protection against later container changes, so the account-level setting is the correct control. Microsoft also notes propagation can take up to 30 seconds after changing the account setting, and clients using anonymous bearer challenge can receive 403 rather than 401 after anonymous access is disallowed.",
+      "wrongOptions": {
+        "B": "Default access tier changes cost and inferred blob tier, not anonymous authorization. Misconception: colder data is less public. Could be correct for cost management of infrequently accessed block blobs.",
+        "C": "Blob access level permits anonymous blob reads when the account allows anonymous access. Reapplying it does not satisfy the review. Misconception: Blob means private access to individual blobs only. Could be correct when intentionally publishing blob URLs without allowing anonymous listing.",
+        "D": "Minimum TLS version rejects old TLS clients but does not require authentication. Misconception: encrypted transport equals authorized access. Could be correct when the requirement is rejecting clients below TLS 1.2."
+      },
+      "plainEnglish": "There is a whole-account public access switch and a per-container public access setting. If the whole-account switch says public blob access is not allowed, no container can override it. That is what the security team wants. Changing TLS or access tiers may be useful for other reasons, but those settings do not decide whether anonymous people can read blobs.",
+      "analogy": "A museum has a front-desk rule and room signs. A room sign might allow visitors to view posters, but if the front desk says no unbadged visitors enter any room, the room sign cannot override the building rule.\n\n| Analogy | Azure reality |\n|---|---|\n| Front-desk rule | Account `AllowBlobPublicAccess` |\n| Room sign | Container access level |\n| Poster view | Blob anonymous read |\n| Room list | Container anonymous listing |\n| Unbadged visitor | Request without authorization |\n\n**Where the analogy breaks down:** Azure also enforces network rules, request headers, SAS tokens, and HTTP status behavior. A museum sign does not represent 403 responses or propagation delay.",
+      "jargon": [
+        {
+          "term": "Anonymous read access",
+          "definition": "Read access without credentials or an Authorization header."
+        },
+        {
+          "term": "AllowBlobPublicAccess",
+          "definition": "Account property that allows or disallows containers from permitting anonymous blob reads."
+        },
+        {
+          "term": "Container access level",
+          "definition": "Per-container setting for Private, Blob, or Container anonymous behavior."
+        },
+        {
+          "term": "Private",
+          "definition": "Container setting requiring authorization for both container and blobs."
+        },
+        {
+          "term": "Blob access level",
+          "definition": "Container setting allowing anonymous blob reads but not container listing."
+        },
+        {
+          "term": "Container access level option",
+          "definition": "Container setting allowing anonymous blob reads and anonymous listing."
+        },
+        {
+          "term": "Authorization header",
+          "definition": "HTTP header carrying credentials or tokens."
+        },
+        {
+          "term": "403 Forbidden",
+          "definition": "HTTP response indicating access is denied."
+        },
+        {
+          "term": "Default access tier",
+          "definition": "Account setting for inferred hot, cool, or cold tier of block blobs."
+        },
+        {
+          "term": "Minimum TLS version",
+          "definition": "Account setting that rejects older TLS clients."
+        }
+      ],
+      "watchOut": "- Anonymous access is never available by default.\n- The account setting overrides container anonymous access settings.\n- Disallowing anonymous access does not replace RBAC, SAS governance, or network controls.\n- Static website hosting has special public behavior for `$web`; do not generalize from it.",
+      "productionTip": {
+        "official": "Microsoft documents that anonymous access is prohibited by default, that account-level disallow overrides all container settings, and that `AllowBlobPublicAccess` can be configured through tools such as CLI, PowerShell, and templates.",
+        "recommendation": "Set `AllowBlobPublicAccess` to false by default and enforce it with Azure Policy. If a public media account is required, isolate it, document the exception, and monitor container access-level changes."
+      },
+      "memoryTrick": "**Account permits possibility; container uses possibility**. If the account says no, public blob access is impossible. The simplification excludes special website behavior and other access mechanisms.",
+      "examTip": "Clue words are **no container**, **even if changed later**, and **anonymously**. Choose the account-level property. A harder version may ask why a Blob-level container still denies anonymous reads; the account probably disallows public access."
+    },
+    "sources": [
+      {
+        "title": "Configure anonymous read access for containers and blobs",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+      },
+      {
+        "title": "az storage account",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/storage/account?view=azure-cli-latest"
+      },
+      {
+        "title": "New-AzStorageAccount (Az.Storage)",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.storage/new-azstorageaccount?view=azps-16.3.0"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.1-07",
+    "objective": "D2.2.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Litware is creating a general-purpose v2 storage account. Most new block blobs will be retained for at least 90 days and accessed rarely, but they must remain online for immediate reads. Administrators may explicitly set a different tier for a few individual blobs.\n\nWhich account-level default access tier should you choose?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Hot"
+      },
+      {
+        "id": "B",
+        "text": "Cool"
+      },
+      {
+        "id": "C",
+        "text": "Cold"
+      },
+      {
+        "id": "D",
+        "text": "Archive"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The question is about the account-level default tier for new block blobs whose tier is not explicitly set.",
+    "sections": {
+      "correctAnswer": "**C. Cold**. Cold is an online access tier for rarely accessed or modified blob data that should remain stored for at least 90 days and still requires fast retrieval.",
+      "technical": "The default account access tier tells Azure which online tier to infer for a new block blob when the upload does not explicitly set a tier. Microsoft documents that the setting can be hot, cool, or cold. Archive is not supported as the default access tier for a storage account.\n\n| Tier | Best fit | Minimum duration guidance |\n|---|---|---|\n| Hot | Frequent reads or writes | Not the rare-access choice |\n| Cool | Infrequent access | At least 30 days |\n| Cold | Rare access, still online | At least 90 days |\n| Archive | Offline archival data | At least 180 days and rehydration needed |\n\nThe requirement **immediate reads** rules out Archive because archived blobs must be rehydrated before reading. The requirement **rarely accessed and retained at least 90 days** points to Cold rather than Cool.\n\nPrecedence matters. A blob with an explicitly assigned tier uses that explicit tier. A blob without an explicit tier infers its tier from the account default, and the portal can show values such as Cold (inferred). Changing the account default affects blobs whose tier is inferred. Access tiers apply to block blobs, not append blobs or page blobs. Microsoft also notes that premium block blob accounts cannot tier data to hot, cool, cold, or archive through Set Blob Tier or lifecycle management.",
+      "wrongOptions": {
+        "A": "Hot is optimized for frequently accessed or modified data, not rarely used 90-day data. Misconception: immediate read always means Hot. Could be correct for active data or data with unpredictable frequent access.",
+        "B": "Cool is online and useful for infrequently accessed data, but its minimum duration guidance is 30 days. The 90-day rare-access clue is a stronger match for Cold. Misconception: every non-hot online blob should be Cool. Could be correct for data expected to stay at least 30 days but not necessarily 90 days.",
+        "D": "Archive is offline and cannot be the account default tier. Misconception: archive is simply the coldest default choice. Could be correct when explicitly tiering individual blobs that can tolerate rehydration latency and satisfy archive economics."
+      },
+      "plainEnglish": "The account default tier is the normal shelf for new block blobs when nobody chooses a shelf for that blob. Litware wants a shelf for files that are rarely used, kept for at least 90 days, and still available right away. Cold is the deep online shelf. Archive is cheaper storage for some cases, but it is asleep and must be rehydrated before reading, and it cannot be the account default.",
+      "analogy": "Litware is choosing a default shelf. Hot is the front counter, Cool is a back shelf, Cold is deep storage that staff can still reach quickly, and Archive is an off-site warehouse requiring a retrieval order. Litware wants deep storage, not off-site storage.\n\n| Analogy | Azure reality |\n|---|---|\n| Default shelf | Account default access tier |\n| Label on one box | Explicit blob tier |\n| Front counter | Hot tier |\n| Back shelf | Cool tier |\n| Deep online storage | Cold tier |\n| Off-site warehouse | Archive tier |\n\n**Where the analogy breaks down:** Azure pricing also includes transactions, data retrieval charges, early deletion charges, and redundancy interactions. Shelf distance does not calculate cost.",
+      "jargon": [
+        {
+          "term": "Default access tier",
+          "definition": "Account setting used as inferred tier for new block blobs without explicit tier."
+        },
+        {
+          "term": "Block blob",
+          "definition": "Blob type used for most object data such as files and images."
+        },
+        {
+          "term": "Hot tier",
+          "definition": "Online tier optimized for frequently accessed or modified data."
+        },
+        {
+          "term": "Cool tier",
+          "definition": "Online tier for infrequently accessed data with 30-day minimum guidance."
+        },
+        {
+          "term": "Cold tier",
+          "definition": "Online tier for rarely accessed data with 90-day minimum guidance."
+        },
+        {
+          "term": "Archive tier",
+          "definition": "Offline tier requiring rehydration and not allowed as account default."
+        },
+        {
+          "term": "Inferred tier",
+          "definition": "Tier inherited from the account default."
+        },
+        {
+          "term": "Explicit tier",
+          "definition": "Tier set directly on an individual blob."
+        },
+        {
+          "term": "Rehydration",
+          "definition": "Moving an archived blob back to an online tier before reading."
+        },
+        {
+          "term": "Early deletion charge",
+          "definition": "Charge that can apply if cooler-tier data is moved or removed too soon."
+        }
+      ],
+      "watchOut": "- Archive is not a valid account default tier.\n- Hot, cool, and cold are online; archive is offline.\n- Explicit blob tier overrides the account default.\n- Access tiers are for block blobs, not append blobs or page blobs.",
+      "productionTip": {
+        "official": "Microsoft documents hot, cool, cold, and archive tiers; the 30-day cool, 90-day cold, and 180-day archive guidance; the account default behavior; and that archive is not supported as a storage account default tier.",
+        "recommendation": "Model total cost before setting a cooler default. Include reads, writes, early deletion, lifecycle moves, and support workflows, then automate tiering with lifecycle management where access patterns are predictable."
+      },
+      "memoryTrick": "**Cold is online; Archive is asleep**. Choose Cold for rare 90-day online data. The trick fails when hours of retrieval latency are acceptable for individually archived blobs.",
+      "examTip": "Clue words are **default access tier**, **90 days**, **rarely accessed**, and **immediate reads**. A harder version may include blobs with explicit tiers; remember explicit blob settings win over the account default."
+    },
+    "sources": [
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      },
+      {
+        "title": "Upgrade to a general-purpose v2 storage account - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-upgrade"
+      },
+      {
+        "title": "Create an Azure Storage Account - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.1-08",
+    "objective": "D2.2.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You manage a legacy general-purpose v1 storage account named `stlegacyapp`. It hosts active blobs, queues, and tables. You need to move it to the recommended account kind without copying data, and you want to set the default account access tier for blob data during the change.\n\nWhich command should you run?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`az storage account update -g rg-prod -n stlegacyapp --set kind=StorageV2 --access-tier=Cool`"
+      },
+      {
+        "id": "B",
+        "text": "`az storage account create -g rg-prod -n stlegacyapp --kind StorageV2 --access-tier Cool`"
+      },
+      {
+        "id": "C",
+        "text": "`az storage account update -g rg-prod -n stlegacyapp --set kind=FileStorage --access-tier=Cool`"
+      },
+      {
+        "id": "D",
+        "text": "`New-AzStorageAccount -ResourceGroupName rg-prod -Name stlegacyapp -Kind BlobStorage -AccessTier Cool`"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The account already exists as GPv1 in resource group `rg-prod`; the task is an in-place upgrade to GPv2, not creating a replacement account.",
+    "sections": {
+      "correctAnswer": "**A. `az storage account update -g rg-prod -n stlegacyapp --set kind=StorageV2 --access-tier=Cool`**. Microsoft documents upgrading a GPv1 account to GPv2 with Azure CLI by updating `kind` to `StorageV2` and specifying Hot or Cool access tier.",
+      "technical": "General-purpose v1 and legacy BlobStorage accounts are legacy account types. Microsoft recommends GPv2 for most scenarios and documents an upgrade path from GPv1 or BlobStorage to GPv2. The upgrade is an Azure Resource Manager operation that changes the account type, with no downtime or data loss risk documented for the GPv2 upgrade. GPv2 incorporates GPv1 functionality, so existing applications and tools continue to work after the upgrade.\n\nThe documented Azure CLI command shape is:\n\n```azurecli\naz storage account update -g <resource-group> -n <storage-account> --set kind=StorageV2 --access-tier=<Hot/Cool>\n```\n\nOption A updates the existing account, sets the kind to `StorageV2`, and chooses Cool as the default account access tier for blob data. The default access tier applies to block blobs without an explicit tier after the account is GPv2.\n\nBoundaries matter. The upgrade is one-way: after upgrading a GPv1 account, you cannot downgrade it back to GPv1. BlobStorage accounts similarly cannot be downgraded after upgrade to GPv2. Microsoft also warns that GPv1 to GPv2 can affect billing, especially transaction costs, so review usage patterns first. This is not a conversion to FileStorage, and create commands do not upgrade an existing named account.",
+      "wrongOptions": {
+        "B": "`az storage account create` creates a new account. The name already exists and the requirement is no-copy in-place upgrade. Misconception: create and update are interchangeable when final settings look similar. Could be correct for provisioning a brand-new GPv2 account.",
+        "C": "FileStorage is the premium file share account kind, not the GPv2 upgrade target, and it would not host existing queues and tables. Misconception: any newer account kind is an upgrade target. Could be correct when creating a dedicated premium Azure Files account.",
+        "D": "`New-AzStorageAccount` creates a new account, and BlobStorage is a legacy account kind rather than the recommended GPv2 target. Misconception: a PowerShell creation command upgrades an existing name. Could be correct only when creating a separate account, not upgrading `stlegacyapp`."
+      },
+      "plainEnglish": "The account already exists, so you need an update command. The supported legacy upgrade changes the account kind to `StorageV2`. You can also choose Hot or Cool as the default tier for blob data during that change. Creating an account with the same name will not upgrade it, and changing it to a file-only account kind would not preserve the mixed services.",
+      "analogy": "The legacy account is an old membership plan. Microsoft offers an upgrade form for the same membership number. You submit the update form to move to the current plan and choose a default storage shelf. You do not open a second membership with the same name or switch to a file-only club.\n\n| Analogy | Azure reality |\n|---|---|\n| Old membership | GPv1 account |\n| Current plan | GPv2 / StorageV2 |\n| Upgrade form | `az storage account update` |\n| Default shelf | Access tier Hot or Cool during upgrade |\n| File-only club | FileStorage account kind |\n\n**Where the analogy breaks down:** Azure upgrades are Resource Manager operations with billing and compatibility considerations. A membership card does not represent endpoints, blob tiering, or application testing.",
+      "jargon": [
+        {
+          "term": "General-purpose v1",
+          "definition": "Legacy Azure Storage account type Microsoft recommends upgrading."
+        },
+        {
+          "term": "General-purpose v2",
+          "definition": "Recommended Azure Storage account type for most scenarios."
+        },
+        {
+          "term": "StorageV2",
+          "definition": "Resource Manager kind value for GPv2 accounts."
+        },
+        {
+          "term": "BlobStorage",
+          "definition": "Legacy storage account kind that can be upgraded to GPv2."
+        },
+        {
+          "term": "Default access tier",
+          "definition": "Account-level Hot or Cool setting specified during this GPv2 upgrade for blob data."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Command-line tool for managing Azure resources."
+        },
+        {
+          "term": "`az storage account update`",
+          "definition": "CLI command for updating an existing storage account."
+        },
+        {
+          "term": "`az storage account create`",
+          "definition": "CLI command for creating a new storage account."
+        },
+        {
+          "term": "New-AzStorageAccount",
+          "definition": "PowerShell cmdlet that creates a storage account."
+        },
+        {
+          "term": "FileStorage",
+          "definition": "Kind for premium file share accounts."
+        }
+      ],
+      "watchOut": "- Use update for an existing account; create is for new accounts.\n- GPv1 to GPv2 is documented and one-way.\n- Review billing before upgrading legacy accounts.\n- FileStorage is not the target for a mixed blob, queue, and table account.",
+      "productionTip": {
+        "official": "Microsoft documents the CLI upgrade command with `--set kind=StorageV2 --access-tier=<Hot/Cool>`, no downtime or data loss risk for upgrading to GPv2, and no downgrade back to GPv1 or BlobStorage after upgrade.",
+        "recommendation": "Before upgrading production legacy accounts, export settings, estimate costs from metrics, verify application compatibility in a test account where practical, and monitor the change even though the operation is documented as no-downtime."
+      },
+      "memoryTrick": "**Legacy uses update; new uses create**. For GPv1 to GPv2, update to `kind=StorageV2`. The rule does not cover moves to premium account types, which require a new account.",
+      "examTip": "Clue words are **legacy GPv1**, **without copying data**, and **default access tier**. Pick the documented update command. A harder version may ask for PowerShell: use `Set-AzStorageAccount -UpgradeToStorageV2 -AccessTier <Hot/Cool>`, not `New-AzStorageAccount`."
+    },
+    "sources": [
+      {
+        "title": "Upgrade to a general-purpose v2 storage account - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-upgrade"
+      },
+      {
+        "title": "Storage Account Overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+      },
+      {
+        "title": "az storage account",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/storage/account?view=azure-cli-latest"
+      },
+      {
+        "title": "New-AzStorageAccount (Az.Storage)",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.storage/new-azstorageaccount?view=azps-16.3.0"
+      },
+      {
+        "title": "Access tiers for blob data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

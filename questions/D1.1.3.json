@@ -1,0 +1,1076 @@
+[
+  {
+    "id": "D1.1.3-01",
+    "objective": "D1.1.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You create a new member user named `AdeleV@contoso.com` in Microsoft Entra ID. The user has no value configured for **Usage location**. You need to assign Adele a Microsoft 365 license directly by using an admin tool. The assignment must succeed on the first attempt.\n\nWhat should you do first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set Adele's **Usage location** to the country or region where she will use the services"
+      },
+      {
+        "id": "B",
+        "text": "Assign Adele to the Global Administrator role"
+      },
+      {
+        "id": "C",
+        "text": "Disable all service plans in the product license before assignment"
+      },
+      {
+        "id": "D",
+        "text": "Create a dynamic membership group for Adele and assign the license to the group"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The tenant owns an available license and the product is supported in the user's intended country or region.",
+    "sections": {
+      "correctAnswer": "**A. Set Adele's **Usage location** to the country or region where she will use the services**. Before a license can be assigned, Microsoft requires the administrator to specify the user's location because some services are not available in all locations.",
+      "technical": "Usage location is evaluated before a direct product license is provisioned for a user. Microsoft documents this because some services in a product are unavailable in some countries or regions. The practical sequence for Adele is: create or locate the user, set `UsageLocation` to the correct two-letter country or region, assign the product license, and then check license details for service-plan provisioning status. The scope is the individual user because the prompt asks for a direct assignment, not a group rule. Group-based licensing has a documented exception: if a user has no specific location, the user can inherit the tenant location. That exception does not make a missing value a good direct-assignment design, especially in a tenant with users in multiple countries. Administrator roles such as Global Administrator change who can administer the tenant; they do not supply a user's service-availability location. Disabling service plans might reduce what a license includes, but it does not remove the need for the location check.",
+      "wrongOptions": {
+        "B": "Assigning Global Administrator is wrong because it gives Adele broad tenant administration and does not populate `UsageLocation`. Misconception: an admin role makes a user eligible for any product license. Could be correct when: Adele is truly a tenant administrator and the organization has approved that privileged role separately from licensing.",
+        "C": "Disabling all service plans is wrong because it removes the value of the license and still leaves the location prerequisite unresolved. Misconception: service availability checks can be skipped by turning services off. Could be correct when: you intentionally disable one optional service plan while leaving the rest of a valid product assigned.",
+        "D": "Creating a dynamic group is wrong because the scenario asks for a direct first-attempt assignment to one user. Misconception: every Microsoft 365 license must be assigned through a group. Could be correct when: many users should receive standardized licenses through a governed dynamic or assigned group."
+      },
+      "plainEnglish": "Adele is like a new employee whose work country has not been recorded yet. Microsoft cannot safely turn on a bundle of online services until it knows which country rules apply to that user. The first job is not to make Adele an administrator or to create a special group. The first job is to fill in the missing location. After that, the license system can decide which parts of the product can be switched on for Adele.",
+      "analogy": "A mobile phone company will not activate an international roaming package until it knows the customer's home country, because different services are allowed in different places.\n\n| Analogy | Microsoft Entra reality |\n|---|---|\n| Home country on the phone account | User Usage location |\n| Roaming package | Microsoft 365 product license |\n| Roaming features available per country | Service plans available by location |\n\n**Where the analogy breaks down:** A phone plan usually has one carrier's rules. Microsoft licensing can combine tenant defaults, direct assignments, group inheritance, and many separate service plans, so the cloud check is more granular than a normal phone activation.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory, used to manage users, groups, roles, and sign-ins."
+        },
+        {
+          "term": "License",
+          "definition": "A purchased entitlement that lets a user use a Microsoft cloud product or service."
+        },
+        {
+          "term": "Service plan",
+          "definition": "An individual app or service inside a product license that can sometimes be enabled or disabled."
+        },
+        {
+          "term": "Group-based licensing",
+          "definition": "Assigning product licenses to a group so licenses are applied to direct user members."
+        },
+        {
+          "term": "Usage location",
+          "definition": "A user property that identifies the country or region used when assigning licenses."
+        },
+        {
+          "term": "Global Administrator",
+          "definition": "A highly privileged tenant-wide administrator role."
+        },
+        {
+          "term": "Set-EntraUser",
+          "definition": "A Microsoft Entra PowerShell cmdlet that can update user properties such as UsageLocation."
+        }
+      ],
+      "watchOut": "- Do not confuse a user's administrative role with the user's licensing attributes.\n- For direct assignment, set Usage location before assigning the product.\n- Tenant-location inheritance for group licensing is an exception, not a substitute for reliable user provisioning.\n- A disabled service plan can change included apps, but it does not fix a missing location.",
+      "productionTip": {
+        "official": "Microsoft documents that administrators must specify the user's location before assigning licenses because some services are not available in all locations. Microsoft Entra PowerShell examples also show how to find users whose `UsageLocation` is null.",
+        "recommendation": "Add Usage location to the account-creation checklist and source it from HR or another authoritative system. In a multinational tenant, block automated direct license assignment until that value is populated and validated."
+      },
+      "memoryTrick": "Use **address before access**: record the user's service country before granting the product. This shortcut is about direct licensing; group licensing can inherit tenant location.",
+      "examTip": "The exam clue is the blank **Usage location** on a new user. Rule out Global Administrator because it changes Adele's power, not her licensing eligibility. Rule out disabling all plans because the question wants the license to succeed, not an empty product shell. A harder version might ask about group licensing, where tenant-location inheritance can appear, but explicit user location remains the cleaner onboarding answer."
+    },
+    "sources": [
+      {
+        "title": "Assign or unassign licenses to a group in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-group-licenses?view=o365-worldwide"
+      },
+      {
+        "title": "Manage User Licenses Using Microsoft Entra PowerShell",
+        "url": "https://learn.microsoft.com/en-us/powershell/entra-powershell/how-to-manage-user-licenses?view=entra-powershell"
+      },
+      {
+        "title": "Assign or unassign licenses for users in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/assign-licenses-to-users?view=o365-worldwide"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.3-02",
+    "objective": "D1.1.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have a Microsoft Entra tenant with the following groups.\n\n| Group | Type | Membership | Notes |\n|---|---|---|---|\n| `Lic-Sales` | Security | Assigned | Contains 120 sales users |\n| `All-Sales` | Microsoft 365 | Dynamic user membership | Contains the same users by department rule |\n| `Nested-Sales` | Security | Assigned | Contains `Lic-Sales` as a member |\n\nYou need to manage Microsoft 365 product assignment for the sales users by using group-based licensing in the Microsoft 365 admin center. Which two statements are true? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "You can assign a product license to `Lic-Sales`"
+      },
+      {
+        "id": "B",
+        "text": "You can assign a product license to `All-Sales`"
+      },
+      {
+        "id": "C",
+        "text": "Licenses assigned to `Nested-Sales` will apply to users in `Lic-Sales` through the nested membership"
+      },
+      {
+        "id": "D",
+        "text": "Only dynamic membership groups can be used for group-based licensing"
+      },
+      {
+        "id": "E",
+        "text": "Group-based licensing removes the need for any available licenses in the tenant"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The tenant has enough available product licenses and dynamic group license coverage is met.",
+    "sections": {
+      "correctAnswer": "**A. You can assign a product license to `Lic-Sales`** and **B. You can assign a product license to `All-Sales`**. Security groups and Microsoft 365 groups can be used for group-based licensing, but nested groups are not supported for license inheritance.",
+      "technical": "Group-based licensing starts with the group object that receives the product assignment. Microsoft documents that security groups, mail-enabled groups, and Microsoft 365 groups can be used. Therefore `Lic-Sales` is valid as a security group, and `All-Sales` is valid as a Microsoft 365 group. Dynamic membership is only how `All-Sales` gets its members; it is not a requirement for license assignment. The important scope rule is first-level membership. Microsoft documents that nested groups are not currently supported for group-based licensing. If a licensed group contains another group, the licensing service does not expand the inner group's users for the license. Dynamic membership also has a separate licensing requirement: user members of dynamic groups require Microsoft Entra ID P1 or Intune for Education coverage for each unique user. Finally, assigning a license to a group still consumes purchased product units for users who receive the product.",
+      "wrongOptions": {
+        "C": "Nested license inheritance is wrong because Microsoft states nested groups are not supported for group-based licensing. Misconception: group expansion works the same way for every Microsoft Entra feature. Could be correct when: a different feature explicitly supports nested groups or users are direct members of the licensed group.",
+        "D": "Dynamic-only licensing is wrong because assigned security groups and Microsoft 365 groups can be used. Misconception: automation is required for group-based licensing. Could be correct when: the business requirement is automatic membership by department, city, or another attribute.",
+        "E": "Unlimited licensing is wrong because group-based licensing consumes purchased licenses for the users who receive the product. Misconception: a group assignment is a pooled site license. Could be correct when: the organization has purchased enough user licenses for every direct member who needs the product."
+      },
+      "plainEnglish": "Think of group licensing as putting a software rule on a named list of people. A normal security list can work. A Microsoft 365 group can work. A list whose membership is filled automatically by a department rule can also work. But a list that contains another list is different: the licensing feature does not open the second list and license those names. The users must be direct members of the group that has the license assignment.",
+      "analogy": "A training coordinator hands course vouchers to people whose names are on the attendance sheet. A printed sheet and an HR-generated sheet are both acceptable, but a line that says see another sheet is not processed.\n\n| Analogy | Microsoft Entra reality |\n|---|---|\n| Printed attendance sheet | Assigned security group |\n| HR-generated attendance sheet | Dynamic Microsoft 365 group |\n| A sheet listed inside another sheet | Nested group |\n| Course voucher | Product license |\n\n**Where the analogy breaks down:** Real Microsoft Entra groups can be used by many features, and some of those features handle nesting differently. This analogy applies specifically to group-based license processing.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory, used to manage users, groups, roles, and sign-ins."
+        },
+        {
+          "term": "License",
+          "definition": "A purchased entitlement that lets a user use a Microsoft cloud product or service."
+        },
+        {
+          "term": "Service plan",
+          "definition": "An individual app or service inside a product license that can sometimes be enabled or disabled."
+        },
+        {
+          "term": "Group-based licensing",
+          "definition": "Assigning product licenses to a group so licenses are applied to direct user members."
+        },
+        {
+          "term": "Security group",
+          "definition": "A group commonly used for access, policy, and license assignment."
+        },
+        {
+          "term": "Microsoft 365 group",
+          "definition": "A collaboration group that can also be used as a license target."
+        },
+        {
+          "term": "Dynamic membership",
+          "definition": "Rule-based group membership from user or device attributes."
+        },
+        {
+          "term": "Nested group",
+          "definition": "A group that contains another group as a member."
+        }
+      ],
+      "watchOut": "- Security groups and Microsoft 365 groups can both be license targets.\n- Dynamic membership is optional for licensing, but dynamic group users need proper license coverage.\n- Nested groups are a common exam trap; only first-level users are processed.\n- Group assignment automates distribution but does not provide unlimited product seats.",
+      "productionTip": {
+        "official": "Microsoft documents the supported group types for group-based licensing and states that nested groups are not currently supported. Microsoft also documents P1 or Intune for Education coverage for unique users in dynamic groups.",
+        "recommendation": "Create purpose-named first-level groups such as `Lic-M365-E3-Sales`. Avoid using nested departmental group structures for licensing, and monitor dynamic group rules because attribute changes can add or remove license eligibility automatically."
+      },
+      "memoryTrick": "**License the list with people, not the list with lists.** This is a simplification because the direct people can be maintained manually or by a dynamic rule.",
+      "examTip": "The key contrast is group type versus membership depth. `Security` and `Microsoft 365` do not disqualify the groups, but `Nested-Sales` does not pass licenses through `Lic-Sales`. A harder question might combine a dynamic group with an insufficient P1 count; then the group can be a license target, but the dynamic membership feature still needs coverage."
+    },
+    "sources": [
+      {
+        "title": "Assign or unassign licenses to a group in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-group-licenses?view=o365-worldwide"
+      },
+      {
+        "title": "Manage rules for dynamic membership groups in Microsoft Entra ID",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-dynamic-membership"
+      },
+      {
+        "title": "PowerShell examples for group-based licensing",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/licensing-powershell-graph-examples"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.3-03",
+    "objective": "D1.1.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You assign Microsoft 365 Business Premium to a group named `Lic-FieldStaff`. Members of the group must receive the product, but they must not receive one app that is included in the product. You need to minimize ongoing administrative effort.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a Conditional Access policy that blocks the unwanted app for the group"
+      },
+      {
+        "id": "B",
+        "text": "Assign the product to each user directly and ask users not to open the unwanted app"
+      },
+      {
+        "id": "C",
+        "text": "Assign the product to the group and use **Turn apps and services on or off** to disable the unwanted service plan"
+      },
+      {
+        "id": "D",
+        "text": "Remove the users from `Lic-FieldStaff` after the product license is assigned"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The unwanted app maps to a service plan that can be disabled for the selected product.",
+    "sections": {
+      "correctAnswer": "**C. Assign the product to the group and use **Turn apps and services on or off** to disable the unwanted service plan**. The admin center assignment flow supports turning included apps and services on or off for a user or group license assignment.",
+      "technical": "A Microsoft 365 product license is a bundle of service plans. The Microsoft 365 admin center lets an administrator assign a product to a user or group and use **Turn apps and services on or off** to remove access to specific included items. In this scenario, the product should remain assigned to `Lic-FieldStaff`; only the unwanted app's service plan should be disabled in that group assignment. Scope matters because this setting applies to the group license assignment and then to the group's direct members. Conditional Access has a different purpose: it evaluates sign-in signals and applies controls such as block, MFA, or compliant-device requirements. It does not change the license bundle or the service-plan provisioning state. Also review other assignment paths: if the same user receives another assignment that enables the service plan, the effective result can differ from the one group configuration.",
+      "wrongOptions": {
+        "A": "Conditional Access is wrong because it does not disable an included service plan in the product license. Misconception: blocking sign-in to an app is the same as not licensing the app. Could be correct when: the requirement is to enforce MFA, device compliance, or block decisions for an application.",
+        "B": "Direct assignment plus user instruction is wrong because it increases administration and relies on behavior rather than configuration. Misconception: user guidance is a licensing control. Could be correct when: a small exception needs a unique direct license assignment and the service-plan settings are configured by an administrator.",
+        "D": "Removing users from the group is wrong because it removes the group-based product assignment instead of only one app. Misconception: group removal leaves the license in place after initial assignment. Could be correct when: the users should stop receiving the whole product from that group."
+      },
+      "plainEnglish": "The field staff need most of a software package but not one app inside the package. The clean way is to keep handing out the package through the group and remove that one app from the package configuration. Blocking the app with a sign-in policy is a different kind of control, and asking every user not to use the app is not enforcement. Removing users from the group would take away the whole package, not just the unwanted app.",
+      "analogy": "A warehouse issues a standard field-worker toolbox, but the supervisor removes the laser meter from that toolbox because this team is not trained for it.\n\n| Analogy | Microsoft Entra reality |\n|---|---|\n| Field-worker toolbox | Microsoft 365 Business Premium license |\n| Laser meter removed from the kit | Disabled service plan |\n| Field staff roster | `Lic-FieldStaff` group |\n| Supervisor's kit configuration | Apps and services on/off setting |\n\n**Where the analogy breaks down:** A physical tool removed from a box cannot reappear from another box. In licensing, another direct or group assignment can still affect a user's final service-plan state.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory, used to manage users, groups, roles, and sign-ins."
+        },
+        {
+          "term": "License",
+          "definition": "A purchased entitlement that lets a user use a Microsoft cloud product or service."
+        },
+        {
+          "term": "Service plan",
+          "definition": "An individual app or service inside a product license that can sometimes be enabled or disabled."
+        },
+        {
+          "term": "Group-based licensing",
+          "definition": "Assigning product licenses to a group so licenses are applied to direct user members."
+        },
+        {
+          "term": "Disabled plan",
+          "definition": "A service plan turned off in a license assignment."
+        },
+        {
+          "term": "Turn apps and services on or off",
+          "definition": "The admin center option used to enable or disable included service plans."
+        },
+        {
+          "term": "Conditional Access",
+          "definition": "A policy engine that evaluates sign-ins and enforces access controls."
+        }
+      ],
+      "watchOut": "- Service-plan disabling is done in the license assignment, not in Conditional Access.\n- Removing a user from the license group removes the product assignment path.\n- Check for other groups or direct licenses that might grant the same plan.\n- Some service plans have dependencies; test the disabled-plan set with pilot users.",
+      "productionTip": {
+        "official": "Microsoft documents **Turn apps and services on or off** in the user and group license assignment flows, and Microsoft Graph represents disabled service plans in license assignment objects.",
+        "recommendation": "Create approved license profiles for each worker population, including the exact disabled plans. Before changing a production group, test a pilot account and confirm the user's license details show the intended service-plan state."
+      },
+      "memoryTrick": "**Keep the bundle, trim the app.** This mnemonic fails if another assignment grants the same app from a different path.",
+      "examTip": "The words **must receive the product** and **must not receive one app** point to service-plan selection. Rule out Conditional Access because it governs sign-in, not what the product license contains. A harder version could ask what happens when the user belongs to two licensed groups with different disabled-plan settings."
+    },
+    "sources": [
+      {
+        "title": "Assign or unassign licenses to a group in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-group-licenses?view=o365-worldwide"
+      },
+      {
+        "title": "Assign or unassign licenses for users in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/assign-licenses-to-users?view=o365-worldwide"
+      },
+      {
+        "title": "user: assignLicense - Microsoft Graph v1.0",
+        "url": "https://learn.microsoft.com/en-us/graph/api/user-assignlicense?view=graph-rest-1.0"
+      },
+      {
+        "title": "Microsoft Entra Conditional Access: Zero Trust Policy Engine",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/conditional-access/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.3-04",
+    "objective": "D1.1.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A user named Ben receives Microsoft 365 E3 from a group named `Lic-E3-AllStaff`. Ben's user details show that the license is inherited from the group. Ben is leaving the department and must no longer receive Microsoft 365 E3. You try to clear the product license on Ben's user account, but the license remains assigned.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign the same license directly to Ben and then remove the direct assignment"
+      },
+      {
+        "id": "B",
+        "text": "Remove Ben from `Lic-E3-AllStaff` or remove the license assignment from that group"
+      },
+      {
+        "id": "C",
+        "text": "Disable Ben's sign-in so the inherited license is automatically removed"
+      },
+      {
+        "id": "D",
+        "text": "Change Ben's Usage location to a different country or region"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Ben receives this SKU only through the named group and the goal is license removal.",
+    "sections": {
+      "correctAnswer": "**B. Remove Ben from `Lic-E3-AllStaff` or remove the license assignment from that group**. A group-inherited license is removed by changing the group membership or group license assignment, not by clearing a nonexistent direct assignment.",
+      "technical": "The assignment source controls removal. Microsoft distinguishes direct user assignments from group-based assignments on the Licenses page. If Ben's product is inherited from `Lic-E3-AllStaff`, clearing a direct license on Ben cannot remove the group path because that path is recalculated from group membership. The narrow fix is to remove Ben from `Lic-E3-AllStaff` if only Ben should lose the product. The broader fix is to unassign the product from `Lic-E3-AllStaff` if no member of that group should receive it. If Ben also had a direct assignment or belonged to another licensed group, those paths would need separate review. Blocking sign-in can be part of offboarding, but it does not free the license by itself. Changing Usage location is a validation property and is not a supported removal method for inherited licenses.",
+      "wrongOptions": {
+        "A": "Adding and removing a direct assignment is wrong because the original inherited group path remains. Misconception: direct licensing overrides group licensing for removal. Could be correct when: the only existing assignment is direct and no group grants the same product.",
+        "C": "Disabling sign-in is wrong because it blocks authentication but does not remove the group license assignment. Misconception: a disabled account automatically becomes unlicensed. Could be correct when: immediate sign-in prevention is required while a separate process removes licenses.",
+        "D": "Changing Usage location is wrong because location affects assignment validation, not removal of an inherited product. Misconception: making a user geographically different is a safe unlicensing method. Could be correct when: the user's real country or region changed and the licensing attributes must be corrected."
+      },
+      "plainEnglish": "Ben keeps getting the product because a group is giving it to him. Trying to erase the product on Ben's own page is like wiping a printed badge while the badge printer still has his name on the eligible list. Stop the printer at its source: remove Ben from the licensed group, or remove the product from the group if the whole group no longer needs it. Turning off sign-in may stop Ben from logging in, but it does not explain why the license keeps appearing.",
+      "analogy": "A company cafeteria gives lunch cards to everyone listed in the `AllStaff` roster. Ben leaves the department, but the cafeteria keeps issuing his card because the roster still includes him.\n\n| Analogy | Microsoft Entra reality |\n|---|---|\n| `AllStaff` cafeteria roster | `Lic-E3-AllStaff` group |\n| Lunch card | Microsoft 365 E3 license |\n| Removing Ben from the roster | Removing group membership |\n| Canceling cards for the roster | Removing the group license assignment |\n\n**Where the analogy breaks down:** A cafeteria may issue one card from one list. Microsoft Entra users can receive the same product from multiple groups and direct assignments, so all active paths must be checked.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory, used to manage users, groups, roles, and sign-ins."
+        },
+        {
+          "term": "License",
+          "definition": "A purchased entitlement that lets a user use a Microsoft cloud product or service."
+        },
+        {
+          "term": "Service plan",
+          "definition": "An individual app or service inside a product license that can sometimes be enabled or disabled."
+        },
+        {
+          "term": "Group-based licensing",
+          "definition": "Assigning product licenses to a group so licenses are applied to direct user members."
+        },
+        {
+          "term": "Direct assignment",
+          "definition": "A license assigned explicitly to a user account."
+        },
+        {
+          "term": "Inherited license",
+          "definition": "A license received through group membership."
+        },
+        {
+          "term": "Effective license",
+          "definition": "The final license state after all assignment paths are combined."
+        }
+      ],
+      "watchOut": "- The word **inherited** means the source is a group assignment.\n- Removing a direct license does not remove a group-inherited license.\n- Blocking sign-in and reclaiming a license are separate offboarding steps.\n- If several groups assign the same product, removing one group might not remove the effective license.",
+      "productionTip": {
+        "official": "Microsoft documents direct user assignments and group-based assignments separately, and the product Licenses page shows whether assignments are direct or group-based.",
+        "recommendation": "In offboarding automation, remove users from license groups before or alongside account disablement, then verify the user's effective licenses. Keep license groups separate from broad access groups so license removal is easy to reason about."
+      },
+      "memoryTrick": "**Inherited means remove from the source.** It is a shortcut; it still requires checking whether another source grants the same SKU.",
+      "examTip": "The phrase **inherited from the group** is the decisive clue. Rule out direct reassignment tricks because they create or remove only a direct path. A harder version may show one direct license plus two inherited licenses; then the exam expects you to remove the exact path or paths that still grant the product."
+    },
+    "sources": [
+      {
+        "title": "Assign or unassign licenses for users in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/assign-licenses-to-users?view=o365-worldwide"
+      },
+      {
+        "title": "Assign or unassign licenses to a group in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-group-licenses?view=o365-worldwide"
+      },
+      {
+        "title": "PowerShell examples for group-based licensing",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/licensing-powershell-graph-examples"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.3-05",
+    "objective": "D1.1.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You are moving 500 users from a group named `Lic-E3-Old` to a group named `Lic-E3-New`. Both groups assign the same Microsoft 365 product, but `Lic-E3-New` has a different disabled service-plan configuration. Users must not experience a temporary loss of licensed services during the move.\n\nWhich sequence should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Remove users from `Lic-E3-Old`, wait for processing to finish, and then add users to `Lic-E3-New`"
+      },
+      {
+        "id": "B",
+        "text": "Delete `Lic-E3-Old`, recreate it with the new configuration, and add the users back"
+      },
+      {
+        "id": "C",
+        "text": "Add users to `Lic-E3-New`, confirm the new license is applied, and then remove users from `Lic-E3-Old`"
+      },
+      {
+        "id": "D",
+        "text": "Change each user's Usage location before moving group membership"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Both groups are valid first-level licensed groups, enough licenses exist, and users must keep the product continuously.",
+    "sections": {
+      "correctAnswer": "**C. Add users to `Lic-E3-New`, confirm the new license is applied, and then remove users from `Lic-E3-Old`**. Microsoft documents adding the user to the destination group, confirming the new license, and then removing the original group membership to prevent temporary service loss.",
+      "technical": "Microsoft documents a specific safe order for moving users between licensed groups: add the user to the destination group, confirm the new license appears, and only then remove the user from the original group. That order matters because group-based licensing processes changes asynchronously. If users are removed from `Lic-E3-Old` first, they can be unlicensed while the `Lic-E3-New` assignment is still waiting to process. In this scenario, both groups assign the same product but with different disabled service-plan configuration, so you should expect a short overlap period and verify the final state on sample users. Large groups can take longer to process under tenant load. Deleting the old group removes the rollback path and risks broad disruption. Usage location should already be valid; changing it does not preserve continuity between license groups.",
+      "wrongOptions": {
+        "A": "Removing from `Lic-E3-Old` first is wrong because users can lose the product before `Lic-E3-New` finishes processing. Misconception: group membership license changes are immediate and ordered. Could be correct when: a temporary product removal is intentional and approved.",
+        "B": "Deleting the old group is wrong because it removes the existing license path and makes rollback harder. Misconception: recreating a group is safer than staged migration. Could be correct when: the group is unused and all members have already been verified on a replacement path.",
+        "D": "Changing Usage location is wrong because it does not maintain continuous group license assignment. Misconception: every license move problem is a location problem. Could be correct when: a user has an actual invalid or missing Usage location error."
+      },
+      "plainEnglish": "This is a no-downtime move. Keep the old software path working until the new one is proven to work. Add the 500 users to the new license group, check that the new license has appeared, and then remove them from the old group. If you remove the old group first, users may temporarily lose access while Microsoft finishes applying the new group rule.",
+      "analogy": "A facilities team is moving employees from an old badge reader to a new badge reader. They add employees to the new reader and test entry before deleting them from the old reader.\n\n| Analogy | Microsoft Entra reality |\n|---|---|\n| Old badge reader | `Lic-E3-Old` group assignment |\n| New badge reader | `Lic-E3-New` group assignment |\n| Successful door test | License confirmed on the user |\n| Removing from old reader | Removing old group membership |\n\n**Where the analogy breaks down:** Door readers usually grant the same access. Here, the two groups can also have different disabled service-plan configurations, so final license details must be checked, not just the presence of any license.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory, used to manage users, groups, roles, and sign-ins."
+        },
+        {
+          "term": "License",
+          "definition": "A purchased entitlement that lets a user use a Microsoft cloud product or service."
+        },
+        {
+          "term": "Service plan",
+          "definition": "An individual app or service inside a product license that can sometimes be enabled or disabled."
+        },
+        {
+          "term": "Group-based licensing",
+          "definition": "Assigning product licenses to a group so licenses are applied to direct user members."
+        },
+        {
+          "term": "Licensed group",
+          "definition": "A group with a product license assigned."
+        },
+        {
+          "term": "Processing",
+          "definition": "Background application of license or membership changes."
+        },
+        {
+          "term": "Assignment path",
+          "definition": "A source through which a user receives a license."
+        }
+      ],
+      "watchOut": "- Add destination membership before removing source membership.\n- Confirm the new license on the user, not just the group configuration.\n- Large licensed groups can take time to process.\n- If the two groups' plan settings conflict, fix that before removing the safe old path.",
+      "productionTip": {
+        "official": "Microsoft documents the add-confirm-remove order for moving users between licensed groups and warns that processing time can vary for large groups or high-load periods.",
+        "recommendation": "Move large populations in batches, keep `Lic-E3-Old` until all batches are verified, and log before-and-after service-plan states for a pilot set so rollback is possible."
+      },
+      "memoryTrick": "**Test the new badge before cutting the old badge.** This fails if the two badge lists create a service-plan conflict that must be resolved first.",
+      "examTip": "The phrase **must not experience a temporary loss** points to assignment continuity. Rule out remove-first and delete-and-recreate sequences because both create avoidable gaps. A harder version may include an error on the destination group; in that case, keep the old assignment until the error is corrected and the destination license is visible."
+    },
+    "sources": [
+      {
+        "title": "Assign or unassign licenses to a group in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-group-licenses?view=o365-worldwide"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.3-06",
+    "objective": "D1.1.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A group named `Lic-ProjectA` has 75 direct user members. You assign a product license to the group. The tenant owns 50 available licenses for that product. The **Errors & issues** tab shows several users with a license assignment problem.\n\nWhat should you do to resolve the issue with the least impact to users who still need the product?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Remove the Usage location value from all affected users"
+      },
+      {
+        "id": "B",
+        "text": "Convert `Lic-ProjectA` to a nested group under another licensed group"
+      },
+      {
+        "id": "C",
+        "text": "Assign the License Administrator role to each affected user"
+      },
+      {
+        "id": "D",
+        "text": "Buy or free enough licenses for the product, and then reprocess the affected users"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. All 75 users legitimately need the product, and the error is insufficient available licenses.",
+    "sections": {
+      "correctAnswer": "**D. Buy or free enough licenses for the product, and then reprocess the affected users**. No available licenses is a documented licensing issue; after buying or freeing licenses, reprocess affected users.",
+      "technical": "The group contains 75 direct users, but the tenant has only 50 available product licenses. Microsoft lists no available licenses as a common assignment error. The group assignment can identify who should receive the product, but each successful user still consumes a purchased unit. The root-cause order is capacity first, retry second: check the SKU's purchased and consumed counts, buy more licenses or reclaim unused ones, and then use Reprocess for the failed users. Removing Usage location would target the wrong validation check and could create additional errors. Nesting the group is not a capacity workaround, and group-based licensing does not support nested inheritance anyway. Assigning License Administrator to affected users is a privilege change, not product capacity.",
+      "wrongOptions": {
+        "A": "Removing Usage location is wrong because the stated shortage is available product licenses, not geography. Misconception: every licensing error comes from location. Could be correct when: the user's location value is genuinely wrong and you are replacing it with a valid location, not clearing it.",
+        "B": "Nesting `Lic-ProjectA` is wrong because nested groups do not solve license capacity and are not supported for group-based licensing inheritance. Misconception: nesting changes how many licenses are consumed. Could be correct when: a separate non-licensing feature supports nested groups for organization.",
+        "C": "Assigning License Administrator to users is wrong because it grants management permission and does not create product seats. Misconception: users need an admin role to receive a license. Could be correct when: a help desk operator needs delegated license-management rights."
+      },
+      "plainEnglish": "The tenant is short of seats. There are 75 people on the project list and only 50 remaining seats for the product. The licensing system can give seats to some users and report errors for the rest. The fix is to make enough seats available, either by buying more or reclaiming unused ones, then tell the system to try the failed users again.",
+      "analogy": "A project manager reserves software training seats for 75 employees, but the training vendor has only 50 seats left. The waiting list does not create more chairs.\n\n| Analogy | Microsoft Entra reality |\n|---|---|\n| Training seat | Product license unit |\n| Project attendee list | `Lic-ProjectA` group |\n| Seat shortage | No available licenses error |\n| Reopening registration after buying seats | Reprocess after capacity is fixed |\n\n**Where the analogy breaks down:** A training class usually has one capacity number. Microsoft products can also fail for location, service-plan conflicts, dependencies, and other per-user conditions.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory, used to manage users, groups, roles, and sign-ins."
+        },
+        {
+          "term": "License",
+          "definition": "A purchased entitlement that lets a user use a Microsoft cloud product or service."
+        },
+        {
+          "term": "Service plan",
+          "definition": "An individual app or service inside a product license that can sometimes be enabled or disabled."
+        },
+        {
+          "term": "Group-based licensing",
+          "definition": "Assigning product licenses to a group so licenses are applied to direct user members."
+        },
+        {
+          "term": "Available licenses",
+          "definition": "Purchased product units not currently consumed."
+        },
+        {
+          "term": "Consumed units",
+          "definition": "Licenses already assigned to users."
+        },
+        {
+          "term": "Reprocess",
+          "definition": "Retrying a license assignment after correction."
+        },
+        {
+          "term": "License Administrator",
+          "definition": "A role for managing licenses, not consuming products without a seat."
+        }
+      ],
+      "watchOut": "- Count intended users against available license units before assigning a large group.\n- Reprocess does not purchase or free licenses by itself.\n- Nested groups are not a workaround for capacity or inheritance.\n- License Administrator is for administrators who manage licenses, not for end users who consume products.",
+      "productionTip": {
+        "official": "Microsoft documents no available licenses as a common licensing issue and documents Reprocess after the underlying issue, such as capacity, is resolved. Microsoft Entra PowerShell can show SKU enabled and consumed units.",
+        "recommendation": "Set alerts or reports for low license availability before onboarding waves. Reclaim licenses from disabled or departed accounts in a controlled process, then reprocess only the users that failed because of capacity."
+      },
+      "memoryTrick": "**No seats means no seats.** A group can choose the queue, but only purchasing or freeing capacity creates room.",
+      "examTip": "The numbers are the clue: 75 members and 50 available licenses. Choose the answer that fixes capacity and then retries. Rule out location because the prompt identifies a product-unit shortage, and rule out roles because users do not need administrative roles to consume a license."
+    },
+    "sources": [
+      {
+        "title": "Assign or unassign licenses for users in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/assign-licenses-to-users?view=o365-worldwide"
+      },
+      {
+        "title": "Assign or unassign licenses to a group in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-group-licenses?view=o365-worldwide"
+      },
+      {
+        "title": "Manage User Licenses Using Microsoft Entra PowerShell",
+        "url": "https://learn.microsoft.com/en-us/powershell/entra-powershell/how-to-manage-user-licenses?view=entra-powershell"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.3-07",
+    "objective": "D1.1.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A user named Chihiro receives product licenses from two groups. The product details page shows an **Errors & issues** entry for Chihiro with a conflicting service plans problem. You need to resolve the error while preserving the products that Chihiro actually needs.\n\nWhat should you do first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Delete Chihiro's Microsoft Entra user account and recreate it with the same user principal name"
+      },
+      {
+        "id": "B",
+        "text": "Review Chihiro's direct and group license assignment paths, then remove or adjust the assignment that grants the conflicting service plan"
+      },
+      {
+        "id": "C",
+        "text": "Assign Chihiro the Directory Readers role"
+      },
+      {
+        "id": "D",
+        "text": "Select **Reprocess** immediately without changing any license or service-plan configuration"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The conflict comes from overlapping or incompatible service-plan assignments.",
+    "sections": {
+      "correctAnswer": "**B. Review Chihiro's direct and group license assignment paths, then remove or adjust the assignment that grants the conflicting service plan**. Conflicting services or license plans are documented errors; identify the assignment path that creates the conflict and correct it before retrying.",
+      "technical": "A conflicting service plans error means the effective license set contains services that cannot be provisioned together. Because Chihiro receives products from two groups, the first task is to identify which group assignment contributes which product and service plan. Include any direct assignments in the review, because a direct license can also participate in the effective state. After identifying the conflict, keep the product Chihiro needs and adjust the other assignment: remove Chihiro from the unnecessary license group, change the disabled service-plan configuration, or remove a direct assignment. Reprocess is useful only after the conflicting state has changed. Deleting and recreating the user is disproportionate and can reapply the same group memberships. Directory Readers provides read-only directory visibility and cannot change license provisioning.",
+      "wrongOptions": {
+        "A": "Deleting and recreating Chihiro is wrong because the same group memberships can recreate the same conflict and the action is disruptive. Misconception: a license conflict means the user object is corrupt. Could be correct when: a separate identity-lifecycle problem requires account recreation and licensing is not the issue.",
+        "C": "Directory Readers is wrong because it grants read-only directory access and cannot change license assignments or service plans. Misconception: reading directory data repairs provisioning. Could be correct when: an auditor or application needs basic directory visibility only.",
+        "D": "Immediate Reprocess is wrong because the conflict has not been removed. Misconception: retry actions automatically decide which product the user should keep. Could be correct when: an administrator has already removed the conflicting assignment or changed the disabled-plan configuration."
+      },
+      "plainEnglish": "Chihiro is receiving two sets of software pieces, and two pieces do not fit together. The safe fix is not to erase Chihiro or press retry repeatedly. First find the group or direct license that contributes each piece. Then remove or change the piece Chihiro does not need. After the clash is gone, retry the assignment so Microsoft can provision the remaining services.",
+      "analogy": "Two different project teams issue Chihiro access cards for lab equipment, but one card enables a safety mode that conflicts with the other team's mode.\n\n| Analogy | Microsoft Entra reality |\n|---|---|\n| Project team issuing a card | Licensed group assignment |\n| Safety mode on a card | Service plan inside a product |\n| Two modes that cannot run together | Conflicting service plans |\n| Reissuing after one mode is removed | Reprocess after correction |\n\n**Where the analogy breaks down:** Lab cards are usually visible objects. License conflicts can come from hidden combinations of direct assignments, inherited group assignments, and disabled-plan settings that must be inspected in admin tools or Graph.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory, used to manage users, groups, roles, and sign-ins."
+        },
+        {
+          "term": "License",
+          "definition": "A purchased entitlement that lets a user use a Microsoft cloud product or service."
+        },
+        {
+          "term": "Service plan",
+          "definition": "An individual app or service inside a product license that can sometimes be enabled or disabled."
+        },
+        {
+          "term": "Group-based licensing",
+          "definition": "Assigning product licenses to a group so licenses are applied to direct user members."
+        },
+        {
+          "term": "Conflicting service plans",
+          "definition": "Plans that cannot be provisioned together for the same user."
+        },
+        {
+          "term": "Directory Readers",
+          "definition": "A read-only directory role."
+        },
+        {
+          "term": "User principal name",
+          "definition": "A user's sign-in name, often email-like."
+        },
+        {
+          "term": "Effective license",
+          "definition": "The combined result of direct and group assignments."
+        }
+      ],
+      "watchOut": "- Do not press Reprocess until the conflict source has changed.\n- Review direct assignments as well as all licensed group paths.\n- Preserve the product Chihiro actually needs; do not remove all licenses just to clear an error.\n- Account recreation is rarely the right answer for a license configuration problem.",
+      "productionTip": {
+        "official": "Microsoft documents conflicting services or license plans as a common reason for license assignment problems and provides Errors & issues plus Reprocess for retrying after remediation.",
+        "recommendation": "Maintain a license design matrix listing products that should not be combined and standard disabled-plan choices. During troubleshooting, record the group object ID or assignment source that caused the conflict before changing membership."
+      },
+      "memoryTrick": "**A conflict is a collision, not a corruption.** Find the colliding assignment path before using the retry button.",
+      "examTip": "The clues are **two groups** and **conflicting service plans**. Rule out user deletion because the problem is not the account identity; rule out immediate Reprocess because the same conflict still exists. A harder version may include a table of service plans and ask which group configuration should disable one plan."
+    },
+    "sources": [
+      {
+        "title": "Assign or unassign licenses for users in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/assign-licenses-to-users?view=o365-worldwide"
+      },
+      {
+        "title": "Assign or unassign licenses to a group in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-group-licenses?view=o365-worldwide"
+      },
+      {
+        "title": "PowerShell examples for group-based licensing",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/licensing-powershell-graph-examples"
+      },
+      {
+        "title": "user: assignLicense - Microsoft Graph v1.0",
+        "url": "https://learn.microsoft.com/en-us/graph/api/user-assignlicense?view=graph-rest-1.0"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.3-08",
+    "objective": "D1.1.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A group named `Lic-AddOn` assigns an add-on service plan to users. Several members show a dependency violation in license assignment state. The add-on requires a base service plan that these users do not currently have. You need to resolve the errors without granting unnecessary products.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Remove Usage location from the affected users so the add-on can inherit the tenant location"
+      },
+      {
+        "id": "B",
+        "text": "Assign the add-on to a nested group that contains the affected users"
+      },
+      {
+        "id": "C",
+        "text": "Assign the required base license or enable the required base service plan for the affected users, and then reprocess the license assignment"
+      },
+      {
+        "id": "D",
+        "text": "Make the affected users owners of `Lic-AddOn`"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The error is a missing dependency, not capacity or location.",
+    "sections": {
+      "correctAnswer": "**C. Assign the required base license or enable the required base service plan for the affected users, and then reprocess the license assignment**. Missing dependencies are documented licensing errors; the required base plan must exist before the add-on can provision.",
+      "technical": "A dependency violation is different from a capacity or location error. It means the add-on being assigned by `Lic-AddOn` requires another service plan that the affected users do not currently have enabled. The fix is to supply the prerequisite with the least broad entitlement that satisfies the dependency. That might mean enabling a base plan that was accidentally disabled in an existing product, adding users to a base-license group, or assigning a base license for an approved exception. After the base service is present, use Reprocess so the add-on assignment is evaluated again. Clearing Usage location addresses a geographic validation problem, not a missing base plan. Nesting the add-on group does not help because group-based licensing does not support nested inheritance. Making a user a group owner changes group administration, not product entitlements.",
+      "wrongOptions": {
+        "A": "Removing Usage location is wrong because the problem is a missing prerequisite service, not country or region validation. Misconception: dependency violations are location errors. Could be correct when: the reported error is an invalid usage location and a valid location is being set.",
+        "B": "Assigning the add-on to a nested group is wrong because nesting does not provide the missing base plan and nested groups are not supported for group licensing inheritance. Misconception: group structure can satisfy product dependencies. Could be correct when: a non-licensing feature explicitly supports nested group membership.",
+        "D": "Making users owners of `Lic-AddOn` is wrong because ownership is an administration relationship, not a product entitlement. Misconception: group owners automatically receive or repair licenses. Could be correct when: users need delegated authority to manage group properties or membership."
+      },
+      "plainEnglish": "The add-on is not a standalone product for these users. It needs a foundation that they do not have. Give them the required base service first, then try the add-on again. Changing their location, putting them behind another group, or making them owners of the license group does not provide the missing foundation.",
+      "analogy": "A design team receives a plug-in for a graphics program, but several users do not have the graphics program installed. The plug-in cannot run until the base program exists.\n\n| Analogy | Microsoft Entra reality |\n|---|---|\n| Graphics plug-in | Add-on service plan |\n| Base graphics program | Required base service plan |\n| Install base program | Assign or enable base license plan |\n| Try plug-in activation again | Reprocess license assignment |\n\n**Where the analogy breaks down:** A desktop plug-in usually checks one installed app. Microsoft licensing can satisfy prerequisites through different products, groups, direct assignments, or enabled service plans.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory, used to manage users, groups, roles, and sign-ins."
+        },
+        {
+          "term": "License",
+          "definition": "A purchased entitlement that lets a user use a Microsoft cloud product or service."
+        },
+        {
+          "term": "Service plan",
+          "definition": "An individual app or service inside a product license that can sometimes be enabled or disabled."
+        },
+        {
+          "term": "Group-based licensing",
+          "definition": "Assigning product licenses to a group so licenses are applied to direct user members."
+        },
+        {
+          "term": "Add-on",
+          "definition": "A license component that extends another service."
+        },
+        {
+          "term": "Base service plan",
+          "definition": "The prerequisite plan required by a dependent plan."
+        },
+        {
+          "term": "Dependency violation",
+          "definition": "A licensing error caused by a missing prerequisite."
+        },
+        {
+          "term": "Group owner",
+          "definition": "A user who can manage some group settings but does not automatically receive licenses."
+        }
+      ],
+      "watchOut": "- Dependency errors are about missing prerequisites, not necessarily missing purchased units.\n- A required base plan can be present in a product but disabled.\n- Use the narrowest product or plan that satisfies the add-on requirement.\n- Group ownership and nested membership do not satisfy service-plan dependencies.",
+      "productionTip": {
+        "official": "Microsoft documents missing dependencies as a group license assignment error type and documents Reprocess after the underlying issue is resolved.",
+        "recommendation": "Document add-on prerequisites in the group description, for example which base license group users must join first. Pilot new add-on groups with users who represent each common base-license combination."
+      },
+      "memoryTrick": "**Plug-ins need platforms.** For add-on licenses, prove the base service exists before retrying the dependent plan.",
+      "examTip": "The words **add-on**, **dependency violation**, and **base service plan** identify the error type. Rule out Usage location because no geography problem is described. A harder version may ask whether to enable a disabled plan in an existing product or add users to a separate base-license group."
+    },
+    "sources": [
+      {
+        "title": "Assign or unassign licenses to a group in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-group-licenses?view=o365-worldwide"
+      },
+      {
+        "title": "Assign or unassign licenses for users in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/assign-licenses-to-users?view=o365-worldwide"
+      },
+      {
+        "title": "PowerShell examples for group-based licensing",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/licensing-powershell-graph-examples"
+      },
+      {
+        "title": "Product names and service plan identifiers for licensing",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/licensing-service-plan-reference"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.3-09",
+    "objective": "D1.1.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You corrected the Usage location for 12 users who previously failed to receive a group-based license. You are on the product details page in the Microsoft 365 admin center and can see the users on the **Errors & issues** tab. You need the licensing service to try applying the current group assignment again.\n\nWhat should you do next?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Remove the license from the group and immediately assign it again to the same group"
+      },
+      {
+        "id": "B",
+        "text": "Convert the users from member users to guest users"
+      },
+      {
+        "id": "C",
+        "text": "Wait for the users' passwords to expire"
+      },
+      {
+        "id": "D",
+        "text": "Select the affected users on **Errors & issues** and choose **Reprocess**"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The root cause was Usage location and is now corrected. Twelve users is within the documented reprocess behavior for the admin center.",
+    "sections": {
+      "correctAnswer": "**D. Select the affected users on **Errors & issues** and choose **Reprocess****. After resolving the underlying issue, Microsoft documents selecting affected users in Errors & issues and choosing Reprocess to retry assignment.",
+      "technical": "Reprocess is the targeted retry action for users whose licensing problem has already been corrected. The important order is: inspect the error, fix the root cause, then retry the affected users. In this scenario, the invalid or missing Usage location was the root cause and has been corrected for 12 users. The Microsoft 365 admin center's Errors & issues tab is already showing the affected users, so selecting them and choosing **Reprocess** retries the current group assignment without disturbing healthy members of the group. Microsoft documents that Reprocess attempts to reprocess licenses for up to 20 users at a time in the admin center; 12 users fit within that documented behavior. Removing and reassigning the license to the whole group is broader and riskier. Guest conversion and password expiry are unrelated identity changes.",
+      "wrongOptions": {
+        "A": "Removing and reassigning the group license is wrong because it affects the whole group when only 12 corrected users need retry. Misconception: the only retry method is recreating the assignment. Could be correct when: the group assignment itself is incorrect and a planned replacement is required.",
+        "B": "Converting users to guests is wrong because user type is not the corrected licensing error and can change collaboration behavior. Misconception: guest status refreshes license processing. Could be correct when: the account was created as the wrong identity type for a B2B scenario.",
+        "C": "Waiting for password expiry is wrong because password lifecycle has no documented connection to retrying license assignment. Misconception: any sign-in event reprocesses licenses. Could be correct when: the task is specifically password rotation or password policy enforcement."
+      },
+      "plainEnglish": "The users' forms were rejected because one field was wrong. You fixed that field. Now you resubmit those same rejected forms. That is what Reprocess does for licensing. It is better than canceling and recreating the whole group license, because most users in the group may already be correctly licensed.",
+      "analogy": "A conference registration system rejected 12 attendees because their country field was invalid. After the event team fixes the country field, they resubmit those 12 registrations.\n\n| Analogy | Microsoft Entra reality |\n|---|---|\n| Rejected attendee records | Users on Errors & issues |\n| Corrected country field | Fixed Usage location |\n| Resubmit selected registrations | Reprocess selected users |\n| Entire conference list | Whole licensed group |\n\n**Where the analogy breaks down:** A conference registration retry is usually immediate. Microsoft license processing can still depend on service availability, license capacity, and backend processing time.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory, used to manage users, groups, roles, and sign-ins."
+        },
+        {
+          "term": "License",
+          "definition": "A purchased entitlement that lets a user use a Microsoft cloud product or service."
+        },
+        {
+          "term": "Service plan",
+          "definition": "An individual app or service inside a product license that can sometimes be enabled or disabled."
+        },
+        {
+          "term": "Group-based licensing",
+          "definition": "Assigning product licenses to a group so licenses are applied to direct user members."
+        },
+        {
+          "term": "Reprocess",
+          "definition": "An admin center action that retries license assignment after errors are corrected."
+        },
+        {
+          "term": "Errors & issues",
+          "definition": "The product page tab listing license problems."
+        },
+        {
+          "term": "Member user",
+          "definition": "An internal tenant user."
+        },
+        {
+          "term": "Guest user",
+          "definition": "An external collaboration identity."
+        }
+      ],
+      "watchOut": "- Reprocess is for after the root cause is corrected.\n- The admin center documents a 20-user-at-a-time reprocess behavior for group license issues.\n- Avoid removing and re-adding the whole group assignment for a small set of failed users.\n- Password age and guest status do not retry product licensing.",
+      "productionTip": {
+        "official": "Microsoft documents the Errors & issues tab for license assignment problems and states that Reprocess retries assignment after the underlying issue is fixed.",
+        "recommendation": "Use a troubleshooting log that records the original error, the field corrected, who selected Reprocess, and the final license state. For more than 20 users, plan batches or use an approved automation path."
+      },
+      "memoryTrick": "**Repair the record, then resubmit it.** Reprocess is a retry after correction, not a replacement for correction.",
+      "examTip": "The prompt says the Usage location is already corrected and the users are visible in **Errors & issues**. That points directly to Reprocess. Rule out group unassignment because it affects the whole group. A harder version may use 25 or 100 users, where the documented 20-user admin center behavior becomes relevant."
+    },
+    "sources": [
+      {
+        "title": "Assign or unassign licenses for users in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/assign-licenses-to-users?view=o365-worldwide"
+      },
+      {
+        "title": "Assign or unassign licenses to a group in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-group-licenses?view=o365-worldwide"
+      },
+      {
+        "title": "Manage User Licenses Using Microsoft Entra PowerShell",
+        "url": "https://learn.microsoft.com/en-us/powershell/entra-powershell/how-to-manage-user-licenses?view=entra-powershell"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.3-10",
+    "objective": "D1.1.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You need to delegate license management for a help desk team. The team must be able to assign and remove Microsoft 365 licenses for users and groups. The team must not be able to manage Conditional Access policies or assign Microsoft Entra roles to other administrators. Which two roles can support license assignment tasks according to Microsoft documentation? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "License Administrator"
+      },
+      {
+        "id": "B",
+        "text": "User Administrator"
+      },
+      {
+        "id": "C",
+        "text": "Conditional Access Administrator"
+      },
+      {
+        "id": "D",
+        "text": "Privileged Role Administrator"
+      },
+      {
+        "id": "E",
+        "text": "Security Reader"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The organization wants least-privilege delegation for license administration.",
+    "sections": {
+      "correctAnswer": "**A. License Administrator** and **B. User Administrator**. Microsoft documentation identifies License Administrator and User Administrator for license assignment tasks.",
+      "technical": "License delegation is a Microsoft Entra role decision. Microsoft 365 user licensing documentation states that an administrator must be at least a License Administrator or User Administrator to assign licenses. Group licensing documentation also includes License Administrator and User Administrator among roles that can assign licenses to groups. For this help desk scenario, License Administrator is the most targeted role because the requirement is license management. User Administrator also supports license assignment, but it grants broader user and group management permissions, so it should be chosen only if those extra user-administration tasks are part of the job. Conditional Access Administrator is scoped to Conditional Access capabilities, not routine product license assignment. Privileged Role Administrator can manage role assignments and PIM, which violates the stated restriction. Security Reader is read-only and cannot assign or remove licenses.",
+      "wrongOptions": {
+        "C": "Conditional Access Administrator is wrong because it manages Conditional Access policies, not Microsoft 365 product license assignment. Misconception: any Entra admin role can manage licenses. Could be correct when: the delegated task is creating or editing Conditional Access policies.",
+        "D": "Privileged Role Administrator is wrong because it can manage Entra role assignments and PIM, which the requirement explicitly forbids. Misconception: broad privilege is acceptable if it includes the needed task. Could be correct when: a trusted identity administrator must manage role assignments.",
+        "E": "Security Reader is wrong because it is read-only and cannot assign or remove product licenses. Misconception: visibility into security data includes operational license changes. Could be correct when: the team only needs to view security reports or configuration."
+      },
+      "plainEnglish": "The help desk needs permission to hand out and remove software seats. Give them a role that is documented for software-seat management. License Administrator is built for that job. User Administrator can also do license work, but it is a bigger role because it can manage more about users and groups. Do not give a role for security policies or administrator-role assignment when the job is just licensing.",
+      "analogy": "A school office needs staff to issue locker keys. The right delegation is a locker-key clerk, or possibly a student-records clerk who can also issue keys. It is not the principal's master-key authority.\n\n| Analogy | Microsoft Entra reality |\n|---|---|\n| Locker-key clerk | License Administrator |\n| Student-records clerk | User Administrator |\n| Security policy office | Conditional Access Administrator |\n| Principal's master authority | Privileged Role Administrator |\n\n**Where the analogy breaks down:** School job titles are informal. Microsoft Entra roles have documented permissions and can also be combined with API permissions, PIM activation, and organizational approval workflows.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory, used to manage users, groups, roles, and sign-ins."
+        },
+        {
+          "term": "License",
+          "definition": "A purchased entitlement that lets a user use a Microsoft cloud product or service."
+        },
+        {
+          "term": "Service plan",
+          "definition": "An individual app or service inside a product license that can sometimes be enabled or disabled."
+        },
+        {
+          "term": "Group-based licensing",
+          "definition": "Assigning product licenses to a group so licenses are applied to direct user members."
+        },
+        {
+          "term": "License Administrator",
+          "definition": "A role intended for managing license assignments."
+        },
+        {
+          "term": "User Administrator",
+          "definition": "A role that manages users and groups and can assign licenses."
+        },
+        {
+          "term": "Privileged Role Administrator",
+          "definition": "A powerful role that manages Entra role assignments and PIM."
+        },
+        {
+          "term": "Least privilege",
+          "definition": "Granting only the permissions needed for the job."
+        }
+      ],
+      "watchOut": "- License Administrator is the narrower role for license-only work.\n- User Administrator can assign licenses but carries broader user and group permissions.\n- Conditional Access Administrator is not a licensing role.\n- Privileged Role Administrator is too powerful for routine help desk licensing.\n- Microsoft Graph license operations also require appropriate Graph permissions.",
+      "productionTip": {
+        "official": "Microsoft documents License Administrator and User Administrator as roles that can assign licenses, and Graph assignLicense documentation lists supported Entra roles for delegated calls.",
+        "recommendation": "Start with License Administrator for help desk licensing. If the team also needs user lifecycle tasks, document why User Administrator is required, and avoid granting Privileged Role Administrator outside a tightly controlled identity admin group."
+      },
+      "memoryTrick": "**License work gets License Admin first.** User Admin is broader; privileged role roles are for role management, not routine license seats.",
+      "examTip": "The phrase **must not manage Conditional Access policies or assign roles** eliminates Conditional Access Administrator and Privileged Role Administrator. Security Reader is read-only. A harder question might include Groups Administrator, which can be relevant to group license assignment but would not cover every user-license workflow in the same way."
+    },
+    "sources": [
+      {
+        "title": "Assign or unassign licenses for users in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/assign-licenses-to-users?view=o365-worldwide"
+      },
+      {
+        "title": "Assign or unassign licenses to a group in the Microsoft 365 admin center",
+        "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-group-licenses?view=o365-worldwide"
+      },
+      {
+        "title": "user: assignLicense - Microsoft Graph v1.0",
+        "url": "https://learn.microsoft.com/en-us/graph/api/user-assignlicense?view=graph-rest-1.0"
+      },
+      {
+        "title": "What is Privileged Identity Management?",
+        "url": "https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure"
+      },
+      {
+        "title": "Microsoft Entra Conditional Access: Zero Trust Policy Engine",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/conditional-access/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.1.3-11",
+    "objective": "D1.1.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You manage a tenant that has Microsoft Entra ID Free. You plan to automate membership of license groups by department, create Conditional Access policies for the licensed users, and use Privileged Identity Management (PIM) for administrators who manage licensing. You need to identify the minimum Microsoft Entra license level that supports all three planned identity features.\n\nWhich license level should you plan for?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Microsoft Entra ID Free"
+      },
+      {
+        "id": "B",
+        "text": "Microsoft Entra ID P1"
+      },
+      {
+        "id": "C",
+        "text": "Microsoft Entra ID P2"
+      },
+      {
+        "id": "D",
+        "text": "Microsoft Entra Agent ID"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The organization wants generally available Conditional Access and PIM capabilities, and dynamic groups contain user members requiring appropriate license coverage.",
+    "sections": {
+      "correctAnswer": "**C. Microsoft Entra ID P2**. Dynamic membership and standard Conditional Access require at least P1, while PIM is the higher-tier privileged-access feature; P2 is the listed level that covers all three planned capabilities.",
+      "technical": "This question compares tenant feature entitlements, not the mechanics of assigning a Microsoft 365 product to a user. Microsoft Entra ID Free is included with Microsoft cloud subscriptions, but the planned features are premium. Dynamic membership groups require Microsoft Entra ID P1 or Intune for Education coverage for each unique user who is a member of one or more dynamic groups. Conditional Access documentation states that using Conditional Access requires Microsoft Entra ID P1; risk-based Conditional Access requires Microsoft Entra ID Protection, which is P2. Privileged Identity Management is a privileged access governance feature. Microsoft documents PIM licensing through Microsoft Entra ID Governance licensing, and AZ-104 comparisons commonly treat PIM as requiring the higher premium level represented here by Microsoft Entra ID P2 or an equivalent bundle. Microsoft Entra Agent ID is a separate product for agent identity scenarios and does not satisfy this human identity plan.",
+      "wrongOptions": {
+        "A": "Microsoft Entra ID Free is wrong because the plan includes dynamic membership and Conditional Access, both of which require premium coverage. Misconception: every Entra feature is available once a tenant exists. Could be correct when: only basic identity features included with Microsoft cloud subscriptions are needed.",
+        "B": "Microsoft Entra ID P1 is wrong because it covers dynamic groups and standard Conditional Access but not the PIM requirement in this option set. Misconception: P1 and P2 differ only by price. Could be correct when: the plan excludes PIM, risk-based Conditional Access, and other P2-level features.",
+        "D": "Microsoft Entra Agent ID is wrong because it is for agent identity scenarios, not these human user and administrator identity features. Misconception: any product with Entra in its name enables all Entra ID features. Could be correct when: the project is specifically about agent identities or agent identity blueprints."
+      },
+      "plainEnglish": "Free is the basic identity plan. P1 adds features such as rule-based groups and Conditional Access policies. The plan also includes PIM, which is the deciding feature because it is an advanced privileged-access capability. From the choices, P2 is the level that covers the P1-style features and the PIM requirement. In real purchasing, the same entitlement might come through a Microsoft 365 or Entra suite bundle, but the exam option here is the standalone level.",
+      "analogy": "A company buys building-access packages. The basic package opens the front door, the professional package adds automatic department door lists, and the executive security package adds temporary privileged access to the server room.\n\n| Analogy | Microsoft Entra reality |\n|---|---|\n| Basic front-door package | Microsoft Entra ID Free |\n| Automatic department door lists | Dynamic membership groups |\n| Conditional door rules | Conditional Access |\n| Temporary server-room privilege | Privileged Identity Management |\n\n**Where the analogy breaks down:** Real Microsoft licensing can be bought as standalone Entra ID P1/P2, Microsoft Entra ID Governance, Microsoft Entra Suite, or Microsoft 365 bundles. The analogy shows feature tiering, not every purchasing path.",
+      "jargon": [
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly Azure Active Directory, used to manage users, groups, roles, and sign-ins."
+        },
+        {
+          "term": "License",
+          "definition": "A purchased entitlement that lets a user use a Microsoft cloud product or service."
+        },
+        {
+          "term": "Service plan",
+          "definition": "An individual app or service inside a product license that can sometimes be enabled or disabled."
+        },
+        {
+          "term": "Group-based licensing",
+          "definition": "Assigning product licenses to a group so licenses are applied to direct user members."
+        },
+        {
+          "term": "Microsoft Entra ID Free",
+          "definition": "The basic Entra ID edition included with Microsoft cloud subscriptions."
+        },
+        {
+          "term": "Microsoft Entra ID P1",
+          "definition": "A premium edition including features such as Conditional Access and dynamic groups."
+        },
+        {
+          "term": "Microsoft Entra ID P2",
+          "definition": "A higher premium edition associated with advanced protection and governance capabilities."
+        },
+        {
+          "term": "Privileged Identity Management",
+          "definition": "A service for just-in-time, time-bound privileged access."
+        },
+        {
+          "term": "Microsoft Entra Agent ID",
+          "definition": "A product for managing agent identities, not a replacement for P1 or P2 human identity features."
+        }
+      ],
+      "watchOut": "- Dynamic user groups point to P1 or equivalent coverage.\n- Standard Conditional Access points to P1; risk-based Conditional Access points to P2.\n- PIM is the feature that pushes this question beyond P1.\n- Microsoft Entra Agent ID is for agent identities, not ordinary administrator PIM.\n- Verify bundle entitlements in production instead of relying only on a standalone SKU name.",
+      "productionTip": {
+        "official": "Microsoft documents Entra ID Free, P1, P2, Conditional Access licensing, dynamic membership licensing, and Microsoft Entra ID Governance products that include PIM capabilities with prerequisites.",
+        "recommendation": "Build a feature-to-license matrix before enabling premium identity features. For administrators who manage licensing, pair the correct entitlement with least-privilege roles and just-in-time activation where your purchased plan supports it."
+      },
+      "memoryTrick": "**PIM is the premium tiebreaker.** Dynamic groups and Conditional Access get you to P1; PIM pushes the exam answer to P2 or equivalent.",
+      "examTip": "Read the list of planned features and choose the highest tier required. Dynamic membership and standard Conditional Access are not enough to make the answer P2 by themselves, but PIM is the extra clue. A harder item could replace PIM with risk-based Conditional Access, which also points to P2 through Identity Protection."
+    },
+    "sources": [
+      {
+        "title": "Microsoft Entra licensing",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/licensing"
+      },
+      {
+        "title": "Manage rules for dynamic membership groups in Microsoft Entra ID",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/users/groups-dynamic-membership"
+      },
+      {
+        "title": "Microsoft Entra Conditional Access: Zero Trust Policy Engine",
+        "url": "https://learn.microsoft.com/en-us/entra/identity/conditional-access/overview"
+      },
+      {
+        "title": "What is Privileged Identity Management?",
+        "url": "https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure"
+      },
+      {
+        "title": "Microsoft Entra ID Governance licensing fundamentals",
+        "url": "https://learn.microsoft.com/en-us/entra/id-governance/licensing-fundamentals"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

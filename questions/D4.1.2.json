@@ -1,0 +1,969 @@
+[
+  {
+    "id": "D4.1.2-01",
+    "objective": "D4.1.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains the following virtual networks.\n\n| Virtual network | Region | Address space |\n|---|---|---|\n| `vnet-prod-eus` | East US | `10.10.0.0/16` |\n| `vnet-analytics-eus` | East US | `10.20.0.0/16` |\n| `vnet-dr-weu` | West Europe | `10.30.0.0/16` |\n\nYou need private connectivity between `vnet-prod-eus` and the other two virtual networks. The solution must avoid VPN gateways for Azure-to-Azure traffic.\n\nWhich statement describes the required peering type?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use global virtual network peering for both connections because global peering is required for all production networks"
+      },
+      {
+        "id": "B",
+        "text": "Use virtual network peering to `vnet-analytics-eus` and global virtual network peering to `vnet-dr-weu`"
+      },
+      {
+        "id": "C",
+        "text": "Use only VPN Gateway VNet-to-VNet connections because virtual network peering works only inside one virtual network"
+      },
+      {
+        "id": "D",
+        "text": "Create one peering from `vnet-prod-eus` to `vnet-dr-weu`; it automatically covers `vnet-analytics-eus`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. All three virtual networks use Azure Resource Manager, their address spaces do not overlap, and the subscriptions are in clouds that support peering with each other.",
+    "sections": {
+      "correctAnswer": "**B. Use virtual network peering to `vnet-analytics-eus` and global virtual network peering to `vnet-dr-weu`**. Microsoft defines regular virtual network peering as connecting virtual networks in the same Azure region and global virtual network peering as connecting virtual networks across Azure regions.",
+      "technical": "Virtual network peering connects two Azure virtual networks so resources can communicate over Microsoft backbone infrastructure without a public internet path, VPN gateway, or extra encryption requirement for that VNet-to-VNet hop. The first decision is regional scope.\n\n| Connection | Correct peering label | Why |\n|---|---|---|\n| East US to East US | Virtual network peering | Both virtual networks are in the same Azure region |\n| East US to West Europe | Global virtual network peering | The virtual networks are in different Azure regions |\n\nAfter scope, check the constraints. The virtual networks must have nonoverlapping IP address spaces. You can peer virtual networks across subscriptions and Microsoft Entra tenants when permissions are satisfied, but you cannot peer across separate Azure clouds such as Azure public cloud to Microsoft Azure operated by 21Vianet. Creating the peering does not require downtime for resources in either virtual network.\n\nThe order for an exam scenario is: verify address spaces, identify whether the regions match, confirm the cloud boundary, ensure permissions, and then create the peering links. The regional or global label changes the feature name and some constraints, but both use the Azure backbone and both let private IP resources communicate when security rules and routes allow it.",
+      "wrongOptions": {
+        "A": "Global peering is for virtual networks in different Azure regions, not a production-only feature. Misconception: The word global means newer or more secure. Could be correct when both target networks are in regions different from the source network.",
+        "C": "VPN Gateway VNet-to-VNet is a valid alternative connection method, but it is not required for Azure-to-Azure VNet communication and the requirement says to avoid gateways. Misconception: Private VNet connectivity always means an IPsec tunnel. Could be correct when encryption through VPN gateways or a VPN-specific topology is required.",
+        "D": "A peering is between two virtual networks only. It does not include other virtual networks merely because they share a region or subscription. Misconception: One peering creates a regional network fabric for every VNet nearby. Could be correct only if the question asked for connectivity between exactly `vnet-prod-eus` and `vnet-dr-weu`."
+      },
+      "plainEnglish": "Think of each virtual network as a private neighborhood in Azure. If two neighborhoods are in the same city, Azure calls the direct road between them virtual network peering. If the neighborhoods are in different cities, Azure calls the road global virtual network peering. The road is still private and stays on Microsoft's network. It is not a public internet route and it does not require a VPN gateway. You still need a separate road for each pair of neighborhoods that must talk.",
+      "analogy": "A company has offices in one city and another country. A private shuttle between two offices in the same city is local. A private shuttle between countries is international, but it still belongs to the company.\n\n| Analogy | Azure reality |\n|---|---|\n| Same-city shuttle | Same-region virtual network peering |\n| International shuttle | Global virtual network peering |\n| Company-only roads | Microsoft backbone network |\n| Separate shuttle route | Separate peering relationship |\n\n**Where the analogy breaks down:** Azure traffic is routed by IP prefixes, effective routes, and security rules. A shuttle route does not model nonoverlapping address-space checks or Azure cloud boundary restrictions.",
+      "jargon": [
+        {
+          "term": "Virtual network",
+          "definition": "A private IP network boundary in Azure where subnets and Azure resources are placed."
+        },
+        {
+          "term": "Virtual network peering",
+          "definition": "A same-region connection between two Azure virtual networks that lets private addresses communicate directly."
+        },
+        {
+          "term": "Global virtual network peering",
+          "definition": "A peering relationship between virtual networks that are located in different Azure regions."
+        },
+        {
+          "term": "Azure region",
+          "definition": "A Microsoft datacenter geography such as East US or West Europe where regional resources are deployed."
+        },
+        {
+          "term": "Microsoft backbone",
+          "definition": "Microsoft's private network infrastructure that carries peering traffic instead of the public internet."
+        },
+        {
+          "term": "Address space",
+          "definition": "The CIDR ranges assigned to a virtual network, such as `10.10.0.0/16`."
+        },
+        {
+          "term": "VPN gateway",
+          "definition": "A managed Azure gateway used for encrypted VPN connectivity to other networks."
+        },
+        {
+          "term": "Microsoft Entra tenant",
+          "definition": "The identity directory boundary formerly called an Azure AD tenant."
+        }
+      ],
+      "watchOut": "- Same region uses virtual network peering; different Azure regions use global virtual network peering.\n- Peering traffic is private and uses the Microsoft backbone, but NSGs, routes, and firewalls can still block it.\n- Global peering cannot cross different Azure clouds.\n- The peered address spaces must not overlap.",
+      "productionTip": {
+        "official": "Microsoft documents that local and global VNet peering both use the Azure backbone and require no downtime when the peering is created. The manage-peering documentation also lists the cloud, address-space, and region constraints that should be checked before deployment.",
+        "recommendation": "Record the region pair and CIDR ranges in the network design before creating peerings. Use names such as `prod-eus-to-dr-weu` so operations teams can tell whether a peering is regional or global without opening the resource."
+      },
+      "memoryTrick": "Same region is the short name, different region gets the word **global**. This is a simplification because global peering still has cloud and service constraints.",
+      "examTip": "Clue words are the region names in the resource table and the requirement to avoid gateways. Match same-region pairs to virtual network peering and cross-region pairs to global virtual network peering. A harder version may add a China cloud or Government cloud VNet; then the cloud boundary becomes the deciding clue."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+      },
+      {
+        "title": "Create, Change, or Delete Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.2-02",
+    "objective": "D4.1.2",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank has a hub-and-spoke topology in Azure.\n\n| Virtual network | Role | Peering |\n|---|---|---|\n| `vnet-hub` | Azure Firewall and shared services | Peered with both spokes |\n| `vnet-payroll` | Payroll workload | Peered with hub only |\n| `vnet-claims` | Claims workload | Peered with hub only |\n\nVMs in `vnet-payroll` must connect to VMs in `vnet-claims`. Security requires inspection by Azure Firewall in `vnet-hub`; direct spoke-to-spoke peering is not allowed.\n\nWhich two actions should you configure? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Rely on the existing hub peerings because virtual network peering is transitive through the hub"
+      },
+      {
+        "id": "B",
+        "text": "Create only a private DNS zone link because DNS resolution also creates network reachability"
+      },
+      {
+        "id": "C",
+        "text": "Add user-defined routes in the spokes that send the other spoke's prefixes to the Azure Firewall private IP address"
+      },
+      {
+        "id": "D",
+        "text": "Enable forwarded traffic on the relevant peering directions so traffic routed through the hub appliance is permitted"
+      },
+      {
+        "id": "E",
+        "text": "Move the Azure Firewall into one spoke so the other spoke learns routes automatically from peering"
+      }
+    ],
+    "correct": [
+      "C",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Azure Firewall is already deployed in the hub virtual network, IP forwarding and firewall policy are configured as needed, and the task is to enable inspected spoke-to-spoke traffic through peering.",
+    "sections": {
+      "correctAnswer": "**C. Add user-defined routes in the spokes that send the other spoke's prefixes to the Azure Firewall private IP address** and **D. Enable forwarded traffic on the relevant peering directions so traffic routed through the hub appliance is permitted**. Peering is not transitive, so traffic must be deliberately routed through the hub appliance and allowed as forwarded traffic over the peerings.",
+      "technical": "Virtual network peerings by themselves are not transitive. A peering between payroll and hub plus a peering between hub and claims does not automatically create payroll-to-claims connectivity. Microsoft describes the hub as a place that can provide a route between spokes, but the route must use a network virtual appliance, Azure Firewall, gateway, direct peering, Azure Virtual WAN, or a managed connectivity feature such as Azure Virtual Network Manager direct connectivity.\n\nFor the firewall-inspection requirement, the routing flow is specific:\n\n1. Payroll subnet route table sends the claims prefix to Azure Firewall's private IP in `vnet-hub`.\n2. The payroll-to-hub peering must permit the hub to receive forwarded traffic as required by the path.\n3. Azure Firewall evaluates policy and forwards allowed traffic.\n4. The hub-to-claims side must allow the forwarded packet to reach the claims network.\n5. Return traffic needs a symmetric route or it may bypass the firewall and fail stateful inspection.\n\nThe peering setting named **Allow forwarded traffic** does not create a route or deploy an appliance. It only allows traffic that did not originate in the directly peered virtual network to cross that peering. User-defined routes and the firewall are configured separately. Direct spoke-to-spoke peering would work technically, but it violates the scenario's inspection requirement.",
+      "wrongOptions": {
+        "A": "Hub peerings alone do not provide transitive spoke-to-spoke connectivity. Misconception: A hub VNet behaves like a router as soon as two spokes are peered to it. Could be correct only if the question asked about each spoke reaching hub-hosted services.",
+        "B": "DNS can translate names to IP addresses, but it does not add IP routes or authorize packets through peering. Misconception: If a name resolves, the network path must exist. Could be correct when the only problem is name lookup after routing is already working.",
+        "E": "Moving the firewall into a spoke does not make peering transitive or automatically teach the other spoke a route. Misconception: The appliance location alone controls Azure routing. Could be correct in a deliberately redesigned topology where route tables point to that appliance and security policy accepts the placement."
+      },
+      "plainEnglish": "The hub is not a magic hallway that joins every spoke to every other spoke. Payroll can talk to the hub, and claims can talk to the hub, but payroll cannot automatically pass through the hub to claims. To inspect the traffic, you must put road signs in both spokes that say, \"send traffic for the other spoke to the firewall.\" You also have to allow the peering to carry traffic that was forwarded by the firewall, because that traffic is no longer just ordinary traffic from the directly connected network.",
+      "analogy": "Imagine two branch offices connected to headquarters. Employees are not allowed to walk directly between branches. They must go through the security desk at headquarters.\n\n| Analogy | Azure reality |\n|---|---|\n| Headquarters | Hub virtual network |\n| Branch offices | Spoke virtual networks |\n| Security desk | Azure Firewall or another NVA |\n| Road signs to headquarters | User-defined routes |\n| Permission for escorted visitors | Allow forwarded traffic |\n\n**Where the analogy breaks down:** Azure packets follow prefix-based route tables and security rules. People walking through a lobby do not model return-route symmetry or stateful firewall session tracking.",
+      "jargon": [
+        {
+          "term": "Hub-and-spoke topology",
+          "definition": "A network design where a central virtual network hosts shared services and workload virtual networks connect to it."
+        },
+        {
+          "term": "Transitive",
+          "definition": "A relationship where A reaches C through B automatically; regular VNet peering does not behave this way."
+        },
+        {
+          "term": "Azure Firewall",
+          "definition": "A managed firewall service often deployed in a hub to inspect and control network traffic."
+        },
+        {
+          "term": "Network virtual appliance",
+          "definition": "A VM-based network device such as a firewall, router, or inspection appliance."
+        },
+        {
+          "term": "User-defined route",
+          "definition": "A custom route table entry that changes the next hop for a destination prefix."
+        },
+        {
+          "term": "Next hop",
+          "definition": "The target Azure sends traffic to after matching a route, such as a virtual appliance IP."
+        },
+        {
+          "term": "Allow forwarded traffic",
+          "definition": "A peering setting that permits traffic forwarded by a VM, gateway, or appliance to cross the peering."
+        },
+        {
+          "term": "Stateful inspection",
+          "definition": "Firewall behavior that tracks a connection so return traffic is evaluated as part of the same flow."
+        }
+      ],
+      "watchOut": "- Peering is nontransitive even in a neat hub-and-spoke diagram.\n- **Allow forwarded traffic** is necessary for appliance paths, but it does not build the route table.\n- Return traffic must be considered, especially with stateful firewalls.\n- Direct spoke-to-spoke peering may be simpler, but it bypasses a required hub inspection point.",
+      "productionTip": {
+        "official": "Microsoft documents service chaining with user-defined routes to a virtual appliance or gateway in a peered network. The manage-peering article explains that allowing forwarded traffic permits traffic from networks peered to the remote VNet but does not create UDRs or appliances.",
+        "recommendation": "For inspected spoke-to-spoke flows, manage UDRs as code and test effective routes on representative NICs. Keep firewall rules, route tables, and peering flags in the same change plan so one missing setting does not create a silent black hole."
+      },
+      "memoryTrick": "Peering is a handshake, not a hallway. For spoke-to-spoke through a hub, remember **route it and allow forwarded**.",
+      "examTip": "Clue words are **spoke-to-spoke**, **hub**, **Azure Firewall**, and **direct peering not allowed**. Rule out answers that treat peering as transitive. A harder question may offer Azure Virtual Network Manager direct connectivity; that could be valid only if inspection through the hub is not mandatory."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+      },
+      {
+        "title": "Create, Change, or Delete Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+      },
+      {
+        "title": "Hub-Spoke Network Topology in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/networking/architecture/hub-spoke"
+      },
+      {
+        "title": "Connectivity Configurations in Azure Virtual Network Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network-manager/concept-connectivity-configuration"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.2-03",
+    "objective": "D4.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You use Azure CLI to create a peering from `vnet-app` to `vnet-data`. After the command succeeds, the peering status in `vnet-app` is **Initiated**. VMs in the two virtual networks still cannot communicate.\n\nYou need the peering to become established with the least administrative effort while using CLI.\n\nWhat should you do next?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create the reverse peering from `vnet-data` to `vnet-app` and verify both peerings show **Connected**"
+      },
+      {
+        "id": "B",
+        "text": "Wait for the **Initiated** peering to change automatically to **Connected** after route propagation"
+      },
+      {
+        "id": "C",
+        "text": "Enable gateway transit on `vnet-app` because every peering needs a virtual network gateway"
+      },
+      {
+        "id": "D",
+        "text": "Delete both virtual networks and recreate them in the same resource group"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The address spaces do not overlap, NSGs are not blocking the test traffic, and the administrator has Network Contributor or equivalent custom permissions on both virtual networks.",
+    "sections": {
+      "correctAnswer": "**A. Create the reverse peering from `vnet-data` to `vnet-app` and verify both peerings show Connected**. For Resource Manager virtual networks, a peering must be configured for each virtual network; the first one shows **Initiated** until the second direction is created.",
+      "technical": "A VNet peering is represented as a peering resource under each participating virtual network. With Azure CLI or PowerShell, creating only one direction is not enough to establish the relationship. Microsoft describes two status states that matter here:\n\n| Status | Meaning in this scenario |\n|---|---|\n| Initiated | The first peering exists, but the matching peering from the remote VNet has not been created |\n| Connected | Both peering resources exist and the peering relationship is successfully established |\n\nThe Azure portal Add peering experience asks for local and remote peering settings on one page and can create both sides together when you have access. CLI examples show two commands: one from `vnet-1` to `vnet-2`, and one from `vnet-2` to `vnet-1`. After the reverse command is created, select refresh or query again and verify that both sides show **Connected**.\n\nConnectivity still also depends on security rules, UDRs, and resource firewalls. However, the status in the question points to the missing reverse peering, not an NSG issue. Gateway transit is optional for sharing a gateway; it is not needed for normal VNet-to-VNet peering.",
+      "wrongOptions": {
+        "B": "An Initiated status does not become Connected merely by waiting if the reverse peering is absent. Misconception: Peering status is only an eventual-consistency delay. Could be correct for a short Updating state after both peerings exist, not for a one-sided setup.",
+        "C": "Gateway transit is used when one VNet should use a gateway in a peered VNet; ordinary peering does not require a gateway. Misconception: All cross-network communication needs a gateway resource. Could be correct when a spoke must use a hub VPN or ExpressRoute gateway.",
+        "D": "Resource group placement is not the problem, and recreating networks is unnecessary disruptive work. Misconception: Peered VNets must be in one resource group. Could be correct only if the design intentionally needed new nonoverlapping address spaces and existing VNets could not be changed."
+      },
+      "plainEnglish": "You created one half of a two-sided connection. Azure can see that `vnet-app` wants to connect to `vnet-data`, so it marks that half as Initiated. The connection is not truly complete until `vnet-data` also has a matching peering back to `vnet-app`. The portal often hides this detail by creating both halves in one form. When you use CLI, you normally run one command for each direction.",
+      "analogy": "Two offices agree to open private doors to each other. You unlocked the door from the app office, but the data office has not unlocked its matching door yet.\n\n| Analogy | Azure reality |\n|---|---|\n| First unlocked door | First peering resource |\n| Matching door | Reverse peering resource |\n| Door label says waiting | Initiated status |\n| Both doors unlocked | Connected status |\n\n**Where the analogy breaks down:** Azure does not pass packets through literal doors. It validates peering resources, address prefixes, routes, and security controls.",
+      "jargon": [
+        {
+          "term": "Azure CLI",
+          "definition": "The `az` command-line tool used to create and manage Azure resources."
+        },
+        {
+          "term": "Peering resource",
+          "definition": "The configuration object stored under a virtual network that points to a remote VNet."
+        },
+        {
+          "term": "Initiated",
+          "definition": "A peering state showing the first side exists but the reciprocal side is not yet connected."
+        },
+        {
+          "term": "Connected",
+          "definition": "The peering state that indicates both sides have been established successfully."
+        },
+        {
+          "term": "Reverse peering",
+          "definition": "The matching peering created from the second virtual network back to the first."
+        },
+        {
+          "term": "Resource Manager",
+          "definition": "Azure's current deployment and management model for resources."
+        },
+        {
+          "term": "Network Contributor",
+          "definition": "An Azure built-in role that can manage network resources including virtual network peerings."
+        },
+        {
+          "term": "NSG",
+          "definition": "A network security group that filters inbound and outbound traffic at subnet or NIC scope."
+        }
+      ],
+      "watchOut": "- CLI and PowerShell examples create a peering in each direction.\n- Portal can create both sides from one form when the operator has the right access.\n- **Initiated** is a strong hint that only one side exists.\n- **Connected** does not guarantee the application works; it only confirms the peering relationship.",
+      "productionTip": {
+        "official": "Microsoft documents that a Resource Manager peering must be configured for each virtual network and that status becomes Connected only after the second peering is created. The portal workflow includes local and remote peering settings so both links can be created together.",
+        "recommendation": "In scripts, name both peering resources explicitly and query both statuses after deployment. Make the deployment fail if either side is not Connected, then run separate connectivity checks for NSG and route issues."
+      },
+      "memoryTrick": "One side says **Initiated**; two sides say **Connected**. This shortcut works for peering status, not for every possible network failure.",
+      "examTip": "Clue words are **Azure CLI**, **status Initiated**, and **least administrative effort**. The answer is the reverse peering, not gateway transit or waiting. A tougher item may show portal settings; with portal, creating both sides in one action can be the fastest path."
+    },
+    "sources": [
+      {
+        "title": "Create, Change, or Delete Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+      },
+      {
+        "title": "Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.2-04",
+    "objective": "D4.1.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Adatum has a hub VNet named `vnet-hub` that contains a VPN gateway. A spoke VNet named `vnet-app1` must use the hub gateway to reach on-premises networks. A second spoke named `vnet-app2` already uses a different remote gateway from another hub.\n\nYou need to configure peering for `vnet-app1` only.\n\nWhich two settings should you configure? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable **Use remote gateways** on the `vnet-hub` to `vnet-app1` peering"
+      },
+      {
+        "id": "B",
+        "text": "Enable **Allow gateway transit** on the `vnet-hub` to `vnet-app1` peering"
+      },
+      {
+        "id": "C",
+        "text": "Enable **Use remote gateways** on both `vnet-app1` and `vnet-app2` peerings to the same hub"
+      },
+      {
+        "id": "D",
+        "text": "Deploy a local VPN gateway in `vnet-app1` and also select **Use remote gateways**"
+      },
+      {
+        "id": "E",
+        "text": "Enable **Use remote gateways** on the `vnet-app1` to `vnet-hub` peering"
+      }
+    ],
+    "correct": [
+      "B",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. `vnet-hub` has a supported VPN gateway SKU, `vnet-app1` has no virtual network gateway, and the requirement is gateway transit over an existing peering.",
+    "sections": {
+      "correctAnswer": "**B. Enable Allow gateway transit on the `vnet-hub` to `vnet-app1` peering** and **E. Enable Use remote gateways on the `vnet-app1` to `vnet-hub` peering**. The hub advertises that its gateway can be used, and the spoke chooses to use that remote gateway.",
+      "technical": "Gateway transit has two complementary peering settings. The virtual network that owns the gateway enables **Allow gateway transit** toward the peer. The virtual network that wants to consume that gateway enables **Use remote gateways** toward the gateway-owning VNet.\n\nFor `vnet-app1`, the correct flow is:\n\n1. Hub side: allow the hub gateway or route server to forward traffic to the spoke.\n2. Spoke side: enable the spoke to use the hub's remote gateway.\n3. Do not deploy a gateway in the spoke if it will use a remote gateway.\n4. Verify route propagation and on-premises address ranges after peering reaches Connected.\n\nMicrosoft documents that a virtual network can have only one gateway: local or remote. It also states that the remote gateway option can be enabled in only one of a virtual network's peering relationships. Therefore, `vnet-app2` cannot be casually changed if it already uses a different remote gateway. VPN Gateway transit works with all VPN Gateway SKUs except Basic. Forwarded traffic settings are related to appliance-forwarded traffic; they are not substitutes for gateway transit.",
+      "wrongOptions": {
+        "A": "The hub owns the gateway, so it should allow transit; it does not use its own gateway as a remote gateway through the spoke. Misconception: Both sides use the same checkbox name. Could be correct on the spoke side of a different peering where that VNet consumes a gateway.",
+        "C": "`vnet-app2` is out of scope and already uses another remote gateway. A VNet can enable remote gateways in only one peering. Misconception: Every spoke can select every remote gateway for redundancy. Could be correct only after removing the other remote gateway dependency and designing a supported single-remote-gateway path.",
+        "D": "A VNet that uses a remote gateway cannot already have its own gateway configured. Misconception: Local and remote gateways can be combined for extra reachability. Could be correct when the spoke needs independent VPN connectivity and is not using remote gateway transit."
+      },
+      "plainEnglish": "The hub has the shared door to on-premises. The hub must say, \"I allow this spoke to use my door.\" The spoke must say, \"I want to use the hub's door.\" Those are two different settings on opposite sides of the peering. The spoke cannot also keep its own door for the same purpose, and it cannot choose multiple remote doors through multiple peerings.",
+      "analogy": "A building has a guarded exit to a private campus. The building owner must approve sharing the exit, and the tenant must agree to use that shared exit instead of building a separate one.\n\n| Analogy | Azure reality |\n|---|---|\n| Guarded campus exit | VPN gateway in the hub |\n| Owner approval | Allow gateway transit |\n| Tenant chooses shared exit | Use remote gateways |\n| Tenant's own exit | Local virtual network gateway |\n| Only one exit plan | Local-or-one-remote gateway rule |\n\n**Where the analogy breaks down:** Azure route propagation, gateway SKUs, and BGP routes have precise behavior that a building-exit story cannot capture.",
+      "jargon": [
+        {
+          "term": "VPN gateway",
+          "definition": "An Azure virtual network gateway that sends encrypted traffic to on-premises networks or other VNets."
+        },
+        {
+          "term": "Gateway transit",
+          "definition": "A peering capability that lets a VNet use a gateway located in its peered VNet."
+        },
+        {
+          "term": "Allow gateway transit",
+          "definition": "The setting on the gateway-owning VNet peering that permits the peer to use the gateway."
+        },
+        {
+          "term": "Use remote gateways",
+          "definition": "The setting on the consuming VNet peering that selects the peer's gateway for route connectivity."
+        },
+        {
+          "term": "Spoke VNet",
+          "definition": "A workload virtual network connected to a hub for shared services or connectivity."
+        },
+        {
+          "term": "Route propagation",
+          "definition": "The automatic distribution of gateway-learned routes into effective route tables."
+        },
+        {
+          "term": "Basic VPN Gateway SKU",
+          "definition": "A VPN Gateway SKU that Microsoft excludes from the gateway transit option."
+        },
+        {
+          "term": "On-premises network",
+          "definition": "A network outside Azure, such as a company datacenter or branch office."
+        }
+      ],
+      "watchOut": "- The setting names are directional; do not put **Use remote gateways** on the hub side.\n- A spoke using a remote gateway cannot also have its own gateway.\n- A VNet can use a remote gateway in only one peering.\n- VPN gateway transit is not supported with the Basic VPN Gateway SKU.",
+      "productionTip": {
+        "official": "Microsoft documents gateway transit as a peering property and shows the hub side using AllowGatewayTransit while the spoke side uses UseRemoteGateways. The documentation also states that a VNet using a remote gateway cannot have its own gateway and can enable the option in only one peering.",
+        "recommendation": "Treat remote gateway use as a design-time choice, not a convenience checkbox. Keep an inventory of which hub each spoke uses, validate route propagation after changes, and avoid hidden dependencies on a second hub."
+      },
+      "memoryTrick": "Hub **allows**, spoke **uses**. The phrase is short, but always verify the direction and whether the spoke already has a gateway.",
+      "examTip": "Clue words are **hub contains a VPN gateway** and **spoke must use the hub gateway**. Pick one allow setting on the hub side and one use setting on the spoke side. A harder version may mention Route Server; the same remote-gateway wording can include a route server in current portal labels."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+      },
+      {
+        "title": "Create, Change, or Delete Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+      },
+      {
+        "title": "Configure VPN gateway transit for virtual network peering",
+        "url": "https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-peering-gateway-transit"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.2-05",
+    "objective": "D4.1.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You plan to peer two virtual networks.\n\n| Virtual network | Address space |\n|---|---|\n| `vnet-web` | `10.40.0.0/16` |\n| `vnet-db` | `10.40.128.0/17` |\n\nThe network team reports that the peering creation fails validation.\n\nWhat should you do before creating the peering?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable forwarded traffic on both peerings"
+      },
+      {
+        "id": "B",
+        "text": "Create the peerings in different resource groups"
+      },
+      {
+        "id": "C",
+        "text": "Change one virtual network address space so the two address spaces do not overlap"
+      },
+      {
+        "id": "D",
+        "text": "Use global virtual network peering because it allows overlapping private IP ranges"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The virtual networks are standard Azure virtual networks and the task is to create normal virtual network peering, not an Azure Virtual Network Manager connected group design.",
+    "sections": {
+      "correctAnswer": "**C. Change one virtual network address space so the two address spaces do not overlap**. Microsoft lists nonoverlapping IP address spaces as a requirement for peered virtual networks, and `10.40.128.0/17` is contained inside `10.40.0.0/16`.",
+      "technical": "Azure routes peered virtual network traffic by destination IP prefix. If two peered networks contain the same or overlapping prefixes, Azure cannot build a deterministic peering route for those addresses. The manage-peering requirements therefore state that virtual networks you peer must have nonoverlapping IP address spaces.\n\nThe overlap here is direct:\n\n| Prefix | Range relationship |\n|---|---|\n| `10.40.0.0/16` | Covers `10.40.0.0` through `10.40.255.255` |\n| `10.40.128.0/17` | Covers the upper half of the `/16` range |\n\nBecause the second range is inside the first, peering creation is blocked. The fix is to renumber one VNet, remove or resize conflicting ranges, or choose another nonoverlapping CIDR block before creating the peering. Forwarded traffic, gateway transit, and global peering labels do not change the prefix uniqueness requirement.\n\nAzure Virtual Network Manager mesh documentation notes special connected-group behavior for overlapping address spaces, but that is not regular VNet peering and traffic between overlapping subnets is still dropped because routing is nondeterministic. For an AZ-104 peering question, treat overlapping address spaces as a blocker.",
+      "wrongOptions": {
+        "A": "Forwarded traffic controls whether appliance-forwarded packets may cross a peering; it does not make overlapping prefixes valid. Misconception: Any peering validation error can be bypassed with a traffic checkbox. Could be correct when service chaining through an NVA is already designed with nonoverlapping ranges.",
+        "B": "Resource groups organize Azure resources but do not alter IP routing. Misconception: Moving resources changes the network identity of address ranges. Could be correct for governance or lifecycle separation, not for fixing CIDR overlap.",
+        "D": "Global peering still requires nonoverlapping virtual network address spaces. Misconception: Cross-region peering has looser routing rules. Could be correct when the networks are in different Azure regions and their prefixes are unique."
+      },
+      "plainEnglish": "The two networks are using some of the same private addresses. If a packet is sent to `10.40.150.10`, Azure cannot safely know whether that address belongs to the web VNet or the database VNet, because both ranges claim it. Before peering, change one network's address plan so every private address belongs to only one side of the connection.",
+      "analogy": "Two apartment buildings cannot both use the same apartment numbers in a shared mail system without extra context. If both have an apartment 150, the courier does not know where to deliver.\n\n| Analogy | Azure reality |\n|---|---|\n| Apartment number | Private IP address |\n| Building address book | VNet address space |\n| Duplicate apartment range | Overlapping CIDR prefixes |\n| Corrected numbering plan | Nonoverlapping VNet ranges |\n\n**Where the analogy breaks down:** Real Azure routing uses binary prefix matching, not human-readable apartment labels, and peering validation catches the conflict before traffic starts.",
+      "jargon": [
+        {
+          "term": "CIDR",
+          "definition": "Classless Inter-Domain Routing notation, such as `/16`, that describes an IP prefix size."
+        },
+        {
+          "term": "Address space",
+          "definition": "The list of IP prefixes that Azure assigns to a virtual network."
+        },
+        {
+          "term": "Overlapping prefix",
+          "definition": "A situation where one IP range contains or intersects addresses from another range."
+        },
+        {
+          "term": "Deterministic routing",
+          "definition": "Routing where a destination address maps predictably to one next hop."
+        },
+        {
+          "term": "Global peering",
+          "definition": "VNet peering between Azure regions; it is not an overlap workaround."
+        },
+        {
+          "term": "Forwarded traffic",
+          "definition": "Traffic that a gateway or appliance sends onward after receiving it from somewhere else."
+        },
+        {
+          "term": "Resource group",
+          "definition": "An Azure management container for resources, unrelated to IP prefix uniqueness."
+        },
+        {
+          "term": "Connected group",
+          "definition": "An Azure Virtual Network Manager connectivity construct, different from manual peering resources."
+        }
+      ],
+      "watchOut": "- `10.40.128.0/17` is not separate from `10.40.0.0/16`; it is inside it.\n- The overlap rule applies to local and global virtual network peering.\n- Peering settings do not perform NAT or address translation.\n- Fix the IP plan before you build dependencies on the conflicting ranges.",
+      "productionTip": {
+        "official": "Microsoft states that virtual networks you peer must have nonoverlapping IP address spaces. It also documents that overlapping address spaces in an Azure Virtual Network Manager mesh can still cause dropped traffic because routing is nondeterministic.",
+        "recommendation": "Maintain a central IP address management record for Azure VNets. Reserve large blocks by environment or region, and check proposed CIDR changes automatically before deployment pipelines create peerings."
+      },
+      "memoryTrick": "Peering needs unique street numbers. If two VNets claim the same address, peering says no.",
+      "examTip": "Clue words are the CIDR ranges. Calculate whether one range contains the other before considering gateway or firewall settings. A harder exam version may use less obvious overlaps such as `10.0.0.0/15` and `10.1.0.0/16`."
+    },
+    "sources": [
+      {
+        "title": "Create, Change, or Delete Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+      },
+      {
+        "title": "Connectivity Configurations in Azure Virtual Network Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network-manager/concept-connectivity-configuration"
+      },
+      {
+        "title": "Azure Virtual Network FAQ",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.2-06",
+    "objective": "D4.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A peered virtual network named `vnet-services` originally used `10.70.0.0/16`. You add `10.71.0.0/16` to its address space so new service subnets can be created. A VM in a peered VNet named `vnet-app` cannot reach a new service VM in the added range.\n\nYou need to make the new address range visible to the existing peering without deleting the peering.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Delete both peerings and recreate them because peered address spaces cannot be resized"
+      },
+      {
+        "id": "B",
+        "text": "Enable **Use remote gateways** on `vnet-app`"
+      },
+      {
+        "id": "C",
+        "text": "Add the same `10.71.0.0/16` range to `vnet-app`"
+      },
+      {
+        "id": "D",
+        "text": "Sync the virtual network peering and verify the updated address space from the peered VNet"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The added range does not overlap other address spaces, the new VM exists in a valid subnet, and NSGs or guest firewalls are not the cause of the connectivity failure.",
+    "sections": {
+      "correctAnswer": "**D. Sync the virtual network peering and verify the updated address space from the peered VNet**. Microsoft documents that peered VNet address spaces can be modified, added, or deleted without downtime, but peers must be synced with the new address-space changes.",
+      "technical": "Azure supports resizing the address space of peered virtual networks for IPv4 and IPv6 in supported Resource Manager scenarios. You can modify an existing prefix, add a new prefix, or delete an unused prefix. After the change, the peering relationship must learn the updated remote address space.\n\nThe documented operational sequence is:\n\n1. Update the address space on the VNet that is being expanded or resized.\n2. Ensure any added range does not overlap another address space.\n3. Go to the peering and run **Sync** for each remote peered virtual network.\n4. On the peer, check the address space view or effective routes to confirm the new prefix appears.\n5. Test traffic and then investigate NSGs, UDRs, or host firewalls if routing is correct.\n\nThe important nuance is that the peering can stay in place. Deleting and recreating peering is not the standard answer for an address-space update. Microsoft recommends syncing after every resize operation instead of batching several resizes and syncing later. The feature does not support scenarios where the VNet being updated is peered with a classic virtual network.",
+      "wrongOptions": {
+        "A": "Supported peered VNets can have address spaces resized without deleting the peering. Misconception: Peering captures prefixes permanently at creation time. Could be correct only for an unsupported classic-peering scenario or a failed recovery plan where normal sync cannot be used.",
+        "B": "Use remote gateways is for consuming a gateway in a peer; it does not refresh VNet prefixes. Misconception: Gateway settings control all route learning. Could be correct when the app VNet needs on-premises routes from a hub gateway.",
+        "C": "Adding the same range to both VNets would create overlapping address spaces and block peering behavior. Misconception: Both sides must list every reachable prefix locally. Could be correct never for this peering fix; local address spaces should remain distinct."
+      },
+      "plainEnglish": "You expanded one neighborhood by adding a new block of addresses. The connected neighborhood still has the old map. You do not need to tear down the road between them. You need to resync the road's map so the other side learns that the new block belongs to `vnet-services`. After the map is updated, normal security and route checks still apply.",
+      "analogy": "A city adds a new street to an existing district. Nearby districts using shared road signs need their maps refreshed so drivers can find the new street.\n\n| Analogy | Azure reality |\n|---|---|\n| New street | Added VNet address range |\n| Shared road signs | Peering route information |\n| Refreshing maps | Peering sync |\n| Checking the map | Verifying address space or effective routes |\n\n**Where the analogy breaks down:** Azure sync updates peering metadata and route visibility. Human drivers do not have NSGs, UDRs, or classic deployment model limitations.",
+      "jargon": [
+        {
+          "term": "Address-space resize",
+          "definition": "Adding, removing, or changing CIDR ranges assigned to a virtual network."
+        },
+        {
+          "term": "Peering sync",
+          "definition": "An operation that updates a peering with current remote VNet address-space information."
+        },
+        {
+          "term": "Effective routes",
+          "definition": "The route list Azure computes for a network interface after system routes, UDRs, and BGP routes are considered."
+        },
+        {
+          "term": "IPv4",
+          "definition": "The common 32-bit IP addressing format such as `10.71.0.0/16`."
+        },
+        {
+          "term": "IPv6",
+          "definition": "A newer 128-bit IP addressing format that Azure VNets can also use in supported configurations."
+        },
+        {
+          "term": "Classic virtual network",
+          "definition": "An older Azure deployment model VNet; the peered address-space resize feature does not support updating a VNet peered with one."
+        },
+        {
+          "term": "Subnet",
+          "definition": "A smaller address range carved out inside a VNet address space."
+        },
+        {
+          "term": "UDR",
+          "definition": "A user-defined route that can override default route choices for subnet traffic."
+        }
+      ],
+      "watchOut": "- Sync each remote peering after the address-space change.\n- The added range must not overlap another peered or connected address range.\n- Deleting an address range requires it to be empty of resources and services.\n- Peered classic VNet scenarios are excluded from this resize feature.",
+      "productionTip": {
+        "official": "Microsoft documents adding, modifying, and deleting address ranges for peered VNets without downtime and instructs administrators to sync the peer after each resize operation. The article also says to verify the address space from the peered virtual network.",
+        "recommendation": "Schedule address-space changes through the same review process as new peerings. After sync, capture effective routes from at least one NIC in each peer so the change record proves the new prefix is being advertised."
+      },
+      "memoryTrick": "Resize then **sync**, not rip and replace. The phrase assumes a supported Resource Manager peering and nonoverlapping prefixes.",
+      "examTip": "Clue words are **add address space**, **existing peering**, and **without deleting**. Choose Sync. A more advanced item may mention deleting a prefix; then remember the range must be empty before removal and sync still follows."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+      },
+      {
+        "title": "Update the address space for a peered virtual network - Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/update-virtual-network-peering-address-space"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.2-07",
+    "objective": "D4.1.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Fabrikam has two subscriptions associated with different Microsoft Entra tenants. You need to peer `vnet-a` in Subscription A with `vnet-b` in Subscription B. An operator can see only Subscription A in the Azure portal.\n\nYou need to create the peering by following least privilege.\n\nWhich access should be arranged before creating the peering?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Owner on both subscriptions because cross-tenant peering cannot use custom roles"
+      },
+      {
+        "id": "B",
+        "text": "Network Contributor, or a custom role with the required peering actions, on both virtual networks; add guest users across tenants if needed"
+      },
+      {
+        "id": "C",
+        "text": "Reader on the remote virtual network because peering is a read-only operation after the resource ID is known"
+      },
+      {
+        "id": "D",
+        "text": "Storage Account Contributor on both subscriptions because peering data is stored in Azure Storage"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Both tenants allow the necessary collaboration setup, the virtual network address spaces do not overlap, and the peering is between Resource Manager virtual networks.",
+    "sections": {
+      "correctAnswer": "**B. Network Contributor, or a custom role with the required peering actions, on both virtual networks; add guest users across tenants if needed**. Microsoft documents Network Contributor as the built-in role for peering and lists specific `Microsoft.Network/virtualNetworks/virtualNetworkPeerings/*` actions for custom roles.",
+      "technical": "Cross-subscription and cross-tenant peering is supported, but authorization must exist on both sides. If the remote subscription is in another Microsoft Entra tenant and the operator lacks read access, the portal can accept a remote virtual network resource ID, and users might need to be added as guests in the opposite tenant.\n\nFor least privilege, use either:\n\n| Need | Access pattern |\n|---|---|\n| Simple built-in role | Network Contributor on the relevant virtual networks or scopes |\n| Custom least-privilege role | Peering write and read actions to create and inspect peerings |\n| Remote deletion later | Peering read and delete actions on the remote virtual network |\n\nThe key action to create a peering from one VNet to another is `Microsoft.Network/virtualNetworks/virtualNetworkPeerings/write`. Microsoft also lists read and delete actions. The VPN gateway transit article gives an example in which one side needs Network Contributor or peering write, and the remote Resource Manager side needs `Microsoft.Network/virtualNetworks/peer`. The exam usually expects that the account has the right networking role or exact custom actions on both VNets, not subscription Owner.\n\nAfter permissions are arranged, create both peering directions or use the portal experience that creates both when access allows it.",
+      "wrongOptions": {
+        "A": "Owner would work but is broader than required and not least privilege. Microsoft documents Network Contributor and custom roles for peering. Misconception: Cross-tenant always requires full subscription control. Could be correct only in a nonproduction lab where governance permits broad rights, not for least privilege.",
+        "C": "Reader cannot create or change peering resources. Knowing the resource ID helps selection, but write permission is still required. Misconception: A peering only references the remote VNet and therefore needs no write action. Could be correct when an auditor only needs to inspect existing configuration.",
+        "D": "Storage Account Contributor has no relevance to virtual network peering. Misconception: Azure stores all configuration in a customer storage account. Could be correct when managing blob containers or file shares, not Microsoft.Network resources."
+      },
+      "plainEnglish": "Peering two VNets owned by different directories is like connecting two buildings run by different companies. Someone must be allowed to make network changes in each building. They do not need to be the CEO of both companies, but they need the right facilities permission. In Azure, that means Network Contributor or a carefully built custom role with peering permissions on both sides. If the people belong to different directories, they may need guest access so the other tenant recognizes them.",
+      "analogy": "Two campuses want a private walkway. Each campus security office must approve the work order before construction begins.\n\n| Analogy | Azure reality |\n|---|---|\n| Campus security permission | Network Contributor or custom peering role |\n| Work order to build walkway | Peering write action |\n| Visiting contractor badge | Guest user in the other tenant |\n| Building address | Remote VNet resource ID |\n\n**Where the analogy breaks down:** Azure RBAC evaluates exact scopes and actions. A badge story does not show management groups, subscriptions, resource groups, or deny assignments.",
+      "jargon": [
+        {
+          "term": "Subscription",
+          "definition": "An Azure billing and management container that holds resource groups and resources."
+        },
+        {
+          "term": "Microsoft Entra tenant",
+          "definition": "An identity directory boundary; Azure AD was the former name."
+        },
+        {
+          "term": "Network Contributor",
+          "definition": "A built-in Azure role that can manage network resources, including peering configuration."
+        },
+        {
+          "term": "Custom role",
+          "definition": "An RBAC role you define with selected Azure actions for least-privilege access."
+        },
+        {
+          "term": "RBAC",
+          "definition": "Role-based access control, Azure's authorization system for management-plane actions."
+        },
+        {
+          "term": "Guest user",
+          "definition": "An external identity invited into a tenant so permissions can be assigned there."
+        },
+        {
+          "term": "Resource ID",
+          "definition": "The full Azure path that uniquely identifies a resource such as a virtual network."
+        },
+        {
+          "term": "Management-plane action",
+          "definition": "An operation that creates, reads, updates, or deletes Azure resource configuration."
+        }
+      ],
+      "watchOut": "- Cross-subscription peering can involve the same or different Microsoft Entra tenants.\n- Portal selection is easier with read access, but resource ID entry can help when browsing access is missing.\n- Least privilege does not mean Reader; peering creation needs write actions.\n- Plan who can remove remote peerings later, because delete permission is separately important.",
+      "productionTip": {
+        "official": "Microsoft documents Network Contributor as the role required to work with virtual network peerings and lists peering write, read, and delete actions for custom roles. The portal documentation also notes guest-user setup when subscriptions are associated with different Microsoft Entra tenants.",
+        "recommendation": "Assign permissions at the narrowest scope that operations can support, often the specific VNets or resource groups. Use temporary privileged access for one-time cross-tenant peering creation and document the remote resource IDs in the change ticket."
+      },
+      "memoryTrick": "Peering crosses networks, so grant network actions on both networks. This is simplified because exact scopes and tenant invitation steps still matter.",
+      "examTip": "Clue words are **least privilege**, **different subscriptions**, and **different tenants**. Avoid Owner unless no least-privilege option exists. A harder question may list exact custom actions; choose the one containing peering write for creation and read/delete for inspection or removal."
+    },
+    "sources": [
+      {
+        "title": "Create, Change, or Delete Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+      },
+      {
+        "title": "Configure VPN gateway transit for virtual network peering",
+        "url": "https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-peering-gateway-transit"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.2-08",
+    "objective": "D4.1.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Litware is reviewing the security and cost impact of peering `vnet-dev` and `vnet-test`. A manager says, \"If we peer them, Azure will send traffic over the public internet, but at least it is free because no gateway is deployed.\"\n\nWhich statement should you give the manager?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Peering traffic stays on Microsoft's backbone and is private, but ingress and egress traffic over the peering has a nominal charge"
+      },
+      {
+        "id": "B",
+        "text": "Peering traffic uses the public internet unless a VPN gateway is deployed in both virtual networks"
+      },
+      {
+        "id": "C",
+        "text": "Peering traffic is always free if both virtual networks are in the same subscription"
+      },
+      {
+        "id": "D",
+        "text": "Peering encrypts all traffic with IPsec, and the encryption fee replaces ingress and egress charges"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The question concerns standard Azure virtual network peering data transfer behavior and not application-layer encryption or third-party appliances.",
+    "sections": {
+      "correctAnswer": "**A. Peering traffic stays on Microsoft's backbone and is private, but ingress and egress traffic over the peering has a nominal charge**. Microsoft states that VNet peering traffic is kept on the Microsoft backbone and that peering traffic is charged for ingress and egress.",
+      "technical": "Virtual network peering is designed for private IP communication between Azure virtual networks. Microsoft states that network traffic between peered virtual networks is private, remains on the Microsoft backbone network, and does not require public internet routing, gateways, or encryption between the virtual networks.\n\nCost is a separate topic from privacy. The peering overview and manage-peering documentation both state that there is a nominal charge for ingress and egress traffic that uses a virtual network peering. The pricing amount depends on Azure's pricing page and region context, but the exam-level fact is that peering is not automatically free just because no VPN gateway is deployed.\n\nThe evaluation order for this type of question is:\n\n1. Identify whether the traffic path is peering or a VPN gateway connection.\n2. For peering, choose Microsoft backbone and private IP routing, not public internet.\n3. Do not infer IPsec encryption from peering; use application encryption or VPN if that is a requirement.\n4. Include data transfer charges for peering ingress and egress.\n\nIf both a peering and a virtual network gateway connection exist between the same VNets, Microsoft documents that traffic between the VNets flows through the peering configuration rather than the gateway.",
+      "wrongOptions": {
+        "B": "Peering does not use the public internet for VNet-to-VNet traffic, and gateways are not required for normal peering. Misconception: Any private cross-network path must be a VPN tunnel. Could be correct when the chosen architecture is a VPN Gateway VNet-to-VNet connection instead of peering.",
+        "C": "Subscription placement does not make peering data transfer free. Misconception: Management ownership controls network billing. Could be correct only for a different Azure feature with no data transfer charge, not documented VNet peering charges.",
+        "D": "VNet peering does not add IPsec encryption, and there remains a peering ingress/egress charge. Misconception: Private backbone equals encrypted VPN tunnel. Could be correct when describing VPN Gateway VNet-to-VNet, which uses IPsec/IKE tunnels."
+      },
+      "plainEnglish": "Peering is like using a private Microsoft road between two Azure neighborhoods. Cars do not drive on the public highway, so the path is private to Azure's backbone. But private roads can still have tolls. The lack of a VPN gateway does not mean the traffic is free, and it also does not mean Azure wraps every packet in VPN encryption.",
+      "analogy": "A company ships boxes between two warehouses using its own internal road system. The boxes do not go through public streets, but the company still accounts for fuel and road usage.\n\n| Analogy | Azure reality |\n|---|---|\n| Internal road system | Microsoft backbone |\n| Boxes between warehouses | Packets between peered VNets |\n| Road-use accounting | Ingress and egress peering charges |\n| Armored convoy | VPN/IPsec, not ordinary peering |\n\n**Where the analogy breaks down:** Azure charges are metered data transfer records, not literal tollbooths, and application encryption can still be used over peering.",
+      "jargon": [
+        {
+          "term": "Ingress",
+          "definition": "Traffic entering a virtual network or service from another network."
+        },
+        {
+          "term": "Egress",
+          "definition": "Traffic leaving a virtual network or service toward another network."
+        },
+        {
+          "term": "Microsoft backbone",
+          "definition": "Microsoft's private wide-area network used by Azure services and peering paths."
+        },
+        {
+          "term": "Public internet",
+          "definition": "The shared global network outside Microsoft's private backbone; peering avoids it for VNet traffic."
+        },
+        {
+          "term": "IPsec",
+          "definition": "A suite of protocols commonly used by VPN gateways to encrypt IP traffic."
+        },
+        {
+          "term": "Application-layer encryption",
+          "definition": "Encryption performed by the app protocol, such as TLS, regardless of the network path."
+        },
+        {
+          "term": "Data transfer charge",
+          "definition": "Billing based on the amount of traffic sent or received across a network feature."
+        },
+        {
+          "term": "Virtual network gateway",
+          "definition": "A managed gateway used for VPN or ExpressRoute connectivity rather than ordinary peering."
+        }
+      ],
+      "watchOut": "- Private backbone does not mean zero cost.\n- Private backbone does not automatically mean IPsec encryption.\n- A peering does not require a gateway for VNet-to-VNet traffic.\n- If both gateway connection and peering exist, VNet-to-VNet traffic uses the peering configuration.",
+      "productionTip": {
+        "official": "Microsoft documents that VNet peering traffic is private and kept on the Microsoft backbone. It also states that there is a nominal fee for ingress and egress traffic using a virtual network peering connection.",
+        "recommendation": "Estimate peering data transfer for chatty workloads before choosing topology. Use TLS for sensitive application protocols even over private peering when compliance requires encryption in transit beyond Azure's private backbone."
+      },
+      "memoryTrick": "Peering is **private, not price-free**. The phrase is a billing reminder, not a substitute for checking the current pricing page.",
+      "examTip": "Clue words are **public internet**, **free**, and **no gateway**. The correct response separates traffic path from billing. A harder version may compare peering to VPN Gateway charges; remember they have different pricing models and technical behavior."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+      },
+      {
+        "title": "Create, Change, or Delete Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.2-09",
+    "objective": "D4.1.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Contoso has two Azure virtual networks in different regions. The security team asks whether to connect them by using virtual network peering or by using a VPN Gateway VNet-to-VNet connection. The requirements are:\n\n- Minimize Azure networking components.\n- Use private IP connectivity between the VNets.\n- Do not require an IPsec tunnel between the two Azure VNets.\n- Prefer the lower-latency Azure backbone path.\n\nWhat should you deploy?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A VPN Gateway VNet-to-VNet connection in each VNet because peering cannot cross regions"
+      },
+      {
+        "id": "B",
+        "text": "A Site-to-Site VPN through on-premises equipment because Azure-to-Azure traffic must leave Azure"
+      },
+      {
+        "id": "C",
+        "text": "An ExpressRoute gateway in both virtual networks because peering requires ExpressRoute"
+      },
+      {
+        "id": "D",
+        "text": "Global virtual network peering between the two virtual networks"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. Address spaces are nonoverlapping, both regions are supported for global peering, and the security team does not require VPN tunnel encryption for this Azure-to-Azure path.",
+    "sections": {
+      "correctAnswer": "**D. Global virtual network peering between the two virtual networks**. Global peering connects virtual networks across Azure regions over the Microsoft backbone without requiring VPN gateways or an IPsec VNet-to-VNet tunnel.",
+      "technical": "Both VNet peering and VPN Gateway VNet-to-VNet can connect Azure virtual networks, but they serve different design goals. Global VNet peering is the lighter solution when the requirement is direct private connectivity across Azure regions without a gateway. Microsoft describes peering as low latency, high bandwidth, backbone-routed communication between VNets, and says traffic is routed directly through Microsoft backbone infrastructure rather than through a gateway or the public internet.\n\nVPN Gateway VNet-to-VNet uses VPN gateways and the VNet2VNet connection type. Microsoft describes it as similar to Site-to-Site IPsec because both use VPN gateways to provide secure tunnels with IPsec/IKE. That can be useful when the design specifically requires VPN semantics, but it adds gateway resources and has a different pricing model.\n\nIf both peering and gateway connectivity exist between two VNets, traffic flows through the peering configuration. That precedence is another hint that peering is the native Azure path for private VNet-to-VNet communication when no VPN tunnel is required.\n\nThe decision order is: confirm regions and nonoverlapping address spaces, check whether IPsec tunnel requirements exist, choose global peering for direct backbone connectivity, and reserve VPN Gateway VNet-to-VNet for designs that explicitly need gateway-based VPN behavior.",
+      "wrongOptions": {
+        "A": "Global virtual network peering specifically supports peering across Azure regions, so gateways are not required just because the regions differ. Misconception: Peering is same-region only. Could be correct when a policy mandates IPsec VPN tunnels or when peering constraints block the design.",
+        "B": "Azure-to-Azure VNet communication does not need to hairpin through on-premises equipment. Misconception: Site-to-Site VPN is the universal way to connect private networks. Could be correct for a hybrid design where on-premises inspection is explicitly required.",
+        "C": "ExpressRoute is not required for VNet peering, and an ExpressRoute gateway cannot be the next-hop type in a UDR for peering service chaining. Misconception: All private Microsoft backbone paths require ExpressRoute. Could be correct when connecting Azure VNets to an on-premises network over an ExpressRoute circuit."
+      },
+      "plainEnglish": "The team wants two Azure networks in different regions to talk privately, but they do not want a VPN tunnel. Global peering is the direct Azure feature for that. A VPN Gateway VNet-to-VNet connection is more like building a VPN tunnel between the networks. It can be useful, but it adds gateways and does not match the requirement to avoid IPsec.",
+      "analogy": "Two company offices in different cities can either use the company's private intercity road or build a guarded tunnel system with special tunnel equipment. If the requirement says no tunnel equipment, use the private road.\n\n| Analogy | Azure reality |\n|---|---|\n| Private intercity road | Global VNet peering |\n| Guarded tunnel equipment | VPN gateways |\n| Tunnel protocol | IPsec/IKE |\n| Different cities | Different Azure regions |\n\n**Where the analogy breaks down:** Real peering depends on Azure route tables, address prefixes, subscriptions, and service constraints; roads do not express gateway SKU or VPN connection objects.",
+      "jargon": [
+        {
+          "term": "VNet-to-VNet",
+          "definition": "A VPN Gateway connection type that links two Azure VNets by using VPN gateways."
+        },
+        {
+          "term": "IPsec/IKE",
+          "definition": "Protocols used by VPN gateways to authenticate and encrypt tunnel traffic."
+        },
+        {
+          "term": "Global VNet peering",
+          "definition": "Peering between Azure virtual networks in different regions."
+        },
+        {
+          "term": "Gateway resource",
+          "definition": "A managed Azure resource such as VPN Gateway deployed into a gateway subnet."
+        },
+        {
+          "term": "GatewaySubnet",
+          "definition": "A specially named subnet used by Azure virtual network gateways."
+        },
+        {
+          "term": "ExpressRoute",
+          "definition": "A private connectivity service commonly used between on-premises networks and Azure."
+        },
+        {
+          "term": "Hairpin",
+          "definition": "Sending traffic through an intermediate location when a more direct path exists."
+        },
+        {
+          "term": "Precedence",
+          "definition": "The rule that one path is chosen over another when both are configured; peering wins over gateway VNet-to-VNet between the VNets."
+        }
+      ],
+      "watchOut": "- Cross-region VNet peering is called global VNet peering.\n- VPN Gateway VNet-to-VNet uses VPN gateways and IPsec/IKE tunnels.\n- Peering does not require ExpressRoute.\n- If both peering and gateway connection exist between the same VNets, VNet traffic uses peering.",
+      "productionTip": {
+        "official": "Microsoft documents global VNet peering for cross-region virtual networks and states that peering traffic is routed directly over the Microsoft backbone without gateways. VPN Gateway documentation describes VNet-to-VNet as using VPN gateways and IPsec/IKE.",
+        "recommendation": "Choose peering for most Azure-to-Azure private connectivity when addressing and service constraints fit. Choose VPN Gateway VNet-to-VNet only when tunnel semantics, gateway policy, or a legacy topology requirement justifies the extra components."
+      },
+      "memoryTrick": "Need an Azure road? Peer. Need an IPsec tunnel? Gateway. This is a simplification because compliance and routing requirements can override the quick rule.",
+      "examTip": "Clue words are **different regions**, **no IPsec tunnel**, **minimize components**, and **Azure backbone**. Those point to global peering. A trickier item may require encrypted VPN semantics; then VNet-to-VNet could become the answer despite extra components."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+      },
+      {
+        "title": "Create, Change, or Delete Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+      },
+      {
+        "title": "Connect a VNet to another VNet using a VPN Gateway VNet-to-VNet connection",
+        "url": "https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-vnet-vnet-rm-ps"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.1.2-10",
+    "objective": "D4.1.2",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Tailspin Toys connects `vnet-east` and `vnet-west` by using global virtual network peering. An application in `vnet-east` must call `orders.internal.tailspin.local`, which should resolve to an internal load balancer in `vnet-west`.\n\nCurrent state:\n\n| Item | Configuration |\n|---|---|\n| Load balancer | Basic internal load balancer in `vnet-west` |\n| DNS | Azure-provided name resolution only |\n| Connectivity by direct VM private IP | Works |\n\nYou need the application to reach the load-balanced service by name across the global peering.\n\nWhich two changes should you make? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Keep the Basic internal load balancer because all load balancer SKUs support global VNet peering"
+      },
+      {
+        "id": "B",
+        "text": "Move the service behind a Standard internal load balancer or another supported endpoint for global VNet peering"
+      },
+      {
+        "id": "C",
+        "text": "Disable **Allow virtual network access** on both peerings to force DNS forwarding"
+      },
+      {
+        "id": "D",
+        "text": "Rely on Azure-provided host-name resolution because peered VNets share one automatic DNS suffix"
+      },
+      {
+        "id": "E",
+        "text": "Configure name resolution, such as an Azure Private DNS zone linked to the required VNets or a custom DNS solution"
+      }
+    ],
+    "correct": [
+      "B",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. The service must be reached over global VNet peering by private address, and the organization can change the load-balancing and DNS design.",
+    "sections": {
+      "correctAnswer": "**B. Move the service behind a Standard internal load balancer or another supported endpoint for global VNet peering** and **E. Configure name resolution, such as an Azure Private DNS zone linked to the required VNets or a custom DNS solution**. Microsoft documents that Basic Load Balancer front-end IPs are not reachable over global peering, and default Azure name resolution does not resolve names across peered VNets.",
+      "technical": "This scenario has two separate problems. The first is data-plane reachability to the front-end IP. Microsoft documents a constraint for globally peered virtual networks: resources in one virtual network cannot communicate with the front-end IP address of a Basic Load Balancer, internal or public, in the globally peered virtual network. The Load Balancer SKU comparison also states that Standard Internal Load Balancer is supported through global VNet peering and Basic Load Balancer is not.\n\nThe second issue is name resolution. Azure-provided name resolution is scoped to a virtual network. Microsoft states that DNS names created for one VNet cannot be resolved from other VNets, and the peering requirements say you cannot resolve names in peered VNets by using default Azure name resolution. For cross-VNet names, use Azure Private DNS zones, Azure DNS Private Resolver, or customer-managed DNS servers. A private DNS zone can be linked to multiple virtual networks as resolution networks; records in the zone can then be queried from linked VNets.\n\nThe order is: make the endpoint reachable over global peering, configure DNS to resolve the service name to the private endpoint address, then validate routes, NSGs, and application ports.",
+      "wrongOptions": {
+        "A": "Basic Load Balancer front-end IPs are not supported over global VNet peering. Misconception: If direct VM IP connectivity works, every private frontend in the remote VNet must also work. Could be correct only for same-region scenarios where Basic Load Balancer support exists, but Basic has been retired and should be upgraded.",
+        "C": "Disabling virtual network access blocks traffic over the peering; it does not create DNS forwarding. Misconception: Peering traffic controls and DNS controls are the same knob. Could be correct when intentionally stopping communication between peered VNets.",
+        "D": "Azure-provided DNS does not automatically resolve host names across peered virtual networks. Misconception: Peering merges DNS namespaces as well as IP routing. Could be correct for name resolution within the same Resource Manager virtual network."
+      },
+      "plainEnglish": "The app has a road to the other VNet because direct VM private IP connectivity works. But the destination it wants is behind an old Basic load balancer that global peering cannot reach. Also, the app is asking for a name, and Azure's built-in DNS does not automatically share names between peered VNets. Fix both layers: put the service behind a supported load-balancing endpoint and provide DNS that both VNets can query.",
+      "analogy": "A caller in one branch can drive to another branch, but the branch's old reception desk is not reachable from long-distance company roads. The caller also lacks the phone directory entry for the department.\n\n| Analogy | Azure reality |\n|---|---|\n| Long-distance company road | Global VNet peering |\n| Old reception desk | Basic internal load balancer frontend |\n| Updated reception desk | Standard internal load balancer or supported endpoint |\n| Shared phone directory | Private DNS zone or custom DNS |\n\n**Where the analogy breaks down:** Load balancer SKU support and DNS query paths are independent Azure control planes, not one physical reception service.",
+      "jargon": [
+        {
+          "term": "Basic Load Balancer",
+          "definition": "A retired Azure Load Balancer SKU with limited features and no global VNet peering support."
+        },
+        {
+          "term": "Standard Load Balancer",
+          "definition": "The current Azure Load Balancer SKU that supports Standard internal load balancer access through global VNet peering."
+        },
+        {
+          "term": "Frontend IP",
+          "definition": "The IP address clients connect to on a load balancer."
+        },
+        {
+          "term": "Internal load balancer",
+          "definition": "A private Azure load balancer whose frontend is reachable by private network clients."
+        },
+        {
+          "term": "Azure-provided DNS",
+          "definition": "The built-in Azure name resolution service scoped primarily to a single virtual network for VM host names."
+        },
+        {
+          "term": "Azure Private DNS zone",
+          "definition": "A private DNS zone resource that can be linked to VNets for private name resolution."
+        },
+        {
+          "term": "Resolution virtual network",
+          "definition": "A VNet linked to a private DNS zone so its resources can query records in the zone."
+        },
+        {
+          "term": "Custom DNS",
+          "definition": "A DNS server or resolver design managed by the customer instead of relying only on Azure-provided DNS."
+        }
+      ],
+      "watchOut": "- Basic Load Balancer front-end IPs are not reachable across global VNet peering.\n- Basic Load Balancer was retired; Standard is the expected modernization path.\n- IP connectivity and DNS resolution are separate troubleshooting layers.\n- Default Azure name resolution is scoped to a VNet and does not become shared just because VNets are peered.",
+      "productionTip": {
+        "official": "Microsoft documents the global peering constraint for Basic Load Balancer frontend IPs and states that Standard Internal Load Balancer is supported via global VNet peering. Microsoft also documents Azure Private DNS zone links and cross-VNet name-resolution options.",
+        "recommendation": "When migrating globally peered applications, test three items separately: direct private IP reachability, load balancer frontend reachability, and DNS resolution from each client VNet. Modernize Basic Load Balancer dependencies before relying on cross-region peering."
+      },
+      "memoryTrick": "For global peering, remember **Standard frontend, shared DNS**. This shortcut is for the scenario shown; other supported private endpoints can also be valid.",
+      "examTip": "Clue words are **global peering**, **Basic internal load balancer**, and **Azure-provided DNS only**. Pick one answer for the unsupported frontend and one for cross-VNet name resolution. A harder question may say direct IP works; that does not prove the load balancer frontend or DNS is correct."
+    },
+    "sources": [
+      {
+        "title": "Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview"
+      },
+      {
+        "title": "Create, Change, or Delete Azure Virtual Network Peering",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-peering"
+      },
+      {
+        "title": "Azure Load Balancer SKUs",
+        "url": "https://learn.microsoft.com/en-us/azure/load-balancer/skus"
+      },
+      {
+        "title": "Azure Virtual Network Name Resolution Guide",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-name-resolution-for-vms-and-role-instances"
+      },
+      {
+        "title": "What is a virtual network link subresource of Azure DNS private zones",
+        "url": "https://learn.microsoft.com/en-us/azure/dns/private-dns-virtual-network-links"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

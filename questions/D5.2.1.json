@@ -1,0 +1,444 @@
+[
+  {
+    "id": "D5.2.1-01",
+    "objective": "D5.2.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "Adatum is creating a backup design and wants to know which workloads belong in a Recovery Services vault. The estate includes Azure virtual machines, SQL Server databases running inside Azure VMs, SAP HANA databases running inside Azure VMs, Azure file shares, Windows file servers in a branch office, and a new Azure Kubernetes Service cluster. The team wants to avoid choosing the wrong vault type during the design review.\n\nWhich statement correctly describes the Recovery Services vault scope for this design?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use a Recovery Services vault for Azure VMs, SQL Server in Azure VMs, SAP HANA in Azure VMs, Azure Files, and on-premises workloads protected with MARS, MABS, or DPM"
+      },
+      {
+        "id": "B",
+        "text": "Use a Recovery Services vault only for Azure virtual machines; databases, file shares, and on-premises servers require a Backup vault"
+      },
+      {
+        "id": "C",
+        "text": "Use a Recovery Services vault for Azure Kubernetes Service and Azure Cosmos DB, but use a Backup vault for Azure VMs and SQL Server in Azure VMs"
+      },
+      {
+        "id": "D",
+        "text": "Use a Recovery Services vault only for workloads that run in the same resource group as the vault"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The question is about Azure Backup vault selection for common AZ-104 workloads, not Azure Site Recovery replication or third-party backup products.",
+    "sections": {
+      "correctAnswer": "**A. Use a Recovery Services vault for Azure VMs, SQL Server in Azure VMs, SAP HANA in Azure VMs, Azure Files, and on-premises workloads protected with MARS, MABS, or DPM**. Microsoft documents Recovery Services vaults as the vault type used to orchestrate, manage, and store backup data for those workload categories.",
+      "technical": "A Recovery Services vault is an Azure management and storage entity for backup data and recovery points. Microsoft describes it as holding copies of data or configuration information for VMs, workloads, servers, or workstations. The support matrix gives the clearest exam wording: Azure Backup uses Recovery Services vaults to orchestrate and manage backups for Azure VMs, SQL in Azure VMs, SAP HANA in Azure VMs, Azure File shares, and on-premises workloads using Azure Backup Agent, Azure Backup Server, or System Center DPM. It also uses Recovery Services vaults to store backed-up data for those workloads.\n\nThe individual workload pages reinforce the same mapping. Azure VM backup stores VM backups in a Recovery Services vault. SQL Server in Azure VM backup is a workload-aware solution that streams backup data to a Recovery Services vault and supports full, differential, and log backup behavior for database-level restore. SAP HANA on Azure VM backup uses a Recovery Services vault and Backint-certified integration. Azure Files backup begins by creating or selecting a Recovery Services vault and supports snapshot and vaulted backup tiers. For on-premises Windows servers, the MARS agent can back up directly to a Recovery Services vault. With MABS or DPM, workloads first back up to local backup-server storage, and the MARS agent then backs up that server's data to the vault.\n\nBackup vault is a separate Azure Backup vault type for other datasource categories. Microsoft documentation for immutable vault support lists Backup vault workloads such as Azure Kubernetes Service, Azure Database for PostgreSQL, and Azure Cosmos DB. That distinction matters in mixed estates because the newer-sounding Backup vault does not replace Recovery Services vault for all traditional administrator workloads.",
+      "wrongOptions": {
+        "B": "Recovery Services vaults are not VM-only. They are used for Azure Files, SQL Server in Azure VMs, SAP HANA in Azure VMs, and supported on-premises backup paths too. Misconception: because many tutorials start with VM backup, the vault must be limited to whole VMs. Could be correct only for a deliberately narrow design that protects Azure VMs and nothing else.",
+        "C": "This reverses the split. AKS and Cosmos DB are examples associated with Backup vault in current documentation, while Azure VMs and SQL Server in Azure VMs use Recovery Services vaults. Misconception: the newer Backup vault name sounds like it should protect every modern and older backup datasource. Could be correct for a design limited to supported Backup vault datasource types.",
+        "D": "Same resource group placement is not the rule. Workloads can be protected from different resource groups when other requirements, such as region and permissions, are met. Misconception: Azure services can only manage resources in their own resource group. Could be correct as an internal naming or lifecycle governance preference, not as a Recovery Services vault support boundary."
+      },
+      "plainEnglish": "A Recovery Services vault is like a backup safe managed by Azure Backup. It is not only for whole virtual machines. It can also manage backups for databases that run inside Azure VMs, Azure file shares, and certain on-premises machines when those machines use Microsoft backup agents or backup servers. Some newer Azure services use another vault type called Backup vault. For the classic AZ-104 administrator workloads in the question, Recovery Services vault is the correct choice, except for the AKS cluster, which belongs to a different backup-vault story.",
+      "analogy": "Think of two secure warehouses. One warehouse has labeled loading docks for VMs, SQL-in-VM, HANA-in-VM, Azure file shares, and branch-office trucks arriving through approved carriers. A newer warehouse handles a different set of cloud-native cargo.\n\n| Analogy | Azure reality |\n|---|---|\n| Established backup warehouse | Recovery Services vault |\n| VM dock | Azure VM backup |\n| Database crates inside VM trucks | SQL Server and SAP HANA in Azure VM backup |\n| File-share pallets | Azure Files backup |\n| Approved branch carriers | MARS, MABS, and DPM |\n| Newer warehouse | Backup vault for other datasource types |\n\n**Where the analogy breaks down:** Azure vault choice is controlled by exact datasource support, regions, policies, and APIs, not by physical docks or shipping companies.",
+      "jargon": [
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure Backup vault type that stores recovery points and manages backup operations for supported workloads."
+        },
+        {
+          "term": "Backup vault",
+          "definition": "A separate Azure Backup vault type used for certain other datasource categories such as AKS, PostgreSQL, and Cosmos DB."
+        },
+        {
+          "term": "Azure VM backup",
+          "definition": "Azure Backup protection for an entire Azure virtual machine using supported VM backup methods."
+        },
+        {
+          "term": "SQL Server in Azure VM",
+          "definition": "SQL Server installed inside an Azure virtual machine and protected by workload-aware Azure Backup."
+        },
+        {
+          "term": "SAP HANA in Azure VM",
+          "definition": "SAP HANA databases running on Azure virtual machines and protected through Azure Backup integration."
+        },
+        {
+          "term": "Azure Files",
+          "definition": "Azure managed file shares that Azure Backup can protect through snapshot and vaulted backup tiers."
+        },
+        {
+          "term": "MARS agent",
+          "definition": "Microsoft Azure Recovery Services agent used to back up files, folders, system state, or backup-server data to a vault."
+        },
+        {
+          "term": "MABS",
+          "definition": "Microsoft Azure Backup Server, a DPM-based server product for protecting workloads and sending backups to Azure."
+        },
+        {
+          "term": "DPM",
+          "definition": "System Center Data Protection Manager, an enterprise backup product that can use Azure Backup for cloud storage."
+        }
+      ],
+      "watchOut": "- Recovery Services vault and Backup vault are not interchangeable names.\n- Azure VM backup and SQL or SAP HANA workload backup are different modes, but both use Recovery Services vaults.\n- MARS directly protects Windows machines; direct Linux backup with MARS is not supported.\n- MABS and DPM can protect broader workloads and then send data to a Recovery Services vault.\n- Always confirm the specific datasource support matrix before choosing a vault type.",
+      "productionTip": {
+        "official": "Microsoft's Azure Backup support matrix states that Recovery Services vaults orchestrate, manage, and store backups for Azure VMs, SQL in Azure VMs, SAP HANA in Azure VMs, Azure File shares, and on-premises workloads using Azure Backup Agent, Azure Backup Server, or System Center DPM.",
+        "recommendation": "Start backup architecture diagrams with datasource-to-vault mapping before discussing schedules. Label Recovery Services vault and Backup vault workloads separately so teams do not onboard AKS or Cosmos DB into a design intended for VM-era backup workloads."
+      },
+      "memoryTrick": "For AZ-104, Recovery Services vault protects the **VM-era staples**: VMs, SQL-in-VM, HANA-in-VM, Azure Files, and MARS/MABS/DPM. Always check newer datasources separately.",
+      "examTip": "Clue words are **Azure VMs**, **SQL Server in Azure VMs**, **SAP HANA in Azure VMs**, **Azure Files**, and **MARS/MABS/DPM**. Choose Recovery Services vault. A harder item may include AKS or Cosmos DB to test whether you know some datasource types use Backup vault instead."
+    },
+    "sources": [
+      {
+        "title": "Overview of Recovery Services vaults - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+      },
+      {
+        "title": "Azure Backup support matrix - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-support-matrix"
+      },
+      {
+        "title": "About Azure VM backup - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-vms-introduction"
+      },
+      {
+        "title": "About Azure Files backup - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/azure-file-share-backup-overview"
+      },
+      {
+        "title": "Back up SQL Server databases to Azure - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-sql-database"
+      },
+      {
+        "title": "About the SAP HANA database backup on Azure VMs - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/sap-hana-database-about"
+      },
+      {
+        "title": "Support matrix for the MARS agent - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-support-matrix-mars-agent"
+      },
+      {
+        "title": "MABS & System Center DPM support matrix - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-support-matrix-mabs-dpm"
+      },
+      {
+        "title": "Concept of Immutable Vault for Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-immutable-vault-concept"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.1-02",
+    "objective": "D5.2.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Litware has Azure virtual machines in Australia East and Southeast Asia. A junior administrator creates one Recovery Services vault in Australia East and tries to use it to protect all VMs to simplify reporting. The Southeast Asia VMs do not appear during the backup configuration workflow. The team asks what must be changed while keeping the design supported.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Move the Australia East vault to Southeast Asia after the first backup job runs"
+      },
+      {
+        "id": "B",
+        "text": "Create a Recovery Services vault in each Azure region that contains VMs to be protected, then configure the VMs with the vault in their own region"
+      },
+      {
+        "id": "C",
+        "text": "Keep one Australia East vault and enable Cross Region Restore so VMs in Southeast Asia can back up to it"
+      },
+      {
+        "id": "D",
+        "text": "Put all VMs in the same resource group as the Australia East vault because region does not affect Azure VM backup discovery"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The protected datasources are Azure VMs using Azure Backup with Recovery Services vaults. The question is about backup configuration, not restoring already protected recovery points.",
+    "sections": {
+      "correctAnswer": "**B. Create a Recovery Services vault in each Azure region that contains VMs to be protected, then configure the VMs with the vault in their own region**. Microsoft documents that to protect a datasource, the Recovery Services vault must be in the same region as the datasource; multiple source regions require multiple vaults.",
+      "technical": "The vault location is a hard design input, not just a cosmetic setting. In the Recovery Services vault creation guidance, Microsoft states that for you to create a vault to help protect any datasource, the vault must be in the same region as the datasource. It also warns that if datasources are in multiple regions, you should create a Recovery Services vault for each region. The Azure Backup support matrix says the same thing for Azure VM backup: backup is within a region, you need a vault in every Azure region that contains VMs you want to back up, and you cannot back up to a different region.\n\nThis explains the portal behavior in the scenario. The Australia East vault can discover and protect supported datasources in Australia East. It should not be expected to protect Southeast Asia VMs, so those VMs not appearing is a location design issue rather than proof of a VM extension or permissions problem. The supported fix is to create a second Recovery Services vault in Southeast Asia and configure the Southeast Asia VMs with that vault. You can still centralize monitoring and reporting across vaults by using Backup Center, Azure Monitor, reports, or governance tooling; the protected items themselves remain associated with regional vaults.\n\nCross Region Restore is commonly confused with cross-region backup onboarding. Cross Region Restore is a restore capability for a GRS Recovery Services vault that lets supported backup data be restored in an Azure paired secondary region. It does not mean any VM in any region can send its regular backups to a vault in a different primary region. Similarly, Recovery Services vaults can be moved across subscriptions or resource groups in supported situations, but moving vaults across Azure regions is not supported.",
+      "wrongOptions": {
+        "A": "Moving Recovery Services vaults across regions is not supported, and waiting until after the first backup does not change that. Misconception: vault location can be adjusted later like a resource-group move. Could be correct for supported moves across subscriptions or resource groups in the same subscription, but not between Azure regions.",
+        "C": "Cross Region Restore is for restoring replicated backup data in a paired secondary region from a GRS vault. It is not a way to protect VMs whose source region differs from the vault region. Misconception: any feature with cross-region in the name relaxes backup onboarding rules. Could be correct when the requirement is secondary-region restore for already protected supported workloads.",
+        "D": "Resource group placement does not override the vault-region requirement. A VM can be in a different resource group from the vault, but the vault must be in the correct region. Misconception: Azure discovery is mainly about resource group membership. Could be correct as an internal organization pattern, not as a supported backup-region solution."
+      },
+      "plainEnglish": "A Recovery Services vault is regional. If your VMs are in two Azure regions, you need backup vault coverage in both regions. The Australia East vault is the right home for Australia East VMs. It is not the right home for Southeast Asia VMs. Create another Recovery Services vault in Southeast Asia and protect those VMs there. Cross Region Restore sounds related, but it is about restoring copies to a paired region; it does not let Southeast Asia VMs send their normal backups to an Australia East vault.",
+      "analogy": "A company stores emergency copies in regional safety lockers. The Sydney locker accepts Sydney office records. The Singapore office needs its own Singapore locker for regular deposits, even if the company has central reporting about all lockers. A disaster-recovery copy might exist elsewhere, but it does not change where each office makes normal deposits.\n\n| Analogy | Azure reality |\n|---|---|\n| Regional safety locker | Recovery Services vault in a region |\n| Office records | VM backup data |\n| Sydney and Singapore offices | Australia East and Southeast Asia VMs |\n| Regular deposits | Scheduled backup jobs |\n| Disaster copy | Cross Region Restore with GRS |\n\n**Where the analogy breaks down:** Azure region pairs, replication settings, restore permissions, and backup policies follow exact service rules that a locker metaphor cannot fully model.",
+      "jargon": [
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure Backup management and storage entity that contains recovery points, policies, and protected items."
+        },
+        {
+          "term": "Datasource",
+          "definition": "The workload being protected by Azure Backup, such as an Azure virtual machine."
+        },
+        {
+          "term": "Azure region",
+          "definition": "A geographic Azure location where regional services and resources are deployed."
+        },
+        {
+          "term": "Backup Center",
+          "definition": "A centralized Azure management experience for monitoring and managing backups across supported vaults."
+        },
+        {
+          "term": "Cross Region Restore",
+          "definition": "An Azure Backup feature that can restore supported GRS-vault backup data in a paired secondary region."
+        },
+        {
+          "term": "GRS",
+          "definition": "Geo-redundant storage, a replication choice that copies data to a secondary paired region."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical Azure container for managing related resources, independent of the backup same-region requirement."
+        },
+        {
+          "term": "Protected item",
+          "definition": "A configured backup item inside a vault, such as a VM selected for protection."
+        }
+      ],
+      "watchOut": "- The vault must be in the same region as the datasource when protecting it.\n- Multiple source regions require multiple regional vaults.\n- Cross Region Restore is not cross-region backup onboarding.\n- Moving a Recovery Services vault across Azure regions is not supported.\n- Resource group organization does not replace location requirements.",
+      "productionTip": {
+        "official": "Microsoft's Recovery Services vault creation guidance says the vault must be in the same region as the datasource and recommends creating a vault for each region when datasources span regions. The support matrix states that backup is within a region.",
+        "recommendation": "Include region in vault naming, such as `rsv-prod-aue` and `rsv-prod-sea`. Use central reporting instead of forcing every workload into one vault, and assign RBAC at vault or regional resource-group scope to match support responsibilities."
+      },
+      "memoryTrick": "Backups enter the vault **in their own region**. The rule is about protection setup; it does not describe every secondary-region restore option.",
+      "examTip": "Clue words are **VMs in two regions**, **one vault**, and **VMs do not appear**. Choose one vault per source region. A harder question may mention cross-subscription backup; that does not remove the same-region requirement for the protected VM and vault."
+    },
+    "sources": [
+      {
+        "title": "Create and Configure Recovery Services Vaults - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-create-recovery-services-vault"
+      },
+      {
+        "title": "Azure Backup support matrix - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-support-matrix"
+      },
+      {
+        "title": "Overview of Recovery Services vaults - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.1-03",
+    "objective": "D5.2.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Contoso is creating a Recovery Services vault named `rsv-dev-aue` for development VMs in Australia East. The finance team wants the lowest storage replication cost for these nonproduction backups. No backup items have been configured in the vault yet. A separate production vault will later need secondary-region restore drills.\n\nWhat should you do for `rsv-dev-aue` before enabling any backups?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable backup first, then change the vault from geo-redundant to locally-redundant storage after the first recovery point is created"
+      },
+      {
+        "id": "B",
+        "text": "Enable Cross Region Restore on the development vault because it is required before selecting locally-redundant storage"
+      },
+      {
+        "id": "C",
+        "text": "Open the vault properties, update Backup Configuration, and set storage replication to Locally-redundant storage before configuring backup"
+      },
+      {
+        "id": "D",
+        "text": "Create an Azure Storage account with LRS and attach it to the Recovery Services vault as the backup storage target"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The development workload does not require Cross Region Restore. The vault is empty and no protected items have been configured. LRS is acceptable for the organization's nonproduction recovery requirements.",
+    "sections": {
+      "correctAnswer": "**C. Open the vault properties, update Backup Configuration, and set storage replication to Locally-redundant storage before configuring backup**. Microsoft documents that you must change the Recovery Services vault storage replication type before configuring backup; after backup is configured, the option is disabled.",
+      "technical": "Azure Backup automatically handles storage for a Recovery Services vault, but you choose how that vault storage is replicated. The create-and-configure guidance lists Geo-redundant, Locally-redundant, and Zone-redundant storage as the vault storage replication choices. It also gives the timing rule that matters most for the exam: change the storage replication type for a Recovery Services vault before you configure a backup in the vault. After you configure a backup, the option to modify is disabled. The Azure Backup support matrix repeats this behavior by saying that the storage replication type can be modified before backups are stored, but after backups begin in the vault, the replication type cannot be modified.\n\nFor the development vault, the business requirement is lowest storage replication cost for nonproduction backups. Microsoft's guidance recommends LRS to reduce storage costs when Azure is not being used as the primary backup storage endpoint. Because no backup items exist yet, this is the correct time to set the vault to locally redundant storage. Once a VM or another item is protected and backups begin, changing from GRS to LRS is not the normal supported workflow.\n\nCross Region Restore is a different decision. The configuration article states that Cross Region Restore is supported only for a Recovery Services vault that uses GRS replication. Therefore, the later production vault that needs secondary-region restore drills should be planned separately as GRS with Cross Region Restore if its workloads and regions are supported. Cross Region Restore is not a prerequisite for choosing LRS, and LRS does not support that feature. Administrators also do not attach a customer-created storage account for ordinary vault storage; the Recovery Services vault and Azure Backup handle that automatically.",
+      "wrongOptions": {
+        "A": "The timing is backward. After backup is configured or backups begin, the storage replication option is disabled in the normal workflow. Misconception: storage redundancy is a setting you can tune after observing the first backup. Could be correct for settings that remain mutable after protection starts, but not for Recovery Services vault storage replication type.",
+        "B": "Cross Region Restore requires GRS; it is not required for LRS and conflicts with the cost-minimizing development goal. Misconception: every resilience feature must be enabled before any storage choice. Could be correct for a production vault that must support supported secondary-region restore drills.",
+        "D": "Azure Backup automatically handles storage for the vault. You do not attach your own storage account as the standard Recovery Services vault backup target. Misconception: because many Azure logging features use a selected storage account, backup vault storage works the same way. Could be correct for services that explicitly ask for a storage account, such as flow logs, but not this vault setting."
+      },
+      "plainEnglish": "Choose the vault's storage durability before you put anything in the vault. For this development vault, the company wants the cheaper local-copy option, and no backups exist yet. So open the vault properties and set the backup storage replication type to locally redundant. Do not wait until the first backup succeeds. After backups are configured, Azure disables the normal change option because existing recovery points depend on the vault storage setup. A production vault with Cross Region Restore is a different design and would need geo-redundant storage.",
+      "analogy": "A records manager chooses what kind of safe to buy before storing documents. A local safe is cheaper. A service that also keeps copies in another city costs more. Once boxes are sealed and stored, swapping the whole storage design is no longer a simple switch.\n\n| Analogy | Azure reality |\n|---|---|\n| Choosing safe type | Setting vault storage replication |\n| Local safe | Locally redundant storage |\n| Copies in another city | Geo-redundant storage and Cross Region Restore planning |\n| Boxes already stored | Backups already configured or recovery points created |\n| Storage company handles shelves | Azure Backup automatically handles vault storage |\n\n**Where the analogy breaks down:** Azure storage replication is implemented by platform services and region-pair rules, not by physically replacing safes, and restore features have workload-specific support matrices.",
+      "jargon": [
+        {
+          "term": "Storage replication type",
+          "definition": "The Recovery Services vault setting that controls how backup storage is replicated."
+        },
+        {
+          "term": "Locally redundant storage",
+          "definition": "A lower-cost replication option that keeps multiple copies within a single datacenter or location boundary in a region."
+        },
+        {
+          "term": "Geo-redundant storage",
+          "definition": "A replication option that copies data to a secondary paired region and is required for Cross Region Restore."
+        },
+        {
+          "term": "Zone-redundant storage",
+          "definition": "A replication option that stores data across availability zones in supported regions."
+        },
+        {
+          "term": "Backup Configuration",
+          "definition": "The vault properties area where storage replication is reviewed or changed before backup is configured."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A point-in-time backup copy from which a protected item can be restored."
+        },
+        {
+          "term": "Cross Region Restore",
+          "definition": "A feature that allows supported backup data in a GRS vault to be restored in an Azure paired secondary region."
+        },
+        {
+          "term": "Primary backup storage endpoint",
+          "definition": "Microsoft guidance phrase for using Azure as the main backup storage location, which often points to higher redundancy choices."
+        }
+      ],
+      "watchOut": "- Set storage replication before configuring the first backup item.\n- After protection starts, changing the vault replication type is disabled in the normal workflow.\n- Cross Region Restore requires GRS, not LRS.\n- Azure Backup handles vault storage automatically; do not attach a storage account.\n- Azure Files snapshot tier has workload-specific storage behavior, so read the file-share details when applicable.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure Backup automatically handles storage for a Recovery Services vault and that the storage replication type must be changed before configuring backup. The same page recommends GRS when Azure is the primary backup storage endpoint and LRS to reduce storage costs when that resilience is not required.",
+        "recommendation": "Make redundancy a required field in the vault creation checklist. For production, explicitly decide whether Cross Region Restore justifies GRS. For development, record the business acceptance of LRS so future operators do not assume paired-region restore is available."
+      },
+      "memoryTrick": "Choose redundancy **before recovery points exist**. This simplification is the key vault rule, even though some workloads add their own backup-tier details.",
+      "examTip": "Clue words are **no backup items yet**, **lowest cost**, and **before enabling backups**. Pick LRS now. A harder question may say the vault must support Cross Region Restore; that changes the answer to a GRS-based production design before protection starts."
+    },
+    "sources": [
+      {
+        "title": "Create and Configure Recovery Services Vaults - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-create-recovery-services-vault"
+      },
+      {
+        "title": "Azure Backup support matrix - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-support-matrix"
+      },
+      {
+        "title": "Overview of Recovery Services vaults - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.1-04",
+    "objective": "D5.2.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "Woodgrove Bank is hardening a production Recovery Services vault for Azure VM, Azure Files, SQL Server in Azure VM, and SAP HANA in Azure VM backups. The security team wants recovery from accidental or malicious deletion, protection against destructive backup operations, the ability to restore supported data in a paired secondary region for audit drills, and least-privilege access for auditors who only review backup status. The vault is new and no items are protected yet.\n\nWhich three choices are appropriate? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use secure-by-default soft delete for backup data, recognizing the default 14-day retention and the ability to configure a longer soft-delete retention period"
+      },
+      {
+        "id": "B",
+        "text": "Enable immutability on the vault and lock it after validating the operational impact, so operations that could delete recovery points before expiry are blocked"
+      },
+      {
+        "id": "C",
+        "text": "Use a GRS Recovery Services vault and enable Cross Region Restore if secondary-region restore drills are required for supported workloads"
+      },
+      {
+        "id": "D",
+        "text": "Assign Backup Contributor to auditors because it is the least-privilege role for viewing backup management operations"
+      },
+      {
+        "id": "E",
+        "text": "Disable soft delete before configuring production backup so deleted items can be permanently removed immediately"
+      },
+      {
+        "id": "F",
+        "text": "Use LRS storage for the vault because Cross Region Restore works with any Recovery Services vault redundancy setting"
+      }
+    ],
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The organization accepts the cost and operational implications of production resilience features. Cross Region Restore is used only for workloads and regions supported by Azure Backup. Auditors do not need to create policies, trigger backup, or restore data.",
+    "sections": {
+      "correctAnswer": "**A. Use secure-by-default soft delete**, **B. Enable and later lock vault immutability after validation**, and **C. Use GRS with Cross Region Restore for supported secondary-region restore drills**. These choices align with Azure Backup's documented deletion recovery, immutable vault, and Cross Region Restore behavior for production protection.",
+      "technical": "Azure Backup has several protection layers, and the AZ-104 exam often tests their differences. Soft delete delays permanent deletion of backup data and vaults so you can recover from accidental or malicious deletion. Microsoft documents secure-by-default soft delete as enabled or enforced for Recovery Services vaults. Deleted backup data is retained for 14 days by default, and soft-delete retention can be configured from 14 to 180 days. Soft delete is a recovery buffer after deletion; it does not mean administrators should delete backup data casually.\n\nImmutable vault is a stronger control for destructive backup operations. An immutable vault blocks operations that could lead to loss of recovery points, such as stop protection with deletion of data and retention reductions that would delete existing recovery points before expiry. Immutability starts as a reversible setting, but it can be locked. Once enabled and locked, the setting cannot be disabled. Microsoft documents WORM-backed storage where available, and service-enforced immutability for other supported regions and workloads until WORM-backed storage is available. Locking immutability is therefore a production decision that should follow validation because it intentionally restricts future deletion and retention-reduction actions.\n\nCross Region Restore is about restore location, not deletion protection. The create-and-configure guidance says Cross Region Restore is supported only for a Recovery Services vault that uses GRS replication. With the option enabled at the vault level, supported Azure VMs and supported SQL Server or SAP HANA databases in Azure VMs can be restored in a secondary paired region according to documented support. Azure Files vaulted backup has its own cross-region capabilities and support details, so workload documentation still matters.\n\nRBAC completes the design, but the offered auditor role is wrong. Azure Backup has Backup Contributor, Backup Operator, and Backup Reader. Backup Reader can view backup management operations and fits monitoring or audit review. Backup Contributor can create and manage backup except deleting the vault and granting access to others, so it exceeds least privilege for auditors.",
+      "wrongOptions": {
+        "D": "Backup Contributor is not least privilege for auditors who only view status. Backup Reader is the documented viewing role for backup management operations. Misconception: contributor roles are safe for anyone who promises not to change settings. Could be correct for a backup administrator who must create policies and manage backup operations, subject to separation of duties.",
+        "E": "Soft delete is a production safety feature, and secure-by-default behavior is intended to preserve recoverability after accidental or malicious deletion. Disabling it conflicts with the requirement and might not be possible in enforced regions. Misconception: immediate cleanup is more valuable than backup deletion recovery. Could be correct only in a controlled nonproduction lab where policy permits it and recoverability is not required.",
+        "F": "Cross Region Restore is supported only for a Recovery Services vault that uses GRS replication. LRS does not provide the required paired-region replicated data. Misconception: restore features are independent of storage redundancy. Could be correct for a lower-cost vault that has no secondary-region restore requirement."
+      },
+      "plainEnglish": "Soft delete, immutability, and Cross Region Restore solve three different problems. Soft delete is a grace period after someone deletes backup data, so you can recover it. Immutability is a lock that stops people from doing certain destructive backup actions before recovery points expire. Cross Region Restore is for restoring supported backups in a paired secondary Azure region, and it needs geo-redundant storage. For people who only inspect backup status, do not give broad contributor access. Use a read-only backup role instead. Because this vault is new, this is the right time to choose the production storage and hardening settings.",
+      "analogy": "A bank archive uses several safeguards. A deleted record goes to a recovery tray for a limited time. A tamper-proof seal prevents staff from destroying archived records early. A duplicate archive in another city supports disaster drills. Auditors get a viewing window, not a key to rearrange the archive.\n\n| Analogy | Azure reality |\n|---|---|\n| Recovery tray | Soft delete retention |\n| Tamper-proof seal | Immutable vault setting |\n| Locked seal | Enabled and locked immutability |\n| Duplicate archive in paired city | GRS plus Cross Region Restore |\n| Viewing window | Backup Reader role |\n\n**Where the analogy breaks down:** Azure Backup enforces these controls through service APIs, RBAC, replication settings, WORM storage, and workload support matrices rather than physical keys and paper files.",
+      "jargon": [
+        {
+          "term": "Soft delete",
+          "definition": "An Azure Backup feature that retains deleted backup data for a configured period so it can be recovered before permanent deletion."
+        },
+        {
+          "term": "Secure by default",
+          "definition": "Azure Backup behavior where soft delete is enabled or enforced by default to protect against accidental or malicious deletion."
+        },
+        {
+          "term": "Immutable vault",
+          "definition": "A vault setting that blocks operations that could lead to loss of recovery points before expiry."
+        },
+        {
+          "term": "WORM",
+          "definition": "Write once, read many storage behavior that prevents modification or deletion during an immutable period."
+        },
+        {
+          "term": "Cross Region Restore",
+          "definition": "A Recovery Services vault feature that lets supported GRS-protected backup data be restored in an Azure paired secondary region."
+        },
+        {
+          "term": "GRS",
+          "definition": "Geo-redundant storage, which replicates data to a secondary paired Azure region and is required for Cross Region Restore."
+        },
+        {
+          "term": "Backup Contributor",
+          "definition": "An Azure Backup built-in role that can create and manage backup except deleting the vault and granting access to others."
+        },
+        {
+          "term": "Backup Operator",
+          "definition": "An Azure Backup built-in role that can perform many backup operations but cannot remove backup or manage backup policies like Backup Contributor can."
+        },
+        {
+          "term": "Backup Reader",
+          "definition": "An Azure Backup built-in role intended for viewing backup management operations."
+        },
+        {
+          "term": "Recovery point",
+          "definition": "A stored backup point that can be used to restore a protected item."
+        }
+      ],
+      "watchOut": "- Soft delete is a recovery buffer; immutability blocks certain destructive actions before expiry.\n- Locking immutability is irreversible, so test operational impact first.\n- Cross Region Restore requires GRS and workload support; LRS is not enough.\n- Backup Reader, not Backup Contributor, is the least-privilege built-in role for view-only auditors.\n- Backup roles do not control actions done inside MARS, DPM, or MABS client UIs in exactly the same way as portal, REST, PowerShell, or CLI operations.",
+      "productionTip": {
+        "official": "Microsoft documents secure-by-default soft delete for Azure Backup with 14-day default retention and configurable retention up to 180 days. It documents immutable vault states including disabled, enabled, and enabled-and-locked. It also states that Cross Region Restore is supported only for Recovery Services vaults using GRS.",
+        "recommendation": "For production vaults, decide on GRS, Cross Region Restore, soft-delete retention, and immutability before onboarding workloads. Assign auditors Backup Reader, separate policy owners from operators, and require a change review before locking immutability because rollback is not available after lock."
+      },
+      "memoryTrick": "Use **SIC** for hardened vaults: Soft delete, Immutability, Cross-region restore. The mnemonic is incomplete unless you also choose the right redundancy and RBAC roles.",
+      "examTip": "Clue words are **malicious deletion**, **destructive operations**, **paired secondary region**, and **auditors only review**. Select soft delete, immutable vault, and GRS plus Cross Region Restore. Reject Backup Contributor for auditors and reject LRS when secondary-region restore is required."
+    },
+    "sources": [
+      {
+        "title": "Secure by Default with Soft Delete for Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/secure-by-default"
+      },
+      {
+        "title": "Concept of Immutable Vault for Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-immutable-vault-concept"
+      },
+      {
+        "title": "Create and Configure Recovery Services Vaults - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-create-recovery-services-vault"
+      },
+      {
+        "title": "Manage Backups with Azure role-based access control - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-rbac-rs-vault"
+      },
+      {
+        "title": "Overview of Recovery Services vaults - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-recovery-services-vault-overview"
+      },
+      {
+        "title": "About Azure Files backup - Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/azure-file-share-backup-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

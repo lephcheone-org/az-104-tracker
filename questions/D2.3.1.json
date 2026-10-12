@@ -1,0 +1,881 @@
+[
+  {
+    "id": "D2.3.1-01",
+    "objective": "D2.3.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains a resource group named `rg-analytics`. A Linux analytics team needs an Azure file share that exposes POSIX-style behavior for containers. A Windows operations team wants to map a drive to the same namespace from Windows clients. You are creating the first file share and want to choose the supported protocol and network design.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create one NFS share and mount it from both the Linux containers and the Windows clients"
+      },
+      {
+        "id": "B",
+        "text": "Create one SMB share because every Azure file share can be switched between SMB and NFS after creation"
+      },
+      {
+        "id": "C",
+        "text": "Create separate shares if both protocols are required; use NFS only from Linux clients and secure NFS with restricted virtual network access"
+      },
+      {
+        "id": "D",
+        "text": "Create an NFS share in a general-purpose v2 standard account and expose it through the unrestricted public endpoint"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud in October 2026. The question is about Azure Files share creation and protocol selection, not Azure NetApp Files or Azure Blob NFS.",
+    "sections": {
+      "correctAnswer": "**C. Create separate shares if both protocols are required; use NFS only from Linux clients and secure NFS with restricted virtual network access**. Azure Files doesn't support accessing one file share by both SMB and NFS, and Microsoft documents NFS Azure file shares as Linux-oriented shares that rely on network-level access controls rather than Windows SMB identity behavior.",
+      "technical": "Azure Files supports SMB and NFS as industry-standard ways to mount file shares, but the protocol is a design boundary for the share. The protocol decision is evaluated at creation time for a file share. A single Azure file share doesn't expose the same data through both SMB and NFS. For classic file shares in a FileStorage account, you can have separate SMB and NFS shares in the same storage account, but they remain different shares with separate namespaces.\n\nThe practical decision sequence is:\n\n1. Identify the client operating systems and application semantics. SMB is the normal choice for Windows, mixed Windows/Linux/macOS file sharing, lift-and-shift Windows applications, and identity-based access with Kerberos.\n2. Choose NFS when Linux workloads need POSIX semantics, case sensitivity, symbolic links, or UNIX-style permissions. Azure Files NFS uses NFS 4.1 and isn't supported for Windows clients.\n3. Place NFS on SSD file shares. Microsoft documents NFS as SSD-only, while SMB can use SSD or HDD depending on the billing and account model.\n4. Add network restrictions before treating NFS as reachable. NFS Azure file shares don't use user-based identity authentication, so clients must connect through private endpoints or service endpoints from allowed virtual network subnets.\n\nThe exception to avoid is assuming that a storage account can magically translate one share between Win32 SMB semantics and POSIX NFS semantics. A storage account may contain multiple classic shares, but an individual share doesn't become a dual-protocol file server. Windows access to NFS Azure file shares is explicitly unsupported, so a Windows drive-mapping requirement points to SMB or to another architecture.",
+      "wrongOptions": {
+        "A": "NFS Azure file shares aren't supported for Windows, so a Windows team can't map the NFS share as the answer suggests. Misconception: NFS is a universal file protocol that Azure Files exposes to every operating system. Could be correct when: the clients are supported Linux clients and the design uses restricted network access for NFS.",
+        "B": "Azure Files doesn't support one individual file share being accessed with both SMB and NFS, and the protocol choice isn't a casual post-creation toggle for one namespace. Misconception: a cloud share behaves like a multiprotocol NAS volume with automatic protocol conversion. Could be correct when: you create separate SMB and NFS classic shares within a suitable storage account for separate datasets.",
+        "D": "NFS Azure file shares require SSD storage and network restrictions; pay-as-you-go general-purpose v2 standard accounts are HDD SMB-only for Azure Files. Misconception: enabling NFS is just an account checkbox like some Blob Storage settings. Could be correct when: you are creating an SMB pay-as-you-go share in a StorageV2 account rather than an NFS share."
+      },
+      "plainEnglish": "Think of SMB and NFS as two different languages for talking to file storage. Azure Files can speak both languages, but not both for the same folder tree at the same time. SMB is the language most Windows file shares use, and it works well when people sign in with Windows or Microsoft Entra-related identities. NFS is mainly for Linux-style applications that expect UNIX permissions and case-sensitive file names. Because Azure Files NFS doesn't identify each user the same way SMB can, you must control which networks can reach it. If one team needs Windows drive mapping and another needs Linux POSIX behavior, design two shares or reconsider the app architecture instead of forcing one share to do both jobs.",
+      "analogy": "Imagine a service desk that can print either English forms or engineering forms. Each cabinet is created for one form style, and people must use the correct counter to work with it. A Windows team expecting English forms can't use a cabinet built only for engineering forms.\n\n| Analogy | Azure reality |\n|---|---|\n| English counter | SMB file share |\n| Engineering counter | NFS file share |\n| One cabinet with one form style | One Azure file share with one protocol |\n| Separate cabinets in one building | Separate classic shares in one storage account |\n| Door badge to reach engineering counter | Private endpoint or service endpoint for NFS |\n\n**Where the analogy breaks down:** Azure protocol choices also affect authentication, file locking, case sensitivity, billing choices, and supported client operating systems. Real file access uses network packets and exact protocol versions, not paper forms.",
+      "jargon": [
+        {
+          "term": "Azure Files",
+          "definition": "A managed Azure service for cloud file shares that can be mounted by supported clients through SMB or NFS."
+        },
+        {
+          "term": "SMB",
+          "definition": "Server Message Block, a file sharing protocol commonly used by Windows file shares and supported by Azure Files."
+        },
+        {
+          "term": "NFS",
+          "definition": "Network File System, a protocol commonly used by Linux and UNIX-style applications. Azure Files supports NFS version 4.1."
+        },
+        {
+          "term": "POSIX",
+          "definition": "A family of UNIX-style operating system standards that influence file permissions, case sensitivity, links, and application behavior."
+        },
+        {
+          "term": "FileStorage account",
+          "definition": "A storage account kind used for provisioned Azure Files shares, including SSD and some HDD provisioned models."
+        },
+        {
+          "term": "StorageV2 account",
+          "definition": "A general-purpose v2 storage account kind used by pay-as-you-go HDD classic SMB file shares and other storage services."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A network interface with a private IP address in a virtual network that provides private access to an Azure resource."
+        },
+        {
+          "term": "Service endpoint",
+          "definition": "A virtual network feature that lets traffic from selected subnets reach Azure services over the Azure backbone and be identified by subnet."
+        },
+        {
+          "term": "Win32 semantics",
+          "definition": "Windows-style file system behavior such as case-insensitive names and Windows access control behavior."
+        },
+        {
+          "term": "UNIX-style permissions",
+          "definition": "Permissions represented with owner, group, and mode bits commonly used by Linux file systems."
+        }
+      ],
+      "watchOut": "- One Azure file share can't serve the same files through both SMB and NFS.\n- Azure Files NFS is for Linux clients, not Windows drive mapping.\n- NFS uses network-level access controls, so an unrestricted public endpoint isn't the right security model.\n- NFS requires SSD media; HDD pay-as-you-go shares are SMB only.\n- If both teams need Azure Files, separate the data or create separate shares with clear ownership.",
+      "productionTip": {
+        "official": "Microsoft documents SMB and NFS as separate Azure Files protocols and states that an individual Azure file share can't be accessed with both. The NFS documentation also states that Windows clients aren't supported and that clients must use private endpoints or service endpoints with virtual network restrictions.",
+        "recommendation": "Choose the protocol during workload design, not after deployment. For mixed estates, put Windows user shares on SMB with identity-based authentication, put Linux-only POSIX workloads on NFS behind private networking, and avoid promising a shared cross-protocol namespace unless another product explicitly supports it."
+      },
+      "memoryTrick": "Remember **one share, one speaking style**: SMB for Windows-friendly sharing, NFS for Linux/POSIX sharing. This is a simplification because Linux and macOS can also use SMB, but it protects you from choosing NFS for Windows clients.",
+      "examTip": "Clue words are **same namespace**, **Linux containers**, **Windows clients**, and **NFS**. Rule out any answer that puts SMB and NFS on one Azure file share or mounts Azure Files NFS from Windows. A harder version may mention Microsoft.FileShares; that resource provider currently targets NFS file shares, while SMB requirements still point you back to classic file shares in storage accounts."
+    },
+    "sources": [
+      {
+        "title": "What is Azure Files?",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-introduction"
+      },
+      {
+        "title": "Plan an Azure Files deployment",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+      },
+      {
+        "title": "NFS file shares in Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/files-nfs-protocol"
+      },
+      {
+        "title": "SMB File Shares in Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/files-smb-protocol"
+      },
+      {
+        "title": "Networking Considerations for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-networking-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.1-02",
+    "objective": "D2.3.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You plan to create new classic Azure file shares for two workloads.\n\n| Workload | Requirement |\n|---|---|\n| `acct-smb` | SMB share for a departmental app, predictable capacity and performance, HDD media is acceptable |\n| `ml-nfs` | NFS 4.1 share for a Linux machine-learning pipeline, low latency is required |\n\nYou want to use currently recommended billing guidance where it fits. Which two choices should you make? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create `acct-smb` in a `FileStorage` account that uses a provisioned v2 standard SKU such as `StandardV2_LRS`"
+      },
+      {
+        "id": "B",
+        "text": "Create `ml-nfs` in a `StorageV2` account that uses `Standard_LRS` and select NFS when the share is created"
+      },
+      {
+        "id": "C",
+        "text": "Create `ml-nfs` on SSD storage, using a `FileStorage` provisioned account or a Microsoft.FileShares resource that supports NFS"
+      },
+      {
+        "id": "D",
+        "text": "Use pay-as-you-go billing for both shares because Microsoft recommends it for all new Azure Files deployments"
+      },
+      {
+        "id": "E",
+        "text": "Use a Microsoft.FileShares resource for `acct-smb` because it eliminates the storage account and supports SMB"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The SMB workload is a classic file share in a storage account. The NFS workload can use a classic FileStorage share unless the design deliberately uses the newer Microsoft.FileShares resource model.",
+    "sections": {
+      "correctAnswer": "**A. Create `acct-smb` in a `FileStorage` account that uses a provisioned v2 standard SKU such as `StandardV2_LRS`** and **C. Create `ml-nfs` on SSD storage, using a `FileStorage` provisioned account or a Microsoft.FileShares resource that supports NFS**. Provisioned v2 is recommended for new Azure Files deployments, HDD provisioned v2 can support SMB classic shares, and NFS Azure file shares require SSD storage.",
+      "technical": "Azure Files now has several combinations of account kind, media tier, billing model, and protocol. The exam usually expects you to match these combinations rather than remember only the word premium. For classic file shares, a storage account's kind and SKU define which file shares can be created in it.\n\nFor the SMB departmental app, the stated need is predictable capacity and performance while HDD is acceptable. Provisioned v2 supports HDD classic SMB file shares in `FileStorage` accounts through standard v2 SKUs such as `StandardV2_LRS`, `StandardV2_ZRS`, `StandardV2_GRS`, and `StandardV2_GZRS`. In provisioned v2, storage, IOPS, and throughput are chosen separately, and billing is based on provisioned quantities rather than actual usage.\n\nFor the NFS machine-learning pipeline, the protocol and latency requirement steer the design toward SSD. Microsoft documents NFS Azure file shares as SSD-only. Classic NFS shares can be created in FileStorage accounts with provisioned models, and the newer Microsoft.FileShares resource provider supports NFS shares using provisioned v2. HDD pay-as-you-go is SMB-only, so it can't host the NFS workload.\n\nThe order of evaluation is:\n\n1. Start with the protocol. NFS eliminates HDD and pay-as-you-go combinations.\n2. Pick the media tier. Low latency favors SSD; cost-effective general SMB can use HDD.\n3. Choose a supported resource/account model. Classic shares live inside storage accounts; Microsoft.FileShares creates top-level NFS shares.\n4. Match billing. Provisioned v2 is the current recommended default for new deployments, but the answer still has to match the protocol and media support table.\n\nProvisioned v1 and pay-as-you-go remain supported. They are not the default recommendation for a new design unless a scenario gives a specific reason.",
+      "wrongOptions": {
+        "B": "A `StorageV2` account using `Standard_LRS` creates HDD pay-as-you-go classic file shares, and that model is SMB-only for Azure Files. Misconception: a standard general-purpose account can create any file protocol if the portal shows file shares. Could be correct when: the target is an SMB pay-as-you-go HDD share and NFS isn't required.",
+        "D": "Microsoft doesn't recommend pay-as-you-go for all new Azure Files deployments; the billing guidance says to use provisioned v2 for new deployments unless there is a reason to choose another model. Pay-as-you-go is also unavailable for NFS shares. Misconception: usage-based billing is always the modern cloud default. Could be correct when: you specifically need an HDD SMB classic file share whose cost profile fits pay-as-you-go.",
+        "E": "Microsoft.FileShares currently supports NFS file shares, so it is not the correct model for the SMB departmental share. Misconception: the newest resource provider automatically replaces all storage-account-based Azure Files deployments. Could be correct when: the workload is a new NFS deployment and the region and features required by Microsoft.FileShares are supported."
+      },
+      "plainEnglish": "Azure Files has several shelves, and not every file share can go on every shelf. HDD storage is cheaper and works for many SMB Windows-style shares. SSD storage is faster and is required for Azure Files NFS. Provisioned v2 is like reserving a specific amount of space, speed, and bandwidth. You pay for what you reserve, so it is easier to budget and tune. Pay-as-you-go is like paying for the amount stored and the number of actions, but it applies only to HDD SMB classic shares. Therefore, the departmental SMB app can use a standard provisioned v2 FileStorage account, while the Linux NFS pipeline must be placed on SSD-capable Azure Files storage.",
+      "analogy": "Picture a warehouse with storage lanes. Some lanes are lower-cost truck lanes, and some are fast conveyor lanes. You can put ordinary office boxes on the truck lane if speed is not critical, but a special machine that only fits on a conveyor can't be sent to the truck lane.\n\n| Analogy | Azure reality |\n|---|---|\n| Truck lane | HDD Azure file share |\n| Conveyor lane | SSD Azure file share |\n| Paying for reserved lane width and speed | Provisioned v2 billing |\n| Paying by package count and handling | Pay-as-you-go billing |\n| Linux-only special machine | NFS workload |\n| Department office boxes | SMB workload |\n\n**Where the analogy breaks down:** Azure settings include redundancy, resource providers, SKUs, protocol support, and regional availability. A warehouse lane doesn't model IOPS, throughput guardrails, or network protocol negotiation.",
+      "jargon": [
+        {
+          "term": "Classic file share",
+          "definition": "An Azure file share deployed inside a storage account through the Microsoft.Storage resource provider."
+        },
+        {
+          "term": "FileStorage",
+          "definition": "A storage account kind used for provisioned Azure Files shares and limited to file shares rather than blobs, queues, and tables."
+        },
+        {
+          "term": "StorageV2",
+          "definition": "A general-purpose v2 storage account kind that can host pay-as-you-go HDD classic SMB file shares and other Azure Storage services."
+        },
+        {
+          "term": "Provisioned v2",
+          "definition": "An Azure Files billing model where storage, IOPS, and throughput are provisioned separately and billed based on provisioned amounts."
+        },
+        {
+          "term": "Pay-as-you-go",
+          "definition": "An Azure Files billing model where used storage, transactions, and data transfer determine cost. For Azure Files, it applies to HDD classic SMB shares."
+        },
+        {
+          "term": "SSD",
+          "definition": "Solid state drive media tier, also called premium in some UI contexts, used for lower-latency Azure file shares."
+        },
+        {
+          "term": "HDD",
+          "definition": "Hard disk drive media tier, also called standard in some contexts, used for cost-effective general-purpose Azure file shares."
+        },
+        {
+          "term": "SKU",
+          "definition": "The stock keeping unit value for a storage account, such as `StandardV2_LRS` or `PremiumV2_LRS`, that affects media, redundancy, and billing."
+        },
+        {
+          "term": "IOPS",
+          "definition": "Input/output operations per second, a performance measure for storage requests."
+        },
+        {
+          "term": "Throughput",
+          "definition": "The rate at which data can be transferred, commonly measured by Azure Files in MiB per second."
+        }
+      ],
+      "watchOut": "- Do not put NFS Azure file shares in HDD pay-as-you-go accounts.\n- `Premium` and `Standard` are not enough by themselves; check account kind, SKU, billing model, and protocol.\n- Provisioned v2 can be SSD or HDD for classic shares, but Microsoft.FileShares is NFS-focused.\n- Pay-as-you-go remains supported, yet it is not the recommended default for new deployments.\n- Low latency and NFS both push the design toward SSD storage.",
+      "productionTip": {
+        "official": "Microsoft's billing documentation states that provisioned v2 lets you provision storage, IOPS, and throughput independently and recommends it for new Azure Files deployments. The planning and NFS documentation state that NFS uses SSD storage, while HDD pay-as-you-go classic shares are SMB-only.",
+        "recommendation": "Build a small compatibility matrix during design reviews: protocol, client OS, media tier, billing model, redundancy, and region. Treat any proposed combination that crosses rows, such as NFS plus StorageV2 pay-as-you-go, as invalid until the official availability table proves otherwise."
+      },
+      "memoryTrick": "Use **protocol first, pricing second**. NFS narrows the shelves before cost optimization begins. This is a simplification because regional availability and redundancy can still remove choices after the protocol decision.",
+      "examTip": "Clue words are **NFS 4.1**, **Linux**, **HDD acceptable**, and **predictable capacity and performance**. Select choices that map each workload to a supported account and media combination. A harder version may offer `Premium_LRS` provisioned v1, which can be valid for SSD shares but isn't the current default recommendation when provisioned v2 is available."
+    },
+    "sources": [
+      {
+        "title": "Create a classic file share - Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+      },
+      {
+        "title": "Understand Azure Files Billing",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/understanding-billing"
+      },
+      {
+        "title": "Plan an Azure Files deployment",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+      },
+      {
+        "title": "NFS file shares in Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/files-nfs-protocol"
+      },
+      {
+        "title": "Azure Files Scale and Performance Targets",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-scale-targets"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.1-03",
+    "objective": "D2.3.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a standard pay-as-you-go Azure file share named `archive` in a `StorageV2` account. The share currently has a quota of 5 TiB. The records team expects the used capacity to grow to 40 TiB during the next year. The workload is SMB only, and no extra IOPS guarantee is required.\n\nYou need to allow the share to grow while minimizing changes and avoiding a move to SSD storage.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Edit the file share quota and set it to a larger value, up to the current pay-as-you-go maximum"
+      },
+      {
+        "id": "B",
+        "text": "Create a new premium `FileStorage` account because standard Azure file shares can't exceed 5 TiB"
+      },
+      {
+        "id": "C",
+        "text": "Enable the NFS protocol on the existing share because NFS is required for shares larger than 5 TiB"
+      },
+      {
+        "id": "D",
+        "text": "Increase the storage account key length because large file shares require stronger Shared Key credentials"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The share is a classic SMB pay-as-you-go share. Data protection settings such as snapshots and soft delete are outside this objective and intentionally not used in the scenario.",
+    "sections": {
+      "correctAnswer": "**A. Edit the file share quota and set it to a larger value, up to the current pay-as-you-go maximum**. Microsoft documents that pay-as-you-go Azure file shares can grow up to 100 TiB, and the large file share setting is a legacy concern for older accounts that may need their quota increased.",
+      "technical": "Quota means different things depending on the Azure Files billing model. In a pay-as-you-go classic file share, quota is a maximum share size setting. It helps limit growth and costs, but it doesn't directly determine the bill. Billing is based on used storage, transactions, and data transfer. In provisioned billing models, the quota or provisioned capacity is the amount of storage capacity you pay for, whether or not the application uses all of it.\n\nFor this scenario, the storage account is `StorageV2`, the media is standard HDD, and the protocol is SMB. Current Microsoft scale documentation says all pay-as-you-go Azure file shares can grow up to 100 TiB. The older large file share feature was historically used to let pay-as-you-go shares grow beyond 5 TiB. If an older storage account predates that feature, you may need to increase the file share quota; you don't need to recreate the share as premium just because the target is 40 TiB.\n\nThe configuration order is:\n\n1. Confirm the share is a pay-as-you-go SMB classic file share.\n2. Check the desired maximum size against the current pay-as-you-go share maximum.\n3. Use the portal's **Edit quota** action or an equivalent PowerShell or Azure CLI update command to raise the quota.\n4. Monitor used capacity and transactions because the account still shares storage account limits with other resources.\n\nThe exception is performance. Raising quota only allows more data to be stored; it doesn't turn the share into SSD storage or reserve extra IOPS. If the records application later requires guaranteed IOPS or independent throughput provisioning, that is a billing and media tier redesign, not a quota-only change.",
+      "wrongOptions": {
+        "B": "Standard pay-as-you-go shares aren't limited to 5 TiB in current Azure Files behavior; Microsoft documents a 100 TiB maximum for pay-as-you-go shares. Misconception: the old large file share threshold is still the normal ceiling for every standard file share. Could be correct when: the workload needs SSD latency or provisioned performance rather than simply more SMB capacity.",
+        "C": "NFS is neither required nor appropriate for this Windows-style SMB archive scenario, and an existing share doesn't become larger by changing to NFS. Misconception: large capacity is tied to Linux or NFS semantics. Could be correct when: a separate Linux workload needs POSIX behavior on a supported SSD NFS share.",
+        "D": "Storage account keys are authentication secrets and their length isn't a capacity control for Azure file shares. Misconception: stronger credentials unlock larger storage features. Could be correct when: rotating compromised keys or strengthening access practices, not when increasing share capacity."
+      },
+      "plainEnglish": "The quota is the share's size limit. For this standard pay-as-you-go share, making the quota bigger lets the archive grow, and the bill follows what is actually stored and used. You don't have to move to premium storage only because the old number was 5 TiB. Think of the quota as the maximum line painted on the storage room wall. If the organization needs more room and Azure supports that room size, move the line higher. That does not make the floor faster or stronger; it just allows more boxes to be stored before the share says it is full.",
+      "analogy": "A warehouse manager has a marked boundary around the archive area. The team is currently allowed to occupy five aisles, but the building has enough space for many more. The manager can move the boundary marker without replacing the entire warehouse.\n\n| Analogy | Azure reality |\n|---|---|\n| Boundary marker | File share quota |\n| Boxes already stored | Used storage |\n| Warehouse bill based on occupied space and handling | Pay-as-you-go storage and transactions |\n| Faster automated warehouse | SSD or provisioned performance design |\n| Old five-aisle paperwork | Legacy large file share configuration history |\n\n**Where the analogy breaks down:** Azure also enforces storage account limits, transaction costs, throughput ceilings, and API rules. A physical boundary line doesn't capture those shared service limits.",
+      "jargon": [
+        {
+          "term": "Quota",
+          "definition": "The configured maximum size for an Azure file share. In pay-as-you-go shares, it limits growth but does not directly set the bill."
+        },
+        {
+          "term": "Pay-as-you-go",
+          "definition": "A usage-based Azure Files billing model where costs include used storage, transactions, and data transfer."
+        },
+        {
+          "term": "StorageV2",
+          "definition": "A general-purpose v2 storage account kind that can host pay-as-you-go HDD Azure file shares."
+        },
+        {
+          "term": "SMB",
+          "definition": "Server Message Block, the protocol used by many Windows-style file shares."
+        },
+        {
+          "term": "HDD",
+          "definition": "Hard disk drive media tier used for standard, cost-effective Azure file shares."
+        },
+        {
+          "term": "SSD",
+          "definition": "Solid state drive media tier used when lower latency or supported NFS designs are needed."
+        },
+        {
+          "term": "Large file share feature",
+          "definition": "A legacy Azure Files setting that historically allowed pay-as-you-go shares to grow beyond 5 TiB; current pay-as-you-go shares can grow up to 100 TiB."
+        },
+        {
+          "term": "Storage account key",
+          "definition": "An account-level secret that can authorize access to storage resources when Shared Key access is enabled."
+        },
+        {
+          "term": "IOPS",
+          "definition": "Input/output operations per second, a performance measure rather than a capacity setting."
+        }
+      ],
+      "watchOut": "- In pay-as-you-go, quota controls maximum growth; it is not provisioned billing.\n- Current pay-as-you-go Azure file shares can grow up to 100 TiB.\n- Increasing quota doesn't provide SSD latency, reserved IOPS, or new protocol support.\n- The storage account remains a shared performance and capacity boundary for resources inside it.\n- Older accounts may show 5 TiB history, but the remedy is usually a quota increase, not a full migration.",
+      "productionTip": {
+        "official": "Microsoft documents that pay-as-you-go file shares can grow up to 100 TiB and that quota in this model is used to limit share size, with no direct billing impact from setting quota to the maximum. Microsoft also notes that storage account data-plane limits still apply.",
+        "recommendation": "Set quota high enough for forecasted growth but keep alerting on used capacity and transactions. For archives, test restore and access patterns separately; a large quota only solves capacity, while performance and cost surprises usually come from active scans or bulk migrations."
+      },
+      "memoryTrick": "For standard pay-as-you-go shares, **quota is a guardrail, not a purchase order**. This is a simplification because setting a very high guardrail can still permit unexpected growth that creates higher usage charges.",
+      "examTip": "Clue words are **pay-as-you-go**, **5 TiB**, **40 TiB**, and **no extra IOPS guarantee**. Choose the answer that changes quota in place. A harder version may switch the account to provisioned v2; then the same word quota means provisioned capacity, and increasing it changes what you pay for."
+    },
+    "sources": [
+      {
+        "title": "Azure Files Scale and Performance Targets",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-scale-targets"
+      },
+      {
+        "title": "Modify an Azure File Share - Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/modify-file-share"
+      },
+      {
+        "title": "Understand Azure Files Billing",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/understanding-billing"
+      },
+      {
+        "title": "Create a classic file share - Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.1-04",
+    "objective": "D2.3.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You are creating a standard pay-as-you-go Azure file share named `migrate` for a file server migration. The migration tool will enumerate directories, create many files, and copy data continuously for several days. After the migration, the share will host reference documents that users open only occasionally.\n\nWhich access tier should you choose when creating the share?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Cool, because it has the lowest at-rest storage price and is always cheapest for document libraries"
+      },
+      {
+        "id": "B",
+        "text": "Hot, because it is the only standard tier that supports SMB writes during a migration"
+      },
+      {
+        "id": "C",
+        "text": "Transaction optimized, because the initial migration creates a large number of file operations"
+      },
+      {
+        "id": "D",
+        "text": "Premium, because access tiers apply only to SSD shares"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The share is a classic HDD pay-as-you-go SMB file share. The question is about standard access tiers, not Blob Storage access tiers or backup policy selection.",
+    "sections": {
+      "correctAnswer": "**C. Transaction optimized, because the initial migration creates a large number of file operations**. Microsoft recommends starting pay-as-you-go classic file shares in the transaction optimized tier during migration, then choosing a tier from normal usage after the migration finishes.",
+      "technical": "Standard pay-as-you-go Azure file shares have three access tiers: transaction optimized, hot, and cool. These tiers don't move the share to different disks. Microsoft states that all three are stored on the same HDD storage hardware. The difference is the price balance between data stored at rest and transactions.\n\nTransaction optimized has the highest at-rest storage price but the lowest transaction prices. Hot is the middle choice, with lower storage price than transaction optimized and higher transaction price. Cool has the lowest at-rest storage price and the highest transaction prices. The tier you choose should match the activity pattern, not merely the file extension or the department name.\n\nMigration is a special period. Copy tools often list folders, open files, create directories, write ranges, set metadata, and verify content. A user may describe this as \"copying files,\" but Azure Files bills many SMB and FileREST operations as transactions in a pay-as-you-go model. Microsoft specifically recommends choosing transaction optimized during initial migration, then evaluating transaction counts after the workload settles.\n\nThe order is:\n\n1. Create the pay-as-you-go share for the migration in transaction optimized.\n2. Complete the bulk copy and validation.\n3. Run the workload for a representative period after migration.\n4. Review storage metrics and pricing calculator inputs.\n5. Move to hot or cool only if normal access patterns make that cheaper.\n\nThere are costs and throttles around tier changes. Moving between tiers incurs per-file transaction charges, and moving from cool to hotter tiers can include data retrieval charges. Microsoft also documents limits around how frequently a share's tier can be changed. Therefore, the first tier should match the migration phase rather than assume the final archive state.",
+      "wrongOptions": {
+        "A": "Cool may become cost-effective after the share becomes quiet, but it is a poor initial choice for a heavy migration because cool has the highest transaction prices. Misconception: lowest storage price always means lowest total bill. Could be correct when: the share is already stable, infrequently accessed, and transaction counts have been measured.",
+        "B": "Hot supports SMB writes, but it isn't the only standard tier that supports them. The differentiator among standard access tiers is pricing for storage versus transactions, not basic SMB write capability. Misconception: access tier names define allowed operations. Could be correct when: measured post-migration activity makes hot cheaper than transaction optimized or cool.",
+        "D": "Premium isn't one of the standard pay-as-you-go access tiers; standard access tiers apply to HDD pay-as-you-go classic shares. Misconception: tier words in Azure Files always mean premium performance levels. Could be correct when: the workload requires SSD latency or provisioned performance rather than standard pay-as-you-go pricing."
+      },
+      "plainEnglish": "A migration is busy even if the final library will be quiet. Copying a server does much more than save one big file. It asks for folder lists, opens many files, writes pieces, creates directories, and checks results. In the standard pay-as-you-go model, those actions count as transactions. Transaction optimized is the tier built to make many actions cheaper. After the move, you can watch real usage and decide whether hot or cool costs less for the ongoing document library. Choosing cool on day one can save a little on storage while making the busy copy phase unnecessarily expensive.",
+      "analogy": "A moving company offers three pricing plans for a warehouse. One plan charges more rent but very little each time a worker handles a box. Another charges less rent but more for each box touch. During moving week, workers touch thousands of boxes, so the low-handling-fee plan wins.\n\n| Analogy | Azure reality |\n|---|---|\n| Warehouse rent | At-rest storage price |\n| Box handling fee | File transaction price |\n| Moving week | File server migration |\n| Quiet records room | Post-migration reference library |\n| Change pricing plan later | Change access tier after measuring usage |\n\n**Where the analogy breaks down:** Azure counts specific SMB and FileREST operations, not human box touches. Tier switches themselves can create charges and have timing limits, so changing plans isn't frictionless.",
+      "jargon": [
+        {
+          "term": "Access tier",
+          "definition": "A setting on pay-as-you-go Azure file shares that changes the pricing balance for stored data and transactions."
+        },
+        {
+          "term": "Transaction optimized",
+          "definition": "A standard Azure Files access tier with higher storage price but lower transaction prices, useful for high-transaction workloads."
+        },
+        {
+          "term": "Hot",
+          "definition": "A standard Azure Files access tier that balances storage and transaction prices between transaction optimized and cool."
+        },
+        {
+          "term": "Cool",
+          "definition": "A standard Azure Files access tier with lower storage price but higher transaction prices and possible data retrieval costs when moving to hotter tiers."
+        },
+        {
+          "term": "Pay-as-you-go",
+          "definition": "A billing model where used storage, transactions, and transfer costs drive the bill."
+        },
+        {
+          "term": "HDD",
+          "definition": "Hard disk drive media tier used by standard Azure Files shares."
+        },
+        {
+          "term": "SMB",
+          "definition": "Server Message Block, a file sharing protocol used by Windows and supported by Azure Files."
+        },
+        {
+          "term": "FileREST",
+          "definition": "The REST API for Azure Files data operations on classic file shares."
+        },
+        {
+          "term": "At-rest storage",
+          "definition": "Data stored on disk in Azure Files, as opposed to the operations used to access or modify it."
+        },
+        {
+          "term": "Pricing calculator",
+          "definition": "A Microsoft tool used to estimate Azure costs from expected usage inputs."
+        }
+      ],
+      "watchOut": "- Standard access tiers are pricing tiers on the same HDD hardware, not separate performance hardware.\n- Migration traffic usually has unusually high transaction counts.\n- Cool can be more expensive than transaction optimized if transaction volume is high enough.\n- Switching tiers can add per-file transaction costs and, from cool to warmer tiers, retrieval charges.\n- Choose the long-term tier from measured post-migration usage, not from the migration week.",
+      "productionTip": {
+        "official": "Microsoft documents transaction optimized, hot, and cool tiers for pay-as-you-go classic file shares and states that transaction optimized is recommended during initial migration because migrations generate many transactions. The billing documentation also explains that tier changes can incur transaction and retrieval costs.",
+        "recommendation": "Create migration shares in transaction optimized, collect several normal-business-cycle days of metrics after cutover, and then model hot or cool. Keep a note of the tier change date because a short observation window that includes migration traffic can distort the economics."
+      },
+      "memoryTrick": "During a move, pick the tier that makes **touches cheap**. This is a simplification because after the move, stored capacity may dominate cost and a cooler tier may become better.",
+      "examTip": "Clue words are **migration tool**, **enumerate**, **create many files**, and **several days**. Those words mean transactions matter. A harder question may ask about a quiet share that is already migrated; then cool or hot might be correct after transaction metrics prove the pattern."
+    },
+    "sources": [
+      {
+        "title": "Create a classic file share - Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+      },
+      {
+        "title": "Understand Azure Files Billing",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/understanding-billing"
+      },
+      {
+        "title": "Modify an Azure File Share - Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/modify-file-share"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.1-05",
+    "objective": "D2.3.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You create an SMB Azure file share named `finance` in a storage account named `stfinfiles`. A Windows 11 user working from home can't map drive `Z:` to `\\\\stfinfiles.file.core.windows.net\\finance`. The same user can reach HTTPS websites, and DNS resolves the storage account name. You suspect the home ISP blocks outbound SMB traffic.\n\nWhich two actions are appropriate troubleshooting or design responses? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Run `Test-NetConnection -ComputerName stfinfiles.file.core.windows.net -Port 445` from the client"
+      },
+      {
+        "id": "B",
+        "text": "Mount the SMB share by appending a SAS token to the UNC path"
+      },
+      {
+        "id": "C",
+        "text": "Use a VPN or ExpressRoute path to an Azure virtual network and reach the share through private connectivity"
+      },
+      {
+        "id": "D",
+        "text": "Change the file share to NFS so Windows can use TCP port 2049 instead of TCP port 445"
+      },
+      {
+        "id": "E",
+        "text": "Disable encryption in transit because encrypted SMB uses HTTPS instead of port 445"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The user needs direct Windows SMB access unless an alternate cache architecture is selected. The scenario doesn't require changing identity provider settings.",
+    "sections": {
+      "correctAnswer": "**A. Run `Test-NetConnection -ComputerName stfinfiles.file.core.windows.net -Port 445` from the client** and **C. Use a VPN or ExpressRoute path to an Azure virtual network and reach the share through private connectivity**. SMB requires TCP port 445, and Microsoft documents VPN or ExpressRoute private connectivity as alternatives when outbound 445 is blocked.",
+      "technical": "Mounting an SMB Azure file share from Windows uses the SMB protocol, and SMB uses TCP port 445. DNS resolution and general internet access don't prove that port 445 is open. A client can browse HTTPS sites over TCP 443 while still being unable to establish an SMB session to Azure Files.\n\nMicrosoft's Windows mounting guidance uses `Test-NetConnection` to check connectivity to the storage account file endpoint on port 445 before creating a persistent drive mapping. If `TcpTestSucceeded` is false, the issue is network reachability rather than the share path alone. The troubleshooting documentation also lists SMB as using TCP 445 and states that the client must resolve the storage account name and establish a TCP connection to the correct endpoint and port.\n\nThe response order is:\n\n1. Confirm the UNC path and DNS name are correct.\n2. Test TCP 445 to the storage account file endpoint.\n3. If blocked by an ISP or corporate network, avoid trying to tunnel SMB through a SAS token or random port change.\n4. Provide private connectivity, such as point-to-site VPN for an individual device, site-to-site VPN for an office, or ExpressRoute for private enterprise connectivity.\n5. Verify DNS again if private endpoints are introduced, because clients should resolve the file endpoint to the private address.\n\nAzure Files doesn't support mounting SMB shares with SAS tokens from Windows. SAS can be used with REST-style access patterns, but Microsoft states SAS tokens aren't currently supported for mounting Azure file shares. NFS doesn't fix Windows SMB access because Azure Files NFS isn't supported for Windows clients. SMB encryption protects traffic inside SMB; it doesn't move an SMB drive mapping to HTTPS port 443.",
+      "wrongOptions": {
+        "B": "SAS tokens aren't currently supported for mounting Azure file shares in Windows, so adding one to a UNC path doesn't solve an SMB port block. Misconception: any Azure Storage access token can be used by any storage client. Could be correct when: an application accesses Azure Files through supported REST APIs rather than mapping an SMB drive.",
+        "D": "Azure Files NFS isn't supported for Windows clients, and changing protocols would create a different Linux-oriented share design rather than fixing Windows SMB. Misconception: changing to another port is enough regardless of client support and file system semantics. Could be correct when: the workload is Linux-based and was designed for NFS from the start.",
+        "E": "Disabling encryption in transit doesn't turn SMB into HTTPS or remove the TCP 445 requirement. Misconception: encrypted SMB and HTTPS are the same transport because both protect data in transit. Could be correct when: a legacy same-region SMB client lacks SMB encryption support and the security team accepts that risk, not when an ISP blocks port 445."
+      },
+      "plainEnglish": "Mapping a Windows drive to Azure Files uses the same kind of network path as many Windows file servers: SMB on port 445. Being able to open websites doesn't prove that port is open, because websites usually use port 443. The first practical check is to test whether the computer can connect to the storage account on port 445. If the home provider blocks it, the clean answer is to give the computer a private path into Azure, such as a VPN, or use a corporate private connection. You can't fix a blocked SMB drive mapping by adding a web-style token to the path.",
+      "analogy": "A house can have working roads to the grocery store but a blocked service road to the warehouse. Checking that the main road works doesn't prove the service road is open.\n\n| Analogy | Azure reality |\n|---|---|\n| Service road to warehouse | TCP port 445 for SMB |\n| Grocery store road | HTTPS over TCP 443 |\n| Road test | `Test-NetConnection` |\n| Private company tunnel | VPN or ExpressRoute |\n| Address book choosing public or private road | DNS resolution |\n\n**Where the analogy breaks down:** Networks use DNS, firewalls, routing, protocol negotiation, authentication, and encryption. A blocked road doesn't capture all the ways an SMB session can fail after TCP connectivity succeeds.",
+      "jargon": [
+        {
+          "term": "SMB",
+          "definition": "Server Message Block, the protocol Windows commonly uses for file shares and mapped drives."
+        },
+        {
+          "term": "UNC path",
+          "definition": "A Windows network path such as `\\\\server\\share` used to access a shared folder."
+        },
+        {
+          "term": "TCP port 445",
+          "definition": "The network port used by SMB for Azure Files and many Windows file shares."
+        },
+        {
+          "term": "DNS",
+          "definition": "Domain Name System, which translates host names such as `stfinfiles.file.core.windows.net` to IP addresses."
+        },
+        {
+          "term": "Test-NetConnection",
+          "definition": "A PowerShell cmdlet that can test whether a TCP connection to a host and port succeeds."
+        },
+        {
+          "term": "VPN",
+          "definition": "Virtual private network, a private network connection from a client or site into an Azure virtual network."
+        },
+        {
+          "term": "ExpressRoute",
+          "definition": "An Azure service for private connectivity between on-premises networks and Microsoft cloud services."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "A private IP address in a virtual network used to reach an Azure service privately."
+        },
+        {
+          "term": "SAS token",
+          "definition": "Shared access signature, a delegated access token for Azure Storage resources. It is not used to mount SMB Azure file shares."
+        },
+        {
+          "term": "Encryption in transit",
+          "definition": "Protection for data while it moves across the network; for SMB it is SMB channel encryption, not HTTPS drive mapping."
+        }
+      ],
+      "watchOut": "- DNS success doesn't prove SMB port 445 is reachable.\n- HTTPS access over port 443 is not evidence that SMB will work.\n- SAS tokens aren't supported for Windows drive mapping to Azure file shares.\n- Disabling SMB encryption doesn't bypass an ISP block on port 445.\n- Private endpoint connectivity still requires correct DNS resolution to the private address.",
+      "productionTip": {
+        "official": "Microsoft's Windows mount documentation tells you to ensure port 445 is open and uses `Test-NetConnection` in the mounting script. Microsoft networking guidance states that VPN or ExpressRoute private connectivity provides an alternative path when organizations or ISPs block outbound SMB traffic.",
+        "recommendation": "For home or branch users, standardize a connectivity pattern instead of troubleshooting one laptop at a time. Use point-to-site VPN for individual devices, site-to-site VPN or ExpressRoute for offices, and verify name resolution whenever private endpoints are part of the path."
+      },
+      "memoryTrick": "For Windows mapped drives, **web works doesn't mean file works**. This is a simplification because the file connection can also fail from credentials, SMB settings, or permissions after port 445 succeeds.",
+      "examTip": "Clue words are **Windows**, **UNC path**, **ISP blocks outbound SMB**, and **DNS resolves**. Pick the answer that tests or routes TCP 445. A harder version may include a private endpoint; then you must also verify DNS resolves the storage account name to the private endpoint address."
+    },
+    "sources": [
+      {
+        "title": "Mount SMB Azure File Share on Windows",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-how-to-use-files-windows"
+      },
+      {
+        "title": "Troubleshoot Azure Files",
+        "url": "https://learn.microsoft.com/en-us/troubleshoot/azure/azure-storage/files/connectivity/files-troubleshoot"
+      },
+      {
+        "title": "Networking Considerations for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-networking-overview"
+      },
+      {
+        "title": "SMB File Shares in Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/files-smb-protocol"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.1-06",
+    "objective": "D2.3.1",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You are configuring identity-based access for an SMB Azure file share named `profiles`. Hybrid users will access the share from domain-joined Windows clients. The security team requires least privilege and wants NTFS permissions to continue controlling subfolders inside the share.\n\nWhich two statements describe the required authorization model? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable one supported identity source on the storage account, such as AD DS, Microsoft Entra Domain Services, or Microsoft Entra Kerberos"
+      },
+      {
+        "id": "B",
+        "text": "Assign an Azure Files share-level role such as Storage File Data SMB Share Contributor, and also configure file and directory ACLs"
+      },
+      {
+        "id": "C",
+        "text": "Assign the Storage Account Contributor management role because it grants users SMB data access to every file in the share"
+      },
+      {
+        "id": "D",
+        "text": "Skip share-level roles because NTFS permissions alone are evaluated before Azure Files checks the share permission"
+      },
+      {
+        "id": "E",
+        "text": "Set the default share-level permission to Reader because new identity-enabled storage accounts grant Reader by default"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The share uses SMB and identity-based authentication. Users and groups are represented consistently in the relevant identity source and Microsoft Entra ID where required.",
+    "sections": {
+      "correctAnswer": "**A. Enable one supported identity source on the storage account, such as AD DS, Microsoft Entra Domain Services, or Microsoft Entra Kerberos** and **B. Assign an Azure Files share-level role such as Storage File Data SMB Share Contributor, and also configure file and directory ACLs**. Azure Files identity-based SMB access uses Kerberos authentication plus both share-level authorization and file or directory permissions.",
+      "technical": "Identity-based authentication for Azure Files SMB separates authentication from authorization. Authentication proves who the user is by using Kerberos with a configured identity source. Microsoft documents three user identity sources for SMB Azure Files: on-premises Active Directory Domain Services, Microsoft Entra Domain Services, and Microsoft Entra Kerberos. Only one identity source for file access authentication can be enabled per storage account, and it applies to all file shares in that account.\n\nAccess to data requires two permission layers. The first layer is share-level permission, usually assigned through Azure RBAC roles designed for Azure Files. Common roles include Storage File Data SMB Share Reader for read access, Storage File Data SMB Share Contributor for read/write/delete access, and Storage File Data SMB Share Elevated Contributor for read/write/delete plus modifying ACLs. The second layer is the Windows file and directory access control list, often called NTFS permissions. Those ACLs provide the granular folder and file rules.\n\nThe request is effectively evaluated like this:\n\n1. The client authenticates through the configured identity source and obtains a Kerberos ticket.\n2. Azure Files checks whether the identity has share-level permission, either by a specific Azure RBAC role assignment or an applicable default share-level permission.\n3. The file system permissions on the directory or file are evaluated for the requested operation.\n4. Access is granted only when the required permission exists at both layers.\n\nDefault share-level permission is not automatically Reader. Microsoft documents its initial value as None, which means no access is allowed to files or directories through that default setting. If both a default share-level permission and a specific user or group assignment exist, the higher-level share permission takes precedence at that share-level layer, but that still doesn't replace NTFS ACL design.",
+      "wrongOptions": {
+        "C": "Storage Account Contributor is a management-plane role and isn't the intended Azure Files SMB data-access role for users opening files. Misconception: any role on the storage account grants data access through SMB. Could be correct when: an operator needs to manage storage account configuration, not read or write share contents as an SMB user.",
+        "D": "NTFS permissions are necessary but not sufficient; Azure Files also requires share-level permission for identity-based SMB access. Misconception: cloud share permissions disappear once NTFS ACLs exist. Could be correct when: discussing the second, granular layer after a valid share-level role has already been assigned.",
+        "E": "The default share-level permission is initialized as None, not Reader, and setting a broad default permission should be deliberate because it applies to all authenticated identities. Misconception: enabling identity-based authentication automatically grants basic data access. Could be correct when: an administrator intentionally configures a default Reader-equivalent permission for all authenticated identities in a specific design."
+      },
+      "plainEnglish": "Signing in is not the same as being allowed into every folder. First, Azure Files needs a way to recognize users, such as your Active Directory or a Microsoft Entra Kerberos setup. After that, each user or group needs permission at the share entrance. Then, inside the share, normal Windows folder permissions decide which subfolders and files they can use. If either layer says no, access fails. Giving someone a role to manage the storage account is like letting them change building settings; it is not the same as giving them a badge that opens the finance folder.",
+      "analogy": "An office building has a lobby guard and locked rooms upstairs. The lobby guard checks whether an employee may enter the building. Each room still has its own lock. A facilities manager who can change lights and air conditioning doesn't automatically receive keys to confidential rooms.\n\n| Analogy | Azure reality |\n|---|---|\n| Employee identity check | Kerberos authentication |\n| Lobby permission | Azure Files share-level RBAC role |\n| Room lock | NTFS file or directory ACL |\n| Building facilities role | Storage account management role |\n| Default no-entry state | Default share-level permission of None |\n\n**Where the analogy breaks down:** Azure can combine default and explicit share-level permissions, uses synced identity objects, and evaluates protocol security settings. Physical badges don't represent Kerberos tickets or Azure RBAC scopes.",
+      "jargon": [
+        {
+          "term": "Identity-based authentication",
+          "definition": "Access that uses a user or service identity instead of a storage account key."
+        },
+        {
+          "term": "SMB",
+          "definition": "Server Message Block, the file sharing protocol used by the Azure file share in this scenario."
+        },
+        {
+          "term": "Kerberos",
+          "definition": "A ticket-based authentication protocol used by supported Azure Files identity sources for SMB access."
+        },
+        {
+          "term": "AD DS",
+          "definition": "Active Directory Domain Services, the traditional Windows Server directory service."
+        },
+        {
+          "term": "Microsoft Entra Domain Services",
+          "definition": "A managed domain service from Microsoft Entra that can provide Kerberos-compatible domain services."
+        },
+        {
+          "term": "Microsoft Entra Kerberos",
+          "definition": "A Microsoft Entra capability that can issue Kerberos tickets for Azure Files SMB access in supported identity scenarios."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, used here to assign share-level permissions to identities."
+        },
+        {
+          "term": "Storage File Data SMB Share Contributor",
+          "definition": "A built-in role that grants read, write, and delete access to files and directories in Azure Files over SMB."
+        },
+        {
+          "term": "NTFS permissions",
+          "definition": "Windows file and directory permissions stored as access control lists."
+        },
+        {
+          "term": "Default share-level permission",
+          "definition": "A storage account setting that can grant the same Azure Files share-level permission to all authenticated identities; it starts as None."
+        }
+      ],
+      "watchOut": "- Enabling an identity source doesn't automatically grant data access.\n- Share-level permission and NTFS ACLs are both part of the access decision.\n- Management roles such as Storage Account Contributor aren't substitutes for Azure Files data roles.\n- Only one user identity source for file access authentication is used per storage account.\n- A broad default share permission can simplify migrations but may be too permissive for least privilege.",
+      "productionTip": {
+        "official": "Microsoft documents three supported identity sources for SMB Azure Files and states that authentication is only one part of access: users need share-level permission plus file or directory permission. The share-level permissions documentation lists the built-in Storage File Data SMB roles and says the default share-level permission starts as None.",
+        "recommendation": "Assign share-level roles to groups rather than individuals, keep the role as narrow as the workload permits, and manage fine-grained access with Windows ACLs. Reserve default share-level permissions for migration or cross-tenant edge cases where specific Microsoft Entra assignments aren't practical."
+      },
+      "memoryTrick": "Use **source, share, subfolder**: configure the identity source, grant the share role, then apply folder ACLs. This is a simplification because network access and SMB security settings must also be healthy before users connect.",
+      "examTip": "Clue words are **identity-based**, **SMB**, **least privilege**, and **NTFS permissions**. Select answers that include both the identity source and the two-layer authorization model. A harder version may ask about default share-level permission precedence; remember it starts at None and a higher-level share permission wins only within the share-level layer."
+    },
+    "sources": [
+      {
+        "title": "Overview - Azure Files Identity-Based Authentication",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-active-directory-overview"
+      },
+      {
+        "title": "Assign Share-Level Permissions for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-assign-share-level-permissions"
+      },
+      {
+        "title": "Mount SMB Azure File Share on Windows",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-how-to-use-files-windows"
+      },
+      {
+        "title": "SMB File Shares in Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/files-smb-protocol"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.1-07",
+    "objective": "D2.3.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You manage a storage account named `stlegacy` that hosts several SMB Azure file shares. A legacy service runs under a local Windows account and currently mounts `\\\\stlegacy.file.core.windows.net\\drop` by using the storage account name and one of the storage account keys. The security team plans to disable storage account key access after users are migrated to identity-based authentication.\n\nWhat is the expected effect of disabling storage account key access?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Existing key-based SMB mounts can continue because disabling key access affects only Blob Storage REST calls"
+      },
+      {
+        "id": "B",
+        "text": "The legacy service must use identity-based SMB access or another supported method because the storage account key can no longer be used to mount the share"
+      },
+      {
+        "id": "C",
+        "text": "The service can keep mounting with the key if NTFS permissions grant Full Control to the local Windows account"
+      },
+      {
+        "id": "D",
+        "text": "The mount will continue if a service SAS is generated for the file share and saved in Windows Credential Manager"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The service is mounting an SMB Azure file share directly from Windows. The storage account has key-based access enabled before the change.",
+    "sections": {
+      "correctAnswer": "**B. The legacy service must use identity-based SMB access or another supported method because the storage account key can no longer be used to mount the share**. Microsoft documents storage account key access as the setting that controls whether shared keys can be used to mount Azure file shares over SMB or access them through FileREST.",
+      "technical": "A storage account key is an account-level shared secret. For Azure Files, mounting a share with the storage account name as the user and the key as the password is supported only when storage account key access is enabled. Microsoft warns that using the key is effectively an administrator operation for the mounted file share: it grants full permissions to all files and folders in the share being accessed, even if ACLs exist. It also represents powerful access to resources in the storage account.\n\nThe storage account has a security setting named **Enable storage account key access**. For Azure Files, Microsoft documents that this setting controls whether storage account keys, also called shared keys, can be used to mount a file share using SMB or to access the share using the FileREST API. When the setting is disabled, the legacy service's password material is no longer accepted for that key-based SMB mount.\n\nThe evaluation path is different from identity-based access:\n\n1. In key-based mounting, the client presents storage account credentials and uses NTLMv2.\n2. Azure Files treats the key as an administrative credential for the share access path.\n3. If shared key access is disabled, that authentication path is blocked.\n4. The workload must move to identity-based SMB access, a managed identity scenario where supported, or another architecture that doesn't depend on the account key.\n\nNTFS ACLs don't rescue the design because the service first needs a valid authentication method. SAS also isn't a replacement for mounting an SMB share on Windows, because Microsoft states SAS tokens aren't currently supported for mounting Azure file shares. Disabling keys is a security hardening step, but it requires dependency discovery before the switch.",
+      "wrongOptions": {
+        "A": "The Azure Files creation documentation explicitly says the setting applies to mounting file shares with SMB and to FileREST, not only to Blob Storage REST calls. Misconception: shared key settings are blob-only because many examples mention Blob Storage. Could be correct when: discussing a different setting that applies only to Blob data operations.",
+        "C": "NTFS permissions can't make an invalid storage account key authentication path work. Once key access is disabled, the local account's file permissions are not reached through that key-based SMB session. Misconception: file permissions can override failed authentication. Could be correct when: a user already authenticated through a supported identity source and the only remaining question is file-level authorization.",
+        "D": "SAS tokens aren't currently supported for mounting Azure file shares, so saving a service SAS in Windows Credential Manager doesn't replace the storage account key for SMB. Misconception: any Azure Storage secret can be entered as a Windows network password. Could be correct when: a tool accesses Azure Files through supported REST operations using a SAS."
+      },
+      "plainEnglish": "The storage account key is like a master password for this kind of mount. If the organization turns off the ability to use that master password, old services that still depend on it can't keep signing in that way. Folder permissions do not help if the front door no longer accepts the password. A web-style SAS link also is not the same as a Windows mapped drive password. The service needs to be changed to use a supported identity-based sign-in or moved behind a different supported design before the key path is disabled.",
+      "analogy": "A building used to allow a master key at the service entrance. Security retires that master key system and requires employee badges instead. A worker can't keep entering with the old key just because the room upstairs still lists that worker on a door sign.\n\n| Analogy | Azure reality |\n|---|---|\n| Master key | Storage account key |\n| Retiring the master key reader | Disabling storage account key access |\n| Employee badge | Identity-based SMB authentication |\n| Room door sign | NTFS file or directory ACL |\n| Visitor coupon | SAS token |\n\n**Where the analogy breaks down:** Azure keys are cryptographic secrets, not physical metal. Key rotation, Shared Key authorization, NTLMv2, Kerberos, and REST authorization have precise protocol rules that a building analogy cannot show.",
+      "jargon": [
+        {
+          "term": "Storage account key",
+          "definition": "A shared secret for a storage account that can authorize access when Shared Key access is enabled."
+        },
+        {
+          "term": "Shared Key",
+          "definition": "An Azure Storage authorization method that uses storage account keys."
+        },
+        {
+          "term": "SMB",
+          "definition": "Server Message Block, the protocol used to mount the Azure file share from Windows."
+        },
+        {
+          "term": "NTLMv2",
+          "definition": "An authentication method used by Azure Files when mounting with a storage account key."
+        },
+        {
+          "term": "Identity-based authentication",
+          "definition": "A method that authenticates users or services through a supported identity source instead of account keys."
+        },
+        {
+          "term": "FileREST",
+          "definition": "The REST API for Azure Files data operations on classic file shares."
+        },
+        {
+          "term": "NTFS permissions",
+          "definition": "Windows file and folder access control lists used for file-level authorization."
+        },
+        {
+          "term": "SAS",
+          "definition": "Shared access signature, a token that delegates limited storage access for supported API scenarios."
+        },
+        {
+          "term": "Windows Credential Manager",
+          "definition": "A Windows feature that stores credentials for network resources and applications."
+        },
+        {
+          "term": "Legacy service",
+          "definition": "An older application or background process that may not support modern identity patterns without changes."
+        }
+      ],
+      "watchOut": "- Key-based Azure Files mounting is powerful and not least privilege.\n- Disabling storage account key access can break services, scripts, and scheduled tasks that saved the key.\n- NTFS ACLs are evaluated only after a supported authentication path succeeds.\n- SAS tokens are not a Windows SMB mount substitute.\n- Inventory persistent credentials on hosts before changing the account-wide key setting.",
+      "productionTip": {
+        "official": "Microsoft documents that storage account key access controls whether account keys can mount Azure file shares over SMB or access shares through FileREST. The Windows mounting guidance also says using the storage account key is not recommended and functions like an administrator credential for the file share path.",
+        "recommendation": "Migrate services to identity-based SMB access where possible, then disable Shared Key only after logs and host scans show no remaining key-based mounts. Use staged change windows because cached Windows credentials and service accounts often hide key dependencies."
+      },
+      "memoryTrick": "If you **turn off the master key**, old key mounts stop at the door. This is a simplification because other access methods may still work if they are independently configured and authorized.",
+      "examTip": "Clue words are **storage account key**, **disable key access**, and **mounts by using the storage account name and key**. Choose the answer that breaks key-based SMB and moves to identity. A harder version may ask about browsing data in the Azure portal; portal data access can also be affected by authorization settings and network rules."
+    },
+    "sources": [
+      {
+        "title": "Create a classic file share - Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/create-classic-file-share"
+      },
+      {
+        "title": "Mount SMB Azure File Share on Windows",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-how-to-use-files-windows"
+      },
+      {
+        "title": "Plan an Azure Files deployment",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+      },
+      {
+        "title": "SMB File Shares in Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/files-smb-protocol"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.1-08",
+    "objective": "D2.3.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A branch office has users who need fast access to a departmental SMB share, but the branch firewall policy doesn't allow direct outbound TCP 445 connections to Azure Files from user PCs. You are allowed to deploy a Windows Server in the branch, and the central copy of the data must remain in Azure Files. You want a configuration that can also reduce local disk use by keeping cold files in Azure.\n\nWhich design should you choose?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Deploy Azure File Sync with a Storage Sync Service, a sync group, the Azure file share as the cloud endpoint, the branch Windows Server folder as a server endpoint, and cloud tiering as needed"
+      },
+      {
+        "id": "B",
+        "text": "Create a Microsoft.FileShares NFS share and mount it from each Windows client through TCP 2049"
+      },
+      {
+        "id": "C",
+        "text": "Create a service SAS for the Azure file share and distribute the SAS to users as the mapped drive password"
+      },
+      {
+        "id": "D",
+        "text": "Create an Azure Blob container with hierarchical namespace and mount it as the branch SMB file server"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The branch workload is SMB and can use a Windows Server cache. The question uses Azure File Sync only as option context for creating and configuring an Azure file share.",
+    "sections": {
+      "correctAnswer": "**A. Deploy Azure File Sync with a Storage Sync Service, a sync group, the Azure file share as the cloud endpoint, the branch Windows Server folder as a server endpoint, and cloud tiering as needed**. Azure File Sync centralizes data in an Azure file share while caching it on Windows Server, and cloud tiering can keep the namespace visible while storing infrequently used file contents in Azure.",
+      "technical": "Azure File Sync is not a different storage protocol for Azure Files clients. It is a synchronization and caching service built around a classic SMB Azure file share and one or more Windows Servers. In this scenario, the users can't directly mount Azure Files because port 445 from PCs to Azure is blocked. A branch Windows Server can provide local SMB access on the branch network while synchronizing with the Azure file share.\n\nThe required components have specific roles. A Storage Sync Service is the Azure management resource for Azure File Sync. A registered server is a Windows Server that has the Azure File Sync agent installed and has established trust with the service. A sync group defines the relationship between one cloud endpoint and one or more server endpoints. The cloud endpoint is the Azure file share. A server endpoint is a path on the registered Windows Server that syncs with that cloud endpoint.\n\nCloud tiering is optional but matches the disk-saving requirement. With cloud tiering, frequently accessed files remain cached locally, while infrequently used file contents can be tiered to Azure. The full namespace remains visible, and files are recalled when accessed.\n\nThe order of deployment is:\n\n1. Create or choose a classic SMB Azure file share as the authoritative cloud endpoint.\n2. Deploy a Storage Sync Service in Azure.\n3. Install the Azure File Sync agent on the branch Windows Server and register it.\n4. Create a sync group that links the Azure file share and the branch folder.\n5. Enable cloud tiering on the server endpoint if local storage conservation is required.\n6. Have branch users access the Windows Server SMB share locally, not Azure Files directly from their PCs.\n\nThis design doesn't make NFS work for Windows, doesn't use SAS for SMB mounting, and doesn't turn Blob Storage into an SMB file server. It is an Azure Files hybrid access pattern.",
+      "wrongOptions": {
+        "B": "Microsoft.FileShares currently supports NFS, and Azure Files NFS isn't supported for Windows clients. It also doesn't solve the requirement for a local Windows SMB cache. Misconception: any Azure file share resource can replace SMB for Windows users if a different port is allowed. Could be correct when: Linux clients need an NFS share and the network is designed for NFS access.",
+        "C": "SAS tokens aren't supported for mounting Azure file shares as Windows SMB mapped drives, and distributing SAS tokens to users wouldn't create a local cache. Misconception: SAS is a universal password for all Azure Storage access styles. Could be correct when: an application uses supported FileREST operations with a limited SAS.",
+        "D": "Azure Blob Storage with hierarchical namespace is object storage, not an SMB file server for Windows drive mapping. Misconception: a hierarchical namespace in Blob Storage is equivalent to Azure Files. Could be correct when: the workload is built for Data Lake or Blob APIs instead of standard file system SMB access."
+      },
+      "plainEnglish": "The branch users need a nearby file server experience, but their computers can't talk directly to Azure Files over the SMB port. Azure File Sync lets a Windows Server in the branch act like the nearby file server while Azure Files keeps the central copy. The server and Azure file share stay synchronized. If the branch server doesn't have enough disk for everything, cloud tiering can leave rarely used file contents in Azure while still showing users the full list of folders and files. Users open files from the branch server, and the server handles syncing with Azure.",
+      "analogy": "A company keeps the master archive in headquarters but places a staffed records desk in each branch. Branch employees ask the local desk for files. The desk keeps popular folders in its cabinets and requests rarely used folders from headquarters when needed.\n\n| Analogy | Azure reality |\n|---|---|\n| Headquarters archive | Azure file share cloud endpoint |\n| Branch records desk | Windows Server with Azure File Sync agent |\n| Desk registration | Registered server |\n| Rule connecting desk and archive | Sync group |\n| Local cabinet folder | Server endpoint |\n| Keeping only popular contents locally | Cloud tiering |\n\n**Where the analogy breaks down:** Azure File Sync has conflict handling, change detection behavior, scale limits, agent versions, and networking requirements. A records desk doesn't represent SMB permissions, sync databases, or recall latency.",
+      "jargon": [
+        {
+          "term": "Azure File Sync",
+          "definition": "A service that synchronizes Azure file shares with folders on Windows Servers and can cache file contents locally."
+        },
+        {
+          "term": "Storage Sync Service",
+          "definition": "The Azure resource that manages registered servers and sync groups for Azure File Sync."
+        },
+        {
+          "term": "Sync group",
+          "definition": "A synchronization relationship that links an Azure file share cloud endpoint with one or more server endpoints."
+        },
+        {
+          "term": "Cloud endpoint",
+          "definition": "The Azure file share in an Azure File Sync sync group."
+        },
+        {
+          "term": "Server endpoint",
+          "definition": "A folder path on a registered Windows Server that syncs with a cloud endpoint."
+        },
+        {
+          "term": "Registered server",
+          "definition": "A Windows Server with the Azure File Sync agent installed and registered to a Storage Sync Service."
+        },
+        {
+          "term": "Cloud tiering",
+          "definition": "An Azure File Sync feature that caches frequently accessed files locally and tiers colder file contents to Azure while keeping the namespace visible."
+        },
+        {
+          "term": "SMB",
+          "definition": "Server Message Block, the file sharing protocol that Windows clients use for mapped drives and branch file shares."
+        },
+        {
+          "term": "TCP 445",
+          "definition": "The network port used by SMB for direct Azure Files mounting."
+        },
+        {
+          "term": "Hierarchical namespace",
+          "definition": "A Data Lake Storage capability for Blob Storage namespaces; it doesn't make Blob Storage an SMB file share."
+        }
+      ],
+      "watchOut": "- Azure File Sync works with classic SMB Azure file shares, not NFS Microsoft.FileShares resources.\n- Users connect to the branch Windows Server, not directly to Azure Files, in this cache pattern.\n- Cloud tiering saves local disk but can recall data when users open tiered files.\n- A sync group has a cloud endpoint and server endpoints; don't confuse these names.\n- Blob hierarchical namespace and Azure Files are different storage services.",
+      "productionTip": {
+        "official": "Microsoft describes Azure File Sync as centralizing file shares in Azure Files while maintaining Windows Server compatibility and optional cloud tiering. The planning documentation defines Storage Sync Services, registered servers, sync groups, cloud endpoints, and server endpoints, and notes Azure File Sync is for SMB file shares.",
+        "recommendation": "Use Azure File Sync when local SMB performance or port-445 restrictions make direct cloud mounting unattractive, but size the branch server and WAN path carefully. Enable cloud tiering only after deciding which folders can tolerate first-open recall delays and monitoring egress."
+      },
+      "memoryTrick": "Azure File Sync is **cloud as master, server as cache**. This is a simplification because multi-site sync can allow changes from several servers, and conflict behavior still needs planning.",
+      "examTip": "Clue words are **branch office**, **Windows Server allowed**, **direct outbound TCP 445 blocked**, and **reduce local disk use**. Choose the answer with Storage Sync Service, sync group, cloud endpoint, server endpoint, and cloud tiering. A harder version may say clients are Linux-only; then Azure File Sync is not the correct cache service."
+    },
+    "sources": [
+      {
+        "title": "What is Azure File Sync?",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/file-sync/file-sync-introduction"
+      },
+      {
+        "title": "Plan an Azure File Sync deployment",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/file-sync/file-sync-planning"
+      },
+      {
+        "title": "Networking Considerations for Azure Files",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-networking-overview"
+      },
+      {
+        "title": "Mount SMB Azure File Share on Windows",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-how-to-use-files-windows"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

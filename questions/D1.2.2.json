@@ -1,0 +1,208 @@
+[
+  {
+    "id": "D1.2.2-01",
+    "objective": "D1.2.2",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure environment with the following hierarchy.\n\n| Level | Name | Notes |\n|---|---|---|\n| Management group | `mg-platform` | Contains subscription `Sub1` and will contain future platform subscriptions |\n| Subscription | `Sub1` | Contains resource groups `rg-network` and `rg-monitoring` |\n| Resource group | `rg-network` | Contains virtual networks |\n| Resource group | `rg-monitoring` | Contains Log Analytics workspaces |\n\nThe audit team must be able to view all current and future Azure resources in subscriptions placed under `mg-platform`. The team must not be able to change resources or assign access. You need to minimize administrative effort.\n\nAt which scope should you assign the Reader role?",
+    "options": [
+      {"id": "A", "text": "At each resource group in `Sub1`"},
+      {"id": "B", "text": "At the `mg-platform` management group"},
+      {"id": "C", "text": "At each current subscription under `mg-platform`"},
+      {"id": "D", "text": "At root scope (`/`) for the tenant"}
+    ],
+    "correct": ["B"],
+    "assumptions": "Azure public cloud. The audit team is represented by a Microsoft Entra security group. All subscriptions that should be audited are, and will remain, children of the `mg-platform` management group. No deny assignments or role assignment conditions are present.",
+    "sections": {
+      "correctAnswer": "**B. At the `mg-platform` management group**. A role assignment applies at the selected scope and is inherited by child scopes, so Reader at the management group covers subscriptions, resource groups, and resources beneath it without granting write or access-management permissions.",
+      "technical": "Azure RBAC role assignment has three parts: a security principal, a role definition, and a scope. Scope is the set of resources the assignment applies to. Azure supports four usual assignment levels from broad to narrow: management group, subscription, resource group, and resource. These scopes form a parent-child hierarchy, and lower levels inherit role permissions from higher levels.\n\nFor this scenario, the evaluation is:\n\n1. The audit group needs visibility across everything under `mg-platform`, including future subscriptions added to that management group.\n2. Reader is the built-in role intended for viewing Azure resources without making changes.\n3. Assigning Reader at `mg-platform` makes the permission available to child subscriptions and their child resource groups and resources.\n4. Assigning at subscription or resource group scope would work only for the current listed scopes and would require new assignments when new subscriptions or resource groups are added.\n\nAzure RBAC is additive, so this answer assumes the audit group does not already have broader assignments elsewhere. Deny assignments are checked before role assignments during access evaluation, but user-created role assignments are normally grants, not denies. A root-scope assignment would also inherit downward, but it is broader than requested and would expose unrelated subscriptions and management groups in the tenant.",
+      "wrongOptions": {
+        "A": "Assigning Reader at each resource group is too narrow and creates unnecessary administration. It would not automatically cover new resource groups unless another assignment is added. Misconception: Resource groups are the highest practical scope for access. Could be correct when the audit team needed to view only a few named resource groups and should not see other resource groups in the same subscription.",
+        "C": "Assigning Reader at each current subscription covers current subscriptions but misses future subscriptions unless administrators remember to repeat the assignment. Misconception: Management groups are only for policy or billing organization and do not affect RBAC. Could be correct when there is no management group containing the target subscriptions or when each subscription needs a different auditing group.",
+        "D": "Root scope (`/`) is broader than the stated requirement. It can cover all subscriptions and management groups in the tenant, not just those under `mg-platform`, so it violates least privilege. Misconception: The broadest scope is best when you want inheritance. Could be correct only for a carefully controlled emergency or tenant-wide administration scenario where access to every subscription and management group is explicitly required."
+      },
+      "plainEnglish": "Think of Azure resources as folders inside bigger folders. A management group can contain subscriptions. A subscription contains resource groups. A resource group contains resources. If you put a read-only permission on a high folder, the permission flows down to the folders and files inside it.\n\nThe audit team needs to see everything below `mg-platform`, including subscriptions that will be added later. Putting the Reader role on `mg-platform` is like putting a read-only badge on the top folder for that platform area. The auditors can look, but they cannot edit resources or give other people access. Putting the badge on each current subscription or resource group would mean more work now and more work whenever the hierarchy changes.",
+      "analogy": "A company stores records in filing cabinets. The platform department has one cabinet with drawers for each subscription and folders for each resource group. The audit team needs to inspect everything in that cabinet now and later.\n\n| Analogy | Azure reality |\n|---|---|\n| Filing cabinet | Management group `mg-platform` |\n| Drawer | Subscription |\n| Folder | Resource group |\n| Read-only audit badge | Reader role assignment |\n| New drawer added later | Future subscription under the management group |\n\n**Where the analogy breaks down:** Azure evaluates digital permissions with tokens, role assignments, deny assignments, and conditions. A physical badge does not model every detail of RBAC evaluation or propagation timing.",
+      "jargon": [
+        {"term": "Azure RBAC", "definition": "Azure role-based access control, the Azure authorization system for managing who can access Azure resources, what they can do, and which resources the access applies to."},
+        {"term": "Scope", "definition": "The boundary where an Azure role assignment applies, such as management group, subscription, resource group, or resource."},
+        {"term": "Management group", "definition": "An Azure governance container above subscriptions. Role assignments at this level can apply to subscriptions inside the management group."},
+        {"term": "Subscription", "definition": "An Azure billing and management boundary that contains resource groups and resources."},
+        {"term": "Resource group", "definition": "A logical container inside a subscription for Azure resources that are managed together."},
+        {"term": "Reader", "definition": "A built-in Azure role that lets a principal view resources but not make changes."},
+        {"term": "Security principal", "definition": "A user, group, service principal, or managed identity that can receive a role assignment."},
+        {"term": "Inheritance", "definition": "The behavior where permissions assigned at a parent scope apply to child scopes below it."}
+      ],
+      "watchOut": "- Management group scope is broader than subscription scope and narrower than tenant root scope.\n- Use the lowest scope that covers the real requirement; here that is the management group, not root.\n- Reader lets users view Azure resources, but it does not let them assign roles.\n- Inherited access can surprise administrators who look only at the current resource group. Check parent scopes when troubleshooting.\n- Azure RBAC grants are additive unless a deny assignment or unmet condition blocks access.",
+      "productionTip": {
+        "official": "Use Access control (IAM) at the intended management group, subscription, resource group, or resource to view and add role assignments. The portal assignment flow starts by identifying scope, then selecting the role, member, optional condition, and assignment settings.",
+        "recommendation": "Create an audit security group and assign Reader once at the narrowest parent scope that includes the audit estate. Review inherited assignments before adding more grants, and document why any management group assignment is required because it affects many child resources."
+      },
+      "memoryTrick": "Scope flows downhill: management group to subscription to resource group to resource. This is a simplification because deny assignments and conditions can still block access after inheritance.",
+      "examTip": "Clue words are **current and future**, **under a management group**, **view**, and **minimize administrative effort**. Pick the scope that naturally contains all required objects, then pick the least powerful role. A harder version might ask you to compare a management group assignment with several subscription assignments after one subscription is moved out of the management group."
+    },
+    "sources": [
+      {"title": "Understand scope for Azure RBAC", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"},
+      {"title": "What is Azure role-based access control (Azure RBAC)?", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"},
+      {"title": "Azure built-in roles", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles"},
+      {"title": "Assign Azure roles using the Azure portal", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-portal"}
+    ],
+    "verified": "2026-10"
+  }
+,
+  {
+    "id": "D1.2.2-02",
+    "objective": "D1.2.2",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains a resource group named `rg-app`. The resource group contains a storage account named `stlogs`. The storage account contains two blob containers named `app-logs` and `legal-hold`.\n\nA contractor named Maya must be able to list and read blobs in `app-logs` only. Maya must not manage the storage account, view other resources in `rg-app`, or read blobs in `legal-hold`.\n\nYou open **Access control (IAM)** to add a role assignment. Which two settings should you choose? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {"id": "A", "text": "Select the `Storage Blob Data Reader` role"},
+      {"id": "B", "text": "Select the `Reader` role"},
+      {"id": "C", "text": "Use `rg-app` as the assignment scope"},
+      {"id": "D", "text": "Use the `app-logs` blob container as the assignment scope"},
+      {"id": "E", "text": "Select the `Storage Account Contributor` role"}
+    ],
+    "correct": ["A", "D"],
+    "assumptions": "Azure public cloud. Blob data access uses Microsoft Entra authorization integrated with Azure RBAC, not shared account keys. The `app-logs` container is exposed in the portal as a resource scope for access control. Maya has no other Azure RBAC assignments or deny assignments that affect the storage account.",
+    "sections": {
+      "correctAnswer": "**A. Select the `Storage Blob Data Reader` role** and **D. Use the `app-logs` blob container as the assignment scope**. The role provides read access to blob data, and the container scope keeps the grant limited to only the target container.",
+      "technical": "This question tests two separate choices in every Azure RBAC assignment: the role definition and the scope. The role definition answers **what actions are allowed**. The scope answers **where those actions apply**.\n\n`Storage Blob Data Reader` is the correct role because it includes data-plane permission to read blobs. The general `Reader` role is mainly a management-plane viewing role: it lets a principal view Azure resource metadata but, by default, does not grant access to underlying blob data. Azure role definitions separate `Actions` for management-plane operations from `DataActions` for data inside a resource, such as reading blobs in a container.\n\nThe `app-logs` container is the correct scope because it is the narrowest scope that contains exactly the data Maya needs. A resource group scope would include the storage account and other resources in `rg-app`. A storage account scope would include both `app-logs` and `legal-hold`. The container scope limits inherited permissions to blobs in that container.\n\nAccess evaluation still follows normal Azure RBAC order: Azure Resource Manager retrieves applicable role assignments and deny assignments, deny assignments can block access first, then applicable role assignments are evaluated, and any conditions on the assignment are checked. Conditions can further filter some storage data assignments, but they are not needed when the container itself is already the exact target boundary.",
+      "wrongOptions": {
+        "B": "The Reader role lets Maya view Azure resources, but it does not by itself grant the blob data read permission needed to list and read blobs when using Microsoft Entra authorization. Misconception: Viewing a storage account is the same as reading data inside it. Could be correct when the requirement is only to view the storage account configuration or Azure resource metadata, not the blob contents.",
+        "C": "The resource group scope is too broad because it covers other resources in `rg-app` and can apply the chosen role to more than the `app-logs` container. Misconception: Resource group is always the right least-privilege scope for application resources. Could be correct when Maya needed the same permissions across every relevant resource in the resource group.",
+        "E": "Storage Account Contributor is too powerful for a contractor who only needs to read blobs. It is a management role for storage accounts, not the least-privilege data-reader role for one container. Misconception: Contributor roles are required whenever storage is involved. Could be correct when an operator must manage storage account settings, subject to a separate review of data-access needs."
+      },
+      "plainEnglish": "There are two questions to answer. First, what should Maya be allowed to do? She needs to read blob files, so choose a role made for blob data reading. Second, where should that permission work? She should read only the `app-logs` container, so put the permission directly on that container.\n\nIf you assign a role at the resource group, Maya may get access in places she does not need. If you choose the ordinary Reader role, she can look at information about Azure resources but not necessarily open the blob files. Least privilege means giving the smallest useful permission over the smallest useful area.",
+      "analogy": "A warehouse has many rooms, and one room contains a cabinet labeled `app-logs`. Maya needs to read papers in that cabinet only. Give her a key that opens papers for reading, and make it work only for that one cabinet.\n\n| Analogy | Azure reality |\n|---|---|\n| Warehouse | Resource group `rg-app` |\n| Room or storage area | Storage account `stlogs` |\n| Cabinet | Blob container `app-logs` |\n| Read-only paper key | Storage Blob Data Reader role |\n| Key works only on one cabinet | Container-level scope |\n\n**Where the analogy breaks down:** Azure has separate management-plane and data-plane permissions, plus possible deny assignments and conditions. A simple key does not show those evaluation steps.",
+      "jargon": [
+        {"term": "Access control (IAM)", "definition": "The Azure portal page used to view and manage Azure RBAC role assignments at a selected scope."},
+        {"term": "Storage account", "definition": "An Azure resource that stores data such as blobs, files, queues, and tables."},
+        {"term": "Blob", "definition": "An object stored in Azure Blob Storage, commonly used for files, logs, images, and other unstructured data."},
+        {"term": "Blob container", "definition": "A container inside a storage account that organizes blobs and can be used as a resource scope for role assignments."},
+        {"term": "Storage Blob Data Reader", "definition": "A built-in Azure role that allows read access to Azure Storage blob containers and blob data."},
+        {"term": "Reader", "definition": "A general Azure built-in role that views Azure resources but does not grant data-plane blob access by default."},
+        {"term": "DataActions", "definition": "Permissions in an Azure role definition for operations on data inside a resource, such as reading blobs."},
+        {"term": "Management plane", "definition": "The Azure control layer for creating, configuring, and viewing resource metadata."},
+        {"term": "Data plane", "definition": "The service-specific layer for accessing data stored inside a resource, such as blob contents."}
+      ],
+      "watchOut": "- Do not confuse the `Reader` role with data-reader roles such as `Storage Blob Data Reader`.\n- Scope and role are both required; the correct role at the wrong scope can still overgrant access.\n- A storage account scope would cover both containers in this scenario.\n- Role assignment conditions can refine supported storage data roles, but a direct container scope is simpler when one container is the complete boundary.\n- Shared keys or SAS tokens are separate storage access mechanisms and are not the same as an Azure RBAC assignment.",
+      "productionTip": {
+        "official": "Azure role definitions distinguish control-plane `Actions` from data-plane `DataActions`. Microsoft documentation lists `Storage Blob Data Reader` with blob read data permissions and explains that role assignment conditions can be added to supported blob or queue storage data roles.",
+        "recommendation": "Prefer data-specific roles at container scope for human or application access to blob contents. Avoid granting management roles such as Contributor unless the person must change resource configuration, and periodically review inherited storage assignments from parent scopes."
+      },
+      "memoryTrick": "Pick **what** before **where**: blob data needs a blob data role, then place it at the smallest container that contains the needed blobs. This rule fails if another service cannot be scoped as narrowly.",
+      "examTip": "Clue words are **read blobs**, **only**, and **must not view other resources**. Those point to a data-plane role and a resource-level scope. A harder version may add a requirement such as reading only blobs with a tag; then a supported role assignment condition might become relevant in addition to the role and scope."
+    },
+    "sources": [
+      {"title": "Understand Azure role definitions", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions"},
+      {"title": "Azure built-in roles for Storage", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage#storage-blob-data-reader"},
+      {"title": "Understand scope for Azure RBAC", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"},
+      {"title": "What is Azure attribute-based access control (Azure ABAC)?", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/conditions-overview"}
+    ],
+    "verified": "2026-10"
+  }
+,
+  {
+    "id": "D1.2.2-03",
+    "objective": "D1.2.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription named `Sub1`. A Microsoft Entra group named `OpsAdmins` is assigned the Owner role at the `Sub1` subscription scope. Priya is a member of `OpsAdmins`.\n\nPriya is moving to a read-only support role for a resource group named `rg-prod`. She must no longer be able to create, update, delete, or assign access to resources in `rg-prod`. She does not need access to other resources in `Sub1`.\n\nWhat should you do?",
+    "options": [
+      {"id": "A", "text": "Remove Priya from the subscription-level Owner grant path, and then assign Reader at `rg-prod`"},
+      {"id": "B", "text": "Assign Reader to Priya at `rg-prod` and leave the Owner assignment unchanged"},
+      {"id": "C", "text": "Assign Contributor to Priya at `rg-prod` because it is narrower than subscription scope"},
+      {"id": "D", "text": "Create a deny assignment for Priya at `rg-prod` that blocks write and delete actions"}
+    ],
+    "correct": ["A"],
+    "assumptions": "Azure public cloud. Priya receives Owner only through the `OpsAdmins` group, and removing her from that group or changing the group assignment is administratively possible. No Azure-managed deny assignment already applies to `rg-prod`. The goal is ordinary Azure RBAC, not a deployment stack protection scenario.",
+    "sections": {
+      "correctAnswer": "**A. Remove Priya from the subscription-level Owner grant path, and then assign Reader at `rg-prod`**. Azure RBAC role assignments are additive, so a lower-scope Reader assignment does not cancel inherited Owner permissions from the subscription.",
+      "technical": "Azure RBAC computes effective access from all applicable role assignments, plus deny assignments and conditions. A user can receive permissions directly, through a group, or through transitive group membership. Role assignments at a parent scope apply to child scopes. In this case, `OpsAdmins` has Owner at subscription scope, so Priya inherits Owner over resource groups and resources in `Sub1`, including `rg-prod`.\n\nOwner is a privileged Azure role that grants full management access and includes the ability to assign roles in Azure RBAC. Reader only grants viewing rights. However, Azure RBAC grants are additive: if one applicable assignment grants Owner and another grants Reader, the effective access includes the Owner permissions. The narrower Reader assignment is not a deny and does not override the broader Owner assignment.\n\nThe correct sequence is to remove the unwanted broad grant path first. That could mean removing Priya from `OpsAdmins`, moving her to a different group, or changing the group assignment if appropriate. After the broad inherited access is gone, assign Reader at `rg-prod`, the narrowest scope that matches her new job.\n\nDeny assignments are evaluated before role grants and can block access, but Microsoft documentation states that customers cannot directly create their own deny assignments; they are created and managed by Azure, such as through deployment stack protection settings. They are not the normal tool for reducing a user's RBAC grant.",
+      "wrongOptions": {
+        "B": "Leaving the subscription-level Owner assignment unchanged means Priya still has Owner permissions inherited into `rg-prod`. The Reader assignment adds little or no practical restriction. Misconception: A lower-scope role overrides a higher-scope role. Could be correct when the higher-scope Owner assignment had already been removed and only read access at `rg-prod` remained to be granted.",
+        "C": "Contributor at `rg-prod` is still a write-capable role, and Priya would also keep inherited Owner unless the subscription-level grant path is removed. Misconception: Any role at a narrower scope is automatically safer than a broader assignment. Could be correct when Priya truly needed to manage resources in only `rg-prod` and did not need to assign Azure RBAC roles.",
+        "D": "Deny assignments can block actions even when a role grants them, but you cannot directly create your own ordinary deny assignment for Priya. They are Azure-managed constructs. Misconception: Azure RBAC supports administrator-created deny rules like a firewall. Could be correct conceptually only in scenarios where an Azure service creates a deny assignment, such as protected managed resources, and that service behavior is the intended control."
+      },
+      "plainEnglish": "Priya currently has a powerful permission from a group at the whole subscription level. The resource group sits inside that subscription, so the powerful permission flows down into the resource group. Giving her a read-only permission on the smaller resource group does not erase the bigger permission she already has.\n\nTo make her read-only, you must first take away the big permission path. After that, give her the read-only permission exactly where she needs it: on `rg-prod`. Azure RBAC mostly adds permissions together; it does not use a lower permission to subtract from a higher one.",
+      "analogy": "Priya has a master key for an office building because she belongs to the facilities team. Giving her a visitor badge for one room does not stop the master key from opening that room. You must collect the master key first, then issue the visitor badge for the room she should inspect.\n\n| Analogy | Azure reality |\n|---|---|\n| Master key | Owner at subscription scope |\n| Facilities team membership | Membership in `OpsAdmins` |\n| One room | Resource group `rg-prod` |\n| Visitor badge | Reader role assignment |\n| Collect the master key | Remove the inherited Owner grant path |\n\n**Where the analogy breaks down:** Azure can also have deny assignments and conditions that affect authorization. Physical keys do not reflect the full Azure evaluation logic.",
+      "jargon": [
+        {"term": "Owner", "definition": "A privileged built-in Azure role that grants full access to manage resources and assign roles in Azure RBAC."},
+        {"term": "Contributor", "definition": "A built-in Azure role that can manage resources but cannot assign Azure RBAC roles."},
+        {"term": "Reader", "definition": "A built-in Azure role for viewing resources without changing them."},
+        {"term": "Effective permissions", "definition": "The final permissions a principal has after Azure evaluates applicable role assignments, group memberships, deny assignments, and conditions."},
+        {"term": "Additive model", "definition": "The Azure RBAC behavior where overlapping role assignments generally combine rather than one grant reducing another grant."},
+        {"term": "Deny assignment", "definition": "An Azure-managed assignment that blocks specified actions at a scope, even if role assignments grant those actions."},
+        {"term": "Transitive group membership", "definition": "A user's permissions can come through nested group membership, not only direct membership."},
+        {"term": "Subscription scope", "definition": "An Azure RBAC scope that covers the subscription and child resource groups and resources."}
+      ],
+      "watchOut": "- A lower-scope Reader assignment does not restrict a higher-scope Owner or Contributor assignment.\n- Always check group-based and inherited assignments when access looks too broad.\n- Owner can assign Azure RBAC roles; Contributor cannot, but both are too powerful for read-only support.\n- Deny assignments are real but are not normal administrator-created RBAC deny rules.\n- Removing a user from a broad group can affect other responsibilities, so validate the user's complete access path before changing membership.",
+      "productionTip": {
+        "official": "Azure RBAC determines access by collecting role assignments and deny assignments for the target resource, checking deny assignments, narrowing assignments to the principal and its groups, then evaluating role actions and any conditions. The documentation explicitly describes multiple role assignments as additive.",
+        "recommendation": "For job changes, audit inherited access before adding new roles. Remove broad grants through groups first, then add a narrowly scoped replacement role. Use separate groups for subscription administrators and resource-group readers so membership changes are understandable and reversible."
+      },
+      "memoryTrick": "RBAC grants add; they do not subtract. A small read-only grant cannot shrink a big owner grant. This shortcut fails only when an actual deny assignment or unmet condition is in the evaluation path.",
+      "examTip": "When a question says a user already has Owner or Contributor at a parent scope, do not choose a lower Reader assignment as a restriction. Look for the answer that removes or changes the broad assignment first. A harder version may hide the broad grant through nested group membership or ask you to interpret effective access across multiple scopes."
+    },
+    "sources": [
+      {"title": "What is Azure role-based access control (Azure RBAC)?", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"},
+      {"title": "Azure built-in roles", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles"},
+      {"title": "List Azure deny assignments", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/deny-assignments"},
+      {"title": "Understand scope for Azure RBAC", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"}
+    ],
+    "verified": "2026-10"
+  }
+,
+  {
+    "id": "D1.2.2-04",
+    "objective": "D1.2.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You are a Global Administrator in a Microsoft Entra tenant. The organization has several Azure subscriptions and management groups associated with the tenant. Due to staff turnover, no current administrator can assign Azure RBAC roles in one of the subscriptions.\n\nYou must regain the ability to assign Azure RBAC roles across the tenant so that you can restore appropriate subscription access. You must use a documented Microsoft Entra Global Administrator recovery method and remove the emergency access after the repair.\n\nWhat should you do first?",
+    "options": [
+      {"id": "A", "text": "Assign yourself the Microsoft Entra User Administrator role"},
+      {"id": "B", "text": "Create a Reader role assignment for yourself at each subscription"},
+      {"id": "C", "text": "Enable **Access management for Azure resources** in Microsoft Entra ID properties"},
+      {"id": "D", "text": "Create a deny assignment exception for your Global Administrator account"}
+    ],
+    "correct": ["C"],
+    "assumptions": "Azure public cloud. You are already an active Global Administrator in Microsoft Entra ID, and the subscriptions are associated with the same tenant. You need emergency recovery of Azure RBAC access and will remove the elevated root-scope assignment after restoring normal access.",
+    "sections": {
+      "correctAnswer": "**C. Enable Access management for Azure resources in Microsoft Entra ID properties**. A Global Administrator can elevate access this way, which grants User Access Administrator at root scope (`/`) so they can assign Azure RBAC roles across subscriptions and management groups in the tenant.",
+      "technical": "Azure resource roles and Microsoft Entra roles are related but separate authorization systems. Azure roles control access to Azure resources such as virtual machines, storage accounts, subscriptions, resource groups, and management groups. Microsoft Entra roles control directory resources such as users, groups, domains, and administrator roles. By default, being a Global Administrator in Microsoft Entra ID does not automatically grant access to Azure resources.\n\nMicrosoft documents an emergency recovery path. A Global Administrator can browse to Microsoft Entra ID properties and set **Access management for Azure resources** to **Yes**. When enabled, Azure assigns that user the Azure RBAC `User Access Administrator` role at root scope (`/`). Root scope is above management groups and subscriptions, so the user can view resources and assign access across subscriptions and management groups associated with the tenant.\n\nThe expected repair process is:\n\n1. Activate or sign in as a Global Administrator.\n2. Enable the access-management toggle or use the documented elevate-access API.\n3. Assign the necessary Azure RBAC roles at the correct management group, subscription, resource group, or resource scope.\n4. Remove the elevated access by turning the toggle back to **No** or removing the root-scope User Access Administrator assignment.\n\nThis is powerful emergency access, not a daily administration pattern. Least privilege resumes after the subscription or management group role assignments are fixed.",
+      "wrongOptions": {
+        "A": "User Administrator is a Microsoft Entra directory role for managing users and groups; it does not grant Azure RBAC access to subscriptions or management groups. Misconception: Any Microsoft Entra administrator role can manage Azure resources. Could be correct when the problem is creating users, managing groups, or resetting certain passwords in Microsoft Entra ID.",
+        "B": "Reader would not allow you to assign Azure RBAC roles, and you might not have permission to create even a Reader assignment in the locked-out subscription. Misconception: Viewing subscriptions is enough to repair access. Could be correct when you only need read-only visibility and already have a role assignment writer such as User Access Administrator or Owner to grant it.",
+        "D": "Deny assignments are Azure-managed, and the recovery task is about gaining a grant that can assign roles, not creating a deny exception. Misconception: Lost access is normally repaired by changing deny assignments. Could be correct only when an existing Azure-managed deny assignment is part of a supported service scenario and the service provides a documented way to modify its exclusions."
+      },
+      "plainEnglish": "Being the top administrator for the identity directory does not automatically make you the top administrator for every Azure subscription. The identity system and the Azure resource permission system are separate. Microsoft provides a special emergency switch for Global Administrators. When you turn on **Access management for Azure resources**, Azure gives you a resource-access role at the very top of the Azure hierarchy.\n\nYou use that temporary power to put the right owners or access administrators back on the affected subscriptions. Then you turn the emergency switch off so your account does not keep unnecessary high-level access.",
+      "analogy": "A company has two systems: HR controls employee records, and Facilities controls building keys. You are the head of HR, but that does not normally give you every building key. There is an emergency procedure where HR can request a temporary master key to restore proper facilities access, then return it.\n\n| Analogy | Azure reality |\n|---|---|\n| Head of HR | Microsoft Entra Global Administrator |\n| Building keys | Azure RBAC roles |\n| Temporary master key procedure | Access management for Azure resources toggle |\n| Master key for all buildings | User Access Administrator at root scope (`/`) |\n| Return the key | Set the toggle back to No or remove the assignment |\n\n**Where the analogy breaks down:** Azure creates a specific role assignment with auditable scope and permissions, while a physical master key analogy cannot represent API versions, tokens, or detailed RBAC actions.",
+      "jargon": [
+        {"term": "Microsoft Entra ID", "definition": "Microsoft's cloud identity and access service, formerly called Azure Active Directory, used for users, groups, applications, and directory roles."},
+        {"term": "Global Administrator", "definition": "A highly privileged Microsoft Entra role that can manage administrative features in the directory and can use the documented Azure resource access elevation path."},
+        {"term": "Azure RBAC", "definition": "The Azure resource authorization system based on role assignments, role definitions, and scopes."},
+        {"term": "User Access Administrator", "definition": "An Azure built-in role that lets a user manage access to Azure resources, including assigning roles."},
+        {"term": "Root scope (`/`)", "definition": "The top Azure RBAC scope above management groups and subscriptions in a tenant."},
+        {"term": "Access management for Azure resources", "definition": "A Microsoft Entra ID properties setting that lets a Global Administrator elevate to User Access Administrator at Azure root scope for the signed-in user."},
+        {"term": "Management group", "definition": "An Azure container above subscriptions used for governance and RBAC inheritance."},
+        {"term": "Tenant", "definition": "A dedicated Microsoft Entra ID instance associated with an organization and its identities."}
+      ],
+      "watchOut": "- Global Administrator is a Microsoft Entra role; it does not normally equal Azure subscription Owner.\n- The elevation grants User Access Administrator, not Owner, at root scope. Its purpose is to manage access.\n- The toggle is per signed-in Global Administrator user, not a global setting for every Global Administrator.\n- Remove elevated access after the repair to return to least privilege.\n- Do not confuse root scope (`/`) with a management group scope; root is broader.",
+      "productionTip": {
+        "official": "Microsoft documents that a Global Administrator can elevate access and receive User Access Administrator at root scope (`/`) to manage all subscriptions and management groups associated with the tenant. The same article instructs administrators to remove this elevated access when finished.",
+        "recommendation": "Treat this as break-glass access. Use Privileged Identity Management for Global Administrator where available, record the reason, make only the required RBAC repair, verify normal owners or access administrators exist, and remove the root-scope assignment immediately afterward."
+      },
+      "memoryTrick": "Directory admin is not resource admin by default. The emergency bridge is **Global Admin -> elevate -> User Access Administrator at /**, then remove it. This is a simplification because normal operations should use planned RBAC and PIM instead.",
+      "examTip": "Clue words are **Global Administrator**, **no subscription access**, **assign Azure RBAC roles**, and **remove emergency access**. Choose the documented elevation setting, not another Microsoft Entra role. A harder version might ask what role and scope the elevation creates: User Access Administrator at root scope (`/`)."
+    },
+    "sources": [
+      {"title": "Elevate access to manage all Azure subscriptions and management groups", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/elevate-access-global-admin"},
+      {"title": "Azure roles, Microsoft Entra roles, and classic subscription administrator roles", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"},
+      {"title": "Azure built-in roles", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles"},
+      {"title": "Understand scope for Azure RBAC", "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"}
+    ],
+    "verified": "2026-10"
+  }
+]
+

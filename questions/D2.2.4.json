@@ -1,0 +1,776 @@
+[
+  {
+    "id": "D2.2.4-01",
+    "objective": "D2.2.4",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains three storage accounts used by Tailspin Toys. A security analyst asks you to turn on encryption for new block blobs, file shares, queues, and tables. The analyst also asks whether encryption can be disabled temporarily during a bulk import to improve throughput.\n\nWhat should you tell the analyst?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable Azure Storage encryption only for the blob service, and disable it again during the import window"
+      },
+      {
+        "id": "B",
+        "text": "Do nothing to enable service-side encryption; Azure Storage encryption is enabled for all storage accounts and cannot be disabled"
+      },
+      {
+        "id": "C",
+        "text": "Enable infrastructure encryption on each existing account to turn on the first encryption layer"
+      },
+      {
+        "id": "D",
+        "text": "Create a customer-managed key before Azure Storage can encrypt queues and tables at rest"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The question is about Azure Storage service-side encryption for data at rest in storage accounts, not Azure Disk Encryption, client-side encryption, or TLS for data in transit.",
+    "sections": {
+      "correctAnswer": "**B. Do nothing to enable service-side encryption; Azure Storage encryption is enabled for all storage accounts and cannot be disabled**. Azure Storage automatically encrypts data at rest with 256-bit AES service-side encryption, and Microsoft documents that this protection is enabled for every storage account.",
+      "technical": "Azure Storage service-side encryption is the baseline encryption layer for storage account data. The service encrypts data transparently when it is persisted and decrypts it transparently when an authorized client reads it. Microsoft documents 256-bit AES-GCM for uploaded objects and states that Azure Storage encryption cannot be disabled.\n\nThe scope is broad: blobs, disks, files, queues, tables, and object metadata are encrypted, and geo-replicated data is encrypted in both the primary and secondary regions. The behavior does not depend on a standard or premium performance tier, or on a hot, cool, or archive access tier.\n\nThe order of reasoning is: first identify that the analyst asks about the default encryption-at-rest feature; next recognize that the feature is already active; then reject any plan that depends on turning it off for performance. Infrastructure encryption, customer-managed keys, and customer-provided keys are optional choices for extra assurance or key control. They are not prerequisites for the ordinary encryption that every storage account already has.",
+      "wrongOptions": {
+        "A": "This treats encryption as a per-blob-service toggle that can be disabled for speed, but the documented baseline covers all storage accounts and cannot be disabled. Misconception: encryption at rest is an optional performance setting. Could be correct when discussing application-owned client-side encryption that the app can choose to run or skip.",
+        "C": "Infrastructure encryption adds a second layer; it does not activate the first layer because the first layer already exists. Misconception: the word infrastructure means the basic encryption switch. Could be correct when a compliance requirement asks for double encryption on a new account.",
+        "D": "Customer-managed keys give the customer control over key management, but queues and tables are still encrypted by default with Microsoft-managed keys. Misconception: customer key ownership is required before Azure can encrypt data. Could be correct when the requirement is to control rotation and revocation."
+      },
+      "plainEnglish": "Azure Storage does not wait for you to enable basic encryption. It encrypts stored data automatically, like a facility that seals every box as it is placed on a shelf. Your applications do not need special code to benefit from that default protection, and there is no supported way to turn it off during a bulk load. If the company wants more control, it can choose its own key or add a second encryption layer, but those are separate requirements.",
+      "analogy": "Imagine a warehouse where every package receives a tamper-resistant wrap before storage. A customer can request a special customer-approved wrap or an additional outer wrap, but the first wrap is already applied.\n\n| Analogy | Azure reality |\n|---|---|\n| Default package wrap | Service-side encryption |\n| Special customer wrap | Customer-managed key or customer-provided key option |\n| Additional outer wrap | Infrastructure encryption |\n| Removing wrap for speed | Unsupported attempt to disable Azure Storage encryption |\n\n**Where the analogy breaks down:** Azure performs cryptographic encryption and transparent decryption for authorized operations; physical packaging does not represent key management or metadata encryption.",
+      "jargon": [
+        {
+          "term": "Azure Storage",
+          "definition": "Microsoft's storage platform for blobs, files, queues, tables, disks, and storage account data."
+        },
+        {
+          "term": "Service-side encryption",
+          "definition": "Encryption performed by Azure Storage as data is written to and read from persistent storage."
+        },
+        {
+          "term": "Data at rest",
+          "definition": "Data stored on durable media rather than data moving across a network connection."
+        },
+        {
+          "term": "AES-GCM",
+          "definition": "Advanced Encryption Standard in Galois/Counter Mode, the documented 256-bit mode for Azure Storage uploaded objects."
+        },
+        {
+          "term": "FIPS 140-2",
+          "definition": "A U.S. government standard for cryptographic modules that Microsoft documents for Azure Storage encryption."
+        },
+        {
+          "term": "Infrastructure encryption",
+          "definition": "An optional second Azure Storage encryption layer at the infrastructure level."
+        },
+        {
+          "term": "Customer-managed key",
+          "definition": "A customer-controlled key in Azure Key Vault or Managed HSM used to protect Azure Storage encryption keys."
+        },
+        {
+          "term": "Object metadata",
+          "definition": "Properties and user-defined information associated with storage objects."
+        }
+      ],
+      "watchOut": "- Do not confuse the default service-side encryption layer with optional infrastructure encryption.\n- Basic Azure Storage encryption covers all storage accounts and is not a setting you disable.\n- Customer-managed keys change who controls key material; they do not turn encryption on from an unencrypted state.\n- Geo-replicated storage data is encrypted in the secondary region as well.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure Storage encryption is enabled for all storage accounts, cannot be disabled, uses 256-bit AES for data at rest, and covers blobs, files, queues, tables, disks, and object metadata with no extra charge.",
+        "recommendation": "Treat the default encryption layer as mandatory baseline protection. For production, separately record whether the business needs customer key control, request-level blob keys, or double encryption, because each option changes operations and responsibility differently."
+      },
+      "memoryTrick": "Remember **always on, never off** for Azure Storage service-side encryption. This is a simplification because optional features can add key control or another encryption layer, but the baseline remains present.",
+      "examTip": "Clue words are **turn on encryption**, **all storage services**, and **disable temporarily**. For baseline Azure Storage encryption, answer that it is already enabled and cannot be disabled. A harder version may ask whether customer-managed keys are required for encryption itself; they are required only when the customer must control key management."
+    },
+    "sources": [
+      {
+        "title": "Azure Storage encryption for data at rest",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+      },
+      {
+        "title": "Enable infrastructure encryption for double encryption of data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/infrastructure-encryption-enable"
+      },
+      {
+        "title": "Customer-managed keys for account encryption - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.4-02",
+    "objective": "D2.2.4",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have an existing general-purpose v2 storage account named `stfinance` and an Azure key vault named `kvfinance` in the same Microsoft Entra tenant. The security team requires `stfinance` to use a customer-managed key stored in `kvfinance`. You plan to configure the setting in the Azure portal with the storage account's system-assigned managed identity.\n\nWhich two prerequisites must you satisfy? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable soft delete and purge protection on `kvfinance`"
+      },
+      {
+        "id": "B",
+        "text": "Assign the Key Vault Crypto Service Encryption User role to the storage account's managed identity at the key vault scope"
+      },
+      {
+        "id": "C",
+        "text": "Disable Microsoft-managed keys on the storage account before assigning the customer-managed key"
+      },
+      {
+        "id": "D",
+        "text": "Move the key vault into the same resource group as the storage account"
+      },
+      {
+        "id": "E",
+        "text": "Create an account SAS token with wrapkey and unwrapkey permissions"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The storage account already exists, the key vault uses the Azure RBAC permission model, and the customer-managed key is an RSA or RSA-HSM key supported by Azure Storage.",
+    "sections": {
+      "correctAnswer": "**A. Enable soft delete and purge protection on `kvfinance`** and **B. Assign the Key Vault Crypto Service Encryption User role to the storage account's managed identity at the key vault scope**. Azure Storage requires the key store to protect deleted keys from immediate purge, and the managed identity needs permission to access the key for encryption operations.",
+      "technical": "A customer-managed key changes protection of the root encryption key for the account. Azure Storage still performs the encryption, but it wraps the account key with a key you control in Azure Key Vault or Azure Key Vault Managed HSM. For an existing storage account in the same tenant, Azure Storage can use either a system-assigned or user-assigned managed identity to authenticate to the key vault.\n\nThe key vault or managed HSM must have soft delete and purge protection enabled. These settings reduce the risk that a key needed for storage encryption is accidentally deleted and permanently purged. The key must also be a supported RSA or RSA-HSM key, which the assumptions already cover.\n\nThe identity permission is separate from the vault recovery settings. With Azure RBAC on Key Vault, assign **Key Vault Crypto Service Encryption User** to the storage account's managed identity at key vault scope, or narrower where operationally supported. The underlying operations are key get, wrapkey, and unwrapkey. A new storage account configured with CMK at creation must use a user-assigned identity, but this question states the storage account already exists.",
+      "wrongOptions": {
+        "C": "There is no unencrypted transition where Microsoft-managed encryption must be disabled first; the data remains encrypted while key protection changes. Misconception: switching key management creates a temporary plaintext account. Could be correct only as a loose portal description of selecting Customer-managed keys instead of Microsoft-managed keys.",
+        "D": "A key vault and storage account may be in different regions or subscriptions in the same tenant, so the same resource group is not required. Misconception: dependent Azure resources must share a resource group. Could be correct as an internal naming or governance preference, not as an Azure Storage encryption requirement.",
+        "E": "A SAS token delegates storage access; it does not grant Key Vault cryptographic rights to a managed identity. Misconception: SAS permissions can authorize wrap and unwrap operations on keys. Could be correct when delegating limited access to storage data, not when configuring CMK."
+      },
+      "plainEnglish": "The storage account needs a trusted identity to use the key without anyone pasting secrets into code. That identity must be allowed to use the key vault key for encryption work. The vault itself also needs recovery protections so an important key cannot disappear permanently after one delete operation. The same resource group is not important here, and a storage SAS is the wrong kind of permission.",
+      "analogy": "Picture a secure archive where a robot files documents using a master key kept in a bank vault. The bank first makes sure lost keys can be recovered, then gives the robot an authorization card for key use.\n\n| Analogy | Azure reality |\n|---|---|\n| Secure archive | Storage account |\n| Bank vault | Azure Key Vault |\n| Master key | Customer-managed key |\n| Robot authorization card | Managed identity with Key Vault Crypto Service Encryption User |\n| Recovery protection | Soft delete and purge protection |\n\n**Where the analogy breaks down:** Azure Storage wraps and unwraps account encryption keys through APIs; the managed identity never receives a physical key.",
+      "jargon": [
+        {
+          "term": "Customer-managed key",
+          "definition": "A customer-controlled key in Azure Key Vault or Managed HSM used to protect Azure Storage encryption keys."
+        },
+        {
+          "term": "Azure Key Vault",
+          "definition": "Azure service for storing keys, secrets, and certificates and controlling access to them."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An identity in Microsoft Entra ID that an Azure resource can use without storing credentials in code."
+        },
+        {
+          "term": "System-assigned managed identity",
+          "definition": "A managed identity tied to the lifecycle of one Azure resource, such as a storage account."
+        },
+        {
+          "term": "User-assigned managed identity",
+          "definition": "A standalone managed identity resource that can be associated with one or more Azure resources."
+        },
+        {
+          "term": "Key Vault Crypto Service Encryption User",
+          "definition": "A built-in Azure role used by services that need encryption-related key operations."
+        },
+        {
+          "term": "Soft delete",
+          "definition": "A recovery feature that retains deleted vaults or keys for a configured period."
+        },
+        {
+          "term": "Purge protection",
+          "definition": "A feature that prevents permanent deletion of soft-deleted vaults or keys until the retention period ends."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity service, formerly named Azure Active Directory."
+        }
+      ],
+      "watchOut": "- Existing storage accounts can use system-assigned or user-assigned identities for same-tenant CMK.\n- New storage accounts configured with CMK at creation require a user-assigned identity.\n- Key Vault soft delete alone is not enough; purge protection is also required.\n- Storage SAS tokens never grant Key Vault cryptographic permissions.",
+      "productionTip": {
+        "official": "Microsoft documents that customer-managed keys require a key vault or managed HSM with soft delete and purge protection enabled. The same guidance assigns Key Vault Crypto Service Encryption User to the managed identity that accesses the key.",
+        "recommendation": "Use Azure RBAC for Key Vault where possible and scope permissions narrowly. Keep a runbook that records the managed identity, key URI, rotation mode, and vault recovery settings before production data depends on the key."
+      },
+      "memoryTrick": "For storage CMK, remember **protect the key, then permit the identity**. The phrase means enable Key Vault recovery protections first, then give the storage account identity the encryption-user role.",
+      "examTip": "Clue words are **existing storage account**, **same tenant**, **system-assigned managed identity**, and **Key Vault**. Choose recovery settings and the Key Vault role. A harder question may switch to account creation time, where a user-assigned identity is required."
+    },
+    "sources": [
+      {
+        "title": "Customer-managed keys for account encryption - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+      },
+      {
+        "title": "Configure customer-managed keys in the same tenant for an existing storage account",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-configure-existing-account"
+      },
+      {
+        "title": "Configure customer-managed keys in the same tenant for a new storage account",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-configure-new-account"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.4-03",
+    "objective": "D2.2.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You configure customer-managed keys for a storage account named `stlegal`. The compliance team rotates the key by creating a new version of the same key in Azure Key Vault every six months. The team wants Azure Storage to begin using new key versions without an administrator editing the storage account each time.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a new storage account after every key rotation"
+      },
+      {
+        "id": "B",
+        "text": "Specify the key URI with the current key version and enable blob versioning"
+      },
+      {
+        "id": "C",
+        "text": "Specify the key URI without a key version when configuring customer-managed keys"
+      },
+      {
+        "id": "D",
+        "text": "Disable the older key version immediately after creating the new version"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The key remains in the same key vault or managed HSM, and the requirement is to update the customer-managed key version used by Azure Storage, not to rotate storage account access keys.",
+    "sections": {
+      "correctAnswer": "**C. Specify the key URI without a key version when configuring customer-managed keys**. If the key version is omitted, Azure Storage checks the key vault or managed HSM daily and automatically uses the latest version when a new version is available.",
+      "technical": "Customer-managed keys support automatic and manual key-version updating. In automatic mode, the storage account configuration names the key but does not pin a specific version. Azure Storage checks the key vault or managed HSM once per day for a newer version. If it finds one, it begins using the latest version for encryption key protection.\n\nIn manual mode, the storage account configuration includes a specific key version. Azure Storage keeps using that version until an administrator updates the storage account encryption settings to a different version. This is appropriate for strict change control, but it fails the stated requirement to avoid account edits at each rotation.\n\nThe sequence is: create a new version of the key in Key Vault or Managed HSM; allow Azure Storage's daily check to discover it when automatic updating is configured; keep the old version enabled long enough for the service to move; and only then retire the old version. Microsoft specifically warns to wait 24 hours before disabling the older version. Blob versioning is unrelated because it keeps previous blob contents, not Key Vault key versions.",
+      "wrongOptions": {
+        "A": "A storage account does not need to be recreated to use a new CMK version; Microsoft documents version changes without downtime. Misconception: encryption key choices are always immutable after data exists. Could be correct for account-level infrastructure encryption, which must be selected at account creation.",
+        "B": "Including a version pins the storage account to manual key-version updating, and blob versioning protects blob contents rather than encryption key versions. Misconception: every Azure feature named versioning affects Key Vault keys. Could be correct when the goal is to retain previous versions of blob data after overwrites.",
+        "D": "Disabling the old version immediately can break access before Azure Storage's daily check has moved to the new version. Misconception: creating a new key version instantly updates every dependent resource. Could be correct only after confirming the account has adopted the new version and the waiting period has passed."
+      },
+      "plainEnglish": "A Key Vault key can have multiple versions, like editions of the same manual. If you tell Azure Storage to use a named manual without an edition number, it checks daily for the newest edition. If you give the exact edition number, it stays on that edition until someone changes the storage account. The compliance team still creates the new key version; Azure Storage only follows it when configured not to pin the old version.",
+      "analogy": "A legal office subscribes to a policy binder. A reference to `Binder A` means staff should use the current binder after their daily check. A reference to `Binder A, March edition` means they keep using March until told otherwise.\n\n| Analogy | Azure reality |\n|---|---|\n| Binder name | Key name |\n| Edition | Key version |\n| Daily shelf check | Azure Storage daily check for latest version |\n| Throwing away March too early | Disabling old key version too soon |\n\n**Where the analogy breaks down:** Azure uses cryptographic key wrapping through Key Vault APIs, and the daily check is service behavior rather than a human routine.",
+      "jargon": [
+        {
+          "term": "Key version",
+          "definition": "A specific version of a Key Vault or Managed HSM key created during rotation."
+        },
+        {
+          "term": "Customer-managed key",
+          "definition": "A customer-controlled key in Azure Key Vault or Managed HSM used to protect Azure Storage encryption keys."
+        },
+        {
+          "term": "Azure Key Vault",
+          "definition": "Azure service for storing keys, secrets, and certificates and controlling access to them."
+        },
+        {
+          "term": "Managed HSM",
+          "definition": "Azure Key Vault Managed Hardware Security Module, a dedicated HSM-backed key service."
+        },
+        {
+          "term": "Automatic updating",
+          "definition": "A CMK mode where Azure Storage follows the latest key version after daily checks."
+        },
+        {
+          "term": "Manual updating",
+          "definition": "A CMK mode where the storage account remains pinned to a specified key version."
+        },
+        {
+          "term": "Blob versioning",
+          "definition": "A Blob Storage data protection feature that keeps previous versions of blob data."
+        },
+        {
+          "term": "Storage account access keys",
+          "definition": "Shared Key credentials for storage authentication, separate from encryption keys."
+        }
+      ],
+      "watchOut": "- Omitting the key version enables automatic updating; specifying the version means manual updating.\n- Azure Storage checks for a new key version once daily, not continuously.\n- Wait 24 hours before disabling an older key version after rotation.\n- Azure Storage does not create new Key Vault key versions for you.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure Storage supports automatic and manual updating of customer-managed key versions. Automatic updating is enabled by omitting the key version, and Azure Storage checks the key store daily.",
+        "recommendation": "Choose automatic updating when operations can tolerate service-led adoption of new versions. For production rotations, monitor the active key version and delay disabling older versions until the documented daily check window has passed."
+      },
+      "memoryTrick": "No version means **newest version**; a version means **pinned version**. This simplification is safe for AZ-104, but remember the newest version is adopted after a daily check, not instantly.",
+      "examTip": "Clue words are **without editing the storage account each time** and **new version of the same key**. Pick the URI without a version. A harder variant may ask why an immediate old-key disablement failed; answer with the once-daily check and 24-hour wait."
+    },
+    "sources": [
+      {
+        "title": "Customer-managed keys for account encryption - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+      },
+      {
+        "title": "Configure customer-managed keys in the same tenant for an existing storage account",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-configure-existing-account"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.4-04",
+    "objective": "D2.2.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Woodgrove Bank uses a customer-managed key in Azure Key Vault for a storage account named `stcases`. During an incident, the security team disables the currently configured key in the key vault to stop access quickly. Minutes later, users report that they cannot download blobs or read blob metadata from `stcases`.\n\nDoes this behavior match the documented effect of revoking access to the customer-managed key?",
+    "options": [
+      {
+        "id": "A",
+        "text": "No. Azure Storage permanently decrypts the account when a customer-managed key is disabled"
+      },
+      {
+        "id": "B",
+        "text": "Yes, but only write operations should fail; read operations must continue because the data is already encrypted"
+      },
+      {
+        "id": "C",
+        "text": "No. Disabling the key only prevents future key rotations and does not affect data access"
+      },
+      {
+        "id": "D",
+        "text": "Yes. Disabling the key can make read and write operations on protected data and metadata fail with 403 Forbidden until key access is restored"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The users are accessing Blob Storage data protected by the storage account's active customer-managed key, and the incident action disables that key rather than deleting the storage account.",
+    "sections": {
+      "correctAnswer": "**D. Yes. Disabling the key can make read and write operations on protected data and metadata fail with 403 Forbidden until key access is restored**. Microsoft documents disabling the customer-managed key as a way to revoke access, and affected operations fail because Azure Storage cannot use the key path it needs.",
+      "technical": "Customer-managed keys give the customer an operational control point. Azure Storage uses a managed identity to access the key in Key Vault or Managed HSM and uses that customer-managed key to protect the account's root encryption key. If the configured key is disabled, Azure Storage cannot perform operations that need that key.\n\nMicrosoft documents that after the key is disabled, clients cannot call operations that read from or write to a resource or its metadata. Attempts fail with HTTP 403 Forbidden for all users. The listed Blob Storage operations include Get Blob, Get Blob Properties, Get Blob Metadata, Set Blob Metadata, Put Blob, Put Block, Copy Blob, and others. Azure Files has its own list of affected operations.\n\nThe data is not permanently decrypted or destroyed. It remains encrypted but inaccessible until the key is reenabled or access to the customer-managed key is restored. Even if a user has correct Azure RBAC or SAS permission, the storage service still needs the encryption key path to complete the operation. Valid data-plane authorization does not bypass an unavailable CMK.",
+      "wrongOptions": {
+        "A": "Azure Storage does not decrypt the account when the key is disabled; it keeps data encrypted and inaccessible. Misconception: loss of the wrapper key causes plaintext fallback. Could be correct never as an Azure Storage CMK behavior.",
+        "B": "Reads can fail because decryption and metadata access depend on the key path, not only writes. Misconception: encrypted data can always be read once written. Could be correct for a control that blocks only writes, such as an application read-only policy.",
+        "C": "Disabling the active key affects data operations, not just future rotation. Misconception: Key Vault key state matters only during configuration changes. Could be correct when disabling an old key version that the storage account no longer uses."
+      },
+      "plainEnglish": "The key in Key Vault is like the control that lets Azure Storage open the encrypted filing cabinet. If security disables that key, normal users may still have permissions, but the service cannot complete many reads and writes that depend on the key. The files are not erased, and they are not converted to plain text. They are locked until key access is restored.",
+      "analogy": "A building has employee badges and a master electronic lock credential. During an incident, security disables the master credential. Employees still have badges, but doors depending on that credential refuse to open.\n\n| Analogy | Azure reality |\n|---|---|\n| Employee badge | User, SAS, or app permission |\n| Master credential | Customer-managed key |\n| Door denial | 403 Forbidden from storage operation |\n| Restoring credential | Reenabling or restoring key access |\n| Documents still in room | Data remains encrypted |\n\n**Where the analogy breaks down:** Azure Storage performs cryptographic unwrap operations and returns API errors; physical doors do not model metadata operations or service-managed encryption.",
+      "jargon": [
+        {
+          "term": "Customer-managed key",
+          "definition": "A customer-controlled key in Azure Key Vault or Managed HSM used to protect Azure Storage encryption keys."
+        },
+        {
+          "term": "Revoke access",
+          "definition": "Blocking Azure Storage from using the configured customer-managed key so protected operations fail."
+        },
+        {
+          "term": "Disable key",
+          "definition": "A Key Vault action that makes a key or key version unusable for cryptographic operations."
+        },
+        {
+          "term": "403 Forbidden",
+          "definition": "An HTTP response meaning the service refused to allow the requested operation."
+        },
+        {
+          "term": "Blob metadata",
+          "definition": "Properties and name-value information associated with a blob."
+        },
+        {
+          "term": "Get Blob",
+          "definition": "A Blob Storage operation that reads blob content."
+        },
+        {
+          "term": "Azure Key Vault",
+          "definition": "Azure service for storing keys, secrets, and certificates and controlling access to them."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An identity in Microsoft Entra ID that an Azure resource can use without storing credentials in code."
+        },
+        {
+          "term": "SAS",
+          "definition": "Shared access signature, a token that delegates limited access to a storage resource."
+        }
+      ],
+      "watchOut": "- Disabling the active key is a powerful outage-producing control.\n- The data remains encrypted; it is inaccessible, not decrypted or automatically deleted.\n- User permissions and SAS tokens do not bypass a missing customer-managed key.\n- Restore key access before assuming application authorization is the root problem.",
+      "productionTip": {
+        "official": "Microsoft documents that disabling the key in Key Vault temporarily revokes access to a storage account using customer-managed keys. Listed read and write operations on resources or metadata fail with 403 Forbidden until access is restored.",
+        "recommendation": "Rehearse CMK disable and restore procedures outside production before relying on them for incident response. Keep break-glass Key Vault permissions, monitoring, and owner contacts documented because the blast radius can include every workload using the account."
+      },
+      "memoryTrick": "With CMK, **no key path means no data path** for many operations. This rule of thumb is simplified because Microsoft lists specific affected operations rather than every management action.",
+      "examTip": "Clue words are **customer-managed key**, **disabled in Key Vault**, and **cannot download or read metadata**. Expected behavior is 403 after key revocation. A harder item may include correct RBAC permissions; do not let valid user permission distract from the unavailable encryption key."
+    },
+    "sources": [
+      {
+        "title": "Customer-managed keys for account encryption - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+      },
+      {
+        "title": "Configure customer-managed keys in the same tenant for an existing storage account",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-configure-existing-account"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.4-05",
+    "objective": "D2.2.4",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "Litware hosts data for two customers in one storage account. The company wants each customer's uploaded blobs to use a separate encryption boundary without creating another storage account. Customer A's container must reject uploads that try to use any encryption scope other than the container default. Customer B's container may allow uploaders to choose a different defined scope per blob.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create encryption scopes in the storage account, and set a default encryption scope when each container is created"
+      },
+      {
+        "id": "B",
+        "text": "For Customer A's container, prohibit overrides of the default encryption scope"
+      },
+      {
+        "id": "C",
+        "text": "Use a stored access policy because it selects encryption keys for each blob"
+      },
+      {
+        "id": "D",
+        "text": "Change the default encryption scope after the container is created whenever the customer changes"
+      },
+      {
+        "id": "E",
+        "text": "Disable the encryption scope after upload so existing reads continue normally"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The workload stores block blobs, the required encryption scopes already exist or can be created in the storage account, and the question is about Blob Storage encryption scopes rather than SAS stored access policies.",
+    "sections": {
+      "correctAnswer": "**A. Create encryption scopes in the storage account, and set a default encryption scope when each container is created** and **B. For Customer A's container, prohibit overrides of the default encryption scope**. Encryption scopes can be scoped to a container or blob, and a container can enforce its default so uploads with another scope fail.",
+      "technical": "An encryption scope is a Blob Storage feature for managing encryption at container or individual blob level. By default, a storage account uses a key scoped to the account. When you define an encryption scope, the scope can use a Microsoft-managed key or a customer-managed key. This lets one account host separate encryption boundaries for different customers or datasets.\n\nContainer behavior is selected when the container is created. You can specify a default encryption scope for future blobs in that container. You then decide whether that default is enforced. If overrides are prohibited, an upload that specifies another encryption scope fails. If overrides are allowed, an uploader can specify a different encryption scope defined on the storage account for that blob.\n\nThe sequence is: create one or more encryption scopes; create the container and specify its default scope; choose whether to permit override; and rely on the container default or a blob-level scope at upload time. Read operations are transparent while the encryption scope is enabled. If a scope is disabled, later reads and writes made with that scope fail with 403 Forbidden, and encryption scopes cannot be deleted.",
+      "wrongOptions": {
+        "C": "Stored access policies manage service SAS constraints such as permissions and expiry; they do not select blob encryption keys. Misconception: any storage policy can control encryption. Could be correct when the requirement is to revoke or group service SAS tokens.",
+        "D": "A default encryption scope must be specified for a container when the container is created. Misconception: encryption defaults behave like ordinary mutable metadata. Could be correct for settings that Azure allows changing after creation, not this documented default-scope requirement.",
+        "E": "Disabling an encryption scope causes subsequent reads and writes using that scope to fail with 403 Forbidden. Misconception: disabling only prevents new encrypted writes. Could be correct only after data has been moved and no clients need to access blobs protected by that scope."
+      },
+      "plainEnglish": "Encryption scopes are like named encryption lanes inside one storage account. You can create one lane for Customer A and another for Customer B. When you create a container, you decide which lane it uses by default. Customer A's lane can be locked so every upload must use it. Customer B's container can be more flexible and let uploaders choose another approved lane for a particular blob.",
+      "analogy": "A warehouse has color-coded secure packing stations. Customer A's room must use only the blue station, while Customer B's room normally uses green but may choose another approved station for special packages.\n\n| Analogy | Azure reality |\n|---|---|\n| Secure packing station | Encryption scope |\n| Customer room | Blob container |\n| Package | Blob |\n| Blue-only rule | Default scope with overrides prohibited |\n| Approved alternate station | Blob upload with another scope |\n\n**Where the analogy breaks down:** Azure does not move blobs through physical stations; the selected scope controls cryptographic key use by the service.",
+      "jargon": [
+        {
+          "term": "Encryption scope",
+          "definition": "A named Azure Blob Storage encryption boundary that can use a key scoped to a container or individual blob."
+        },
+        {
+          "term": "Blob Storage",
+          "definition": "Azure object storage for unstructured data such as documents, backups, images, and logs."
+        },
+        {
+          "term": "Container",
+          "definition": "A logical grouping of blobs in a storage account."
+        },
+        {
+          "term": "Default encryption scope",
+          "definition": "The encryption scope applied automatically to new blobs uploaded to a container."
+        },
+        {
+          "term": "Override",
+          "definition": "A setting that allows an uploader to specify a different scope than the container default."
+        },
+        {
+          "term": "Customer-managed key",
+          "definition": "A customer-controlled key in Azure Key Vault or Managed HSM used to protect Azure Storage encryption keys."
+        },
+        {
+          "term": "Microsoft-managed key",
+          "definition": "A key that Microsoft manages for Azure service encryption and key rotation responsibilities."
+        },
+        {
+          "term": "403 Forbidden",
+          "definition": "An HTTP response meaning the service refused to allow the requested operation."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A server-side policy for service SAS validity and permissions, not an encryption selector."
+        }
+      ],
+      "watchOut": "- Encryption scopes are for Blob Storage encryption boundaries, not for queues, tables, or SAS permissions.\n- A container's default encryption scope is specified at container creation.\n- Overrides can be permitted or prohibited, which determines whether nondefault scoped uploads succeed.\n- Disabling a scope breaks reads and writes that use it.",
+      "productionTip": {
+        "official": "Microsoft documents that encryption scopes can manage encryption at container or blob level. A container can enforce or permit override of its default scope, and disabling a scope causes later reads and writes using that scope to fail with 403 Forbidden.",
+        "recommendation": "Use one scope per tenant or data boundary only when you also have processes for key rotation, billing review, and disablement. Combine scopes with separate containers, least-privilege access, and monitoring for unexpected scope choices."
+      },
+      "memoryTrick": "Scope is the **encryption lane**; enforcement says whether blobs may change lanes. The mnemonic is simplified because account keys, container defaults, and blob-level choices still depend on creation settings.",
+      "examTip": "Clue words are **same storage account**, **separate encryption boundary**, **per container/blob**, and **reject uploads**. Select encryption scopes and override prohibition. A harder version may mention a disabled scope; remember disabled scopes block reads as well as writes."
+    },
+    "sources": [
+      {
+        "title": "Encryption scopes for Blob storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/encryption-scope-overview"
+      },
+      {
+        "title": "Create and manage encryption scopes",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/encryption-scope-manage"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.4-06",
+    "objective": "D2.2.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You are deploying a new storage account for Adatum. A regulatory requirement says that data in the account must be encrypted twice by Azure Storage, with one layer at the service level and a second layer at the infrastructure level. You already created a standard general-purpose v2 account named `stadatumprod` yesterday without selecting any special encryption options.\n\nWhat should you do to meet the requirement for the whole account?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable infrastructure encryption on `stadatumprod` from the Encryption blade"
+      },
+      {
+        "id": "B",
+        "text": "Switch `stadatumprod` from Microsoft-managed keys to customer-managed keys"
+      },
+      {
+        "id": "C",
+        "text": "Create a new supported storage account and enable infrastructure encryption during account creation"
+      },
+      {
+        "id": "D",
+        "text": "Create a customer-provided key for each blob request in `stadatumprod`"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The requirement is account-level infrastructure encryption for the entire storage account. The existing account is a regular account that was not created with infrastructure encryption enabled.",
+    "sections": {
+      "correctAnswer": "**C. Create a new supported storage account and enable infrastructure encryption during account creation**. Account-level infrastructure encryption must be configured when the storage account is created; it cannot be enabled or disabled later for that existing account.",
+      "technical": "Azure Storage service-side encryption is the first layer and is always enabled. Infrastructure encryption is an optional second layer. When it is enabled, data is encrypted twice: once at service level and once at infrastructure level, with two different encryption algorithms and two different keys. Microsoft recommends it for scenarios that need double encryption for compliance.\n\nThe creation-time rule is the trap. For account-level infrastructure encryption, the storage account must be configured to require infrastructure encryption when the account is created. Microsoft states that this setting cannot be enabled or disabled after the account exists. Supported account types include general-purpose v2, premium block blob, premium page blob, and premium file shares.\n\nThe practical order is: create a new supported storage account, enable infrastructure encryption on the Encryption tab or with deployment tooling, verify `requireInfrastructureEncryption` is true, then migrate workloads if the existing account lacks the setting. Customer-managed keys can protect the service-level encryption layer, but the infrastructure layer uses Microsoft-managed keys and a separate key. Customer-provided keys are Blob request keys, not account-level double encryption.",
+      "wrongOptions": {
+        "A": "Account-level infrastructure encryption cannot be turned on after account creation. Misconception: every encryption setting in the portal is mutable. Could be correct when verifying an account already created with the setting or when creating a new encryption scope with its own infrastructure option.",
+        "B": "Customer-managed keys change key management for service-level encryption but do not add the infrastructure-level layer. Misconception: customer key control equals double encryption. Could be correct when the requirement is customer control over key rotation or revocation.",
+        "D": "Customer-provided keys apply to supported Blob Storage requests and do not enable double encryption for the whole account. Misconception: any extra key produces the documented infrastructure-encryption feature. Could be correct for per-request blob encryption control in an application."
+      },
+      "plainEnglish": "The storage account already has normal Azure Storage encryption. The requirement asks for a second Azure-managed layer across the whole account. That second layer is like a reinforced design chosen when the safe is built. You cannot add that exact account-wide reinforcement to yesterday's account. Create a new supported account with infrastructure encryption selected, then migrate the workload if the requirement is mandatory.",
+      "analogy": "A company bought a regular filing cabinet yesterday. Today compliance requires a cabinet built with two independent lock layers. It can buy a new double-lock cabinet, but it cannot turn the existing cabinet into that factory-built model.\n\n| Analogy | Azure reality |\n|---|---|\n| Regular cabinet | Existing account with baseline encryption |\n| Factory second lock | Infrastructure encryption at account creation |\n| New double-lock cabinet | New account with infrastructure encryption |\n| Customer lock choice | Customer-managed key |\n| Folder padlock | Customer-provided key on blob requests |\n\n**Where the analogy breaks down:** Azure encryption layers use algorithms and keys in the storage platform, and encryption scopes have a separate creation-time infrastructure option.",
+      "jargon": [
+        {
+          "term": "Infrastructure encryption",
+          "definition": "An optional Azure Storage feature that adds a second encryption layer at the infrastructure level."
+        },
+        {
+          "term": "Service-side encryption",
+          "definition": "Encryption performed by Azure Storage as data is written to and read from persistent storage."
+        },
+        {
+          "term": "Double encryption",
+          "definition": "Encrypting data twice with separate layers, algorithms, and keys."
+        },
+        {
+          "term": "General-purpose v2",
+          "definition": "A current storage account type that supports major Azure Storage services and features."
+        },
+        {
+          "term": "Microsoft-managed key",
+          "definition": "A key that Microsoft manages for Azure service encryption and key rotation responsibilities."
+        },
+        {
+          "term": "Customer-managed key",
+          "definition": "A customer-controlled key in Azure Key Vault or Managed HSM used to protect Azure Storage encryption keys."
+        },
+        {
+          "term": "Customer-provided key",
+          "definition": "A client-supplied AES-256 key included on Blob Storage requests."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's command-line tool for Azure; `--require-infrastructure-encryption` enables the account setting at creation."
+        }
+      ],
+      "watchOut": "- Account-level infrastructure encryption is a create-time choice.\n- Switching to customer-managed keys does not equal double encryption.\n- The infrastructure layer uses Microsoft-managed keys even if the service layer uses customer-managed keys.\n- For most scenarios, Microsoft says normal Azure Storage encryption is sufficient; use double encryption when compliance needs it.",
+      "productionTip": {
+        "official": "Microsoft documents that infrastructure encryption encrypts Azure Storage data twice, once at service level and once at infrastructure level. For a storage account, it must be configured during account creation and cannot be enabled or disabled later.",
+        "recommendation": "Capture double-encryption requirements before provisioning production accounts. Use deployment templates or policy to prevent noncompliant accounts, and plan migration instead of trying to retrofit the account-level setting."
+      },
+      "memoryTrick": "Infrastructure encryption is **built in at birth** for an account. This shortcut fails for a separate encryption-scope scenario, where the scope also has its own creation-time choice.",
+      "examTip": "Clue words are **encrypted twice**, **infrastructure level**, and **account created yesterday**. Create a new account with the setting enabled. A harder version may ask about an encryption scope instead of the whole account; then the setting is chosen when creating the scope."
+    },
+    "sources": [
+      {
+        "title": "Enable infrastructure encryption for double encryption of data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/infrastructure-encryption-enable"
+      },
+      {
+        "title": "Azure Storage encryption for data at rest",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.4-07",
+    "objective": "D2.2.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A developer for Fabrikam uploads a blob by calling the Blob Storage REST API and including an AES-256 encryption key in the request headers. The storage account also uses Microsoft-managed keys for normal service-side encryption. Later, the developer tries to read the blob from the Azure portal and does not provide the original key. The read fails.\n\nWhat explains the failure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A blob encrypted with a customer-provided key requires the same key on later read or write requests, and the Azure portal cannot read or write blobs that require a request-provided key"
+      },
+      {
+        "id": "B",
+        "text": "Customer-provided keys are supported only for Queue Storage, not Blob Storage"
+      },
+      {
+        "id": "C",
+        "text": "Microsoft-managed keys are disabled automatically when a customer-provided key is used"
+      },
+      {
+        "id": "D",
+        "text": "The blob must be converted to an encryption scope before it can be read"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The blob was created or updated with a customer-provided key on the request, and the failure is about Blob Storage access to that same object.",
+    "sections": {
+      "correctAnswer": "**A. A blob encrypted with a customer-provided key requires the same key on later read or write requests, and the Azure portal cannot read or write blobs that require a request-provided key**. Azure Storage discards the supplied key after the operation and stores only a hash to verify future requests.",
+      "technical": "Customer-provided keys are different from customer-managed keys. With a customer-provided key, the client includes an AES-256 encryption key directly on a Blob Storage request. Azure Storage uses that key to encrypt or decrypt the blob operation, writes a SHA-256 hash of the key alongside the blob contents, and discards the actual key after the operation. Azure Storage does not store or manage the key for the customer.\n\nThe follow-up rule is strict. If a client creates or updates a blob by using a customer-provided key, later read and write requests for that blob must also include the same key. If the key is missing on a request for a blob already encrypted with a customer-provided key, the request fails with 409 Conflict. REST callers use headers such as `x-ms-encryption-key`, `x-ms-encryption-key-sha256`, and `x-ms-encryption-algorithm` with value `AES256` for write requests. HTTPS is required.\n\nThe account can still use Microsoft-managed or customer-managed keys. The provided key is used for that blob operation. Microsoft also states that the Azure portal cannot be used to read from or write to a container or blob encrypted with a request-provided key.",
+      "wrongOptions": {
+        "B": "Customer-provided keys are documented for Blob Storage operations. Misconception: request-provided encryption keys are a queue-only client feature. Could be correct when discussing some client-side encryption library support differences, but not this Blob Storage feature.",
+        "C": "The account's Microsoft-managed encryption setting is not disabled automatically; the provided key applies to the specific blob operation. Misconception: one encryption option turns off all others. Could be correct only if an administrator explicitly changes account key management.",
+        "D": "Encryption scopes are separate named encryption boundaries. A customer-provided-key blob is read by supplying the same request key, not by converting it to a scope. Misconception: every special encryption case must become an encryption scope. Could be correct when designing container-level scoped encryption for new uploads."
+      },
+      "plainEnglish": "For this blob, the application brought its own key to the storage request. Azure Storage used the key but did not keep a copy. That means Azure Storage cannot later read the blob for a client that does not bring the same key again. The portal is not a tool where you can supply that request key for these blob operations, so portal access fails.",
+      "analogy": "A courier lets a customer place a package in a locker using the customer's own combination. The courier records a fingerprint of the combination to check future attempts, but it does not know the combination itself.\n\n| Analogy | Azure reality |\n|---|---|\n| Customer combination | Customer-provided AES-256 key |\n| Fingerprint | SHA-256 hash stored with blob |\n| Locker package | Blob encrypted with request key |\n| Returning without combination | Read missing the key |\n| Front desk portal | Azure portal cannot perform these reads |\n\n**Where the analogy breaks down:** Azure uses HTTPS headers and cryptographic verification; the hash cannot be used to derive the real key.",
+      "jargon": [
+        {
+          "term": "Customer-provided key",
+          "definition": "An AES-256 key supplied by the client on Blob Storage requests for granular encryption control."
+        },
+        {
+          "term": "Customer-managed key",
+          "definition": "A customer-controlled key in Azure Key Vault or Managed HSM used to protect Azure Storage encryption keys."
+        },
+        {
+          "term": "Microsoft-managed key",
+          "definition": "A key that Microsoft manages for Azure service encryption and key rotation responsibilities."
+        },
+        {
+          "term": "AES-256",
+          "definition": "Advanced Encryption Standard with a 256-bit key size."
+        },
+        {
+          "term": "SHA-256",
+          "definition": "A cryptographic hash algorithm used here to verify that later requests use the same key."
+        },
+        {
+          "term": "409 Conflict",
+          "definition": "An HTTP status returned when a request conflicts with current object state, such as a missing required key."
+        },
+        {
+          "term": "REST API",
+          "definition": "An HTTP-based API style used to call Blob Storage operations directly."
+        },
+        {
+          "term": "HTTPS",
+          "definition": "Encrypted HTTP required when sending the customer-provided key in request headers."
+        },
+        {
+          "term": "Encryption scope",
+          "definition": "A named Blob Storage encryption boundary, different from sending a key on each request."
+        }
+      ],
+      "watchOut": "- Azure Storage does not store customer-provided keys.\n- Later reads and writes must include the same key used for the blob.\n- The Azure portal cannot read or write containers or blobs that require a request-provided key.\n- Customer-provided keys are for Blob Storage operations, not Azure Files, Queue Storage, or Table Storage.",
+      "productionTip": {
+        "official": "Microsoft documents that customer-provided keys are sent on Blob Storage requests, Azure Storage discards the key after encryption or decryption, and later reads or writes must include the same key. The documentation also states that the portal cannot read or write these blobs.",
+        "recommendation": "Use customer-provided keys only when the application can reliably store, retrieve, rotate, and audit the keys. For many administrative scenarios, customer-managed keys or encryption scopes provide central control with less risk of losing access to individual blobs."
+      },
+      "memoryTrick": "Customer-provided means **bring the key every time**. This is simplified because only supported Blob operations accept the headers, but it captures the exam point about future reads and writes.",
+      "examTip": "Clue words are **AES-256 key in request headers**, **read later without the key**, and **Azure portal**. Choose the customer-provided-key behavior. A harder item may list `x-ms-encryption-key-sha256`; that hash is not a substitute for the real key."
+    },
+    "sources": [
+      {
+        "title": "Provide an encryption key on a request to Blob storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/encryption-customer-provided-keys"
+      },
+      {
+        "title": "Azure Storage encryption for data at rest",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.2.4-08",
+    "objective": "D2.2.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You are designing a new general-purpose v2 storage account for Contoso. The security policy says that customer-managed keys must protect Blob Storage, Azure Files, Queue Storage, and Table Storage data in the account. An engineer says you can create a normal account now and later enable customer-managed keys for all four services from the Encryption blade.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create the storage account normally; customer-managed keys automatically protect queues and tables whenever they protect blobs and files"
+      },
+      {
+        "id": "B",
+        "text": "Enable infrastructure encryption because it is the only way customer-managed keys can protect queues and tables"
+      },
+      {
+        "id": "C",
+        "text": "Use customer-provided keys on Blob Storage requests because they also cover Azure Files, queues, and tables"
+      },
+      {
+        "id": "D",
+        "text": "Create the account with support for customer-managed keys for queues and tables by using the account encryption key, then configure customer-managed keys for the account"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The storage account has not been created yet, and the requirement is customer-managed key protection for all four Azure Storage services in one general-purpose v2 account.",
+    "sections": {
+      "correctAnswer": "**D. Create the account with support for customer-managed keys for queues and tables by using the account encryption key, then configure customer-managed keys for the account**. Blob Storage and Azure Files are protected when account CMK is configured, but queues and tables require account-scoped encryption key support at account creation.",
+      "technical": "The customer-managed key coverage rule has an important service boundary. When you configure CMK for a storage account, Blob Storage and Azure Files data are always protected by that customer-managed key. Queue Storage and Table Storage are different. By default, they use service-scoped Microsoft-managed keys. To later use customer-managed keys for queue and table data, the storage account must be created so those services rely on the account encryption key rather than service-scoped keys.\n\nThe creation-time setting is documented for general-purpose v2 accounts. In the portal, the Advanced tab has a Tables and Queues section that enables support for customer-managed keys. In PowerShell, creation uses `-EncryptionKeyTypeForQueue Account` and `-EncryptionKeyTypeForTable Account`. In Azure CLI, the options are `--encryption-key-type-for-queue Account` and `--encryption-key-type-for-table Account`. Microsoft states that the scope of the encryption key cannot be changed after account creation.\n\nThe correct order is to decide before creation, create the account with queue and table key type set to `Account`, configure customer-managed keys from Key Vault or Managed HSM, and verify that CMK can apply to blobs, files, tables, and queues. Customer-provided keys are Blob-only request keys, and infrastructure encryption is separate double encryption.",
+      "wrongOptions": {
+        "A": "Queues and tables are not automatically protected by customer-managed keys just because blobs and files are. Misconception: all storage services behave identically after CMK is enabled. Could be correct only for Blob Storage and Azure Files, which are always protected when account CMK is configured.",
+        "B": "Infrastructure encryption provides double encryption and relies on Microsoft-managed keys for the infrastructure layer; it is not the queue/table CMK coverage setting. Misconception: double encryption and customer-managed coverage are the same control. Could be correct when compliance asks for data to be encrypted twice.",
+        "C": "Customer-provided keys apply to supported Blob Storage requests, not Azure Files, queues, or tables. Misconception: a key supplied on one service request becomes an account-wide key. Could be correct when a Blob application needs per-request encryption control."
+      },
+      "plainEnglish": "Blob and file data follow the account's customer-managed key after you configure it. Queue and table data need an extra decision when the account is created. If you skip that decision, you cannot simply flip those services to the account-key model later. For a new account that must cover all four services, choose queue and table account-key support first, then configure the customer-managed key.",
+      "analogy": "A new office building can be wired so four departments use the same central security system. Two departments are always on that wiring, but two must be connected during construction.\n\n| Analogy | Azure reality |\n|---|---|\n| Central security system | Account encryption key protected by CMK |\n| Always connected departments | Blob Storage and Azure Files |\n| Construction-time wiring | Queue and table key type set to Account |\n| Later central key setup | Configure customer-managed key |\n| Temporary room key | Customer-provided blob request key |\n\n**Where the analogy breaks down:** Azure key scope is an encryption design choice rather than electrical wiring, and all services remain encrypted even when Microsoft-managed keys are used.",
+      "jargon": [
+        {
+          "term": "General-purpose v2",
+          "definition": "A storage account type that supports blobs, files, queues, tables, and modern features."
+        },
+        {
+          "term": "Customer-managed key",
+          "definition": "A customer-controlled key in Azure Key Vault or Managed HSM used to protect Azure Storage encryption keys."
+        },
+        {
+          "term": "Account encryption key",
+          "definition": "An encryption key scoped to the storage account rather than separately to an individual storage service."
+        },
+        {
+          "term": "Service-scoped key",
+          "definition": "A Microsoft-managed encryption key scoped to an individual service such as queues or tables."
+        },
+        {
+          "term": "Blob Storage",
+          "definition": "Azure object storage for unstructured data such as documents, backups, images, and logs."
+        },
+        {
+          "term": "Azure Files",
+          "definition": "Azure managed file share service that can expose file shares over supported file protocols and APIs."
+        },
+        {
+          "term": "Queue Storage",
+          "definition": "Azure service for storing messages that applications can process asynchronously."
+        },
+        {
+          "term": "Table Storage",
+          "definition": "Azure NoSQL key-value storage for structured entities."
+        },
+        {
+          "term": "Infrastructure encryption",
+          "definition": "An optional Azure Storage feature that adds a second encryption layer at the infrastructure level."
+        }
+      ],
+      "watchOut": "- Blob Storage and Azure Files are always protected by account CMK once CMK is configured.\n- Queue Storage and Table Storage need account-scoped encryption key support chosen at account creation.\n- The queue/table encryption key scope cannot be changed after the account is created.\n- Customer-provided keys are Blob-only request keys and do not solve all-service CMK coverage.",
+      "productionTip": {
+        "official": "Microsoft documents that Queue Storage and Table Storage are not automatically protected by a customer-managed key when CMK is enabled. To include them, create a general-purpose v2 account that uses the account encryption key for queues and tables; this key scope cannot be changed after creation.",
+        "recommendation": "Include queue and table CMK coverage in storage provisioning checklists. If policy requires all four services under CMK, enforce the creation-time options with templates or policy so teams do not create accounts that require migration later."
+      },
+      "memoryTrick": "For CMK coverage, remember **blobs and files follow; queues and tables are chosen at birth**. This shortcut applies to customer-managed keys, not to the always-on baseline encryption covering all services.",
+      "examTip": "Clue words are **all four services**, **new account**, and **later enable**. The exam tests that queues and tables need account-scoped key support at creation. A harder version may show CLI parameters; choose the queue and table options set to `Account`."
+    },
+    "sources": [
+      {
+        "title": "Customer-managed keys for account encryption - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+      },
+      {
+        "title": "Create an account that supports customer-managed keys for tables and queues",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/account-encryption-key-create"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

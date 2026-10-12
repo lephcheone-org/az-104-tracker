@@ -1,0 +1,800 @@
+[
+  {
+    "id": "D3.2.4-01",
+    "objective": "D3.2.4",
+    "type": "multiple",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that hosts several independent workloads. You are choosing VM size families before selecting exact SKUs.\n\n| Workload | Main pressure |\n|---|---|\n| `api-dev01` | Low average CPU with short build spikes |\n| `calc-batch01` | CPU-bound batch processing with modest memory use |\n| `db-cache01` | Large in-memory cache and relational database buffer pool |\n| `graph-render01` | GPU-accelerated visualization |\n| `flow-sim01` | Computational fluid dynamics simulation |\n\nWhich three mappings use an Azure VM size family for its documented workload pattern? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Place `api-dev01` on a B-family size if its average CPU stays below baseline often enough to earn burst credits."
+      },
+      {
+        "id": "B",
+        "text": "Place `db-cache01` on an F-family size because F is the memory-optimized family for large database caches."
+      },
+      {
+        "id": "C",
+        "text": "Place `calc-batch01` on an F-family size when the batch job is CPU-heavy and not memory-heavy."
+      },
+      {
+        "id": "D",
+        "text": "Place `flow-sim01` on an L-family size because L is optimized for InfiniBand-connected HPC simulations."
+      },
+      {
+        "id": "E",
+        "text": "Place `graph-render01` on an N-family GPU size when the application needs GPU acceleration for visualization."
+      }
+    ],
+    "correct": [
+      "A",
+      "C",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. Regional availability, quota, image support, and exact SKU limits are checked after the family is selected. The workloads are standalone VMs.",
+    "sections": {
+      "correctAnswer": "**A. Place `api-dev01` on a B-family size if its average CPU stays below baseline often enough to earn burst credits**, **C. Place `calc-batch01` on an F-family size when the batch job is CPU-heavy and not memory-heavy**, and **E. Place `graph-render01` on an N-family GPU size when the application needs GPU acceleration for visualization**. Those mappings match Microsoft Learn's descriptions of burstable B sizes, compute-optimized F sizes, and GPU-accelerated N sizes.",
+      "technical": "Start with the resource that limits the workload, then choose the family whose design matches that pressure. Azure groups VM sizes into workload types such as general purpose, compute optimized, memory optimized, storage optimized, GPU accelerated, and high performance compute. The B family uses CPU credits and is documented for uneven workloads such as proof-of-concepts, development servers, small databases, and low-traffic web servers. The F family has a high CPU-to-memory ratio and is documented for batch processing, web servers, analytics, application servers, and other CPU-heavy work. GPU accelerated N-family sizes are specialized for compute-intensive, graphics-intensive, visualization, rendering, AI, and virtual desktop workloads. Other families in the table have different purposes: E and M are memory oriented, L is for high disk throughput and I/O, and H-family sizes such as HB are for HPC patterns including computational fluid dynamics and finite element analysis. After choosing the family, validate the exact SKU's vCPU count, memory, disks, network, region, quota, and price.",
+      "wrongOptions": {
+        "B": "F-family is compute optimized, not the primary memory-optimized family. A large cache or database buffer pool usually points to E-family or, for very large memory requirements, M-family. Misconception: a fast CPU family automatically fixes memory pressure. Could be correct when the database workload is genuinely CPU-bound and memory is already sufficient.",
+        "D": "L-family is storage optimized for high disk throughput and I/O. It is not the family documented for InfiniBand-style HPC simulation; H-family sizes serve that role. Misconception: local NVMe speed is the same design target as tightly coupled scientific compute. Could be correct for a storage-heavy database, big data engine, or log-processing system."
+      },
+      "plainEnglish": "VM families are like different vehicles. A bursty development server is a small car with a short turbo boost. A CPU-heavy batch job needs an engine tuned for processor work. A GPU visualization app needs a vehicle with special graphics equipment. A memory cache needs a roomy van, a disk-heavy database needs a cargo truck, and a simulation cluster needs scientific equipment rather than ordinary storage. The family label narrows the search, but you still inspect the exact model before buying.",
+      "analogy": "A facilities manager assigns rooms for clubs. A coding club that is quiet most days can use a modest room, a math contest needs many calculators, an art studio needs graphics equipment, and a research lab needs specialist instruments.\n\n| Analogy | Azure reality |\n|---|---|\n| Modest room with occasional crowd | B-family burstable VM |\n| Calculator room | F-family compute-optimized VM |\n| Room with large filing cabinets | E or M memory-optimized VM |\n| Graphics studio | N-family GPU VM |\n| Research lab | H-family HPC VM |\n\n**Where the analogy breaks down:** Azure also enforces regional availability, quota, operating system support, and exact disk or NIC limits. A room assignment does not model CPU credits or GPU drivers.",
+      "jargon": [
+        {
+          "term": "VM size",
+          "definition": "An Azure compute shape that defines the CPU, memory, storage, network, accelerator, and feature limits available to a virtual machine."
+        },
+        {
+          "term": "SKU",
+          "definition": "A specific sellable Azure size or resource variant, such as a named virtual machine size."
+        },
+        {
+          "term": "vCPU",
+          "definition": "A virtual processor presented to the guest operating system and counted for sizing and quota purposes."
+        },
+        {
+          "term": "Azure public cloud",
+          "definition": "The global commercial Azure environment, as distinct from sovereign or government clouds that can have different availability."
+        },
+        {
+          "term": "B-family",
+          "definition": "General purpose burstable VM sizes that use CPU credits rather than fixed full CPU performance at every moment."
+        },
+        {
+          "term": "D-family",
+          "definition": "General purpose VM sizes that provide a balanced CPU-to-memory ratio for many production and development workloads."
+        },
+        {
+          "term": "F-family",
+          "definition": "Compute-optimized VM sizes with a high CPU-to-memory ratio for CPU-heavy workloads."
+        },
+        {
+          "term": "E-family",
+          "definition": "Memory-optimized VM sizes intended for databases, caches, and in-memory analytics."
+        },
+        {
+          "term": "M-family",
+          "definition": "Ultra memory-optimized VM sizes for extremely large memory needs."
+        },
+        {
+          "term": "L-family",
+          "definition": "Storage-optimized VM sizes designed for high disk throughput and I/O."
+        },
+        {
+          "term": "N-family",
+          "definition": "GPU-accelerated VM families such as NC, ND, NG, and NV."
+        },
+        {
+          "term": "H-family",
+          "definition": "High performance compute VM families for scientific and engineering simulations."
+        }
+      ],
+      "watchOut": "- Family choice is a starting point, not a deployment approval.\n- B-series can be wrong for constant CPU demand even if the price is attractive.\n- Memory pressure should send you toward E or M, not simply toward a larger F size.\n- Storage optimized L sizes are not a substitute for HPC networking.",
+      "productionTip": {
+        "official": "Microsoft Learn categorizes VM sizes by workload type and documents family use cases such as B for burstable general purpose, F for compute optimized workloads, E and M for memory optimized workloads, L for high disk I/O, N for GPU acceleration, and H for HPC.",
+        "recommendation": "Record the bottleneck that drove the family choice, then test the exact size with monitored CPU, memory, disk, and network data. Keep cost optimization separate from compatibility checks so a cheap size does not bypass capacity, quota, or resiliency requirements."
+      },
+      "memoryTrick": "Remember **B bursts, F focuses CPU, E/M eat memory, L loves I/O, N needs GPUs, H handles HPC**. The phrase is a simplification because exact SKUs inside a family still differ.",
+      "examTip": "Clue words such as **burstable**, **CPU-bound**, **in-memory**, **high disk throughput**, **GPU**, and **fluid dynamics** point to different families. Rule out an option that matches one resource while ignoring the stated bottleneck. A harder item may give an exact SKU and ask whether storage, NIC, region, or quota blocks it."
+    },
+    "sources": [
+      {
+        "title": "Virtual machine sizes overview - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+      },
+      {
+        "title": "B family VM size series - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/general-purpose/b-family"
+      },
+      {
+        "title": "F family VM size series - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/compute-optimized/f-family"
+      },
+      {
+        "title": "E family VM size series - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/memory-optimized/e-family"
+      },
+      {
+        "title": "M family VM size series - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/memory-optimized/m-family"
+      },
+      {
+        "title": "L family VM size series - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/storage-optimized/l-family"
+      },
+      {
+        "title": "HB sub-family VM size series - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/high-performance-compute/hb-family"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.4-02",
+    "objective": "D3.2.4",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "A teammate proposes resizing a Windows Server VM to `Standard_E8ads_v5`. The teammate says the name means: \"E family, 8 vCPUs, AMD processor, local temporary disk, Premium SSD capable, version 5.\"\n\nIs the teammate's interpretation correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Yes. `E` is the family, `8` is the vCPU count, `a` indicates AMD, `d` indicates a local temporary disk, `s` indicates Premium SSD compatibility, and `v5` is the version."
+      },
+      {
+        "id": "B",
+        "text": "No. `a` means accelerated networking, `d` means dedicated host, and `s` means Standard SSD only."
+      },
+      {
+        "id": "C",
+        "text": "No. The number after the family is memory in GiB, not the number of vCPUs."
+      },
+      {
+        "id": "D",
+        "text": "No. Feature letters are ignored unless the VM is in an availability set."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The question asks only about the Azure VM size naming convention, not whether the size is available in a particular region or satisfies quota.",
+    "sections": {
+      "correctAnswer": "**A. Yes. `E` is the family, `8` is the vCPU count, `a` indicates AMD, `d` indicates a local temporary disk, `s` indicates Premium SSD compatibility, and `v5` is the version**. Microsoft documents those letters in the current VM naming convention.",
+      "technical": "Azure VM size names encode a family, optional subfamily, number of vCPUs, optional constrained vCPU count, additive feature letters, optional accelerator type, optional memory capacity for M-series, and a version. In `Standard_E8ads_v5`, `E` identifies the memory-optimized E family, `8` denotes eight vCPUs, `a` means an AMD-based processor, `d` means the size includes local temporary disk storage, `s` means compatible with Premium SSD types, and `v5` is the series version. The name is useful triage, not a complete compatibility report. You still check the size page or SKU query for exact data disk count, NIC count, local disk size, supported VM generation, region, and zone availability. Some sizes omit vendor letters, some have multiple feature letters, and specialized GPU names can include an accelerator identifier, so read the convention rather than guessing from ordinary English initials.",
+      "wrongOptions": {
+        "B": "The naming page defines `a` as AMD-based processor, `d` as local temporary disk, and `s` as Premium SSD compatibility. Accelerated networking and dedicated host placement are separate capabilities. Misconception: Azure feature initials always reuse the same letter everywhere. Could be correct only in a different portal field that explicitly refers to accelerated networking or dedicated hosts.",
+        "C": "The number in that position denotes vCPUs, not memory. Some M-series names can include an extra memory marker later, but that is not what `8` means here. Misconception: memory-optimized names place memory first. Could be correct when reading a specification table's memory column rather than the name itself.",
+        "D": "Feature letters are part of the size name regardless of standalone VM, availability set, or scale set placement. Misconception: size naming details matter only during special placement scenarios. Could be correct when discussing availability-set resize coordination, not when decoding SKU text."
+      },
+      "plainEnglish": "Azure VM names are compact labels. In `Standard_E8ads_v5`, the useful part is `E8ads_v5`. The `E` tells you the broad family. The `8` tells you the VM has eight virtual CPUs. The small letters describe traits: `a` points to AMD, `d` means local temporary storage, and `s` means Premium SSD capable. The final `v5` is the series version. This helps you avoid opening many pages just to learn the basics, but real resizing still needs official size details.",
+      "analogy": "A train ticket might say `Car E - Seat 08 - Window - Quiet - Route v5`. The code gives quick clues before you read the full itinerary.\n\n| Analogy | Azure reality |\n|---|---|\n| Car letter | VM family |\n| Seat number | vCPU count |\n| Window or quiet markers | Additive feature letters |\n| Route revision | Series version |\n| Full itinerary | Size specification page |\n\n**Where the analogy breaks down:** Azure names can imply disk support, CPU architecture, and temporary storage behavior, while a ticket code rarely controls infrastructure limits.",
+      "jargon": [
+        {
+          "term": "VM size",
+          "definition": "An Azure compute shape that defines the CPU, memory, storage, network, accelerator, and feature limits available to a virtual machine."
+        },
+        {
+          "term": "SKU",
+          "definition": "A specific sellable Azure size or resource variant, such as a named virtual machine size."
+        },
+        {
+          "term": "vCPU",
+          "definition": "A virtual processor presented to the guest operating system and counted for sizing and quota purposes."
+        },
+        {
+          "term": "Azure public cloud",
+          "definition": "The global commercial Azure environment, as distinct from sovereign or government clouds that can have different availability."
+        },
+        {
+          "term": "`Standard_E8ads_v5`",
+          "definition": "An Azure VM size name whose segments indicate family, vCPU count, additive features, and series version."
+        },
+        {
+          "term": "Family",
+          "definition": "The major letter or letters of a VM size name that identify the broad VM family."
+        },
+        {
+          "term": "Additive feature",
+          "definition": "A lower-case VM name letter indicating a trait such as AMD CPU, local temporary disk, or Premium SSD compatibility."
+        },
+        {
+          "term": "AMD-based processor",
+          "definition": "A VM size trait indicated by `a` in the naming convention."
+        },
+        {
+          "term": "Local temporary disk",
+          "definition": "Non-persistent host storage associated with some VM sizes."
+        },
+        {
+          "term": "Premium SSD",
+          "definition": "A managed disk type intended for production workloads needing higher storage performance."
+        },
+        {
+          "term": "Version",
+          "definition": "The `v` number in a VM size or series name."
+        }
+      ],
+      "watchOut": "- The `s` suffix means Premium SSD compatibility, not that a Premium disk is automatically attached.\n- The `d` suffix indicates local temporary storage, which is not durable data storage.\n- A size name does not prove quota, regional availability, image compatibility, or exact performance.\n- Names with no CPU vendor letter should not be decoded by guesswork.",
+      "productionTip": {
+        "official": "Microsoft Learn documents the VM size naming pattern and lists additive feature letters including `a` for AMD-based processor, `d` for local temporary disks, and `s` for compatibility with Premium SSD types.",
+        "recommendation": "Use naming conventions for quick triage, then confirm with the size page or SKU query before production changes. Keep a checklist for region, quota, disk count, NIC count, VM generation, and temporary-disk dependencies."
+      },
+      "memoryTrick": "For `ads`, read **AMD, disk, SSD premium**. It is only a mnemonic for those letters and does not prove the SKU is safe for a particular VM.",
+      "examTip": "When an item shows a name such as `E8ads_v5`, decode the suffixes before choosing. The exam may hide the answer behind `s` for Premium Storage or `d` for local temporary disk, then add quota or availability details as a second step."
+    },
+    "sources": [
+      {
+        "title": "Azure VM sizes naming conventions - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/vm-naming-conventions"
+      },
+      {
+        "title": "Virtual machine sizes overview - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.4-03",
+    "objective": "D3.2.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have three VMs named `web01`, `web02`, and `web03` in the same availability set. `web01` currently runs on `Standard_D2s_v5`. You need to resize `web01` to `Standard_E4s_v5` during a maintenance window. When you list the resize options for `web01`, `Standard_E4s_v5` is not shown.\n\nWhat should you plan to do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Resize `web01` while it is running; Azure will live-migrate it without a restart because only the VM size changes."
+      },
+      {
+        "id": "B",
+        "text": "Deallocate all VMs in the availability set, resize the required VM or VMs, and then start the VMs again."
+      },
+      {
+        "id": "C",
+        "text": "Detach all data disks from `web01`, resize it, and reattach the disks because disks block size changes."
+      },
+      {
+        "id": "D",
+        "text": "Move `web01` to a new resource group; resource group movement refreshes the hardware cluster and exposes all VM sizes."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The target size is supported in the region but is not available on the current hardware cluster hosting the availability set. The maintenance window can include VM downtime.",
+    "sections": {
+      "correctAnswer": "**B. Deallocate all VMs in the availability set, resize the required VM or VMs, and then start the VMs again**. Microsoft documents that if a new size is not available on the hardware cluster hosting a VM in an availability set, you need to deallocate all VMs in that availability set before resizing.",
+      "technical": "Resizing is disruptive. Microsoft states that changing the size of a running VM causes the VM to restart. In some cases, a restart is not enough because Azure may need to place the VM on a different hardware cluster. If the desired size is not available on the cluster currently hosting the VM, deallocation releases the compute allocation so Azure can allocate the VM on hardware that supports the new size. Availability sets add a placement boundary: when the desired size for a VM in an availability set is unavailable on the hosting cluster, the documented guidance is to deallocate all VMs in the availability set, resize, and start them again. The safe sequence is to list available sizes with `Get-AzVMSize` or `az vm list-vm-resize-options`, schedule downtime if the target is absent, deallocate the set members, update size, and restart. OS and data disks remain, but dynamic public IP addresses can change after deallocation.",
+      "wrongOptions": {
+        "A": "Changing the size of a running VM causes a restart, and the missing target size shows a placement problem. Misconception: resizing behaves like platform live migration. Could be correct only for unrelated maintenance events that Azure handles without an administrator-initiated size change.",
+        "C": "Managed data disks do not normally need to be detached just to change size. Disk limits must be checked, but detaching disks does not make the current hardware cluster support the target. Misconception: attached disks are the main blocker whenever a resize option is missing. Could be correct if the target size supports fewer data disks and you intentionally reduce attachments first.",
+        "D": "A resource group is a management container, not a physical placement refresh mechanism. Moving a resource group does not expose all VM sizes. Misconception: control-plane organization changes host-cluster membership. Could be correct for governance or billing organization, not this resize problem."
+      },
+      "plainEnglish": "A VM size change is like moving a server to a different class of computer. If Azure can provide that class on the same group of hardware, the move is simpler, though the VM still restarts. If the requested class is not available there, Azure must release the current compute slot and find another one. Because the VM is in an availability set, plan the outage for the set rather than pretending only one server is affected.",
+      "analogy": "Three machines are bolted into racks in the same equipment room because they share building services. The replacement part for one machine is not available in that room. The facilities team powers down the room group, moves equipment to a room with the correct part, and powers it back on.\n\n| Analogy | Azure reality |\n|---|---|\n| Equipment room | Hardware cluster |\n| Grouped machines | Availability set VMs |\n| Part unavailable | Target size absent from resize options |\n| Power down group | Deallocate all set members |\n\n**Where the analogy breaks down:** Azure availability sets use fault and update domains rather than literal rooms, and disks remain separate resources.",
+      "jargon": [
+        {
+          "term": "VM size",
+          "definition": "An Azure compute shape that defines the CPU, memory, storage, network, accelerator, and feature limits available to a virtual machine."
+        },
+        {
+          "term": "SKU",
+          "definition": "A specific sellable Azure size or resource variant, such as a named virtual machine size."
+        },
+        {
+          "term": "vCPU",
+          "definition": "A virtual processor presented to the guest operating system and counted for sizing and quota purposes."
+        },
+        {
+          "term": "Azure public cloud",
+          "definition": "The global commercial Azure environment, as distinct from sovereign or government clouds that can have different availability."
+        },
+        {
+          "term": "Availability set",
+          "definition": "An Azure construct that spreads VMs across fault and update domains for traditional VM availability."
+        },
+        {
+          "term": "Hardware cluster",
+          "definition": "The physical host group currently able to run a VM; not every size is available on every cluster."
+        },
+        {
+          "term": "Deallocate",
+          "definition": "Stop a VM and release its compute allocation while keeping the VM resource and disks."
+        },
+        {
+          "term": "Restart",
+          "definition": "A guest operating system interruption caused by resizing a running VM."
+        },
+        {
+          "term": "Dynamic IP address",
+          "definition": "An IP address allocation that can change when the VM is deallocated unless configured as static."
+        },
+        {
+          "term": "`az vm list-vm-resize-options`",
+          "definition": "Azure CLI command that lists sizes available for resizing a specific VM."
+        },
+        {
+          "term": "`Get-AzVMSize`",
+          "definition": "Az PowerShell cmdlet that can list sizes available for a VM or location."
+        }
+      ],
+      "watchOut": "- A running VM resize restarts the VM even when deallocation is not required.\n- If the desired size is missing from the resize options, stopping and deallocating may reveal more choices.\n- In an availability set, a missing size can require deallocating every VM in the set.\n- Deallocation preserves disks but can release dynamic IP addresses.",
+      "productionTip": {
+        "official": "Microsoft Learn states that resizing a running VM causes it to restart, that deallocation may be required when the new size is unavailable on the current hardware cluster, and that availability-set resizing can require deallocating all VMs in the set.",
+        "recommendation": "Treat availability-set resizing as a coordinated change. Capture current sizes, IP configuration, disk attachments, and rollback steps before the maintenance window, and verify application health after every VM starts again."
+      },
+      "memoryTrick": "If the size is **not on the list**, release the slot; if an availability set is involved, think about the **set**. This shortcut still depends on region, quota, and disk compatibility.",
+      "examTip": "The exam clues are **availability set** and **target size not shown**. Pick the answer that deallocates the set members. If a target size is shown, a resize may be simpler, but a running VM still restarts."
+    },
+    "sources": [
+      {
+        "title": "Resize a virtual machine - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+      },
+      {
+        "title": "az vm",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/vm?view=azure-cli-latest"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.4-04",
+    "objective": "D3.2.4",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You need to resize a VM named `app01` in resource group `rg-prod` to `Standard_DS3_v2`. An operations runbook must include one Azure CLI path and one Az PowerShell path that use documented commands.\n\nWhich two runbook snippets are valid ways to check or apply a VM resize? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "```azurecli\naz vm list-vm-resize-options --resource-group rg-prod --name app01 --query \"[].name\" --output table\naz vm resize --resource-group rg-prod --name app01 --size Standard_DS3_v2\n```"
+      },
+      {
+        "id": "B",
+        "text": "```powershell\n$vm = Get-AzVM -ResourceGroupName 'rg-prod' -Name 'app01'\n$vm.HardwareProfile.VmSize = 'Standard_DS3_v2'\nUpdate-AzVM -ResourceGroupName 'rg-prod' -VM $vm\n```"
+      },
+      {
+        "id": "C",
+        "text": "```azurecli\naz vm list-usage --location eastus --name app01\naz vm update --resource-group rg-prod --name app01 --set vmSize=Standard_DS3_v2\n```"
+      },
+      {
+        "id": "D",
+        "text": "```powershell\nSet-AzVMSize -ResourceGroupName 'rg-prod' -Name 'app01' -Size 'Standard_DS3_v2' -NoRestart\n```"
+      },
+      {
+        "id": "E",
+        "text": "```azurecli\naz vm availability-set list-sizes --resource-group rg-prod --name app01\naz vm reboot --resource-group rg-prod --name app01 --size Standard_DS3_v2\n```"
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The operator is signed in, has resize permission, and separately handles maintenance approval, backup, quota, capacity, and application health checks.",
+    "sections": {
+      "correctAnswer": "**A. The Azure CLI snippet that uses `az vm list-vm-resize-options` and `az vm resize`** and **B. The PowerShell snippet that changes `$vm.HardwareProfile.VmSize` and calls `Update-AzVM`**. Microsoft Learn documents those patterns for checking available resize options and applying a new VM size.",
+      "technical": "Azure exposes VM resizing through the portal, Azure CLI, Az PowerShell, and infrastructure-as-code tools. In Azure CLI, `az vm list-vm-resize-options` lists sizes available for the specified VM, and `az vm resize` updates the VM to the requested size. The resize article also shows deallocate and start steps when the runbook deliberately releases compute before resizing. In Az PowerShell, the documented pattern is to retrieve the VM object, set the `HardwareProfile.VmSize` property, and submit the changed model with `Update-AzVM`. Microsoft also shows `Get-AzVMSize -ResourceGroupName ... -VMName ...` to list sizes available on the VM's current hardware cluster. A safe runbook checks candidate sizes, confirms quota and maintenance timing, deallocates first when required, applies the resize, starts the VM if needed, and validates the application. A script does not remove downtime risk.",
+      "wrongOptions": {
+        "C": "`az vm list-usage` checks regional usage and quotas; it does not list resize options for a particular VM. The shown generic update command is not the documented resize path. Misconception: any update command can safely alter hardware size. Could be correct when querying quota usage before a separate resize operation.",
+        "D": "The documented PowerShell approach is `Get-AzVM`, modify `HardwareProfile.VmSize`, then `Update-AzVM`; the shown no-restart cmdlet is not the verified pattern. Misconception: there must be a single no-outage size cmdlet. Could be correct only if a future documented cmdlet with those semantics existed.",
+        "E": "`az vm availability-set list-sizes` is not a direct resize command for `app01`, and `az vm reboot` restarts a VM rather than changing size. Misconception: reboot and resize are equivalent. Could be correct when you only need to restart a VM after a separate change."
+      },
+      "plainEnglish": "The runbook should use the tool that actually changes VM size. In Azure CLI, first list possible sizes for the VM, then call the resize command with the target size. In PowerShell, load the VM's configuration object, change its size property, and send the updated object back to Azure. Commands that only show quota, reboot a VM, or update unrelated properties may look administrative, but they do not perform the documented resize operation.",
+      "analogy": "A mechanic has two accepted procedures for changing a vehicle's tires. One uses a service console; the other uses a paper work order that changes the tire-size field and submits it. Looking at the parking-lot capacity report or turning the ignition off and on does not change the tires.\n\n| Analogy | Azure reality |\n|---|---|\n| Console tire list | `az vm list-vm-resize-options` |\n| Console tire change | `az vm resize` |\n| Paper work order | VM object in PowerShell |\n| Submitted order | `Update-AzVM` |\n\n**Where the analogy breaks down:** Azure operations involve control-plane models, hardware placement, quotas, and possible guest restarts rather than physical tires.",
+      "jargon": [
+        {
+          "term": "VM size",
+          "definition": "An Azure compute shape that defines the CPU, memory, storage, network, accelerator, and feature limits available to a virtual machine."
+        },
+        {
+          "term": "SKU",
+          "definition": "A specific sellable Azure size or resource variant, such as a named virtual machine size."
+        },
+        {
+          "term": "vCPU",
+          "definition": "A virtual processor presented to the guest operating system and counted for sizing and quota purposes."
+        },
+        {
+          "term": "Azure public cloud",
+          "definition": "The global commercial Azure environment, as distinct from sovereign or government clouds that can have different availability."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's cross-platform command-line tool, using commands such as `az vm resize` to manage Azure resources."
+        },
+        {
+          "term": "Az PowerShell",
+          "definition": "Microsoft's PowerShell modules for Azure management, including VM cmdlets."
+        },
+        {
+          "term": "`az vm resize`",
+          "definition": "Azure CLI command used to update a VM's size."
+        },
+        {
+          "term": "`Get-AzVM`",
+          "definition": "Az PowerShell cmdlet that retrieves an Azure VM object."
+        },
+        {
+          "term": "`HardwareProfile.VmSize`",
+          "definition": "The VM model property that stores the requested Azure VM size."
+        },
+        {
+          "term": "`Update-AzVM`",
+          "definition": "Az PowerShell cmdlet that sends changes to a VM model back to Azure."
+        },
+        {
+          "term": "`az vm list-usage`",
+          "definition": "Azure CLI command that lists regional usage resources and quotas for VMs."
+        },
+        {
+          "term": "Runbook",
+          "definition": "A repeatable operational procedure used by administrators."
+        }
+      ],
+      "watchOut": "- Listing usage is not the same as listing resize options.\n- Rebooting a VM does not change its size.\n- PowerShell changes must be submitted with `Update-AzVM`; editing a local object alone is not enough.\n- If the target size is unavailable, deallocation or availability-set coordination may be required.",
+      "productionTip": {
+        "official": "Microsoft Learn shows Azure CLI resizing with `az vm list-vm-resize-options` and `az vm resize`, and shows the Az PowerShell method of changing `$vm.HardwareProfile.VmSize` followed by `Update-AzVM`.",
+        "recommendation": "Put discovery and change commands in the runbook. Capture output, expected size, and post-change checks, and give operators a stop point when the target size is not listed rather than continuing blindly."
+      },
+      "memoryTrick": "CLI says **list resize options, then resize**; PowerShell says **get VM, set VmSize, update VM**. The shortcut does not replace quota, downtime, and rollback planning.",
+      "examTip": "Look for exact command verbs. `resize` and `Update-AzVM` are the useful signals. Distractors often use quota, reboot, or generic update commands that sound administrative but do not match the documented workflow."
+    },
+    "sources": [
+      {
+        "title": "Resize a virtual machine - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+      },
+      {
+        "title": "az vm",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/vm?view=azure-cli-latest"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.4-05",
+    "objective": "D3.2.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You manage a Windows Server VM that currently uses Premium SSD managed disks, four network interfaces, a Generation 2 marketplace image, and an application cache on the local temporary disk. You want to resize the VM to reduce cost.\n\nWhat should you verify before selecting the target size?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Only the vCPU and memory counts, because Azure automatically preserves Premium SSD support, NIC count, VM generation, and temporary disk layout during resize."
+      },
+      {
+        "id": "B",
+        "text": "That the target size supports the current disk type and enough data disks, enough NICs, the VM generation, and a compatible local temporary disk pattern for Windows."
+      },
+      {
+        "id": "C",
+        "text": "Only that the target size is in the same family letter, because all sizes in a family have identical disk, NIC, generation, and temporary disk capabilities."
+      },
+      {
+        "id": "D",
+        "text": "Only the subscription's total regional vCPU quota, because quota validation replaces feature and limit checks."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The VM remains Windows Server and uses Azure managed disks. The exact target SKU is not specified, so the administrator must compare official size specifications before resizing.",
+    "sections": {
+      "correctAnswer": "**B. That the target size supports the current disk type and enough data disks, enough NICs, the VM generation, and a compatible local temporary disk pattern for Windows**. VM sizes differ in Premium Storage support, data disk count, NIC count, local storage, and Generation 1 or Generation 2 support.",
+      "technical": "Cost reduction by resizing is not just a vCPU and memory exercise. A target size must satisfy every attached and required capability of the existing VM. Microsoft Learn size pages include specification tables for processor, memory, local storage, remote storage disk counts and performance, network NIC counts, and feature support. The naming convention gives hints such as `s` for Premium SSD compatibility and `d` for local temporary disk, but the size page or SKU data is the final source for exact values. For this Windows VM, first choose a size that supports Premium Storage because the VM uses Premium SSD managed disks. Then check that the target permits at least the current number of data disks and four NICs. Next verify Generation 2 support because Azure lists selected supported size families. Finally, check temporary-disk compatibility: the resize limitations say Linux can move between sizes with and without local temp disk, but Windows supports only temp-disk-to-temp-disk and no-temp-disk-to-no-temp-disk combinations. Redesigning the cache or NIC layout can expand choices, but that is a separate application change.",
+      "wrongOptions": {
+        "A": "Azure does not automatically make every target size support the same disks, NICs, generation, and temporary disk pattern. Misconception: resize is only a CPU and RAM change. Could be correct for an early capacity estimate after all compatibility requirements are already known.",
+        "C": "Family letters group similar designs, but sizes and series can differ in local storage, disk counts, NIC counts, and feature support. Misconception: one family means identical capabilities. Could be correct when choosing a broad workload family, not when approving a specific resize.",
+        "D": "Quota says whether the subscription is allowed to allocate cores; it does not prove Premium SSD, four NICs, Gen2, or Windows temp-disk compatibility. Misconception: passing quota means all constraints passed. Could be correct when quota is the only reported failure and size capabilities already match."
+      },
+      "plainEnglish": "A cheaper VM can still be the wrong shape. Some sizes allow fewer data disks or fewer network cards. Some support Premium SSD disks and some do not. Some have local temporary storage and some do not. A Windows VM cannot freely switch between temp-disk and no-temp-disk size styles during resize. A Generation 2 operating system image also needs a size that supports Generation 2. Before pressing resize, check every part the VM is already using.",
+      "analogy": "Downsizing an office is not only about counting desks. The new office must have enough network jacks, power circuits, storage cabinets, and the right loading dock.\n\n| Analogy | Azure reality |\n|---|---|\n| Desks | vCPUs and memory |\n| Storage cabinets | Data disk count and disk type support |\n| Network jacks | Maximum NICs |\n| Loading dock style | Generation support |\n| Temporary staging room | Local temporary disk |\n\n**Where the analogy breaks down:** Azure compatibility is enforced by SKU and platform rules, while office fixtures can sometimes be rebuilt after moving.",
+      "jargon": [
+        {
+          "term": "VM size",
+          "definition": "An Azure compute shape that defines the CPU, memory, storage, network, accelerator, and feature limits available to a virtual machine."
+        },
+        {
+          "term": "SKU",
+          "definition": "A specific sellable Azure size or resource variant, such as a named virtual machine size."
+        },
+        {
+          "term": "vCPU",
+          "definition": "A virtual processor presented to the guest operating system and counted for sizing and quota purposes."
+        },
+        {
+          "term": "Azure public cloud",
+          "definition": "The global commercial Azure environment, as distinct from sovereign or government clouds that can have different availability."
+        },
+        {
+          "term": "Premium SSD",
+          "definition": "A managed disk type for production workloads; VM sizes must support Premium Storage to use it appropriately."
+        },
+        {
+          "term": "Managed disk",
+          "definition": "An Azure disk resource managed by the platform and attachable as an OS or data disk."
+        },
+        {
+          "term": "Data disk",
+          "definition": "A managed disk attached to a VM in addition to the operating system disk."
+        },
+        {
+          "term": "NIC",
+          "definition": "Network interface card; in Azure it is a network interface resource attached to a VM."
+        },
+        {
+          "term": "Generation 2 VM",
+          "definition": "A VM using UEFI-based boot architecture and supported only on selected Azure VM size families and images."
+        },
+        {
+          "term": "Local temporary disk",
+          "definition": "Host-local storage supplied by some VM sizes and not intended for durable application data."
+        },
+        {
+          "term": "`s` size suffix",
+          "definition": "A VM naming feature letter indicating Premium SSD compatibility."
+        },
+        {
+          "term": "`d` size suffix",
+          "definition": "A VM naming feature letter indicating local temporary disk storage."
+        }
+      ],
+      "watchOut": "- Premium SSD support is not guaranteed by vCPU count.\n- Maximum data disks and maximum NICs are size-specific limits.\n- Local temporary disk data is not durable and should not hold irreplaceable data.\n- Windows has documented restrictions when resizing between temp-disk and no-temp-disk sizes.\n- Gen2 support depends on both image and size family.",
+      "productionTip": {
+        "official": "Microsoft Learn's resize guidance calls out Premium Storage support, local temporary disk resize limitations, and compatible sizes. Separate Generation 2 documentation lists supported size families, and VM size pages publish disk and NIC specifications.",
+        "recommendation": "Create a compatibility checklist for right-sizing changes. Inventory disk count, NIC count, disk SKU, image generation, and temp-disk usage from the current VM before comparing prices or accepting a target size."
+      },
+      "memoryTrick": "Before resizing, check **DING-T**: Disks, Interfaces, Next-generation support, Premium `s`, and Temporary disk. The mnemonic is a simplification because capacity, region, quota, and testing still matter.",
+      "examTip": "Advanced sizing questions often hide a non-CPU blocker. Words such as **Premium SSD**, **four NICs**, **Generation 2**, or **local temporary disk** should stop you from choosing the cheapest smaller SKU immediately."
+    },
+    "sources": [
+      {
+        "title": "Resize a virtual machine - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+      },
+      {
+        "title": "Azure VM sizes naming conventions - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/vm-naming-conventions"
+      },
+      {
+        "title": "Azure support for Generation 2 VMs - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/generation-2"
+      },
+      {
+        "title": "B family VM size series - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/general-purpose/b-family"
+      },
+      {
+        "title": "D-family size series - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/general-purpose/d-family"
+      },
+      {
+        "title": "E family VM size series - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/memory-optimized/e-family"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.4-06",
+    "objective": "D3.2.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A finance application runs month-end calculations for six continuous hours and keeps CPU utilization above 85 percent during that period. For the rest of the month, the VM is mostly idle. An administrator wants to resize the VM to a B-series VM to minimize cost and assumes it will always burst for the entire six-hour job.\n\nDoes this solution meet the goal of minimizing cost without risking CPU throttling during the month-end run?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Yes. B-series VMs provide fixed full CPU performance once the VM has any credits remaining."
+      },
+      {
+        "id": "B",
+        "text": "Yes. B-series VMs ignore CPU credits for scheduled workloads such as month-end jobs."
+      },
+      {
+        "id": "C",
+        "text": "No. A B-series VM spends credits when running above baseline and is throttled back to baseline after credits are consumed."
+      },
+      {
+        "id": "D",
+        "text": "No. B-series VMs cannot run Windows Server workloads."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The application needs sustained high CPU for the six-hour job, and no testing has proven that a particular B-series size has enough banked credits and baseline performance for that exact run.",
+    "sections": {
+      "correctAnswer": "**C. No. A B-series VM spends credits when running above baseline and is throttled back to baseline after credits are consumed**. B-series can be cost-effective for intermittent CPU, but sustained high CPU can exhaust credits and fall back to the base CPU performance level.",
+      "technical": "B-series VMs are the Azure VM type that uses credits for CPU performance provisioning. They are designed for workloads that do not need full CPU performance continuously. A B-series VM earns credits when CPU use is below its base CPU performance level and spends credits when CPU use is above that level. When credits are consumed, Microsoft documents that the VM is throttled back to baseline until it accumulates credits again. The finance workload has two signals: the mostly idle period can accumulate credits, but the six-hour high-CPU calculation risks draining them during the most important business window. A B-series size might work only after calculation or testing using that size's baseline, initial credits, credits banked per hour, maximum banked credits, and expected CPU demand. Monitor `Percentage CPU`, `CPU Credits Consumed`, and `CPU Credits Remaining` during a proof of concept. If completion time is critical and sustained CPU is required, a fixed-performance D or F size is safer than relying on credits.",
+      "wrongOptions": {
+        "A": "B-series does not become fixed full CPU performance just because credits exist. Credits can be consumed, and performance returns to baseline when they run out. Misconception: burstable means unlimited high CPU after any credit balance appears. Could be correct for a fixed-performance family that does not use CPU credits.",
+        "B": "The credit model is based on CPU usage relative to baseline, not the calendar schedule. A planned job consumes credits like any other spike. Misconception: Azure exempts scheduled bursts from credit accounting. Could be correct only for an application-level scheduler, not VM CPU provisioning.",
+        "D": "B-series sizes apply to Linux and Windows VMs according to the size-family documentation. The issue is sustained credit consumption, not Windows support. Misconception: burstable VMs are Linux-only. Could be correct for a specific image or architecture unsupported by a chosen size."
+      },
+      "plainEnglish": "A B-series VM is like a plan with rollover minutes for extra-fast CPU. When the server is quiet, it saves credits. When it works harder than its included baseline, it spends credits. If a long month-end job uses all the credits before finishing, Azure slows the VM back to the baseline level. That may save money, but it can make the critical calculation run too slowly. Prove the credits are enough, or choose a normal fixed-performance size.",
+      "analogy": "A café worker can call in extra help using saved favors. Quiet days earn favors; a lunch rush spends them. If the rush lasts too long, service returns to one worker and customers wait.\n\n| Analogy | Azure reality |\n|---|---|\n| Quiet days | CPU below B-series baseline |\n| Saved favors | CPU credits |\n| Lunch rush | CPU above baseline |\n| One worker after favors run out | Throttling to base CPU performance |\n\n**Where the analogy breaks down:** Azure credits are numerical CPU accounting rules, and the exact outcome depends on the chosen B-series size and measured demand.",
+      "jargon": [
+        {
+          "term": "VM size",
+          "definition": "An Azure compute shape that defines the CPU, memory, storage, network, accelerator, and feature limits available to a virtual machine."
+        },
+        {
+          "term": "SKU",
+          "definition": "A specific sellable Azure size or resource variant, such as a named virtual machine size."
+        },
+        {
+          "term": "vCPU",
+          "definition": "A virtual processor presented to the guest operating system and counted for sizing and quota purposes."
+        },
+        {
+          "term": "Azure public cloud",
+          "definition": "The global commercial Azure environment, as distinct from sovereign or government clouds that can have different availability."
+        },
+        {
+          "term": "B-series",
+          "definition": "Azure burstable VM sizes that use CPU credits and suit workloads that do not need full CPU continuously."
+        },
+        {
+          "term": "CPU credit",
+          "definition": "A unit of burst allowance earned below baseline CPU usage and spent above baseline CPU usage."
+        },
+        {
+          "term": "Base CPU performance",
+          "definition": "The minimum CPU performance threshold a B-series VM always has available."
+        },
+        {
+          "term": "Throttle",
+          "definition": "Reduce performance back to the documented baseline after burst credits are consumed."
+        },
+        {
+          "term": "Percentage CPU",
+          "definition": "An Azure Monitor metric showing CPU utilization during a measurement period."
+        },
+        {
+          "term": "CPU Credits Consumed",
+          "definition": "A B-series Azure Monitor metric that shows credits spent."
+        },
+        {
+          "term": "CPU Credits Remaining",
+          "definition": "A B-series Azure Monitor metric that shows credits available for bursting."
+        },
+        {
+          "term": "Fixed-performance VM",
+          "definition": "A VM size that does not depend on CPU credits for normal CPU allocation."
+        }
+      ],
+      "watchOut": "- Low monthly average CPU can hide one business-critical sustained spike.\n- B-series can be cheap and still wrong for a long high-CPU run.\n- Initial and maximum credits vary by exact size.\n- Monitor credit balance during a proof of concept.\n- If completion time is critical, fixed-performance D or F sizes are often safer.",
+      "productionTip": {
+        "official": "Microsoft Learn documents that B-series VMs accumulate credits below base performance, consume credits above base performance, and are throttled back to base CPU performance after credits are consumed. Azure Monitor exposes B-series credit metrics.",
+        "recommendation": "Before moving a periodic production job to B-series, replay the peak run on the candidate size and graph credit balance through the entire job. If credits approach zero, choose a fixed-performance size or scale the workload differently."
+      },
+      "memoryTrick": "B means **burstable, not boundless**. The phrase is a simplification because a carefully selected B size can handle some long bursts if credits and baseline are sufficient.",
+      "examTip": "Clue words are **six continuous hours**, **above 85 percent**, and **always burst**. Those point to credit exhaustion risk. A harder item may provide a credit table and ask you to calculate whether the burst fits."
+    },
+    "sources": [
+      {
+        "title": "B family VM size series - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/general-purpose/b-family"
+      },
+      {
+        "title": "B Series CPU Credit Model - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/b-series-cpu-credit-model"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.2.4-07",
+    "objective": "D3.2.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Azure Advisor recommends resizing several underutilized VMs from D-family sizes to smaller E-family sizes. You accept the recommendation for a pilot VM, but deployment of the target size fails. The subscription has many deallocated VMs in the same region.\n\nWhich explanation should you investigate first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The E-family vCPU quota or total regional vCPU quota might be insufficient, and deallocated VMs can still count against quota."
+      },
+      {
+        "id": "B",
+        "text": "Azure Advisor reserves capacity for its recommended size, so the failure must be a guest operating system password issue."
+      },
+      {
+        "id": "C",
+        "text": "A resize recommendation from Advisor bypasses VM family quotas because Advisor already analyzed utilization."
+      },
+      {
+        "id": "D",
+        "text": "Only stopped-but-not-deallocated VMs count against quota; deallocated VMs are always removed from quota calculations."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The failure occurs while allocating or resizing compute resources, not while changing application configuration inside the guest operating system. The administrator has not yet checked subscription quota or regional capacity.",
+    "sections": {
+      "correctAnswer": "**A. The E-family vCPU quota or total regional vCPU quota might be insufficient, and deallocated VMs can still count against quota**. Azure VM quotas are enforced by total regional vCPUs and VM size-family vCPUs, and Microsoft documents that quota includes cores in use by both allocated and deallocated VMs.",
+      "technical": "Advisor recommendations and deployment permission are separate. Azure Advisor can recommend resizing underutilized VMs when a cheaper SKU appears able to run the observed load without performance impact. Its resize criteria include CPU, memory, and outbound network utilization, and it checks items such as same Accelerated Networking and Premium Storage capabilities when applicable, region support, and lower cost. That analysis identifies a candidate; it does not grant quota or reserve physical capacity. Azure VM vCPU quotas are arranged in two tiers for each subscription in each region: Total Regional vCPUs and VM size-family cores such as D-family or E-family. A deployment or resize cannot exceed either tier. The quota article also says quota is calculated from cores in use by allocated and deallocated VMs. After quota, check capacity, because Microsoft distinguishes quota from actual compute capacity in a region or zone. In this question, the move to E-family plus many deallocated VMs makes quota the first investigation.",
+      "wrongOptions": {
+        "B": "Advisor recommendations do not reserve capacity and do not imply allocation success. A guest password issue is not the first explanation for compute allocation failure. Misconception: a recommendation is an approved reservation. Could be correct only if the resize succeeded and later logs show a guest sign-in problem.",
+        "C": "Advisor's analysis does not bypass subscription quotas. The target family and total regional vCPU limits still apply. Misconception: optimization tools override platform governance. Could be correct never for quota bypass; Advisor can guide a decision but not remove quota enforcement.",
+        "D": "Microsoft documents that quota is calculated from cores in use by allocated and deallocated VMs. Deallocating stops compute allocation but does not delete the VM resource. Misconception: deallocated means invisible to quota. Could be correct when discussing active compute billing, not quota accounting."
+      },
+      "plainEnglish": "Advisor can say, 'This VM looks too large; try a smaller and cheaper size.' That suggestion is useful, but Azure still checks whether your subscription is allowed to use enough cores in that region and in that VM family. Moving from D to E can run into the E-family quota even if D-family usage looked fine. Deallocated VMs can still count in quota calculations because they still exist as VM resources. If quota is fine, investigate regional or zonal capacity next.",
+      "analogy": "A travel app may recommend a cheaper flight, but it does not give you a passport or guarantee that seats still exist. You still need permission to travel and an actual seat.\n\n| Analogy | Azure reality |\n|---|---|\n| Cheaper flight suggestion | Advisor resize recommendation |\n| Passport allowance | Subscription quota |\n| Airline seat availability | Regional or zonal capacity |\n| Unused bookings | Deallocated VMs counted for quota |\n\n**Where the analogy breaks down:** Azure quota is measured in vCPUs and resource counts, while capacity depends on infrastructure availability in the target region or zone.",
+      "jargon": [
+        {
+          "term": "VM size",
+          "definition": "An Azure compute shape that defines the CPU, memory, storage, network, accelerator, and feature limits available to a virtual machine."
+        },
+        {
+          "term": "SKU",
+          "definition": "A specific sellable Azure size or resource variant, such as a named virtual machine size."
+        },
+        {
+          "term": "vCPU",
+          "definition": "A virtual processor presented to the guest operating system and counted for sizing and quota purposes."
+        },
+        {
+          "term": "Azure public cloud",
+          "definition": "The global commercial Azure environment, as distinct from sovereign or government clouds that can have different availability."
+        },
+        {
+          "term": "Azure Advisor",
+          "definition": "An Azure service that analyzes resources and provides recommendations, including VM resize or shutdown suggestions."
+        },
+        {
+          "term": "Right-size recommendation",
+          "definition": "A suggestion to resize a VM or VM scale set to a cheaper SKU or count that appears able to handle observed load."
+        },
+        {
+          "term": "Quota",
+          "definition": "The assigned amount of a resource that a subscription can use, such as regional vCPUs or family vCPUs."
+        },
+        {
+          "term": "Total Regional vCPUs",
+          "definition": "The regional quota tier that limits total VM vCPUs across families in a subscription and region."
+        },
+        {
+          "term": "VM size-family vCPUs",
+          "definition": "A quota tier for a particular VM family, such as Standard D Family or Standard E Family vCPUs."
+        },
+        {
+          "term": "Deallocated VM",
+          "definition": "A VM whose compute allocation is stopped and released while the VM resource and disks remain."
+        },
+        {
+          "term": "Capacity",
+          "definition": "The actual compute resources available in a selected Azure region or zone at allocation time."
+        },
+        {
+          "term": "Accelerated Networking",
+          "definition": "A networking capability that Advisor considers for applicable resize recommendations."
+        }
+      ],
+      "watchOut": "- Advisor recommendations help with cost analysis; they do not reserve capacity.\n- A resize can move usage from one family quota to another.\n- Both total regional vCPU quota and size-family quota must allow the target allocation.\n- Deallocated VMs can still count toward quota.\n- Even with enough quota, capacity can still block allocation.",
+      "productionTip": {
+        "official": "Microsoft Learn documents VM quota as a two-tier system with Total Regional vCPUs and VM size-family vCPUs, and states that quota includes allocated and deallocated cores. Advisor resize recommendations analyze utilization and cost but quota and capacity remain separate controls.",
+        "recommendation": "Before accepting many Advisor size changes, export quota usage by region and family. Delete unneeded deallocated VMs, request quota increases before the window, and pilot changes in the same region and zone where production will run."
+      },
+      "memoryTrick": "Advisor **advises**; quota **allows**; capacity **allocates**. This chain is simplified because feature compatibility, policy, or image constraints can still fail a deployment.",
+      "examTip": "When a question combines Advisor, a different VM family, and deallocated VMs, think about quotas before blaming the guest OS. If the item says quota is sufficient, then capacity, SKU availability, zone choice, or feature compatibility becomes the next suspect."
+    },
+    "sources": [
+      {
+        "title": "vCPU quotas - Azure Virtual Machines",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/quotas"
+      },
+      {
+        "title": "Quotas overview - Azure Quotas",
+        "url": "https://learn.microsoft.com/en-us/azure/quotas/quotas-overview"
+      },
+      {
+        "title": "Optimize virtual machine (VM) or virtual machine scale set (VMSS) spend by resizing or shutting down underutilized instances - Azure Advisor",
+        "url": "https://learn.microsoft.com/en-us/azure/advisor/advisor-cost-recommendations"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

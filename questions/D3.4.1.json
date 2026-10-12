@@ -1,0 +1,667 @@
+[
+  {
+    "id": "D3.4.1-01",
+    "objective": "D3.4.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription that contains two planned App Service web apps. The first app, `demo-app`, is a temporary proof of concept that can use the default `azurewebsites.net` hostname and must minimize cost. The second app, `portal-prod`, must use `www.fabrikam.example` with a TLS certificate and must support a staging deployment slot before production release. You need to choose App Service plan tiers before the apps are created.\n\nWhich two statements should guide the plan selection? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use the Free tier for `portal-prod` because the Free tier supports custom domain TLS bindings after the app is created"
+      },
+      {
+        "id": "B",
+        "text": "Use a paid tier for custom domains, and use Basic or higher when a TLS binding is required for that custom domain"
+      },
+      {
+        "id": "C",
+        "text": "Use Standard, Premium, or Isolated for `portal-prod` if the deployment slot requirement must be met"
+      },
+      {
+        "id": "D",
+        "text": "Use Shared for `demo-app` only if it needs scale-out to more than one dedicated VM instance"
+      },
+      {
+        "id": "E",
+        "text": "Use Basic for `portal-prod` because Basic supports five staging slots per app"
+      }
+    ],
+    "correct": [
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The apps are regular Azure App Service web apps, not Azure Functions. The staging environment means an App Service deployment slot, and TLS means a custom-domain certificate binding rather than the default wildcard certificate for `*.azurewebsites.net`.",
+    "sections": {
+      "correctAnswer": "**B. Use a paid tier for custom domains, and use Basic or higher when a TLS binding is required for that custom domain** and **C. Use Standard, Premium, or Isolated for `portal-prod` if the deployment slot requirement must be met**. Free is too small for custom domain mapping, Shared still lacks custom domain SSL support, and deployment slots begin with the Standard family or above.",
+      "technical": "App Service plan tier selection is a provisioning decision because the plan controls which platform features the apps can use. Microsoft separates plan tiers into shared compute, dedicated compute, and isolated hosting. Free and Shared run on shared Azure VMs and give each app a CPU quota. Basic, Standard, Premium, PremiumV2, PremiumV3, and PremiumV4 run on dedicated VM instances assigned to the plan. IsolatedV2 runs inside an App Service Environment for network and compute isolation.\n\nRead the requirements in this order:\n\n1. Hostname requirement: `demo-app` can stay on the default hostname, so Free can be acceptable for a short proof of concept. `portal-prod` needs a custom DNS name, and the custom-domain article says the web app's plan must be a paid tier, not Free.\n2. TLS requirement: the TLS binding article lists Basic, Standard, or Premium as supported pricing tiers for adding a certificate binding. The limits table also states that custom domain SSL isn't supported in Free or Shared, while Basic and above support SNI SSL.\n3. Deployment-slot requirement: the deployment slots article says slots are available in Standard, Premium, or Isolated tiers. The limits table shows Standard supports five slots, and Premium and Isolated support twenty.\n4. Cost requirement: choose the lowest tier that satisfies all required features. That makes Free plausible only for the nonproduction demo app, while the production portal needs at least Standard because Basic doesn't provide deployment slots.\n\nThe feature scope is the App Service plan, but some capabilities are consumed per app. A plan tier doesn't automatically add a domain, bind a certificate, or create a slot; it merely makes those actions possible. There is no inheritance from a higher-tier app in another plan.",
+      "wrongOptions": {
+        "A": "Free includes the default wildcard certificate for the platform hostname, but Microsoft documents zero custom domains and no custom domain SSL support in the Free tier. Misconception: HTTPS on `azurewebsites.net` means any custom hostname can also be secured. Could be correct when the app never uses a custom DNS name and only needs the default App Service hostname.",
+        "D": "Shared is still shared compute and the limits table shows a single shared scale-out position rather than multiple dedicated VM instances. Misconception: A paid tier always means dedicated instances and horizontal scaling. Could be correct only if the question asked for a low-cost paid shared-compute plan with custom domains but no custom domain SSL and no dedicated worker requirement.",
+        "E": "Basic supports custom domains, SNI SSL, backups, and VNet integration, but it does not support staging slots in the limits table. Misconception: Basic is the first paid dedicated tier, so it must include all production release features. Could be correct when the production app requires custom domain TLS but has no slot requirement."
+      },
+      "plainEnglish": "An App Service plan is like choosing the building where your web app will live. A tiny free desk is fine for a short demo if you can use the Azure-provided address. The public customer portal needs a branded address, a certificate for that address, and a separate staging copy. Those features require paying for a bigger building. A custom domain alone can start in paid tiers, certificate binding needs Basic or higher, and deployment slots require Standard or higher. Therefore the demo can be cheap, but the production portal cannot stay Free, Shared, or Basic if the slot is mandatory.",
+      "analogy": "Imagine two pop-up shops. One shop only needs a folding table inside a community hall; the hall's sign is enough. The other shop needs its own sign, a security-approved front door, and a rehearsal room where staff can prepare merchandise before opening day.\n\n| Analogy | Azure reality |\n|---|---|\n| Folding table | Free App Service plan for a demo |\n| Branded sign | Custom domain mapping |\n| Security-approved door | TLS certificate binding |\n| Rehearsal room | Deployment slot |\n| Larger leased unit | Standard or higher plan |\n\n**Where the analogy breaks down:** Azure features are enforced by product tiers and resource settings, not by a landlord. A plan can allow a feature without configuring it for every app.",
+      "jargon": [
+        {
+          "term": "App Service plan",
+          "definition": "The Azure resource that defines the compute resources, operating system, region, instance size, instance count, and pricing tier used by App Service apps."
+        },
+        {
+          "term": "Free tier",
+          "definition": "A shared-compute App Service tier intended for tests and small workloads; it has CPU quotas, no custom domains, and no custom domain SSL support."
+        },
+        {
+          "term": "Shared tier",
+          "definition": "A paid shared-compute tier where apps still run on shared VMs and don't receive dedicated worker instances."
+        },
+        {
+          "term": "Basic tier",
+          "definition": "The first dedicated-compute App Service family; it supports features such as custom domain SSL but not deployment slots."
+        },
+        {
+          "term": "Standard tier",
+          "definition": "A dedicated App Service tier that supports deployment slots, autoscale, custom domain SSL, and more production features."
+        },
+        {
+          "term": "TLS binding",
+          "definition": "The configuration that attaches a certificate to a custom hostname so users can browse to that hostname over HTTPS."
+        },
+        {
+          "term": "SNI SSL",
+          "definition": "Server Name Indication SSL/TLS, which lets multiple secure hostnames share an IP address and is supported without the IP-based SSL charge."
+        },
+        {
+          "term": "Deployment slot",
+          "definition": "A live App Service app instance, such as staging, that can be swapped with production for controlled releases."
+        }
+      ],
+      "watchOut": "- Do not confuse the free platform hostname certificate with a certificate for your own domain.\n- Basic is dedicated compute, but it still lacks deployment slots.\n- Standard supports five slots; Premium and Isolated support more, but choose the lowest tier that satisfies the scenario.\n- Tier availability can vary by operating system and region, so verify SKU availability during provisioning.",
+      "productionTip": {
+        "official": "Microsoft documents custom domain setup as requiring a paid tier rather than Free, custom TLS binding as requiring Basic, Standard, or Premium, and deployment slots as available only in Standard, Premium, or Isolated tiers.",
+        "recommendation": "For production, write the feature requirements before choosing the SKU. If only a domain and TLS are required, Basic may be enough; if release slots or autoscale rules are required, start the design at Standard and justify any move to Premium by capacity or performance needs."
+      },
+      "memoryTrick": "Think **domain pays, certificate starts Basic, slot starts Standard**. This shortcut ignores capacity sizing, but it helps eliminate Free, Shared, and Basic quickly in slot questions.",
+      "examTip": "Clue words are `custom domain`, `TLS certificate`, and `staging deployment slot`. Rule out Free when a custom hostname appears, rule out Shared when custom-domain SSL is needed, and rule out Basic when the requirement says slot. A harder version may add daily backups or VNet integration; those can fit Basic, so the slot remains the deciding feature here."
+    },
+    "sources": [
+      {
+        "title": "Azure App Service Plans - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+      },
+      {
+        "title": "Azure subscription and service limits, quotas, and constraints - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits#azure-app-service-limits"
+      },
+      {
+        "title": "Set Up an Existing Custom Domain Name for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+      },
+      {
+        "title": "Secure Your Domain with TLS/SSL - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+      },
+      {
+        "title": "Set Up Staging Environments - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.1-02",
+    "objective": "D3.4.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure subscription that contains an App Service plan named `asp-shared-prod` in the Standard S1 tier. The plan runs three web apps named `orders`, `catalog`, and `support`. You plan to add a fourth app named `status` to the same plan to save cost. Before approving the design, the operations team asks what happens when the plan has two VM instances and later is changed to three instances.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Only the `status` app runs on the new instance because it was added last"
+      },
+      {
+        "id": "B",
+        "text": "Each app receives its own separate set of VM instances inside the same App Service plan"
+      },
+      {
+        "id": "C",
+        "text": "All apps in the plan share the plan's VM instances and normally run on every instance configured for the plan"
+      },
+      {
+        "id": "D",
+        "text": "The plan's instance count affects only deployment slots, not production apps"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Per-app scaling is disabled. The question is about the default placement behavior of apps in a Standard App Service plan, not about manual scale-out configuration details or autoscale rule design.",
+    "sections": {
+      "correctAnswer": "**C. All apps in the plan share the plan's VM instances and normally run on every instance configured for the plan**. In the default model, the App Service plan owns the workers, and every app in that plan uses those same workers when the app is running.",
+      "technical": "An App Service plan is the compute boundary for App Service apps. Microsoft explains that when you create a plan in a region, you create compute resources for that plan. Whatever apps you place in the plan run on those compute resources. In dedicated compute tiers such as Standard, the VM instances are dedicated to the App Service plan, not to each individual app.\n\nDefault placement works like this:\n\n1. The plan is provisioned with an operating system, region, tier, size, and number of VM instances.\n2. Apps assigned to that plan use the compute resources of the plan.\n3. With per-app scaling disabled, each running app is placed across all VM instances configured in the plan.\n4. Deployment slots, WebJobs, backups, and diagnostic logging also use CPU and memory from the same worker pool when they run.\n5. If the plan instance count changes from two to three, the plan has another worker available, and the apps share that expanded pool.\n\nThe scope of the instance count is the plan. It is not inherited from one app to another; instead, apps are peers within the same hosting plan. Precedence is simple: plan capacity is evaluated before app placement. A single noisy app can affect other apps in the same plan because they draw from the same CPU, memory, and storage quota pool.\n\nThe main exception is per-app scaling. When enabled on supported tiers, an app or slot can be limited to a subset of plan instances. Even then, the plan remains the billing and capacity container, and an app cannot use more active replicas than the plan has workers.",
+      "wrongOptions": {
+        "A": "App Service doesn't reserve the newly added worker for the newest app. Misconception: Placement order determines worker ownership. Could be correct in a manually partitioned architecture that uses a separate plan for the new app, not when the app joins the existing plan.",
+        "B": "A single App Service plan provides one shared set of worker instances for apps in that plan. Misconception: Dedicated compute means each app gets dedicated VMs. Could be correct if every app were deployed into its own separate App Service plan.",
+        "D": "Deployment slots use the plan's VM instances, but production apps are also placed on those instances. Misconception: Slots are the only objects affected by plan capacity. Could be correct only in a question about a setting that is specific to slots, not the plan's compute count."
+      },
+      "plainEnglish": "Think of the plan as a group of servers rented together. If the plan has two servers, the apps in that plan use those two servers. If you change the plan to three servers, the shared group becomes three servers. The extra server isn't assigned to the newest website, and each website doesn't secretly receive a private server set. Putting apps together can save money, but it also means they compete for the same worker resources.",
+      "analogy": "A restaurant kitchen has three food trucks parked beside it. All menus cooked by that kitchen can use the trucks during a festival. Adding one more truck helps the whole kitchen operation; it doesn't belong only to the newest menu item.\n\n| Analogy | Azure reality |\n|---|---|\n| Kitchen operation | App Service plan |\n| Food trucks | VM instances in the plan |\n| Menus | Web apps in the plan |\n| Busy menu slowing others | One app consuming shared CPU or memory |\n| Separate kitchen | Separate App Service plan |\n\n**Where the analogy breaks down:** App Service handles process placement, routing, and platform maintenance automatically. You don't schedule trucks manually the way a kitchen manager would.",
+      "jargon": [
+        {
+          "term": "Standard S1",
+          "definition": "A Standard App Service plan SKU that uses dedicated compute and supports features such as deployment slots and autoscale."
+        },
+        {
+          "term": "VM instance",
+          "definition": "A virtual machine worker used by an App Service plan to run the apps assigned to that plan."
+        },
+        {
+          "term": "Per-app scaling",
+          "definition": "An App Service feature that can limit an app or slot to a subset of the plan's workers while billing remains at the plan level."
+        },
+        {
+          "term": "Deployment slot",
+          "definition": "A live app endpoint, such as staging, attached to an App Service app and hosted by the same plan workers."
+        },
+        {
+          "term": "WebJob",
+          "definition": "A background task or script that runs in the context of an App Service app and uses plan resources."
+        },
+        {
+          "term": "Dedicated compute",
+          "definition": "A tier model where worker VMs are dedicated to the App Service plan rather than shared with other customers' plans."
+        }
+      ],
+      "watchOut": "- Dedicated to the plan does not mean dedicated to each app.\n- Multiple apps can be economical only if the combined CPU, memory, and storage needs fit the plan.\n- Slots count as active apps for resource competition.\n- Per-app scaling changes placement but not the basic plan-level billing boundary.",
+      "productionTip": {
+        "official": "Microsoft documents that apps, slots, WebJobs, backups, and diagnostic logs in the same plan use the plan's VM instances, and that plan scaling affects all apps because they share underlying compute resources.",
+        "recommendation": "Group small, related apps when their resource profiles are predictable. Put a resource-intensive app, a noisy batch worker, or a separately scaled workload in its own plan so capacity changes and incidents don't spill over to unrelated apps."
+      },
+      "memoryTrick": "Plan workers are a **pool, not presents**. This is a simplification because per-app scaling can fence an app to fewer workers, but the plan still owns the pool.",
+      "examTip": "When a question lists several apps in one App Service plan, mentally draw one box around the plan and put all worker instances inside that box. Answers that give each app a private worker set are usually wrong unless the scenario creates separate plans. A tougher item may mention per-app scaling; then check whether that feature was enabled before applying the default rule."
+    },
+    "sources": [
+      {
+        "title": "Azure App Service Plans - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+      },
+      {
+        "title": "Azure subscription and service limits, quotas, and constraints - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits#azure-app-service-limits"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.1-03",
+    "objective": "D3.4.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have an app named `claims-api` that runs in a Windows App Service plan named `asp-win-east` in resource group `rg-app-east` and region East US. You need to move `claims-api` to another existing App Service plan while preserving the app and avoiding a redeployment. Four target plans are available.\n\n| Plan | Resource group | Region | OS type |\n|---|---|---|---|\n| `asp-win-east-2` | `rg-app-east` | East US | Windows |\n| `asp-linux-east` | `rg-app-east` | East US | Linux |\n| `asp-win-west` | `rg-app-east` | West US | Windows |\n| `asp-win-east-rg2` | `rg-app-shared` | East US | Windows |\n\nWhich target plan should you select?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`asp-win-east-2`"
+      },
+      {
+        "id": "B",
+        "text": "`asp-linux-east`"
+      },
+      {
+        "id": "C",
+        "text": "`asp-win-west`"
+      },
+      {
+        "id": "D",
+        "text": "`asp-win-east-rg2`"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The app has no virtual network integration configured, or it is disabled before the plan change. All listed plans already exist and are otherwise healthy. The question asks about changing the App Service plan for an existing app, not cloning to another region.",
+    "sections": {
+      "correctAnswer": "**A. `asp-win-east-2`**. An app can move to another App Service plan when the source and target plans are in the same resource group, same geographical region, and same OS type; this target is the only one that matches all three requirements.",
+      "technical": "The App Service plan is not just a price label. It fixes the operating system and region of the compute workers. The manage-plan documentation states that moving an app to another plan is supported only when the source plan and target plan are in the same resource group, in the same geographical region, and of the same operating system type. Any change such as Windows to Linux, or any different type from the originating type, isn't supported for this move.\n\nThe evaluation order for this scenario is:\n\n1. Check OS type. `claims-api` starts in a Windows plan, so a Linux plan is eliminated.\n2. Check region. The app runs in East US, so a West US plan is eliminated for a direct plan move.\n3. Check resource group and webspace. The target plan must be in the same resource group. Microsoft also explains that App Service deploys plans into an internal deployment unit called a webspace, and plans created with the same resource group, region, and operating system are deployed into the same webspace.\n4. Check app configuration blockers. The app's virtual network integration must be disabled before changing plans.\n\nThe scope is the app's hosting relationship to the plan. The app doesn't inherit a new region or OS from an arbitrary target. Instead, the portal's Change plan list shows only valid plans in the same resource group and geographical region as the current plan, and lets you create a new compatible plan if needed. If the requirement is truly to run in another region, Microsoft points to cloning as an alternative because the region of a plan can't be changed.",
+      "wrongOptions": {
+        "B": "The resource group and region match, but the OS type changes from Windows to Linux, which Microsoft says isn't supported for moving an app between plans. Misconception: App Service apps can switch operating systems by changing plans. Could be correct for a newly created Linux app or a redeployment to a Linux plan, not for this direct move.",
+        "C": "The OS and resource group match, but West US doesn't match the current geographical region. Misconception: A plan move is also a region move. Could be correct if the task used app cloning or a fresh deployment to move the workload across regions.",
+        "D": "The OS and region match, but the resource group differs. Plans in another resource group aren't valid direct move targets for this app. Misconception: Matching region and OS are sufficient by themselves. Could be correct if a new app were being deployed there, or if the scenario used another migration method rather than Change plan."
+      },
+      "plainEnglish": "An App Service app can move between compatible plans, but compatible has a very specific meaning. The new plan must be in the same Azure region, use the same operating system, and be in the same resource group. Those details keep the app inside the same internal hosting area. A Windows app in East US can't simply be pointed at a Linux plan, a West US plan, or a plan in another resource group. For those choices, you would need a different migration approach.",
+      "analogy": "Picture an apartment tenant moving to another unit without hiring movers. The tenant can move across the hall in the same building type, managed by the same office. Moving to another city, a different building system, or another landlord requires a real relocation.\n\n| Analogy | Azure reality |\n|---|---|\n| Tenant | App Service app |\n| Apartment unit | App Service plan |\n| Same building office | Same resource group and webspace |\n| Same city | Same Azure region |\n| Same building utilities | Same Windows or Linux OS type |\n\n**Where the analogy breaks down:** Azure webspace placement is an internal platform concept, and users don't choose a webspace directly the way a tenant chooses a hallway.",
+      "jargon": [
+        {
+          "term": "OS type",
+          "definition": "The operating system family, Windows or Linux, selected for an App Service plan when it is created."
+        },
+        {
+          "term": "Resource group",
+          "definition": "An Azure management container that holds related resources and is part of the compatibility rule for direct App Service plan moves."
+        },
+        {
+          "term": "Region",
+          "definition": "The Azure geographical location where a plan's compute resources are created, such as East US."
+        },
+        {
+          "term": "Webspace",
+          "definition": "An internal App Service deployment unit; plans with the same resource group, region, and OS combination are placed in the same webspace."
+        },
+        {
+          "term": "Change plan",
+          "definition": "The App Service portal action used to move an app to another compatible App Service plan."
+        },
+        {
+          "term": "Virtual network integration",
+          "definition": "An outbound networking feature that must be disabled on the app before changing App Service plans."
+        },
+        {
+          "term": "Cloning",
+          "definition": "An App Service feature that can copy an app to a plan in another region, subject to cloning limitations."
+        }
+      ],
+      "watchOut": "- Same region plus same OS isn't enough if the resource group differs.\n- You can't change a plan's region after creation.\n- A direct plan move isn't a Windows-to-Linux migration path.\n- Disable virtual network integration before the plan change.\n- If no compatible plan appears, create a new plan with the same resource group, region, and OS combination.",
+      "productionTip": {
+        "official": "Microsoft documents that direct app movement requires the source and target App Service plans to share resource group, geographical region, and OS type, and it notes that webspace placement is based on resource group, region, and operating system.",
+        "recommendation": "Name plans with their region and OS, for example `asp-win-eastus-prod`, so operators spot incompatible targets before an outage window. For regional migrations, plan a clone, deployment pipeline, DNS cutover, and validation run instead of relying on Change plan."
+      },
+      "memoryTrick": "Move plans with **R-R-O**: Resource group, Region, OS. The mnemonic is narrow because networking settings and feature downgrades can still block an otherwise matching move.",
+      "examTip": "The table is designed to make three wrong answers each miss one compatibility rule. Cross out different OS first, then different region, then different resource group. A harder version may say the app has VNet integration; then you must disable that integration before moving to the compatible plan."
+    },
+    "sources": [
+      {
+        "title": "Manage an App Service Plan - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+      },
+      {
+        "title": "Azure App Service Plans - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.1-04",
+    "objective": "D3.4.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You use Azure CLI to provision infrastructure for a Linux web app. You need to create an App Service plan named `asp-linux-api` in resource group `rg-api` by using the lowest listed Premium v3 SKU in the command reference. The plan must be a Linux plan at creation time.\n\nWhich command should you run?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```azurecli\naz appservice plan create -g rg-api -n asp-linux-api --sku P0V3 --is-linux\n```"
+      },
+      {
+        "id": "B",
+        "text": "```azurecli\naz appservice plan create -g rg-api -n asp-linux-api --sku S1 --hyper-v\n```"
+      },
+      {
+        "id": "C",
+        "text": "```azurecli\naz webapp create -g rg-api -n asp-linux-api --sku P0V3 --is-linux\n```"
+      },
+      {
+        "id": "D",
+        "text": "```azurecli\naz appservice plan update -g rg-api -n asp-linux-api --sku P0V3 --is-linux\n```"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The resource group already exists. SKU availability in the target region is assumed. The question is about provisioning the App Service plan, not creating the web app that will later use the plan.",
+    "sections": {
+      "correctAnswer": "**A. `az appservice plan create -g rg-api -n asp-linux-api --sku P0V3 --is-linux`**. The command uses the App Service plan create operation, selects the Premium v3 SKU requested, and marks the plan as Linux during creation.",
+      "technical": "The Azure CLI command group for App Service plans is `az appservice plan`. The `create` command requires a plan name and resource group. The command reference lists `--sku` as an optional parameter with values such as `B1`, `S1`, `P0V3`, `P1V3`, `P0V4`, `P1V4`, and many others. It also lists `--is-linux` as a create parameter with true or false values, and the examples show creating a Linux plan by including `--is-linux`.\n\nThe order of reasoning is:\n\n1. Use the plan command group because the task is to provision the hosting plan, not the web app.\n2. Use the `create` action because the plan doesn't exist yet.\n3. Supply the required `--resource-group` and `--name` arguments.\n4. Set `--sku P0V3` because P0V3 is the lowest Premium v3 SKU shown in the current CLI examples and limits table.\n5. Include `--is-linux` so the operating system is fixed as Linux for the new plan.\n\nThe App Service plan's operating system is a plan property. Once you put apps in a plan, an app move from Windows to Linux isn't supported through Change plan. This is why the provisioning command should create the right OS type before the app is deployed.\n\n`--hyper-v` is for Windows container app service plans, not Linux code plans. `az webapp create` is an app creation command, not a plan creation command. `az appservice plan update` changes an existing plan and doesn't satisfy a create-new-plan requirement.",
+      "wrongOptions": {
+        "B": "This creates or attempts to create a Windows container-oriented plan using `--hyper-v`, and it uses Standard S1 instead of the requested Premium v3 SKU. Misconception: Any container-related switch is the Linux switch. Could be correct when the requirement is a Windows container plan with a supported SKU.",
+        "C": "`az webapp create` creates an app, not just the App Service plan named in the prompt. Misconception: Web app and plan creation commands are interchangeable. Could be correct after a compatible plan exists and the next task is to create a Linux web app in that plan.",
+        "D": "The `update` action assumes an existing plan and doesn't create the requested new resource. Misconception: You can set the Linux property later while creating by update. Could be correct for changing supported properties on an existing plan, but not for initial Linux plan provisioning."
+      },
+      "plainEnglish": "The command must do three things: create a plan, choose the right size family, and make the plan Linux. The words after `az` matter. `appservice plan create` creates the hosting plan. `--sku P0V3` selects the requested Premium v3 size. `--is-linux` says the workers are Linux workers. Commands that create a web app, update an existing plan, or use the Windows-container switch don't match the provisioning request.",
+      "analogy": "This is like ordering an empty workshop before hiring the staff. You must order the correct building, choose the premium floor plan, and specify Linux equipment before delivery. Ordering a storefront item or remodeling an old workshop doesn't create the new workshop requested.\n\n| Analogy | Azure reality |\n|---|---|\n| Empty workshop | App Service plan |\n| Premium floor plan | Premium v3 SKU |\n| Linux equipment | `--is-linux` |\n| Storefront tenant | Web app |\n| Remodel form | Update command |\n\n**Where the analogy breaks down:** Azure CLI commands are declarative management operations; the platform, not a contractor, provisions and patches the workers.",
+      "jargon": [
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's command-line tool for creating and managing Azure resources."
+        },
+        {
+          "term": "`az appservice plan create`",
+          "definition": "The Azure CLI command that creates a new App Service plan."
+        },
+        {
+          "term": "`--resource-group` or `-g`",
+          "definition": "The Azure CLI argument that identifies the resource group for the resource being created."
+        },
+        {
+          "term": "`--name` or `-n`",
+          "definition": "The Azure CLI argument that sets the App Service plan name."
+        },
+        {
+          "term": "`--sku`",
+          "definition": "The CLI argument that selects the App Service plan SKU, such as `P0V3` or `S1`."
+        },
+        {
+          "term": "`--is-linux`",
+          "definition": "The CLI switch that creates the App Service plan as a Linux plan."
+        },
+        {
+          "term": "Premium v3",
+          "definition": "A dedicated App Service pricing family listed in current App Service plan tiers and CLI SKU values."
+        },
+        {
+          "term": "`--hyper-v`",
+          "definition": "A CLI option used for Windows container App Service plans, not the normal Linux plan switch."
+        }
+      ],
+      "watchOut": "- Choose the App Service plan command group when the resource to create is the plan.\n- Set Linux at creation; don't rely on moving a Windows-hosted app into a Linux plan later.\n- Verify regional SKU availability when running the command for real.\n- `P0V3` is Premium v3; `S1` is Standard and doesn't satisfy the stated SKU requirement.",
+      "productionTip": {
+        "official": "The Azure CLI reference documents `az appservice plan create` with required `--name` and `--resource-group` arguments, a `--sku` parameter that includes `P0V3`, and an `--is-linux` parameter for Linux plans.",
+        "recommendation": "Put plan creation in infrastructure-as-code or a checked script, then run a read-back command such as `az appservice plan show` to confirm `reserved` or Linux state, SKU, region, and worker count before deploying the web app."
+      },
+      "memoryTrick": "For Linux plans, say **plan create, SKU, is-linux**. This is a command-memory aid; it doesn't replace checking region support, naming standards, or tags.",
+      "examTip": "Look for verbs. Provision a plan means `az appservice plan create`, not `az webapp create` and not `update`. Then inspect the switches: `--is-linux` is the Linux clue, while `--hyper-v` points to Windows containers. A more difficult version may include `--number-of-workers` or `--zone-redundant`; those add capacity rules but don't change the base create syntax."
+    },
+    "sources": [
+      {
+        "title": "az appservice plan - Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/appservice/plan?view=azure-cli-latest#az-appservice-plan-create"
+      },
+      {
+        "title": "Azure App Service Plans - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+      },
+      {
+        "title": "Manage an App Service Plan - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.1-05",
+    "objective": "D3.4.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You need to create a new zone-redundant App Service plan for a public-facing web app. The architecture team requires the plan to distribute plan instances across availability zones where the selected scale unit supports it. You will use Azure CLI and want the plan to start with the minimum instance count allowed for a new zone-redundant plan.\n\nWhich Azure CLI command should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "```azurecli\naz appservice plan create -g rg-web -n asp-zr --sku P1V3 --zone-redundant --number-of-workers 1\n```"
+      },
+      {
+        "id": "B",
+        "text": "```azurecli\naz appservice plan create -g rg-web -n asp-zr --sku P1V3 --zone-redundant --number-of-workers 2\n```"
+      },
+      {
+        "id": "C",
+        "text": "```azurecli\naz appservice plan create -g rg-web -n asp-zr --sku S1 --zone-redundant --number-of-workers 2\n```"
+      },
+      {
+        "id": "D",
+        "text": "```azurecli\naz appservice plan create -g rg-web -n asp-zr --sku F1 --zone-redundant --number-of-workers 2\n```"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The chosen region and App Service scale unit support more than one availability zone for the requested plan. The question focuses on creating the plan, not designing autoscale profiles or per-app scaling.",
+    "sections": {
+      "correctAnswer": "**B. `az appservice plan create -g rg-web -n asp-zr --sku P1V3 --zone-redundant --number-of-workers 2`**. New zone-redundant App Service plans use the `--zone-redundant` argument and must set `--number-of-workers` to at least two.",
+      "technical": "Zone redundancy for an App Service plan is a plan-level setting that distributes plan instances across availability zones. Microsoft documents the new-plan CLI pattern as setting `--zone-redundant` and setting `--number-of-workers`, the instance count, to a value of two or more. The example uses `--sku P1V3`, which is a Premium v3 dedicated tier SKU.\n\nThe evaluation order is:\n\n1. Confirm support. For an existing plan, check `properties.maximumNumberOfZones`; more than one means zone redundancy is supported on that plan's scale unit. For a new plan, choose a region and tier that can land on zone-capable infrastructure.\n2. Choose a supported dedicated tier. The current zone-redundancy documentation demonstrates Premium v3. Free and Shared don't provide the dedicated multi-instance foundation needed for zone-redundant plan instances.\n3. Set the zone flag. In CLI, `--zone-redundant` requests zone redundancy when creating the plan.\n4. Set capacity to two or higher. A capacity of one cannot be spread across zones.\n\nScope and precedence matter. Zone redundancy is about the App Service plan workers. It doesn't create guaranteed app replicas independent of worker count. Microsoft warns that if per-app scaling is enabled and an app or slot has a worker limit of one, you shouldn't infer a second hot replica for that app. For rules-based autoscale on an existing plan, every applicable autoscale profile must have minimum, default, and maximum capacities of at least two before enabling zone redundancy. Those autoscale details are beyond initial provisioning, but they explain why `--number-of-workers 2` is the minimum safe create-time answer.",
+      "wrongOptions": {
+        "A": "The command requests zone redundancy but starts with only one worker, and Microsoft documents that new zone-redundant plans need two or more workers. Misconception: A zone flag can spread a single instance across zones. Could be correct for a non-zone-redundant Premium plan where one worker is acceptable.",
+        "C": "The instance count is two, but the documented creation example for zone redundancy uses Premium v3, and the limits table positions autoscale and higher availability features above Basic while zone guidance is tied to zone-capable plan support. Misconception: Any dedicated tier with two workers is automatically a zone-redundant create target. Could be correct only if current documentation for that exact plan and scale unit supported zone redundancy; the verified create pattern here is Premium v3 with two workers.",
+        "D": "Free is shared compute and doesn't provide dedicated workers for a zone-redundant App Service plan. Misconception: `--number-of-workers` makes the Free tier multi-instance. Could be correct for a lowest-cost test plan without availability-zone requirements."
+      },
+      "plainEnglish": "Zone redundancy needs more than a checkbox. The plan needs enough workers to place them in different zones, so one worker is not enough. The CLI command must say that zone redundancy is enabled and must ask for at least two workers. A Premium v3 SKU is the documented example for this create operation. Free is much too small because it isn't dedicated multi-instance hosting.",
+      "analogy": "A company wants offices in separate parts of a city so one local incident doesn't close the whole operation. Renting only one office and writing `spread out` on the lease doesn't create a second office. You need at least two offices and a lease category that supports that arrangement.\n\n| Analogy | Azure reality |\n|---|---|\n| Office district | Availability zone |\n| Lease category | App Service plan SKU |\n| Two offices | Two plan workers |\n| Spread-out request | `--zone-redundant` |\n| Single employee office | One-worker plan that can't distribute instances |\n\n**Where the analogy breaks down:** Availability zones are physical datacenter groupings, and App Service placement is managed by Azure rather than by a tenant selecting exact buildings.",
+      "jargon": [
+        {
+          "term": "Zone redundancy",
+          "definition": "An App Service plan configuration that places plan instances across availability zones when the plan and scale unit support it."
+        },
+        {
+          "term": "Availability zone",
+          "definition": "A physically separate datacenter zone within a supported Azure region."
+        },
+        {
+          "term": "`--zone-redundant`",
+          "definition": "The Azure CLI flag used to request zone redundancy for an App Service plan."
+        },
+        {
+          "term": "`--number-of-workers`",
+          "definition": "The Azure CLI argument that sets the number of App Service plan worker instances during plan creation or update."
+        },
+        {
+          "term": "Premium v3",
+          "definition": "A dedicated App Service pricing family commonly represented by SKUs such as `P1V3`, `P2V3`, and `P3V3`."
+        },
+        {
+          "term": "Scale unit",
+          "definition": "The underlying App Service infrastructure where a plan is placed; some units support zone redundancy and some don't."
+        },
+        {
+          "term": "Per-app scaling",
+          "definition": "A feature that can limit an app or slot to fewer workers than the plan has, which affects actual app replica placement."
+        }
+      ],
+      "watchOut": "- A zone-redundant plan needs capacity of at least two.\n- The zone setting distributes plan instances; it doesn't promise every app has multiple active replicas if per-app limits are one.\n- Existing plans may be on a scale unit that can't enable zone redundancy.\n- Rules-based autoscale profiles must not later reduce a zone-redundant plan below two workers.",
+      "productionTip": {
+        "official": "Microsoft documents `--zone-redundant` plus `--number-of-workers 2` or more for a new zone-redundant plan, and it documents `maximumNumberOfZones` as the property to inspect for zone support on existing plans.",
+        "recommendation": "For production, verify zone support in the target region before deployment, keep minimum capacity at two or above, and test app behavior during worker restarts because plan zone redundancy doesn't remove the need for stateless design and health probes."
+      },
+      "memoryTrick": "Zone redundant starts with **Z plus two**: zone flag plus at least two workers. This is a simplification because support still depends on region, scale unit, tier, and per-app limits.",
+      "examTip": "The exam clue is `minimum instance count allowed`. Eliminate any answer with one worker, then eliminate shared tiers. A harder version may ask about enabling zone redundancy on an existing rules-based autoscale plan; then the correct action includes raising every relevant autoscale minimum, default, and maximum to at least two before enabling the property."
+    },
+    "sources": [
+      {
+        "title": "Configure App Service plans for zone redundancy - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-zone-redundancy"
+      },
+      {
+        "title": "az appservice plan - Azure CLI",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/appservice/plan?view=azure-cli-latest#az-appservice-plan-create"
+      },
+      {
+        "title": "Azure App Service Plans - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+      },
+      {
+        "title": "Azure subscription and service limits, quotas, and constraints - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits#azure-app-service-limits"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.1-06",
+    "objective": "D3.4.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank plans to host several internal line-of-business web apps. The security team requires the apps to run in a single-tenant App Service deployment on the bank's virtual network, with network access controls managed outside each individual app's configuration. The apps may need more than 30 plan instances in the future.\n\nWhich hosting choice should you provision?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A Standard App Service plan with regional virtual network integration"
+      },
+      {
+        "id": "B",
+        "text": "A Premium v4 App Service plan in the public multitenant App Service"
+      },
+      {
+        "id": "C",
+        "text": "An App Service Environment v3 with Isolated v2 App Service plans"
+      },
+      {
+        "id": "D",
+        "text": "A Free App Service plan with private endpoints enabled"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The bank requires App Service, not Azure Kubernetes Service or virtual machines. The requirement is a single-tenant App Service environment on a virtual network, not only outbound access from an app to a virtual network resource.",
+    "sections": {
+      "correctAnswer": "**C. An App Service Environment v3 with Isolated v2 App Service plans**. App Service Environment is the App Service feature for a fully isolated, single-tenant deployment on the customer's virtual network, and Isolated v2 plans support high scale inside that environment.",
+      "technical": "Azure App Service has two broad placement models relevant to this question. The public multitenant service hosts plans on shared supporting infrastructure, even when dedicated worker VMs are assigned to a customer's plan. App Service Environment provides a single-tenant deployment of App Service that runs in a customer's virtual network. Microsoft describes it as fully isolated and dedicated, suitable for secure network access, high scale, high memory usage, and high request rates.\n\nProvisioning should be evaluated in this order:\n\n1. Identify isolation scope. The scenario requires single-tenant App Service deployment, not just dedicated plan workers. That points to App Service Environment.\n2. Identify network placement. The environment runs in a single subnet inside the customer's virtual network, and apps in that environment don't need separate VNet integration to be on that virtual network.\n3. Identify scale requirement. The App Service Environment overview lists use cases that need more than 30 App Service plan instances, and it states that a single Isolated v2 plan supports up to 100 instances.\n4. Select the plan family. In the hosting-plan tier table, IsolatedV2 is the isolated tier and runs dedicated Azure VMs on dedicated Azure virtual networks.\n\nRegional virtual network integration in Basic, Standard, Premium, Premium v2, Premium v3, or Premium v4 is outbound connectivity from an app to resources in or through a virtual network. It doesn't provide inbound private access by itself and doesn't make the public multitenant service into a single-tenant environment. Private endpoints can provide private inbound access to an app, but they don't create a single-tenant App Service deployment and aren't listed for Free in the limits table.",
+      "wrongOptions": {
+        "A": "Standard with virtual network integration can let an app reach VNet resources outbound, but it remains public multitenant App Service and isn't a single-tenant App Service deployment. Misconception: VNet integration means the app is hosted inside the VNet. Could be correct when the only requirement is outbound access from a multitenant app to private resources.",
+        "B": "Premium v4 is dedicated compute for the plan, but it is still part of the public multitenant App Service model rather than an App Service Environment. Misconception: Premium equals full environmental isolation. Could be correct for high-performance public multitenant apps that don't require a single-tenant environment.",
+        "D": "Free is shared compute, doesn't support private endpoints in the limits table, and cannot meet the scale or isolation requirements. Misconception: Private networking features can be added to any tier. Could be correct only for a disposable test app using the default public platform hostname."
+      },
+      "plainEnglish": "The bank is not only asking for a better web server size. It is asking for its own App Service island inside its virtual network. A normal Standard or Premium plan can be very capable, and it can connect out to a virtual network, but it still lives in the public multitenant App Service system. App Service Environment is the special option that puts App Service into a single-tenant environment owned by one customer and designed for network-isolated, high-scale apps.",
+      "analogy": "A business park offers private suites in a shared office tower and also offers a fenced campus for one company. Premium suites are nicer, but they are still in the tower. Woodgrove asked for the fenced campus.\n\n| Analogy | Azure reality |\n|---|---|\n| Shared office tower | Public multitenant App Service |\n| Private suite | Dedicated App Service plan workers |\n| Fenced campus | App Service Environment |\n| Campus road network | Customer virtual network subnet |\n| Many buildings on campus | Multiple high-scale Isolated v2 plans |\n\n**Where the analogy breaks down:** App Service Environment still uses Azure-managed platform services; the customer controls networking boundaries but doesn't administer physical servers.",
+      "jargon": [
+        {
+          "term": "App Service Environment",
+          "definition": "A single-tenant Azure App Service deployment that runs in a customer's virtual network for isolation and high-scale hosting."
+        },
+        {
+          "term": "Isolated v2",
+          "definition": "The App Service plan tier used in App Service Environment v3 for isolated workers."
+        },
+        {
+          "term": "Public multitenant",
+          "definition": "The standard App Service offering where many customers use shared supporting platform infrastructure."
+        },
+        {
+          "term": "Virtual network integration",
+          "definition": "An App Service feature for outbound access from an app to resources in or through a virtual network."
+        },
+        {
+          "term": "Private endpoint",
+          "definition": "An Azure networking feature that provides private inbound access to supported resources through a private IP address."
+        },
+        {
+          "term": "Single-tenant",
+          "definition": "A deployment model where the environment is dedicated to one customer rather than shared among many customers."
+        },
+        {
+          "term": "Line-of-business app",
+          "definition": "An internal application used to support a company's business processes."
+        }
+      ],
+      "watchOut": "- VNet integration is outbound connectivity, not proof that the app is hosted in your VNet.\n- Dedicated plan workers don't equal a dedicated App Service Environment.\n- Isolated v2 is associated with App Service Environment, not a regular public multitenant plan.\n- ASE v3 should be justified by isolation, networking, or scale needs because it is a larger platform choice.",
+      "productionTip": {
+        "official": "Microsoft describes App Service Environment as a fully isolated and dedicated App Service deployment in a customer's virtual network, and notes that a single Isolated v2 plan can support up to 100 instances.",
+        "recommendation": "Use public multitenant Premium plans unless the isolation or network-control requirement is explicit. When ASE is justified, allocate a sufficiently large subnet, document inbound and outbound routing, and validate DNS and private connectivity before moving business apps."
+      },
+      "memoryTrick": "For full App Service isolation, think **ASE = App Service Estate**. The phrase is a simplification because some apps only need private endpoints or VNet integration, not a full estate.",
+      "examTip": "The decisive words are `single-tenant`, `on the virtual network`, and `more than 30 plan instances`. Those point away from Standard and Premium public plans and toward App Service Environment with Isolated v2. A harder version may ask only for outbound private database access; in that case, VNet integration could be enough and ASE might be overkill."
+    },
+    "sources": [
+      {
+        "title": "App Service Environment Overview - Azure App Service Environment",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/environment/overview"
+      },
+      {
+        "title": "Azure App Service Plans - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+      },
+      {
+        "title": "Integrate your app with an Azure virtual network - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration"
+      },
+      {
+        "title": "Azure subscription and service limits, quotas, and constraints - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits#azure-app-service-limits"
+      },
+      {
+        "title": "Overview of Azure App Service - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.1-07",
+    "objective": "D3.4.1",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You create an App Service plan named `asp-empty-prod` in the Basic B1 tier for a future application. No web apps are currently assigned to the plan. A teammate says there is no cost because the plan is empty. Another teammate says stopping an app in a paid plan would also stop plan charges.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The plan isn't billed until the first app is deployed into it"
+      },
+      {
+        "id": "B",
+        "text": "In dedicated compute tiers, charges are based on the App Service plan's VM instances even if the plan has no apps"
+      },
+      {
+        "id": "C",
+        "text": "Stopping every app changes the App Service plan automatically to the Free tier"
+      },
+      {
+        "id": "D",
+        "text": "Only deployment slots are billed, so an empty plan with no slots has no charge"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The App Service plan is Basic B1, which is a dedicated compute tier. The question is about App Service plan compute charges, not charges from App Service domains, certificates, Traffic Manager, storage accounts, or other Azure services.",
+    "sections": {
+      "correctAnswer": "**B. In dedicated compute tiers, charges are based on the App Service plan's VM instances even if the plan has no apps**. Microsoft notes that empty App Service plans still incur charges because the configured VM instances remain reserved.",
+      "technical": "App Service billing follows the compute model of the selected tier. Free doesn't charge for plan compute. Shared charges each app for its CPU quota. Dedicated compute tiers such as Basic, Standard, Premium, PremiumV2, PremiumV3, and PremiumV4 charge each VM instance configured in the App Service plan. IsolatedV2 charges workers in the App Service Environment.\n\nFor this scenario, evaluate cost this way:\n\n1. Identify the tier. Basic B1 is a dedicated compute tier.\n2. Identify the billing object. In dedicated tiers, the plan defines the number of VM instances that apps are scaled to, and each VM instance is charged.\n3. Check whether app count changes reservation. An App Service plan with no apps still reserves the configured VM instances. Microsoft explicitly warns that plans with no associated apps still incur charges.\n4. Distinguish app state from plan allocation. Stopping an app can stop the app process, but it doesn't delete or downsize the App Service plan.\n5. Decide how to remove charges. Delete the plan if it isn't needed, or scale the plan down to Free when that tier satisfies the requirements and the platform allows it.\n\nFeature charges are separate. Microsoft says there is no additional charge for using features available to the tier, such as custom domains, TLS certificates, deployment slots, and backups, with documented exceptions including App Service domains, App Service certificates, and IP-based TLS connections. Those exceptions don't change the answer because the question is about an empty Basic plan's compute reservation.\n\nThe scope is plan-level. Apps, slots, WebJobs, and backups consume plan resources, but they don't have to exist for the plan's dedicated workers to be allocated and billable.",
+      "wrongOptions": {
+        "A": "A dedicated App Service plan can be billed before any app is deployed because the plan reserves VM instances. Misconception: Billing starts only when application code runs. Could be correct for a different service that bills purely by request execution, not for a dedicated App Service plan.",
+        "C": "Stopping apps doesn't automatically change the plan tier. The plan remains in its selected SKU until you scale, delete, or otherwise modify it. Misconception: App stopped means hosting resources are released. Could be correct only if an operator explicitly scaled the plan to Free or deleted it.",
+        "D": "Deployment slots don't define whether the plan is charged. Slots are live apps that use plan resources, but an empty Basic plan can still incur compute charges. Misconception: Optional features, not reserved workers, drive App Service billing. Could be correct in a narrow discussion about slot availability, not plan compute cost."
+      },
+      "plainEnglish": "A paid App Service plan is like reserving a server room, even if nobody has moved in yet. Azure is keeping the Basic worker capacity ready for you, so the bill is tied to the plan's reserved workers. If you stop an app, you have stopped the tenant's activity, not canceled the room reservation. To stop paying for that reservation, remove the plan or change it to a noncharged tier if your scenario supports that tier.",
+      "analogy": "A company leases a small office for a future project. The office is empty, and the lights might be off, but the lease still costs money because the space is reserved. Moving desks out doesn't cancel the lease.\n\n| Analogy | Azure reality |\n|---|---|\n| Office lease | App Service plan charge |\n| Empty office | Plan with zero apps |\n| Office size | SKU and instance count |\n| Turning off computers | Stopping apps |\n| Canceling the lease | Deleting or scaling down the plan |\n\n**Where the analogy breaks down:** Azure can scale or delete resources much faster than a real lease, and specific billing amounts depend on region, SKU, instance count, and related services.",
+      "jargon": [
+        {
+          "term": "Basic B1",
+          "definition": "A Basic App Service plan SKU that uses dedicated compute and is charged as part of the App Service plan."
+        },
+        {
+          "term": "Dedicated compute tier",
+          "definition": "An App Service pricing category where worker VM instances are dedicated to the customer's App Service plan."
+        },
+        {
+          "term": "VM instance",
+          "definition": "A worker virtual machine allocated to an App Service plan and billed according to tier and size."
+        },
+        {
+          "term": "Stopping an app",
+          "definition": "An App Service operation that stops the application from running but doesn't delete or change the App Service plan."
+        },
+        {
+          "term": "Scale down",
+          "definition": "Changing an App Service plan to a lower pricing tier to reduce features, capacity, or cost."
+        },
+        {
+          "term": "App Service domain",
+          "definition": "A domain name purchased through Azure App Service, billed separately from plan compute."
+        },
+        {
+          "term": "IP-based TLS",
+          "definition": "A TLS binding option with a dedicated public IP address; some tiers include one connection and additional usage can carry a charge."
+        }
+      ],
+      "watchOut": "- Empty dedicated plans can still cost money.\n- Stopped apps don't automatically release the plan's workers.\n- Deleting the last app may delete the plan by default, but keeping the plan means keeping the cost unless you scale it to Free.\n- Watch for separate charges from domains, certificates, Traffic Manager, storage, or other connected services.",
+      "productionTip": {
+        "official": "Microsoft documents that dedicated compute tiers charge each VM instance in the App Service plan and specifically warns that App Service plans with no apps still incur charges because they reserve configured VM instances.",
+        "recommendation": "Tag temporary plans with an owner and expiration date, alert on empty paid plans, and include cleanup steps in deployment pipelines. For planned future work, create the paid plan close to deployment time instead of reserving capacity weeks early."
+      },
+      "memoryTrick": "Empty paid plan means **empty chair, paid reservation**. This is a simplification because Free, Shared, and Isolated follow different billing details, but it captures the Basic/Standard/Premium exam trap.",
+      "examTip": "The clue is `Basic B1` plus `no web apps`. Basic is dedicated compute, so think plan instance charge, not app count. If an answer says stopped apps or zero apps stop the bill automatically, reject it. A harder question may ask for the least-cost cleanup action; deleting the plan or scaling down to Free is the direction, provided no required feature is lost."
+    },
+    "sources": [
+      {
+        "title": "Azure App Service Plans - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+      },
+      {
+        "title": "Manage an App Service Plan - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-plan-manage"
+      },
+      {
+        "title": "Azure subscription and service limits, quotas, and constraints - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits#azure-app-service-limits"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

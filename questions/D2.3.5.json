@@ -1,0 +1,394 @@
+[
+  {
+    "id": "D2.3.5-01",
+    "objective": "D2.3.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an Azure storage account named `stproject` that contains an Azure file share named `designs`. Before a CAD application upgrade, you want a recovery point that lets administrators browse older file versions without making a second full copy of the share.\n\nWhich statement describes what happens when you create an Azure Files share snapshot of `designs`?",
+    "options": [
+      {"id": "A", "text": "Azure creates a writable clone of each file in a new storage account."},
+      {"id": "B", "text": "Azure creates a share-level, read-only, point-in-time copy and stores only changed content after the prior snapshot."},
+      {"id": "C", "text": "Azure creates one independent snapshot for each file, and each file snapshot can be modified before restore."},
+      {"id": "D", "text": "Azure exports the share to a Recovery Services vault whenever a snapshot is created manually."}
+    ],
+    "correct": ["B"],
+    "assumptions": "Azure public cloud. `designs` is an Azure file share, not a managed disk or Azure NetApp Files volume. The recovery point is a native Azure Files share snapshot created from the storage service, not a vaulted backup copy.",
+    "sections": {
+      "correctAnswer": "**B. Azure creates a share-level, read-only, point-in-time copy and stores only changed content after the prior snapshot**. A share snapshot captures the state of the whole file share at a moment in time, is read-only, and uses incremental storage for changes.",
+      "technical": "A share snapshot belongs to a file share. It is not created at storage account scope and it is not a per-file feature, even though recovery can happen at file level after the snapshot exists. Microsoft describes a share snapshot as a point-in-time, read-only copy of the data in an Azure file share. The snapshot has the same redundancy as the base share, and a DateTime value is appended to the share URI to identify the point in time.\n\nThe storage behavior is incremental. After a share snapshot is taken, Azure Files preserves the data needed to represent that point in time. Only data that changed after the most recent share snapshot is saved as additional snapshot content. Metadata updates and property writes also count as changed content. This is why snapshots are useful before an application upgrade: you avoid creating a separate full share just to hold a rollback view.\n\nThe access model is also important. You can read, copy, or delete a share snapshot, but you cannot modify the snapshot itself. To restore, you copy data from the snapshot back to the base share or to another destination. Azure Files does not promote a share snapshot into the live base share in one magic step.\n\nA simple order of operations is:\n\n1. Create the share snapshot for `designs`.\n2. Let the application upgrade write to the base share.\n3. If a file version is needed, browse the snapshot view.\n4. Copy the required file or directory content from the snapshot to the target location.\n\nThe exception is backup service behavior: Azure Backup can manage snapshots and, for vaulted backup, copy changed data to a vault. A manual share snapshot by itself is still a storage-service snapshot in the source file share environment.",
+      "wrongOptions": {
+        "A": "A share snapshot is not a writable clone in another storage account. It remains associated with the file share and can be read, copied, or deleted, but not modified. Misconception: A snapshot is the same as a full duplicate environment. Could be correct when you intentionally copy files to a separate share or storage account with AzCopy or another migration tool.",
+        "C": "The snapshot is created at the share level, not as independent editable snapshots for each file. File-level retrieval is available after the share-level snapshot exists. Misconception: Because you can restore a single file, the snapshot must be file-scoped. Could be correct when discussing an application that keeps its own per-file version history outside Azure Files snapshots.",
+        "D": "Manual Azure Files share snapshots stay with the file share and do not automatically export data to a Recovery Services vault. Azure Backup is the managed service that can use snapshots as part of a backup policy. Misconception: Every recovery point in Azure storage is a vault backup. Could be correct for a vaulted Azure Backup policy that transfers protected data according to that policy."
+      },
+      "plainEnglish": "A share snapshot is like freezing the view of an entire shared folder at a particular minute. People keep working in the normal folder, but the frozen view stays read-only. Azure does not make a full second folder with a writable copy of every file. Instead, it keeps enough extra information to show what the folder looked like when the snapshot was taken. If only ten drawings change after the snapshot, the cost and storage impact relate to changed content rather than another full copy of every drawing. When someone needs an older drawing, an administrator browses the snapshot and copies the old version out.",
+      "analogy": "Think of a museum taking a high-resolution photo of a room before renovation. The photo captures the whole room at that moment, but visitors cannot move objects inside the photo. If a chair is damaged during renovation, the staff can look at the photo and rebuild or replace that chair.\n\n| Analogy | Azure reality |\n|---|---|\n| Museum room | Azure file share |\n| Photo of the room | Share snapshot |\n| Cannot move objects in the photo | Snapshot is read-only |\n| Rebuild one chair from the photo | Restore an individual file by copying it |\n| Only renovation differences matter later | Snapshot storage is incremental changed content |\n\n**Where the analogy breaks down:** Azure is not storing a visual picture. It stores file data and metadata in a way the file service can expose through SMB, NFS, REST, portal, PowerShell, or CLI operations.",
+      "jargon": [
+        {"term": "Azure Files", "definition": "The Azure Storage service that provides managed file shares accessible through supported file sharing protocols such as SMB and NFS."},
+        {"term": "File share", "definition": "A storage container for directories and files that clients can mount or access through APIs."},
+        {"term": "Share snapshot", "definition": "A read-only, point-in-time copy of an Azure file share used to browse or restore earlier file versions."},
+        {"term": "Point-in-time", "definition": "A captured state representing how data looked at a specific date and time."},
+        {"term": "Incremental", "definition": "A storage method that saves changed content instead of creating a full independent copy every time."},
+        {"term": "Read-only", "definition": "A state where data can be read but not changed in that location."},
+        {"term": "Redundancy", "definition": "The Azure Storage replication choice, such as LRS, ZRS, GRS, or GZRS, that determines how copies are stored for durability."},
+        {"term": "Recovery Services vault", "definition": "An Azure resource used by Azure Backup to manage protected items, policies, recovery points, and restores."}
+      ],
+      "watchOut": "- A share snapshot is share-scoped even when the restore target is a single file.\n- Snapshots are read-only; restore means copying data out of the snapshot.\n- Incremental storage does not mean free storage, because changed content and metadata updates still consume billable capacity.\n- A native snapshot is not automatically the same thing as a vaulted backup copy.",
+      "productionTip": {
+        "official": "Microsoft documents share snapshots as point-in-time, read-only copies at file share level. The same article states that share snapshots are incremental and that you can read, copy, or delete a snapshot but cannot modify it.",
+        "recommendation": "Before risky maintenance, take a snapshot and record the snapshot time in the change ticket. For recurring protection, use an automated schedule or Azure Backup rather than relying on an operator to remember manual snapshots."
+      },
+      "memoryTrick": "Remember **share first, file later**: the snapshot is taken for the whole share, but you can recover file items from it. This shortcut fails if you assume the snapshot itself is writable.",
+      "examTip": "Clue words are **share snapshot**, **browse older versions**, and **without a second full copy**. Rule out answers that describe writable clones, per-file snapshot objects, or automatic vault export. A harder version may mention Azure Backup; then decide whether the question asks about the storage snapshot itself or the backup service that manages snapshots."
+    },
+    "sources": [
+      {"title": "Use Azure Files Share Snapshots", "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"}
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.5-02",
+    "objective": "D2.3.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You manage a file share named `finance` that already has 199 share snapshots. A nightly script creates one more snapshot before an accounting import. The finance team asks whether the script can keep creating snapshots indefinitely because each snapshot is incremental.\n\nWhat should you tell the team?",
+    "options": [
+      {"id": "A", "text": "The script can continue indefinitely because incremental snapshots do not count toward any Azure Files limit."},
+      {"id": "B", "text": "The script must stop at 200 snapshots per share unless older snapshots are deleted."},
+      {"id": "C", "text": "The script can keep 365 snapshots because the soft delete retention limit is 365 days."},
+      {"id": "D", "text": "The script must move the oldest snapshot to Archive access tier before creating the next one."}
+    ],
+    "correct": ["B"],
+    "assumptions": "Azure public cloud. The question concerns Azure Files share snapshots on one file share. It does not assume a special quota increase, a third-party backup product, or a separate copied backup outside the file share.",
+    "sections": {
+      "correctAnswer": "**B. The script must stop at 200 snapshots per share unless older snapshots are deleted**. Azure Files supports up to 200 share snapshots for a file share, so snapshot scheduling must include pruning or policy limits.",
+      "technical": "Two different facts must be kept separate. First, Azure Files share snapshots are incremental, so changed content after the prior snapshot is what increases snapshot storage usage. Second, incremental storage does not remove the count limit. Microsoft documents a maximum of 200 share snapshots per share. After the share reaches 200 snapshots, older snapshots must be deleted before a new one can be created.\n\nThe limit applies to snapshots associated with the file share. It is not a storage account wide pool that lets one share borrow another share's unused snapshot count. Microsoft also lists 200 as the maximum number of file share snapshots per classic file share in the Azure Files scale targets and as 200 file share snapshots for the Microsoft.FileShares resource model.\n\nThe planning order is:\n\n1. Count existing snapshots for the target share.\n2. Compare the number with the 200-per-share limit.\n3. Delete or expire older recovery points before the next scheduled snapshot would exceed the limit.\n4. Keep the snapshots that match the recovery requirement rather than every historical point.\n\nRetention is a related but separate idea. The share snapshot article says snapshots can be retained for up to 10 years, but that does not allow more than 200 simultaneous snapshots. Azure Backup policies also have to fit within the snapshot count. The Azure Backup FAQ warns that the 200 limit includes snapshots taken by Azure Backup according to policy, and backups can fail when the maximum is reached.",
+      "wrongOptions": {
+        "A": "Incremental space usage reduces duplicate storage, but it does not erase the documented count limit. Misconception: A small incremental cost means unlimited snapshot objects. Could be correct only in a generic storage design where a product explicitly has no snapshot count limit, not for Azure Files.",
+        "C": "The 1 to 365 day setting belongs to file share soft delete retention, not to the maximum number of share snapshots. Misconception: All Azure Files protection settings use the same retention number. Could be correct when configuring how long deleted shares remain recoverable with soft delete.",
+        "D": "Azure Files share snapshots do not have an Archive access tier that must be assigned before creating another snapshot. Misconception: Blob lifecycle tiering rules apply directly to Azure Files snapshots. Could be correct for supported Blob Storage lifecycle tiering scenarios, but not for Azure Files share snapshots."
+      },
+      "plainEnglish": "The team is mixing up two limits. Incremental means Azure tries not to store a complete duplicate of unchanged data every night. That helps with cost and space. It does not mean the share can have an unlimited number of restore points. A file share can have up to 200 snapshots. With 199 already present, the next run can create snapshot number 200. The run after that needs the script or a backup policy to delete an older snapshot first. Otherwise, protection jobs can start failing even though each individual snapshot might be small.",
+      "analogy": "Imagine a parking garage that charges only for extra space your car occupies, but still has exactly 200 parking spots. Compact cars are cheaper to park than trucks, yet the garage is full when all 200 spots are occupied.\n\n| Analogy | Azure reality |\n|---|---|\n| Parking garage | One Azure file share |\n| Parking spot | Snapshot slot |\n| Compact car | Incremental snapshot with little changed data |\n| Garage full at 200 spots | Snapshot creation blocked at the per-share limit |\n| Tow an old car away | Delete an old snapshot |\n\n**Where the analogy breaks down:** Snapshot storage is not sized like physical vehicles. Azure tracks changed file data and metadata, while the count limit tracks snapshot objects.",
+      "jargon": [
+        {"term": "Snapshot limit", "definition": "The maximum number of share snapshots Azure Files allows for a single file share, documented as 200."},
+        {"term": "Pruning", "definition": "Deleting old recovery points or snapshots so that newer ones can be kept within a policy or service limit."},
+        {"term": "Retention", "definition": "The length of time a recovery point is kept before it is removed."},
+        {"term": "Azure Backup policy", "definition": "A schedule and retention configuration used by Azure Backup to create and manage recovery points."},
+        {"term": "Microsoft.Storage", "definition": "The Azure resource provider for storage accounts and classic file shares."},
+        {"term": "Microsoft.FileShares", "definition": "A resource provider model where file shares are top-level Azure resources rather than child resources inside a storage account."},
+        {"term": "Incremental snapshot", "definition": "A snapshot approach where only changed content after the most recent snapshot adds new stored data."},
+        {"term": "Recovery point", "definition": "A point in time from which data can be restored, such as a share snapshot managed directly or by Azure Backup."}
+      ],
+      "watchOut": "- The limit is 200 snapshots for each file share.\n- Incremental storage and snapshot count are separate constraints.\n- Azure Backup snapshots also count toward the share's snapshot capacity.\n- Long retention does not help if the number of scheduled points exceeds the count limit.",
+      "productionTip": {
+        "official": "Microsoft documents up to 200 share snapshots per share and states that after reaching 200 you must delete older share snapshots to create new ones. Azure Backup documentation also notes the 200 snapshot maximum when calculating recovery points.",
+        "recommendation": "Design a retention schedule before enabling frequent snapshots. For example, keep dense hourly snapshots for recent changes and fewer daily or monthly points for older recovery needs, while checking the projected total before deployment."
+      },
+      "memoryTrick": "**Two hundred doors per share**: every snapshot needs one door, no matter how little changed data sits behind it. The trick is only about count, not about billed capacity.",
+      "examTip": "Clue words are **199 snapshots**, **indefinitely**, and **incremental**. The exam is testing the difference between how snapshots store data and how many snapshot objects a share can have. A tougher question might include Azure Backup; still count policy-created snapshots against the same 200-share limit."
+    },
+    "sources": [
+      {"title": "Use Azure Files Share Snapshots", "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"},
+      {"title": "Azure Files Scale and Performance Targets", "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-scale-targets"},
+      {"title": "Back up Azure Files FAQ", "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-files-faq"}
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.5-03",
+    "objective": "D2.3.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "A user overwrote `QuarterlyForecast.xlsx` in an SMB Azure file share named `planning`. The share has snapshots from every hour today. You need to restore only that workbook with the least data movement. The current versions of other files in `planning` must remain unchanged.\n\nWhich two restore approaches can meet the requirement? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {"id": "A", "text": "In the Azure portal, open a snapshot of `planning`, select `QuarterlyForecast.xlsx`, and use the file restore action to overwrite the original file."},
+      {"id": "B", "text": "Promote the selected share snapshot so it replaces the live share in one operation."},
+      {"id": "C", "text": "Delete the live share and then undelete it from file share soft delete."},
+      {"id": "D", "text": "From Windows File Explorer, open the share's Previous Versions view and copy the workbook from the snapshot view back to the live folder."},
+      {"id": "E", "text": "Restore the entire share from the oldest snapshot because snapshots cannot expose single files."}
+    ],
+    "correct": ["A", "D"],
+    "assumptions": "Azure public cloud. The share uses SMB, is accessible to the administrator, and has snapshots that include the desired workbook version. The task is to recover one overwritten file, not a deleted share or a storage account.",
+    "sections": {
+      "correctAnswer": "**A. In the Azure portal, open a snapshot of `planning`, select `QuarterlyForecast.xlsx`, and use the file restore action to overwrite the original file** and **D. From Windows File Explorer, open the share's Previous Versions view and copy the workbook from the snapshot view back to the live folder**. Azure Files lets you retrieve individual files from a share snapshot, including through the portal and SMB Previous Versions.",
+      "technical": "A share snapshot is captured at the share level, but retrieval is available at the individual file level. That distinction is the heart of this scenario. You do not need to roll back the whole share just because the recovery source is a share snapshot. Microsoft documents that you can restore files from a snapshot in the Azure portal by opening the file share's snapshots, selecting a file in the snapshot, and choosing restore.\n\nFor SMB shares, Windows clients also have a familiar path. Azure Files exposes snapshots through the Previous Versions tab, similar to Volume Shadow Copy experiences on Windows file servers. From that snapshot view, you can open the previous version and copy the specific workbook. The documentation warns that choosing the Windows Restore button on a directory copies the contents of the entire directory recursively to the original location, so for least data movement a deliberate file copy from Open is safer when only one workbook is needed.\n\nThe evaluation order is:\n\n1. Identify that the share itself still exists.\n2. Choose a snapshot timestamp from before the overwrite.\n3. Browse that snapshot rather than the live file share.\n4. Copy or restore only `QuarterlyForecast.xlsx`.\n5. Leave unrelated live files untouched.\n\nA complete share restore is possible by copying file by file from a snapshot, but it is the wrong scale here. Soft delete is not the answer either, because soft delete recovers an accidentally deleted file share, not one overwritten file.",
+      "wrongOptions": {
+        "B": "Azure Files does not promote a share snapshot over the live base share as a single replacement operation. Data is restored by copying items from the snapshot. Misconception: Snapshot restore works like reverting a virtual machine checkpoint. Could be correct for some technologies that support snapshot promotion, but not for Azure Files share snapshots.",
+        "C": "Soft delete operates at the file share level and restores a deleted share with its contents and snapshots. It does not recover one overwritten workbook inside an active share. Misconception: Soft delete is a version history feature for individual files. Could be correct if the entire `planning` share had been deleted and was still within the retention period.",
+        "E": "Snapshots do expose files and directories for browsing and item-level recovery. Restoring the entire share would move much more data than necessary and could overwrite unrelated current changes. Misconception: A share-level snapshot can only be restored as a whole. Could be correct when the requirement is disaster recovery for most or all content after widespread corruption."
+      },
+      "plainEnglish": "The live shared folder is still there; only one spreadsheet was overwritten. The snapshot is like an older read-only view of the share. You can go into that old view, find just the spreadsheet, and copy it back. The Azure portal has a restore option for files in a snapshot. Windows can show SMB share snapshots on the Previous Versions tab, letting an administrator open an older view and copy the file. Deleting and undeleting the whole share would be using a hammer when the problem is one changed file.",
+      "analogy": "Suppose an office has a photocopy of a filing cabinet from 10 AM. At 2 PM, one budget sheet is accidentally replaced. The office manager does not throw away today's whole cabinet. The manager takes the old budget sheet from the 10 AM copy and places just that sheet back into the current cabinet.\n\n| Analogy | Azure reality |\n|---|---|\n| Filing cabinet | Azure file share |\n| 10 AM photocopy | Share snapshot |\n| One budget sheet | `QuarterlyForecast.xlsx` |\n| Copy sheet back | Restore or copy the file from the snapshot |\n| Throw away today's cabinet | Unnecessary full share restore |\n\n**Where the analogy breaks down:** Azure snapshots preserve file-system state and metadata through storage service mechanisms, not paper copies. Permissions and open handles can also affect real restore operations.",
+      "jargon": [
+        {"term": "SMB", "definition": "Server Message Block, a network file sharing protocol used by Windows and supported by Azure Files."},
+        {"term": "Previous Versions", "definition": "A Windows File Explorer feature that shows earlier versions exposed by snapshots for SMB shares."},
+        {"term": "Item-level recovery", "definition": "Restoring selected files or folders instead of restoring an entire share."},
+        {"term": "Overwrite", "definition": "Replacing an existing file's contents with different contents at the same path."},
+        {"term": "Base share", "definition": "The live Azure file share that users currently read from and write to."},
+        {"term": "Snapshot view", "definition": "A read-only view of a file share as it existed when the snapshot was taken."},
+        {"term": "Volume Shadow Copy", "definition": "A Windows technology that provides previous-version style recovery; Azure Files exposes a similar experience for SMB snapshots."},
+        {"term": "Soft delete", "definition": "An Azure Files feature that retains deleted file shares for a configured period so the share can be undeleted."}
+      ],
+      "watchOut": "- Use snapshots for individual file recovery; use soft delete for deleted shares.\n- The Windows Restore button on a directory can recursively copy the directory contents, which might be broader than intended.\n- A share snapshot is not promoted to become the live share.\n- Verify you are browsing the snapshot path, not the current live share, before copying.",
+      "productionTip": {
+        "official": "Microsoft documents portal-based file restore from SMB share snapshots and Windows Previous Versions access to mounted SMB Azure file share snapshots. It also states that complete share restore is performed by copying file by file from the snapshot.",
+        "recommendation": "For single-file incidents, restore to a staging path first when business impact is high, compare timestamps and content, and then overwrite the live file during an agreed window if users may have it open."
+      },
+      "memoryTrick": "For overwritten files, think **snapshot shelf, not share surgery**: pick the older item from the shelf and copy it back. The phrase is a shortcut because wide corruption may still justify a broader restore.",
+      "examTip": "Clue words are **only that workbook**, **least data movement**, and **other files must remain unchanged**. Choose item-level snapshot restore paths. Reject soft delete because the share was not deleted, and reject full-share rollback language because Azure Files restores by copying selected data from the snapshot."
+    },
+    "sources": [
+      {"title": "Use Azure Files Share Snapshots", "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"},
+      {"title": "Azure File Share Soft Delete", "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"}
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.5-04",
+    "objective": "D2.3.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You run an automation job that deletes retired Azure file shares by using the FileREST `Delete Share` operation. The job fails with `409 Share Has Snapshots` when it tries to delete a share named `archive2024`. The share has snapshots that are no longer needed.\n\nWhat should you change in the delete workflow?",
+    "options": [
+      {"id": "A", "text": "Disable file share soft delete before retrying because soft delete blocks every share deletion that has snapshots."},
+      {"id": "B", "text": "Retry the same delete request after 30 seconds because snapshot conflicts are only a propagation delay."},
+      {"id": "C", "text": "Delete the storage account first because a storage account delete automatically bypasses snapshot checks."},
+      {"id": "D", "text": "Delete the snapshots first, or delete the base share with the request option that includes snapshots."}
+    ],
+    "correct": ["D"],
+    "assumptions": "Azure public cloud. The automation uses Azure Files FileREST against a classic file share and the snapshots are intentionally disposable. Any management locks or Azure Backup snapshot leases are handled according to policy before destructive work proceeds.",
+    "sections": {
+      "correctAnswer": "**D. Delete the snapshots first, or delete the base share with the request option that includes snapshots**. The FileREST delete operation returns `409 Share Has Snapshots` if the base share has snapshots and the delete request does not specify that snapshots should be deleted too.",
+      "technical": "Deleting an Azure file share that has snapshots is not the same as deleting a share with no snapshots. The FileREST `Delete Share` operation documents a special header, `x-ms-delete-snapshots`, for a request against the base share. The `include` value deletes the base share and all of its snapshots. A later API version also has `include-leased` for deleting the base share and snapshots even if one or more snapshots have active share leases.\n\nIf the delete request omits that header and the share has associated snapshots, Azure Files returns status code 409 with `Share Has Snapshots`. That response is not a generic transient failure. It tells you the request did not state what to do with the dependent snapshots. The safe workflow is to either enumerate and delete snapshots individually, or use the supported include option when your intent is to remove the share and its snapshots together.\n\nThe order of checks should be:\n\n1. Confirm the share is the correct deletion target.\n2. List snapshots and decide whether any must be retained.\n3. Remove locks or leases only if policy allows deletion.\n4. Delete snapshots individually, or send the base share delete request with snapshot inclusion.\n5. Expect a short period where recreating the same share name can return conflict while deletion completes.\n\nSoft delete affects whether a deleted share can be recovered later, but it does not remove the need to handle snapshots in a FileREST delete call. Resource locks add another layer because snapshot deletion instructions say to remove storage account locks before deleting snapshots.",
+      "wrongOptions": {
+        "A": "Soft delete retains deleted shares, but the observed error is from deleting a base share that has snapshots without specifying snapshot handling. Misconception: Any delete failure in Azure Files must be caused by soft delete. Could be correct only when the goal is immediate permanent deletion of a soft-deleted share, which requires a separate undelete, disable soft delete, and delete sequence.",
+        "B": "A snapshot conflict is not the documented 30-second delay after creating a snapshot or policy. Repeating the same incomplete delete request will continue to fail while snapshots remain. Misconception: All 409 conflicts are temporary. Could be correct when the conflict says a recently deleted share name is still being cleared before recreation.",
+        "C": "Deleting the entire storage account is broader and risky, and management locks can prevent it. It is not the correct file share cleanup method. Misconception: Parent resource deletion is the normal way to avoid child-resource rules. Could be correct only in a planned teardown of an entire test storage account after confirming no protected data remains."
+      },
+      "plainEnglish": "The share has saved older versions attached to it. Azure refuses a plain delete because the request does not say whether those older versions should go away. The automation needs to make that choice explicit. It can delete each snapshot first and then delete the share, or it can send the delete request that says to include snapshots. If Azure Backup has leased snapshots or if a resource lock exists, those protections must be addressed only through the proper change-control process.",
+      "analogy": "Picture a folder in an office archive with several sealed photocopy packets attached. If a clerk says only \"throw away the folder,\" the records system asks what should happen to the packets. The clerk must either remove the packets first or use an approved instruction that destroys the folder and packets together.\n\n| Analogy | Azure reality |\n|---|---|\n| Office folder | Base file share |\n| Sealed packets | Share snapshots |\n| Plain throw-away instruction | Delete Share without snapshot option |\n| Records system refusal | `409 Share Has Snapshots` |\n| Destroy folder and packets together | `x-ms-delete-snapshots: include` |\n\n**Where the analogy breaks down:** Azure enforces the behavior through REST headers, API versions, leases, and authorization rather than a human clerk reading disposal forms.",
+      "jargon": [
+        {"term": "FileREST", "definition": "The Azure Files data-plane REST API used for operations such as deleting a share or share snapshot."},
+        {"term": "Delete Share", "definition": "A FileREST operation that deletes a specified Azure file share or share snapshot."},
+        {"term": "409 Conflict", "definition": "An HTTP status indicating the request conflicts with current resource state, such as a share that has snapshots."},
+        {"term": "`x-ms-delete-snapshots`", "definition": "A request header used when deleting a base share to specify that associated snapshots should also be deleted."},
+        {"term": "Leased snapshot", "definition": "A snapshot protected by a lease, such as leases Azure Backup can acquire to reduce accidental deletion."},
+        {"term": "Base share", "definition": "The current live file share, as distinct from its point-in-time snapshots."},
+        {"term": "Resource lock", "definition": "An Azure Resource Manager lock such as CanNotDelete or ReadOnly that restricts management operations on a resource."},
+        {"term": "Soft delete", "definition": "A feature that retains deleted Azure file shares for a configured retention period before permanent deletion."}
+      ],
+      "watchOut": "- A share with snapshots needs explicit snapshot handling during deletion.\n- Use the include option only when the snapshots truly have no retention value.\n- Azure Backup leases can make deletion a protected operation rather than a simple cleanup task.\n- A storage account lock can block management-plane deletion and should not be removed casually.",
+      "productionTip": {
+        "official": "Microsoft documents that deleting a share with snapshots is not allowed unless snapshots are deleted individually or the base share delete request includes the snapshot deletion header. The same REST page lists `409 Share Has Snapshots` when that header is omitted.",
+        "recommendation": "Build destructive automation with an explicit snapshot inventory step and a dry-run mode. Require an approval tag or change ticket before using include-snapshot deletion on production shares, especially if Azure Backup or legal retention processes are involved."
+      },
+      "memoryTrick": "A share cannot silently abandon its snapshots: **name the snapshots in the plan or include them in the delete**. This rule of thumb leaves room for leases and locks that may require extra authorization.",
+      "examTip": "Clue words are **FileREST**, **409 Share Has Snapshots**, and **snapshots no longer needed**. Pick the answer that deals directly with snapshots. Do not confuse this with soft delete retention, snapshot creation propagation, or deleting the entire storage account."
+    },
+    "sources": [
+      {"title": "Delete Share (FileREST API) - Azure Files", "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/delete-share"},
+      {"title": "Use Azure Files Share Snapshots", "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"},
+      {"title": "About Azure Files backup", "url": "https://learn.microsoft.com/en-us/azure/backup/azure-file-share-backup-overview"}
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.5-05",
+    "objective": "D2.3.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "A storage account named `stlegal` contains several classic Azure file shares. An administrator wants protection against accidental deletion of entire file shares. The administrator also asks whether the same feature can restore an individual deleted file inside an active share.\n\nWhich configuration and explanation should you provide?",
+    "options": [
+      {"id": "A", "text": "Enable soft delete on each directory and set the directory retention between 1 and 365 days; use it for individual files."},
+      {"id": "B", "text": "Enable file share soft delete at the storage account file service with a 1 to 365 day retention; use snapshots or backup for individual files."},
+      {"id": "C", "text": "Enable soft delete only on the target share; all deleted files and folders in that share can then be undeleted separately."},
+      {"id": "D", "text": "Enable blob soft delete on the storage account because blob and file soft delete settings are shared."}
+    ],
+    "correct": ["B"],
+    "assumptions": "Azure public cloud. The file shares are classic SMB or NFS shares created with the Microsoft.Storage resource provider. The requirement is accidental deletion recovery for whole shares, not legal hold or per-file recycle bin behavior.",
+    "sections": {
+      "correctAnswer": "**B. Enable file share soft delete at the storage account file service with a 1 to 365 day retention; use snapshots or backup for individual files**. Azure Files soft delete is configured at storage account level for file shares and restores whole deleted shares, not individual files inside active shares.",
+      "technical": "File share soft delete is a storage account level setting for Azure Files. In the portal, the setting is under the storage account's classic file shares experience, and CLI or PowerShell update the file service properties. Once enabled, the soft delete setting applies to all file shares in that storage account. New storage accounts have file share soft delete enabled by default, but administrators can enable or disable it for existing accounts.\n\nThe retention period is separate from snapshots. Microsoft documents a default file share retention of 7 days and lets you specify any retention period from 1 through 365 days. The retention clock starts when the file share is deleted. If you change the retention period later, shares deleted before the update expire according to the retention period in effect when they were deleted.\n\nThe restore scope is the most tested detail. Soft delete works at the file share level. When you undelete a share, the share and all of its contents, including snapshots, are restored to their state before deletion. If one file inside an active share was deleted or overwritten, Microsoft directs you to use share snapshots or Azure file share backup.\n\nA typical restore sequence is:\n\n1. Show deleted shares in the storage account or list them with CLI or PowerShell.\n2. Identify the deleted share version.\n3. Run the undelete or restore command.\n4. Confirm the share status returns to active.\n\nFor immediate permanent deletion of a soft-deleted share, Microsoft documents a special process: undelete the share, disable soft delete, and then delete the share again. That is not the normal protection path.",
+      "wrongOptions": {
+        "A": "Azure Files soft delete is not enabled on each directory and does not act as a per-file recycle bin. Misconception: Soft delete always means item-level recovery. Could be correct in a different service that supports object-level soft delete, but not for Azure Files share soft delete.",
+        "C": "The setting applies at the storage account file service, not on one individual share, and it does not undelete separate files in an active share. Misconception: A protection setting displayed near shares must be scoped to one selected share. Could be correct if the product had per-share retention controls, which this Azure Files feature does not use.",
+        "D": "Blob soft delete and Azure Files share soft delete are separate storage service features. Enabling a blob protection feature is not the answer for file shares. Misconception: All data services in a storage account share one soft delete switch. Could be correct when the deleted resource is a blob or blob container and the blob service is being configured."
+      },
+      "plainEnglish": "Soft delete for Azure Files protects against someone deleting the whole shared folder. You turn it on for the file service in the storage account, and it covers the shares in that account. If a share is deleted, Azure keeps it for the number of days you selected, from 1 to 365, so you can undelete it. It is not a recycle bin for a single document inside a still-existing share. For one deleted file, you need a previous snapshot or Azure Backup recovery point.",
+      "analogy": "Imagine a building manager can restore an entire office suite after it is mistakenly removed from the building directory. That service brings back the rooms and everything in them as they were when the suite was removed. It does not find one missing folder from a desk while the suite is still open.\n\n| Analogy | Azure reality |\n|---|---|\n| Building directory | Storage account file service |\n| Office suite | File share |\n| Suite removal recovery | File share soft delete undelete |\n| Missing folder on a desk | Individual deleted file |\n| Office photo archive | Share snapshots or Azure Backup |\n\n**Where the analogy breaks down:** Azure preserves a deleted share for a configured retention period and tracks deleted versions, while a building directory analogy does not represent storage metadata or snapshots precisely.",
+      "jargon": [
+        {"term": "Soft delete", "definition": "A protection feature that keeps deleted file shares recoverable for a configured retention period before permanent deletion."},
+        {"term": "Retention period", "definition": "The number of days deleted shares remain recoverable before Azure permanently deletes them."},
+        {"term": "File service properties", "definition": "Settings for Azure Files within a storage account, including the share delete retention policy."},
+        {"term": "Undelete", "definition": "The operation that restores a soft-deleted file share to active state."},
+        {"term": "Classic file share", "definition": "An Azure file share created inside a storage account through the Microsoft.Storage resource provider."},
+        {"term": "Share snapshot", "definition": "A read-only point-in-time copy of a file share that can be used to recover previous file versions."},
+        {"term": "Azure file share backup", "definition": "Azure Backup protection for Azure Files that can use snapshots and backup policies for restore scenarios."},
+        {"term": "Blob soft delete", "definition": "A Blob Storage protection feature; it is configured separately from Azure Files share soft delete."}
+      ],
+      "watchOut": "- File share soft delete restores deleted shares, not individual files.\n- The retention range is 1 through 365 days, with 7 days as the documented default.\n- Disabling soft delete does not prevent already soft-deleted shares from being undeleted until their retention expires.\n- Shares deleted before a retention change keep the retention period that existed at deletion time.",
+      "productionTip": {
+        "official": "Microsoft states that file share soft delete is enabled at the storage account level, applies to all file shares in that account, and supports a retention period from 1 to 365 days. The documentation explicitly says to use share snapshots or Azure file share backup for deleted files.",
+        "recommendation": "Keep soft delete enabled unless a documented disposal process requires otherwise. Pair it with scheduled snapshots or Azure Backup so both whole-share deletion and individual file mistakes have an appropriate recovery path."
+      },
+      "memoryTrick": "Soft delete saves **shares**, snapshots save **file moments**. The mnemonic is simplified because Azure Backup can orchestrate snapshots, but the scope distinction remains the exam point.",
+      "examTip": "Clue words are **entire file shares** and **individual deleted file**. Choose the account-level soft delete setting for share deletion, then state that file-level recovery comes from snapshots or backup. Answers that put soft delete on directories, one share, or the blob service are scope traps."
+    },
+    "sources": [
+      {"title": "Azure File Share Soft Delete", "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"},
+      {"title": "Use Azure Files Share Snapshots", "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"}
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.5-06",
+    "objective": "D2.3.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Contoso is designing protection for two Azure file workloads. `shareA` is a classic SMB file share in a storage account. `shareB` is an NFS file share created as a top-level `Microsoft.FileShares` resource. The team wants to know which native protections apply before choosing backup tooling.\n\nWhich statement is accurate?",
+    "options": [
+      {"id": "A", "text": "Share snapshots can protect both shares, but file share soft delete applies to classic SMB and NFS shares in Microsoft.Storage, not to Microsoft.FileShares resources."},
+      {"id": "B", "text": "File share soft delete applies to all Azure file share resource models, but snapshots are supported only for SMB."},
+      {"id": "C", "text": "Azure Backup snapshot tier supports NFS shares, so it is the recommended method for both shares."},
+      {"id": "D", "text": "Neither workload can use snapshots because NFS support disables snapshots for the whole storage account."}
+    ],
+    "correct": ["A"],
+    "assumptions": "Azure public cloud. `shareA` is a classic file share under Microsoft.Storage. `shareB` is a top-level NFS file share under Microsoft.FileShares. The answer concerns currently documented GA behavior and does not assume private preview features.",
+    "sections": {
+      "correctAnswer": "**A. Share snapshots can protect both shares, but file share soft delete applies to classic SMB and NFS shares in Microsoft.Storage, not to Microsoft.FileShares resources**. Microsoft documents snapshot support for SMB and NFS shares across both resource models, while the soft delete page excludes Microsoft.FileShares.",
+      "technical": "Azure Files now has two resource models in the documentation. Classic file shares are child resources of a storage account and are provided by the Microsoft.Storage resource provider. New top-level file shares are created through Microsoft.FileShares and currently support the NFS protocol. This distinction matters because features do not always apply equally to both models.\n\nFor share snapshots, Microsoft documents broad support. The share snapshot article says snapshots apply to classic SMB and NFS file shares created with Microsoft.Storage and to file shares created with Microsoft.FileShares. It also describes SMB restore paths, NFS `.snapshots` access, and Microsoft.FileShares snapshot commands.\n\nFor soft delete, the documented applicability is narrower. The Azure File Share Soft Delete article says it applies to classic SMB and NFS file shares created with Microsoft.Storage and does not apply to file shares created with Microsoft.FileShares. The soft delete setting is at the storage account level, which aligns with classic shares living inside a storage account.\n\nAzure Backup adds another boundary. Its support matrix states that Azure Backup currently does not support file shares with the NFS protocol. Snapshot support in Azure Files therefore should not be confused with Azure Backup support for every protocol and resource model.\n\nThe decision flow is:\n\n1. Identify the resource model: Microsoft.Storage or Microsoft.FileShares.\n2. Identify the protocol: SMB or NFS.\n3. Apply the feature matrix for snapshots, soft delete, and Azure Backup separately.\n4. Choose a recovery design that covers both item-level recovery and accidental share deletion where supported.",
+      "wrongOptions": {
+        "B": "This reverses the documented support. Snapshots include NFS and Microsoft.FileShares scenarios, while soft delete does not apply to Microsoft.FileShares. Misconception: A newer resource model automatically gets every classic storage account protection feature. Could be correct only if Microsoft later extends soft delete to that resource model and updates the documentation.",
+        "C": "The Azure Backup support matrix states that Azure Backup currently does not support NFS file shares. Misconception: If Azure Files snapshots support NFS, Azure Backup must support NFS too. Could be correct for supported SMB Azure file shares that meet the backup support matrix requirements.",
+        "D": "NFS does not disable snapshots. The share snapshot documentation includes NFS classic shares and top-level Microsoft.FileShares. Misconception: Snapshot support is Windows-only because Previous Versions is a Windows SMB experience. Could be correct for a feature specifically limited to Windows Previous Versions, not for snapshots themselves."
+      },
+      "plainEnglish": "The two protections are not the same switch. Snapshots are available for Azure file shares beyond just Windows SMB shares, including NFS scenarios described in the Azure Files snapshot documentation. Soft delete is narrower: it is a storage-account-level feature for classic shares in a storage account, and Microsoft says it does not apply to the newer top-level Microsoft.FileShares resource. Azure Backup has its own list and currently does not cover NFS shares, even though native snapshots can exist for NFS.",
+      "analogy": "Think of two buildings on a campus. Both buildings have security cameras that can record earlier hallway views. Only the older building is connected to the campus lost-building recovery switch. The backup company also services only certain buildings, even though cameras exist elsewhere.\n\n| Analogy | Azure reality |\n|---|---|\n| Older building | Classic Microsoft.Storage file share |\n| New standalone building | Microsoft.FileShares top-level share |\n| Security camera stills | Share snapshots |\n| Lost-building recovery switch | File share soft delete |\n| Backup company coverage list | Azure Backup support matrix |\n\n**Where the analogy breaks down:** Azure resource providers, protocols, and APIs are more exact than buildings. A feature can support a protocol but still be unsupported by a managed backup service.",
+      "jargon": [
+        {"term": "Microsoft.Storage", "definition": "The Azure resource provider that offers storage accounts and classic file shares within those accounts."},
+        {"term": "Microsoft.FileShares", "definition": "The Azure resource provider that offers file shares as top-level resources without creating a storage account."},
+        {"term": "Classic file share", "definition": "An Azure Files share deployed inside a storage account."},
+        {"term": "NFS", "definition": "Network File System, a protocol commonly used by Linux and Unix systems and supported by Azure Files in specific configurations."},
+        {"term": "SMB", "definition": "Server Message Block, a file sharing protocol commonly used by Windows systems."},
+        {"term": "Support matrix", "definition": "A Microsoft documentation table that lists supported and unsupported configurations for a service."},
+        {"term": "`.snapshots` directory", "definition": "A hidden directory used to access NFS Azure file share snapshots for restore operations."},
+        {"term": "Storage account level", "definition": "A setting scope that applies to the storage account or its contained storage services rather than one independent top-level share."}
+      ],
+      "watchOut": "- Do not infer Azure Backup support from native snapshot support.\n- Soft delete currently excludes file shares created with Microsoft.FileShares.\n- Previous Versions is an SMB client experience, but snapshot support is not limited to SMB.\n- NFS snapshot guidance includes a wait for the `.snapshots` directory after snapshot creation.",
+      "productionTip": {
+        "official": "Microsoft's snapshot documentation lists support for classic SMB and NFS shares and for Microsoft.FileShares. The soft delete article explicitly says it does not apply to Microsoft.FileShares, and the Azure Backup support matrix says NFS file shares are not currently supported by Azure Backup.",
+        "recommendation": "Create a feature matrix for each file workload during design reviews. Separate native snapshots, soft delete, Azure Backup, and external replication so stakeholders do not assume one protection layer covers every protocol and resource model."
+      },
+      "memoryTrick": "**Snapshots stretch wider; soft delete stays classic**. The phrase is shorthand for current documented behavior and should be rechecked when planning future Microsoft.FileShares deployments.",
+      "examTip": "Clue words are **classic SMB**, **top-level Microsoft.FileShares**, and **NFS**. The tested skill is not just knowing a feature name; it is matching feature support to resource model and protocol. Eliminate choices that make one protection mechanism universal."
+    },
+    "sources": [
+      {"title": "Use Azure Files Share Snapshots", "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"},
+      {"title": "Azure File Share Soft Delete", "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"},
+      {"title": "Support Matrix for Azure Files backup by using Azure Backup", "url": "https://learn.microsoft.com/en-us/azure/backup/azure-file-share-support-matrix"}
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.5-07",
+    "objective": "D2.3.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank wants Azure Backup protection for several supported SMB Azure file shares. The security team asks what Azure Backup adds beyond an administrator manually taking occasional snapshots.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {"id": "A", "text": "Azure Backup replaces share snapshots with unmanaged local copies in each client computer."},
+      {"id": "B", "text": "For the snapshot tier, Azure Backup creates file share snapshots through the File Share API and can restore individual files or the full share from available snapshots."},
+      {"id": "C", "text": "Azure Backup disables file share soft delete because snapshots already protect against deleted shares."},
+      {"id": "D", "text": "Azure Backup enables soft delete at the storage account level with a 14-day retention period to protect against accidental file share deletion."},
+      {"id": "E", "text": "Azure Backup removes the 200 snapshot limit from the protected file share."}
+    ],
+    "correct": ["B", "D"],
+    "assumptions": "Azure public cloud. The shares are supported SMB Azure file shares that meet the Azure Backup support matrix. The scenario focuses on native Azure Backup behavior, not a third-party backup appliance or NFS share backup.",
+    "sections": {
+      "correctAnswer": "**B. For the snapshot tier, Azure Backup creates file share snapshots through the File Share API and can restore individual files or the full share from available snapshots** and **D. Azure Backup enables soft delete at the storage account level with a 14-day retention period to protect against accidental file share deletion**. Azure Backup manages scheduled protection and adds deletion safeguards around the source storage account.",
+      "technical": "Azure Backup for Azure Files is a managed protection service. In the snapshot tier, the backup process creates a file share snapshot by using the File Share API and stores the snapshot URL in metadata. No data is transferred to the vault for snapshot-based backup, which is why the FAQ says transferred data can show as 0 MB. Restores can use snapshots available on the source file share, and the support matrix lists both full share restore and item-level restore for the snapshot tier.\n\nAzure Backup also includes protection against accidental deletion of file shares. Microsoft documents that Azure Backup enables the soft delete feature at the storage account level with a retention period of 14 days. If a protected file share is deleted, its contents and snapshots are retained for that period so the share can be recovered. Azure Backup also acquires leases on snapshots created by scheduled or on-demand backup jobs to protect those snapshots against accidental deletion.\n\nThe sequence is:\n\n1. Create or select a Recovery Services vault.\n2. Register or discover the storage account that hosts supported shares.\n3. Configure a backup policy with schedule and retention.\n4. Azure Backup creates snapshots according to policy.\n5. Restore selected files or a full share from available recovery points.\n\nAzure Backup does not remove Azure Files platform limits. The 200 snapshot limit remains important when designing retention, and NFS file shares are currently outside the Azure Backup support matrix.",
+      "wrongOptions": {
+        "A": "Azure Backup for Azure Files does not replace share snapshots with unmanaged client-side copies. The snapshot tier uses file share snapshots and service metadata. Misconception: Backup always means an agent writes copies to every client. Could be correct for some endpoint backup products, not for Azure Files backup.",
+        "C": "Azure Backup enables soft delete rather than disabling it. Snapshots provide file-level recovery, but soft delete helps when an entire share is deleted. Misconception: One recovery layer should turn off the other. Could be correct only in a deliberate lab cleanup where protection has been removed and permanent deletion is required.",
+        "E": "The Azure Files snapshot limit still matters. Azure Backup documentation tells you to account for the 200 snapshot maximum when policies create recovery points. Misconception: Managed backup bypasses source platform limits. Could be correct only for a separate backup tier or product feature that stores independent recovery points outside the source snapshot limit, not for the source snapshot count."
+      },
+      "plainEnglish": "Manual snapshots rely on someone remembering to take and prune them. Azure Backup adds a schedule, retention policy, restore workflow, monitoring, and deletion safeguards. For snapshot-based Azure Files backup, it still uses Azure Files snapshots under the hood. It can restore one file or a whole share from those recovery points. It also turns on share soft delete for the storage account for 14 days, so deleting a protected share is not immediately catastrophic. This does not make snapshot limits disappear.",
+      "analogy": "A bank can have staff take occasional photos of a records room, or it can hire a records service. The service takes photos on schedule, labels them, tracks retention, and adds a rule that a room cannot vanish without a recovery window.\n\n| Analogy | Azure reality |\n|---|---|\n| Staff photo | Manual share snapshot |\n| Records service | Azure Backup |\n| Scheduled labeled photos | Policy-created recovery points |\n| Recovery window for removed room | 14-day soft delete enabled by Azure Backup |\n| Rebuilding one cabinet or whole room | Item-level or full share restore |\n\n**Where the analogy breaks down:** Azure Backup uses APIs, leases, vault metadata, and storage account settings. A human records service does not model snapshot URLs, Recovery Services vault registration, or API-based restore jobs.",
+      "jargon": [
+        {"term": "Azure Backup", "definition": "A managed Azure service for configuring backup policies, recovery points, monitoring, and restore operations."},
+        {"term": "Snapshot tier", "definition": "An Azure Files backup tier where recovery points are based on file share snapshots retained in the source storage account."},
+        {"term": "Vaulted backup", "definition": "An Azure Files backup tier that can transfer changed files and data blocks to vault storage for additional protection."},
+        {"term": "Recovery Services vault", "definition": "An Azure resource used to manage backup configuration and recovery points for supported workloads."},
+        {"term": "Lease", "definition": "A lock-like mechanism Azure Backup can place on snapshots to help prevent accidental deletion."},
+        {"term": "Item-level restore", "definition": "A restore operation that recovers selected files or folders rather than an entire file share."},
+        {"term": "Full share restore", "definition": "A restore operation that recovers the contents of an entire file share to the original or another location."},
+        {"term": "Protected instance fee", "definition": "A Backup pricing component charged for protected Azure Files instances according to Azure Backup pricing rules."}
+      ],
+      "watchOut": "- Azure Backup snapshot tier still depends on source share snapshots.\n- Azure Backup enables 14-day soft delete for accidental share deletion protection.\n- NFS file shares are currently not supported by Azure Backup.\n- Backup policies must be designed so scheduled and on-demand snapshots do not exceed the Azure Files snapshot limit.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure Backup snapshot tier creates a file share snapshot using the File Share API, supports full share and item-level restore in that tier, enables soft delete with 14 days retention, and leases backup snapshots against accidental deletion.",
+        "recommendation": "Use Azure Backup for business-critical SMB shares where scheduling, retention, monitoring, and restore auditing are required. Test both a single-file restore and a full-share restore before relying on the policy during an incident."
+      },
+      "memoryTrick": "Azure Backup is the **scheduler and guardrail around snapshots**. It is a simplification because vaulted backup can add offsite storage behavior, but snapshot-tier questions usually revolve around managed snapshots and soft delete.",
+      "examTip": "Clue words are **Azure Backup**, **SMB file shares**, and **beyond manual snapshots**. Choose statements about policy-created snapshots and soft-delete protection. Reject answers that claim client-side copies, disabled safeguards, or removed Azure Files limits."
+    },
+    "sources": [
+      {"title": "About Azure Files backup", "url": "https://learn.microsoft.com/en-us/azure/backup/azure-file-share-backup-overview"},
+      {"title": "Support Matrix for Azure Files backup by using Azure Backup", "url": "https://learn.microsoft.com/en-us/azure/backup/azure-file-share-support-matrix"},
+      {"title": "Back up Azure Files FAQ", "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-files-faq"}
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.5-08",
+    "objective": "D2.3.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You are reviewing cost and deletion controls for an Azure storage account that hosts critical Azure file shares. The account uses snapshots before releases and file share soft delete for accidental share deletion. A manager says, \"Snapshots are incremental, so they are free, and a Delete lock on the storage account will protect all file data from deletion.\"\n\nWhich response is correct?",
+    "options": [
+      {"id": "A", "text": "The manager is correct because incremental snapshots are not billed and Azure locks apply to all data-plane file operations."},
+      {"id": "B", "text": "The manager is partly wrong: snapshots store billable changed content, soft-deleted provisioned shares can still count toward quota, and resource locks protect management operations rather than every file data operation."},
+      {"id": "C", "text": "The manager is wrong only about locks; snapshots and soft-deleted shares never affect Azure Files billing."},
+      {"id": "D", "text": "The manager is correct for SMB shares but wrong for NFS shares, because only NFS snapshot data is billable."}
+    ],
+    "correct": ["B"],
+    "assumptions": "Azure public cloud. The storage account contains classic Azure file shares. The question asks about documented Azure Files snapshot storage, file share soft delete cost behavior, and Azure Resource Manager locks, not about a negotiated enterprise pricing agreement.",
+    "sections": {
+      "correctAnswer": "**B. The manager is partly wrong: snapshots store billable changed content, soft-deleted provisioned shares can still count toward quota, and resource locks protect management operations rather than every file data operation**. Incremental does not mean free, and a storage account lock is not a substitute for snapshots or soft delete.",
+      "technical": "Cost and deletion protection have several layers. Share snapshots are incremental, but Microsoft still says changed content is stored in the snapshot. Any write operation to the object or property, or metadata update, counts as changed content. Snapshots do not count toward the maximum share size limit, and there is no separate total snapshot size limit per share, but storage account limits still apply and billable storage can grow as changes accumulate. Azure Backup documentation also states that snapshot storage costs are billed along with Azure Files usage.\n\nSoft delete has its own billing and quota behavior. The soft delete article points to billing details by billing model, and it specifically states that for soft-deleted provisioned file shares, the file share quota, meaning provisioned size, is used in the total storage account quota calculation until the soft-deleted share expiry date. That can surprise teams that delete a large provisioned share and immediately expect the capacity to disappear from planning.\n\nResource locks protect Azure resources from management-plane deletion or modification. A CanNotDelete lock allows authorized users to read and modify a resource but not delete it. A ReadOnly lock blocks updates as well as deletion at the management plane. Microsoft explicitly warns that locks apply only to control plane operations, not data plane operations. For storage accounts, a lock can protect the storage account resource or control-plane file share deletion, but it does not protect every file, blob, queue, table, or share data operation.\n\nThe practical conclusion is layered protection: use locks for accidental resource deletion, soft delete for recoverable share deletion, and snapshots or backup for file-level rollback. Use cost monitoring because all layers can affect cost or capacity.",
+      "wrongOptions": {
+        "A": "Incremental snapshots can reduce duplicate storage, but changed content is still stored and billable. Azure locks do not apply to every data-plane operation. Misconception: Protection features are free and universal. Could be correct only as a false simplification in a nontechnical summary, not as an Azure administration answer.",
+        "C": "The billing statement is wrong. Snapshot changed content can incur storage cost, and soft-deleted provisioned shares can count toward storage account quota until expiry. Misconception: Deleted or incremental data never affects charges. Could be correct if discussing a specific unrelated service where deleted items have no retained billable state.",
+        "D": "The billing distinction is not SMB-free versus NFS-billable. The snapshot article describes changed content storage for share snapshots generally. Misconception: Protocol determines whether snapshot capacity costs money. Could be correct only for a documented protocol-specific feature limitation, not for this cost principle."
+      },
+      "plainEnglish": "Incremental is cheaper than copying everything every time, but it is not the same as free. If files keep changing after snapshots, Azure has to keep the old changed parts somewhere so the old view still works. Deleted provisioned shares can also keep counting against capacity planning while soft delete retention is active. A Delete lock is useful because it can stop accidental deletion of the storage account resource through Azure management operations. It does not stop every file operation that goes directly to the storage service. The right design uses all three controls for different risks.",
+      "analogy": "A company keeps revision packets for a contract archive, a rescue window for removed cabinets, and a padlock on the archive room's management door. The revision packets are thinner than full copies, but paper still costs money. The padlock stops someone from removing the room from the building plan, but it does not automatically stop every authorized clerk from changing a paper inside.\n\n| Analogy | Azure reality |\n|---|---|\n| Revision packets | Incremental share snapshots |\n| Paper still costs money | Changed snapshot content is billable storage |\n| Rescue window for removed cabinets | File share soft delete retention |\n| Management door padlock | Azure Resource Manager lock |\n| Clerk editing a paper | Data-plane file operation |\n\n**Where the analogy breaks down:** Azure billing depends on media tier, billing model, redundancy, provisioned values, and service meters. A paper archive does not model those pricing dimensions exactly.",
+      "jargon": [
+        {"term": "Billing model", "definition": "The Azure Files charging approach, such as provisioned v2, provisioned v1, or pay-as-you-go."},
+        {"term": "Changed content", "definition": "File data, property changes, or metadata updates preserved by snapshots after the snapshot point."},
+        {"term": "Provisioned file share", "definition": "A file share billing model where capacity, and in some models performance, is reserved or provisioned rather than charged only by used bytes."},
+        {"term": "Quota", "definition": "A capacity value associated with a file share or storage account that affects allowed or planned storage usage."},
+        {"term": "CanNotDelete lock", "definition": "An Azure management lock that allows reads and modifications but blocks deletion of the locked resource through the control plane."},
+        {"term": "ReadOnly lock", "definition": "An Azure management lock that blocks management updates and deletion, similar to restricting users to read-only management access."},
+        {"term": "Control plane", "definition": "Azure management operations that go through Azure Resource Manager, such as creating or deleting resources."},
+        {"term": "Data plane", "definition": "Service-specific data operations, such as file reads, writes, and some share operations against the storage service endpoint."}
+      ],
+      "watchOut": "- Incremental snapshots reduce duplication but do not eliminate storage charges.\n- Snapshot storage can grow quickly during high churn periods.\n- Soft-deleted provisioned shares can keep their provisioned size in quota calculations until expiry.\n- Azure resource locks are not a replacement for data protection controls inside Azure Files.",
+      "productionTip": {
+        "official": "Microsoft documents that share snapshots save changed content, that snapshot storage costs are billed with Azure Files usage, that soft-deleted provisioned shares count in total storage account quota until expiry, and that Azure management locks apply to control plane operations rather than data plane operations.",
+        "recommendation": "Use Cost Management alerts and Azure Files metrics around release periods with high churn. Apply a CanNotDelete lock to critical storage accounts after validating operational impact, but keep snapshots, soft delete, and backup policies for data recovery."
+      },
+      "memoryTrick": "**Incremental is smaller, not invisible; locks guard Azure doors, not every file drawer.** This is a simplification because some share deletes can be control-plane operations, but the data-plane warning is essential.",
+      "examTip": "Clue words are **incremental**, **free**, **Delete lock**, and **all file data**. Expect a layered answer: snapshots affect cost through changed content, soft delete can retain capacity impact, and locks protect management scope only. Eliminate answers that make one feature cover cost, share recovery, and file-level deletion by itself."
+    },
+    "sources": [
+      {"title": "Use Azure Files Share Snapshots", "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"},
+      {"title": "Azure File Share Soft Delete", "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"},
+      {"title": "Understand Azure Files Billing", "url": "https://learn.microsoft.com/en-us/azure/storage/files/understanding-billing"},
+      {"title": "Lock your Azure resources to protect your infrastructure", "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"},
+      {"title": "About Azure Files backup", "url": "https://learn.microsoft.com/en-us/azure/backup/azure-file-share-backup-overview"}
+    ],
+    "verified": "2026-10"
+  }
+]

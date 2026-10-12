@@ -1,0 +1,941 @@
+[
+  {
+    "id": "D1.3.5-01",
+    "objective": "D1.3.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have three Azure subscriptions named `SubA`, `SubB`, and `SubC`. You also have two Microsoft Entra tenants named `Tenant1` and `Tenant2`.\n\nYour organization wants all three subscriptions to use identities from `Tenant1` for Azure RBAC. A junior administrator says each subscription must have its own dedicated tenant.\n\nWhich statement correctly describes the relationship between Azure subscriptions and Microsoft Entra tenants?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Each Azure subscription can trust multiple Microsoft Entra tenants at the same time."
+      },
+      {
+        "id": "B",
+        "text": "Each Azure subscription can trust one Microsoft Entra tenant, and one tenant can be trusted by multiple subscriptions."
+      },
+      {
+        "id": "C",
+        "text": "Each Microsoft Entra tenant can be trusted by only one Azure subscription."
+      },
+      {
+        "id": "D",
+        "text": "Assigning Global Administrator in `Tenant1` automatically makes the user Owner of all subscriptions that trust `Tenant1`."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The subscriptions are regular Azure subscriptions. No Azure Lighthouse delegation, cross-tenant access setting, or guest-user workaround is being used.",
+    "sections": {
+      "correctAnswer": "**B. Each Azure subscription can trust one Microsoft Entra tenant, and one tenant can be trusted by multiple subscriptions.** A subscription uses its trusted tenant as the directory for authentication and authorization, but many subscriptions can use the same tenant.",
+      "technical": "An Azure subscription is the management and billing boundary where Azure resources and Azure RBAC role assignments live. A Microsoft Entra tenant is the identity directory that contains users, groups, service principals, managed identities, and devices. Microsoft documents this as a trust relationship: every Azure subscription trusts a Microsoft Entra tenant for authentication and authorization of security principals.\n\nThe evaluation flow is: a user signs in to a tenant, Azure Resource Manager checks whether the subscription trusts that tenant, and Azure RBAC evaluates role assignments for principals from that tenant. A subscription can trust only one directory at a time. A tenant, however, can be trusted by multiple subscriptions, which is common in enterprise environments. Azure roles and Microsoft Entra roles remain separate: Azure roles control resources in subscriptions, while Microsoft Entra roles control directory objects. Global Administrator does not automatically equal subscription Owner.",
+      "wrongOptions": {
+        "A": "A subscription does not simultaneously trust multiple directories for Azure RBAC. Misconception: because users can be guests in many directories, a subscription can use many directories at once. Could be correct when discussing a user participating in multiple tenants, not one subscription's trusted directory.",
+        "C": "A tenant can be associated with many subscriptions, so a dedicated tenant per subscription is not required. Misconception: the subscription-to-tenant relationship is one-to-one in both directions. Could be correct only as an organization design choice, not as an Azure platform rule.",
+        "D": "Global Administrator is a Microsoft Entra directory role and does not automatically grant Azure resource permissions. Misconception: the highest directory role is always the highest Azure resource role. Could be correct only after a separate Azure role assignment or documented Global Administrator elevation grants Azure RBAC access."
+      },
+      "plainEnglish": "A subscription is like a container for Azure resources and billing. A tenant is like the company's identity directory. The subscription asks one tenant, `Who is this person or app, and what groups are they in?` Then Azure checks the resource permissions assigned inside the subscription.\n\nYou do not need a separate tenant for each subscription. One company directory can be used by many subscriptions. The key limit is that a single subscription points to one directory at a time for this trust relationship.",
+      "analogy": "Imagine several office buildings using the same employee badge system. Each building chooses one badge office to trust. The same badge office can serve many buildings, but one building does not use two independent badge offices at the same time.\n\n| Analogy | Azure reality |\n|---|---|\n| Building | Azure subscription |\n| Badge office | Microsoft Entra tenant |\n| Door permission | Azure RBAC role assignment |\n\n**Where the analogy breaks down:** Azure also supports guest users, service principals, managed identities, token refresh, and emergency elevation paths. A badge-office story only teaches the trust direction.",
+      "jargon": [
+        {
+          "term": "Azure subscription",
+          "definition": "A billing and management boundary that contains Azure resource groups, resources, and Azure RBAC role assignments."
+        },
+        {
+          "term": "Microsoft Entra tenant",
+          "definition": "A dedicated Microsoft identity directory, formerly Azure AD, that stores users, groups, applications, and devices."
+        },
+        {
+          "term": "Trust relationship",
+          "definition": "The association where a subscription relies on one Microsoft Entra tenant to authenticate and authorize identities."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the system that grants permissions to Azure resources."
+        },
+        {
+          "term": "Global Administrator",
+          "definition": "A Microsoft Entra role for managing the directory, not an automatic Azure subscription Owner role."
+        },
+        {
+          "term": "Security principal",
+          "definition": "An identity, such as a user, group, service principal, or managed identity, that can receive access."
+        }
+      ],
+      "watchOut": "- Do not reverse the rule: one tenant can support many subscriptions, but each subscription trusts one tenant at a time.\n- Microsoft Entra roles and Azure roles are different permission systems.\n- Guest users can appear in a tenant, but Azure RBAC still evaluates identities from the trusted tenant.\n- Changing the trusted directory is a separate operation with major access impact.",
+      "productionTip": {
+        "official": "Microsoft documents that subscriptions can only trust a single directory while one Microsoft Entra tenant might be trusted by multiple subscriptions. It also states that Azure roles control subscription resources and Microsoft Entra roles control directory resources.",
+        "recommendation": "Use one primary tenant for subscriptions that share the same identity and governance model. Use separate tenants only for deliberate isolation, merger, divestiture, or regulatory reasons, and document why the operational complexity is worth it."
+      },
+      "memoryTrick": "One subscription points to one directory; one directory can point back to many subscriptions. This is a simplification because users can still be guests in other directories.",
+      "examTip": "Look for clue words such as **tenant**, **directory**, **subscription**, and **RBAC identities**. If the question asks about the basic relationship, choose one directory per subscription and many subscriptions per directory. A harder version may combine this with moving a subscription to another directory and ask what happens to existing role assignments."
+    },
+    "sources": [
+      {
+        "title": "Add an existing Azure subscription to your tenant",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-subscriptions-associated-directory"
+      },
+      {
+        "title": "Azure roles, Microsoft Entra roles, and classic subscription administrator roles",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.5-02",
+    "objective": "D1.3.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You need to move an Azure subscription named `Sub1` from `TenantA` to `TenantB` by using the documented directory-change process. You sign in as user `admin@contoso.com`.\n\nWhich prerequisite must be satisfied before you can change the directory for `Sub1`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The user must be a Billing Administrator in `TenantB`; Azure RBAC on `Sub1` is not required."
+      },
+      {
+        "id": "B",
+        "text": "The user must have the Owner role on `Sub1`, and the account must exist in both the current and new directories."
+      },
+      {
+        "id": "C",
+        "text": "The user must be a Global Administrator in both tenants, and the subscription must be empty."
+      },
+      {
+        "id": "D",
+        "text": "The user must first transfer billing ownership of `Sub1` to the target tenant."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. `Sub1` is not a Cloud Solution Provider subscription or another subscription type for which changing the Microsoft Entra directory is unsupported.",
+    "sections": {
+      "correctAnswer": "**B. The user must have the Owner role on `Sub1`, and the account must exist in both the current and new directories.** The documented process requires Owner permissions on the subscription and an account that is present in both directories.",
+      "technical": "Changing a subscription's Microsoft Entra directory is a subscription-level operation. The subscription remains the same subscription, but the identity directory used for Azure RBAC changes. Microsoft documents that the signed-in account must have the Owner role assignment for the subscription and must exist in both the current directory and the new directory. The transfer-subscription guidance also emphasizes careful planning because many Azure services depend on security principals in the original directory.\n\nThe checks matter because Azure must verify that the caller can administer the source subscription and can sign in to the target directory. Billing administration alone is not enough to authorize Azure resource access. Global Administrator alone is also not enough because Microsoft Entra directory roles and Azure subscription roles are separate. CSP subscriptions do not support changing the Microsoft Entra directory by this process.",
+      "wrongOptions": {
+        "A": "Billing Administrator is a directory or billing role and does not replace the subscription Owner requirement. Misconception: billing ownership and resource administration are the same thing. Could be correct when the task is managing invoices or supported billing transfers, not changing the subscription's trusted directory.",
+        "C": "Global Administrator is not the documented prerequisite by itself, and the subscription does not have to be empty. Misconception: only tenant-wide administrators can perform any tenant-related subscription action. Could be correct for editing tenant-wide subscription policies, where direct Global Administrator and elevated access are required.",
+        "D": "Billing ownership transfer is a different operation from changing the subscription directory. Misconception: moving who pays always moves the identity tenant. Could be correct when the business goal is to make another account responsible for charges rather than to change which tenant supplies RBAC identities."
+      },
+      "plainEnglish": "To move a subscription from one directory to another, Azure needs proof of two things. First, you control the subscription you are moving. That is why the Owner role is required. Second, you can participate in the destination directory. That is why your account must exist in both places.\n\nPaying the bill is not the same as being allowed to change Azure resource access. Being the top directory administrator is also not automatically the same as subscription Owner.",
+      "analogy": "Moving a company car from one fleet office to another requires the person to be authorized for the car and recognized by the receiving fleet office.\n\n| Analogy | Azure reality |\n|---|---|\n| Company car | Azure subscription |\n| Current fleet office | Source Microsoft Entra tenant |\n| Receiving fleet office | Target Microsoft Entra tenant |\n| Authorized custodian | Subscription Owner |\n\n**Where the analogy breaks down:** Azure subscriptions can contain many services with separate identity dependencies, while a car usually has fewer dependent systems to repair after transfer.",
+      "jargon": [
+        {
+          "term": "Directory change",
+          "definition": "Changing the Microsoft Entra tenant that an Azure subscription trusts for authentication and authorization."
+        },
+        {
+          "term": "Owner role",
+          "definition": "An Azure built-in role that grants full management access and the ability to assign Azure RBAC roles."
+        },
+        {
+          "term": "Billing Administrator",
+          "definition": "A billing-related role used for billing tasks, not a substitute for Azure subscription Owner."
+        },
+        {
+          "term": "Global Administrator",
+          "definition": "A Microsoft Entra role with broad directory permissions but no automatic Azure resource access by default."
+        },
+        {
+          "term": "CSP subscription",
+          "definition": "A Cloud Solution Provider subscription type for which changing the Microsoft Entra directory is not supported by this process."
+        },
+        {
+          "term": "Azure Lighthouse",
+          "definition": "A cross-tenant delegation service that can let users in one tenant manage resources in another without moving the subscription."
+        }
+      ],
+      "watchOut": "- Owner on the subscription is different from billing administrator.\n- The account used for the move must exist in both directories.\n- Some subscription types, including CSP subscriptions, do not support changing the directory.\n- The subscription can contain resources, but identity-dependent resources may need repair after the move.",
+      "productionTip": {
+        "official": "Microsoft documents the prerequisites for associating a subscription with another directory, including Owner role assignment for the subscription and an account in both the current and new directories. The transfer article warns that the operation can require downtime and planning.",
+        "recommendation": "Before changing a directory, export role assignments, custom roles, managed identities, Key Vault dependencies, policy objects, and application registrations. Schedule a change window and prepare a tested access-repair runbook for the target tenant."
+      },
+      "memoryTrick": "For a directory move, remember **own it and exist there**: own the subscription, and have an account in both directories.",
+      "examTip": "If the question asks for a prerequisite to change a subscription directory, do not choose billing-only or Global Administrator-only answers. Look for Owner on the subscription and presence in both tenants. A harder question may add unsupported subscription types or ask whether Azure Lighthouse is a lower-risk alternative."
+    },
+    "sources": [
+      {
+        "title": "Add an existing Azure subscription to your tenant",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-subscriptions-associated-directory"
+      },
+      {
+        "title": "Transfer an Azure subscription to a different Microsoft Entra directory",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/transfer-subscription"
+      },
+      {
+        "title": "Azure roles, Microsoft Entra roles, and classic subscription administrator roles",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.5-03",
+    "objective": "D1.3.5",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You plan to transfer an Azure subscription from `TenantA` to `TenantB`. The subscription contains virtual machines with system-assigned managed identities, a user-assigned managed identity attached to an automation resource, and several Azure key vaults that use access policies.\n\nWhich three impacts should you plan for after changing the subscription directory? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Existing Azure RBAC role assignments and custom roles from `TenantA` are permanently deleted and must be re-created."
+      },
+      {
+        "id": "B",
+        "text": "The subscription ID changes, so all resource IDs must be updated."
+      },
+      {
+        "id": "C",
+        "text": "System-assigned managed identities must be disabled and re-enabled, and their role assignments must be re-created."
+      },
+      {
+        "id": "D",
+        "text": "User-assigned managed identities must be deleted, re-created, attached again, and granted permissions again."
+      },
+      {
+        "id": "E",
+        "text": "Azure Key Vault access policies are automatically converted to equivalent policies for the new tenant without administrator action."
+      },
+      {
+        "id": "F",
+        "text": "All resources are automatically reauthorized because the resource names stay the same."
+      }
+    ],
+    "correct": [
+      "A",
+      "C",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The question asks for documented directory-transfer impacts for Azure RBAC and managed identities. Key Vault is present as a distractor because automatic conversion is not documented.",
+    "sections": {
+      "correctAnswer": "**A. Existing Azure RBAC role assignments and custom roles from `TenantA` are permanently deleted and must be re-created**, **C. System-assigned managed identities must be disabled and re-enabled, and their role assignments must be re-created**, and **D. User-assigned managed identities must be deleted, re-created, attached again, and granted permissions again**. These are documented impacts of moving a subscription to a different Microsoft Entra directory.",
+      "technical": "A subscription directory transfer changes the Microsoft Entra tenant that supplies security principals for Azure RBAC. Role assignments reference identities from the old tenant. When the subscription moves, those old tenant objects do not become equivalent objects in the target tenant. Microsoft documents that role assignments and custom roles are permanently deleted and are not transferred.\n\nManaged identities are also tenant-bound security principals. A system-assigned managed identity is tied to a single Azure resource, so after the directory move you must disable and re-enable it to create an identity in the new tenant, then re-create role assignments. A user-assigned managed identity is a standalone resource. The documented recovery action is to delete, re-create, and reattach it to the appropriate resource, then re-create permissions. Key Vault can also be impacted, but it is not automatically converted.",
+      "wrongOptions": {
+        "B": "The directory transfer does not mean the subscription receives a new subscription ID. The key problem is identity and authorization references, not resource ID replacement. Misconception: every major move changes every resource identifier. Could be correct in a different migration where resources are re-created in a new subscription.",
+        "E": "Key Vault is impacted by a directory move; Microsoft documents that you must update the tenant ID and remove and add new access policies. It is not automatically converted. Misconception: Azure can automatically map every old-tenant security principal to a new-tenant principal. Could be correct only if the statement said administrators must repair Key Vault tenant and access policy settings after the move.",
+        "F": "Resource names remaining the same do not preserve role assignments or managed identity principals from the source tenant. Misconception: names, not identity object IDs, drive Azure authorization. Could be correct only for non-identity metadata that remains with the resource and does not depend on the old tenant."
+      },
+      "plainEnglish": "Moving a subscription to another directory is not just changing a label. The old directory had the people, groups, and service identities that Azure used for access. After the move, those identities are from the wrong directory, so Azure cannot keep the old access list.\n\nManaged identities are special identities that Azure creates for resources. Because they also belong to a directory, you must rebuild or re-enable them in the new directory and grant them access again.",
+      "analogy": "A company moves a secure lab from one campus to another. The lab equipment arrives, but the old campus badge IDs no longer work. Door lists and robot service badges must be rebuilt in the new campus badge system.\n\n| Analogy | Azure reality |\n|---|---|\n| Secure lab | Azure subscription |\n| Door lists | Azure RBAC role assignments |\n| Robot badge on one machine | System-assigned managed identity |\n| Reusable robot badge | User-assigned managed identity |\n\n**Where the analogy breaks down:** Azure has many service-specific dependencies, and Microsoft documents a longer impact table than a physical badge analogy can show.",
+      "jargon": [
+        {
+          "term": "Custom role",
+          "definition": "An Azure RBAC role definition created by an organization instead of using only Microsoft built-in roles."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that connects a security principal, a role definition, and a scope."
+        },
+        {
+          "term": "System-assigned managed identity",
+          "definition": "A managed identity tied to one Azure resource."
+        },
+        {
+          "term": "User-assigned managed identity",
+          "definition": "A standalone managed identity resource that can be attached to one or more supported Azure resources."
+        },
+        {
+          "term": "Security principal",
+          "definition": "An identity object used in authorization."
+        },
+        {
+          "term": "Key Vault access policy",
+          "definition": "A Key Vault access configuration that grants a principal permissions to keys, secrets, or certificates."
+        }
+      ],
+      "watchOut": "- Role assignments and custom roles from the old tenant are permanently deleted.\n- Managed identities are not simply carried across as working identities.\n- Some services are recoverable; others might not support tenant transfer without disabling features or rebuilding.\n- Resource names do not preserve authorization.",
+      "productionTip": {
+        "official": "Microsoft's transfer documentation lists impacted resources, including role assignments, custom roles, system-assigned managed identities, user-assigned managed identities, and Key Vault. It describes the recovery actions for each impacted resource type.",
+        "recommendation": "Build a pre-move inventory with Azure Resource Graph and scripted exports. Re-create access from reviewed groups in the target tenant rather than blindly copying old grants that may include stale accounts or overprivileged service principals."
+      },
+      "memoryTrick": "Tenant moves break identity references: **roles vanish, identities need rebirth**. This is a simplification because some services have additional product-specific recovery steps.",
+      "examTip": "For subscription directory-transfer questions, look for identity-dependent resources. Answers saying access is automatically preserved are usually traps. A harder version may ask which services are not recoverable after transfer or may include Key Vault, Azure Policy, AKS, and database authentication in one table."
+    },
+    "sources": [
+      {
+        "title": "Transfer an Azure subscription to a different Microsoft Entra directory",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/transfer-subscription"
+      },
+      {
+        "title": "Add an existing Azure subscription to your tenant",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-subscriptions-associated-directory"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.5-04",
+    "objective": "D1.3.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A subscription named `Sub1` is billed to Alex's pay-as-you-go account in `TenantA`. Alex wants Blair's account to receive future invoices, but the resources and existing Azure RBAC role assignments in `TenantA` must continue to work.\n\nDuring the billing ownership transfer, what should Alex do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Select **Move subscription tenant** so the subscription moves to Blair's tenant."
+      },
+      {
+        "id": "B",
+        "text": "Clear **Move subscription tenant** and transfer only the billing ownership."
+      },
+      {
+        "id": "C",
+        "text": "Change the subscription directory first, and then transfer billing ownership."
+      },
+      {
+        "id": "D",
+        "text": "Cancel `Sub1` and ask Blair to create a new subscription with the same name."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The transfer is a supported Microsoft Online Services Program pay-as-you-go billing ownership transfer. Blair can accept the transfer and provide a valid payment method.",
+    "sections": {
+      "correctAnswer": "**B. Clear Move subscription tenant and transfer only the billing ownership.** Microsoft documents that clearing that option transfers billing ownership without moving the subscription to the new account's tenant, so existing Azure role assignments are maintained.",
+      "technical": "Billing ownership and directory association are separate concepts. Billing ownership determines who is financially responsible and who can perform billing tasks such as payment-method changes, charge review, and cancellation. Directory association determines which Microsoft Entra tenant supplies identities for Azure RBAC access to resources.\n\nFor supported MOSP billing ownership transfers, the portal can offer a **Move subscription tenant** option when transferring to an account in another Microsoft Entra tenant. If that option is selected, the subscription moves to the new account's tenant. Microsoft warns that all Azure role assignments to access resources in the subscription are permanently removed, and only the user who accepts the transfer has access to manage resources initially. If the goal is only to change who pays while preserving access, clear **Move subscription tenant**.",
+      "wrongOptions": {
+        "A": "Moving the subscription tenant would break the requirement to preserve existing Azure RBAC role assignments. Misconception: billing transfer and tenant move are always the same operation. Could be correct when the explicit goal is to manage the subscription in the recipient's tenant and the team has planned access repair.",
+        "C": "Changing the directory first causes the same access-impact problem and is unnecessary when only invoices need to move. Misconception: the identity tenant must match the billing account tenant for every billing change. Could be correct when the actual project is a tenant consolidation, not just a billing ownership transfer.",
+        "D": "Canceling and recreating a subscription is unnecessary and disruptive; a new subscription would not contain the existing resources or assignments. Misconception: subscription names identify reusable containers that can be recreated with the same contents. Could be correct only when the old environment is being intentionally retired after migration."
+      },
+      "plainEnglish": "The person who pays for a subscription is not always the same thing as the directory that controls who can use the resources. In this scenario, only the bill should move to Blair. The identities and permissions in `TenantA` should stay in place.\n\nIf Alex chooses to move the subscription tenant, Azure will point the subscription at a different directory, and the old access list stops working. Clearing that option says, in effect, `Blair pays the bill, but keep using the same company directory for access.`",
+      "analogy": "A rented office can have two separate records: the company that pays the lease and the badge office that controls door access. You can change the billing contact without changing the badge office.\n\n| Analogy | Azure reality |\n|---|---|\n| Lease payer | Billing owner |\n| Badge office | Microsoft Entra tenant |\n| Door access list | Azure RBAC role assignments |\n| Moving badge office | Move subscription tenant |\n\n**Where the analogy breaks down:** Azure billing agreements, offer types, and transfer eligibility rules are more detailed than a simple office lease transfer.",
+      "jargon": [
+        {
+          "term": "Billing ownership",
+          "definition": "Responsibility for payment and billing administration of an Azure subscription or product."
+        },
+        {
+          "term": "MOSP",
+          "definition": "Microsoft Online Services Program, commonly associated with pay-as-you-go Azure subscriptions."
+        },
+        {
+          "term": "Move subscription tenant",
+          "definition": "A billing-transfer option that also changes the Microsoft Entra tenant associated with the subscription."
+        },
+        {
+          "term": "Azure RBAC role assignment",
+          "definition": "A permission grant for a security principal at a specific Azure scope."
+        },
+        {
+          "term": "Payment method",
+          "definition": "The billing instrument or arrangement used to pay Azure charges."
+        },
+        {
+          "term": "Tenant association",
+          "definition": "The directory relationship that tells the subscription which Microsoft Entra tenant to use for identities."
+        }
+      ],
+      "watchOut": "- A billing transfer can be performed without a tenant move when supported.\n- Selecting **Move subscription tenant** removes existing Azure role assignments.\n- Transferring billing ownership does not automatically copy service credentials or fix identity dependencies.\n- Not all subscription or agreement types support the same self-service transfer paths.",
+      "productionTip": {
+        "official": "Microsoft documents that clearing **Move subscription tenant** transfers billing ownership without moving the subscription to the new account's tenant, preserving existing Azure role assignments. It also recommends reviewing role assignments and credentials after accepting billing ownership.",
+        "recommendation": "For billing-only changes, keep identity and billing changes separate. Record which party owns invoices, which tenant controls access, and who is responsible for post-transfer checks of payment methods, budgets, and role assignments."
+      },
+      "memoryTrick": "Billing answers **who pays**; directory answers **who signs in and gets RBAC**. The two can move together, but they do not have to.",
+      "examTip": "When a question says existing access must continue, avoid options that change the subscription directory. Look for wording that transfers billing ownership only. A harder version may include a transfer between agreement types where self-service transfer support depends on the source and destination offer."
+    },
+    "sources": [
+      {
+        "title": "Transfer billing ownership of an MOSP Azure subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/billing-subscription-transfer"
+      },
+      {
+        "title": "Azure product transfer hub",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/subscription-transfer"
+      },
+      {
+        "title": "Add an existing Azure subscription to your tenant",
+        "url": "https://learn.microsoft.com/en-us/entra/fundamentals/how-subscriptions-associated-directory"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.5-05",
+    "objective": "D1.3.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "A deployment to `Sub1` fails because the subscription has reached its current regional vCPU quota for a VM family. You need to allow more virtual machines to be created. You also want to avoid paying merely for the requested quota.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a new resource group in the same subscription and redeploy the virtual machines there."
+      },
+      {
+        "id": "B",
+        "text": "Request an increase for the adjustable quota from the Azure Quotas experience or the subscription's **Quotas + usage** page."
+      },
+      {
+        "id": "C",
+        "text": "Rename the subscription so Azure recalculates its quotas."
+      },
+      {
+        "id": "D",
+        "text": "Register the `Microsoft.Compute` resource provider again to reserve additional capacity."
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The quota is adjustable and the requested region and VM family are supported. The deployment is blocked by quota, not by Azure Policy, RBAC, subscription disabled state, or a service outage.",
+    "sections": {
+      "correctAnswer": "**B. Request an increase for the adjustable quota from the Azure Quotas experience or the subscription's Quotas + usage page.** Azure quotas are subscription-scoped limits, and Microsoft states that quota increase requests do not have a cost by themselves.",
+      "technical": "Azure services use quotas to set assigned counts for resources in a subscription. A quota might represent virtual machines, storage accounts, networking resources, or service API calls. Some quotas are adjustable; others are non-adjustable hard limits. For adjustable quotas, Microsoft documents that you can request an increase through the Azure Home **My quotas** page or from a subscription's **Quotas + usage** experience.\n\nThe evaluation order is: the deployment asks Azure to create more resources, Azure checks whether the requested count would exceed the applicable subscription, region, and service quota, and the deployment fails if the quota would be exceeded. Requesting a quota increase does not itself reserve capacity and does not create charges. Costs are based on resources you actually use, not the quota value. Microsoft may review increase requests based on usage, service availability, and capacity constraints.",
+      "wrongOptions": {
+        "A": "A quota is normally scoped at the subscription, region, and service dimension, so a new resource group in the same subscription does not bypass it. Misconception: resource groups have independent capacity pools. Could be correct when the failure was caused by a resource-group-level policy or naming conflict, not a subscription quota.",
+        "C": "Renaming a subscription changes its display name; it does not reset quotas. Misconception: subscription metadata changes cause platform limits to refresh. Could be correct only when the actual requirement is to make the subscription name clearer for administrators.",
+        "D": "Resource provider registration enables the subscription to use a provider; it does not reserve extra compute quota or capacity. Misconception: provider registration and quota allocation are the same control. Could be correct when deployment fails because the required provider namespace is not registered."
+      },
+      "plainEnglish": "Azure sets safety limits on how much of some resource types a subscription can create. If you hit a VM limit, creating another folder-like resource group does not help because the limit belongs to the subscription and region, not the folder.\n\nThe right fix is to ask Azure for a higher allowed amount. Asking for a larger allowance is not the same as buying those machines. You pay when you actually run resources.",
+      "analogy": "A company fuel card allows up to a certain amount of fuel per month. If a team needs more, it asks finance to raise the card limit. Raising the limit does not buy fuel immediately; it only allows future purchases.\n\n| Analogy | Azure reality |\n|---|---|\n| Fuel card | Azure subscription |\n| Monthly card limit | Quota |\n| Asking to raise the limit | Quota increase request |\n| Actually filling vehicles | Deploying billable Azure resources |\n\n**Where the analogy breaks down:** Azure quotas can be per region, per resource family, adjustable or non-adjustable, and subject to service capacity review.",
+      "jargon": [
+        {
+          "term": "Quota",
+          "definition": "An assigned count or limit for a countable Azure resource in a subscription."
+        },
+        {
+          "term": "Adjustable quota",
+          "definition": "A quota for which you can request an increase."
+        },
+        {
+          "term": "Non-adjustable quota",
+          "definition": "A hard limit where Azure support may need to suggest another approach."
+        },
+        {
+          "term": "vCPU",
+          "definition": "A virtual CPU count used by Azure virtual machines and VM families."
+        },
+        {
+          "term": "Azure Quotas",
+          "definition": "The Azure portal and API experience used to view quota usage and request quota increases."
+        },
+        {
+          "term": "Capacity",
+          "definition": "Actual available Azure service resources in a region; quota does not guarantee capacity."
+        }
+      ],
+      "watchOut": "- Quota increases are free, but deployed resources still cost money.\n- A quota value does not reserve or guarantee service capacity.\n- Quotas can vary by subscription, region, provider, and resource family.\n- Re-registering a resource provider is not a quota-increase request.",
+      "productionTip": {
+        "official": "Microsoft documents that quotas are enforced at subscription scope, that adjustable quota increases can be requested from Azure Quotas, and that there is no cost for requesting an increase because costs are based on actual usage.",
+        "recommendation": "Monitor quota usage before large deployments and request increases during planning rather than during an outage. Keep requests realistic, document business justification, and build deployments that fail clearly when quota is exceeded."
+      },
+      "memoryTrick": "Quota is permission to grow, not a prepaid reservation. This rule fails only in the sense that approval still depends on Microsoft's review and available capacity.",
+      "examTip": "Clue words include **quota**, **limit**, **vCPU**, **subscription**, and **request increase**. Do not choose resource group, rename, or provider registration fixes for quota exhaustion. A harder version may ask you to distinguish adjustable quotas, non-adjustable quotas, capacity shortage, and Azure Policy denial."
+    },
+    "sources": [
+      {
+        "title": "Quotas overview - Azure Quotas",
+        "url": "https://learn.microsoft.com/en-us/azure/quotas/quotas-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.5-06",
+    "objective": "D1.3.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You manage a pay-as-you-go Azure subscription named `Dev-Old`. The development team wants the subscription display name changed to `Dev-Lab`. A separate unused subscription named `Test-Old` must be canceled, but the team might need to recover it if the cancellation was a mistake.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use the subscription rename operation to change the display name of `Dev-Old`; renaming does not require deleting resources."
+      },
+      {
+        "id": "B",
+        "text": "Create a new subscription named `Dev-Lab` because Azure subscriptions cannot be renamed."
+      },
+      {
+        "id": "C",
+        "text": "After canceling `Test-Old`, billing stops immediately and services are disabled; pay-as-you-go subscriptions can be reactivated in the portal."
+      },
+      {
+        "id": "D",
+        "text": "After canceling `Test-Old`, Azure permanently deletes all data immediately, so reactivation is impossible."
+      },
+      {
+        "id": "E",
+        "text": "Rename `Test-Old` to `Canceled` instead of canceling it because renaming stops billing."
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. `Test-Old` is a pay-as-you-go subscription and the signed-in user has the permissions required to rename and cancel the relevant subscriptions.",
+    "sections": {
+      "correctAnswer": "**A. Use the subscription rename operation to change the display name of `Dev-Old`; renaming does not require deleting resources** and **C. After canceling `Test-Old`, billing stops immediately and services are disabled; pay-as-you-go subscriptions can be reactivated in the portal**. Renaming and canceling are different subscription lifecycle operations.",
+      "technical": "Azure supports a subscription rename operation. The REST API posts to the subscription rename endpoint with a new `subscriptionName`, and Azure PowerShell and Azure CLI expose rename commands. Renaming changes the subscription's display name; it is not a resource migration, tenant move, or billing ownership transfer. Resource IDs continue to use the subscription ID, not the display name.\n\nCancellation is different. Microsoft documents that after you cancel a subscription, billing stops immediately, although final charges might still be invoiced later for usage already incurred. Services are disabled: virtual machines are deallocated, temporary IP addresses are freed, and storage is read-only. Azure retains data temporarily rather than deleting it immediately. Canceled subscriptions are automatically deleted after 90 days, and pay-as-you-go subscriptions canceled accidentally can be reactivated in the Azure portal.",
+      "wrongOptions": {
+        "B": "Azure subscriptions can be renamed, so creating a new subscription only to change the display name is unnecessary. Misconception: the subscription display name is immutable like the subscription ID. Could be correct when the goal is isolation, separate billing, or a new quota boundary rather than a name change.",
+        "D": "Azure does not permanently delete all data immediately at cancellation. Microsoft states that data is retained temporarily and deletion occurs later. Misconception: cancel means instant irreversible deletion. Could be correct only after the retention and deletion period has passed or after manual deletion conditions are met.",
+        "E": "Renaming a subscription has no documented effect on billing. Misconception: changing a label changes the lifecycle state. Could be correct only as an additional housekeeping step after a real cancellation or archival process, not as a billing-control action."
+      },
+      "plainEnglish": "Changing a subscription name is like correcting a label on a box. The contents of the box do not move or disappear. The subscription still has the same ID and resources.\n\nCanceling a subscription is like telling Azure you no longer want to use that box. Azure stops billing for new use and disables services, but it does not instantly shred the contents. There is a recovery period where you can reactivate if the cancellation was a mistake.",
+      "analogy": "A storage locker has a label and a rental status. You can replace the label from `Dev-Old` to `Dev-Lab` without emptying the locker. Canceling the rental is different: the facility locks the locker and starts the closure process.\n\n| Analogy | Azure reality |\n|---|---|\n| Locker label | Subscription display name |\n| Locker account number | Subscription ID |\n| Canceling rental | Canceling the subscription |\n| Recovery period | Reactivation window and retained data |\n\n**Where the analogy breaks down:** Azure service behavior after cancellation varies by service, and invoices can include charges already incurred before cancellation.",
+      "jargon": [
+        {
+          "term": "Subscription display name",
+          "definition": "The friendly name shown for a subscription in tools and portals."
+        },
+        {
+          "term": "Subscription ID",
+          "definition": "The stable GUID identifier used in Azure resource IDs and APIs."
+        },
+        {
+          "term": "Rename operation",
+          "definition": "An Azure Subscription API operation that changes a subscription's name."
+        },
+        {
+          "term": "Cancel subscription",
+          "definition": "A lifecycle operation that stops billing for future use and disables Azure services."
+        },
+        {
+          "term": "Reactivation",
+          "definition": "Restoring a canceled subscription to active use within the supported recovery period."
+        },
+        {
+          "term": "Pay-as-you-go",
+          "definition": "An Azure offer where usage is billed to the payment method or billing account as it is consumed."
+        }
+      ],
+      "watchOut": "- Renaming does not stop billing, change the subscription ID, or move resources.\n- Canceling disables services and should not be used as a cosmetic cleanup action.\n- Azure can send a final invoice after cancellation for usage already incurred.\n- Deleted subscription timing is not the same as cancellation timing.",
+      "productionTip": {
+        "official": "The Subscription Rename REST API changes the subscription name. Microsoft cancellation documentation states that billing stops immediately after cancellation, services are disabled, data is retained temporarily, subscriptions are automatically deleted after 90 days, and pay-as-you-go subscriptions can be reactivated in the portal.",
+        "recommendation": "Use clear naming standards for active subscriptions and require owner sign-off before cancellation. Before canceling, export data, delete or migrate resources intentionally, check custom roles with subscription assignable scopes, and record the reactivation deadline."
+      },
+      "memoryTrick": "Rename is a label change; cancel is a lifecycle change. This simplification does not replace reading service-specific cancellation effects for production workloads.",
+      "examTip": "When the question says **display name**, choose rename. When it says **no longer need** and **billing**, choose cancellation. Avoid answers that say cancellation instantly destroys everything or that renaming changes billing. A harder version may ask who can cancel based on subscription type and role conditions."
+    },
+    "sources": [
+      {
+        "title": "Subscription - Rename",
+        "url": "https://learn.microsoft.com/en-us/rest/api/subscription/subscription/rename?view=rest-subscription-2021-10-01"
+      },
+      {
+        "title": "Cancel and delete your Azure subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/cancel-azure-subscription"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.5-07",
+    "objective": "D1.3.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have the following management group hierarchy.\n\n| Management group | Current child subscriptions | Notes |\n|---|---|---|\n| `mg-dev` | `Sub1` | Has development Azure Policy assignments |\n| `mg-prod` | None | Has production Azure Policy assignments and production RBAC inheritance |\n\n`Sub1` is ready for production and must inherit governance from `mg-prod` instead of `mg-dev`. You have direct Owner on `Sub1`, Contributor on `mg-prod`, and write permissions on `mg-dev`.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a resource group named `mg-prod` inside `Sub1`."
+      },
+      {
+        "id": "B",
+        "text": "Change the Microsoft Entra directory associated with `Sub1` to the directory that owns `mg-prod`."
+      },
+      {
+        "id": "C",
+        "text": "Transfer billing ownership of `Sub1` to the production cost center."
+      },
+      {
+        "id": "D",
+        "text": "Move `Sub1` so that `mg-prod` is its parent management group."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. `mg-dev` and `mg-prod` are in the same tenant management group hierarchy. `Sub1` should remain the same subscription and should not change billing ownership or Microsoft Entra directory association.",
+    "sections": {
+      "correctAnswer": "**D. Move `Sub1` so that `mg-prod` is its parent management group.** A subscription can have only one parent management group, and after the move it inherits access and policies from the new parent hierarchy.",
+      "technical": "Management groups are governance containers above subscriptions. Azure documents that all subscriptions within a management group automatically inherit the conditions applied to that management group, such as Azure RBAC assignments and Azure Policy assignments. To change which management group governance applies to a subscription, you move the subscription in the management group hierarchy.\n\nA subscription can have only one parent management group. Moving `Sub1` from `mg-dev` to `mg-prod` removes it from the `mg-dev` child list and makes it a child of `mg-prod`. Azure then evaluates inherited governance from the new parent hierarchy. User tokens and management group cache can last for 30 minutes, so the hierarchy change might not appear immediately. For a move, Microsoft documents required permissions on the child, target parent, and current parent, with specific root-management-group exceptions and inherited-Owner nuances.",
+      "wrongOptions": {
+        "B": "Changing the subscription directory changes which tenant supplies identities; it is not how you change management group inheritance inside the same tenant. Misconception: management group location and directory association are the same thing. Could be correct when the requirement is to use a different Microsoft Entra tenant for subscription authentication.",
+        "C": "Billing ownership affects who pays and who can manage billing, not which management group policies and RBAC assignments are inherited. Misconception: cost-center changes move subscriptions in governance hierarchy. Could be correct when the only goal is to change invoice responsibility.",
+        "A": "A resource group name has no effect on the management group hierarchy. Misconception: management groups and resource groups are interchangeable containers. Could be correct only when the task is organizing resources inside the subscription, not governing the subscription itself."
+      },
+      "plainEnglish": "Management groups sit above subscriptions. They are used to apply rules and permissions to many subscriptions at once. If a subscription moves from the development management group to the production management group, it starts receiving the production rules from that part of the hierarchy.\n\nCreating a resource group with a similar name would only create a folder inside the subscription. It would not move the subscription. Changing who pays or which directory is trusted would solve different problems.",
+      "analogy": "A subscription is like a department file placed under a section of a company policy binder. If the file moves from the Development section to the Production section, the Production section's rules apply.\n\n| Analogy | Azure reality |\n|---|---|\n| Policy binder section | Management group |\n| Department file | Subscription |\n| Rules printed on the section | Inherited policies and RBAC assignments |\n| Moving the file | Moving the subscription between management groups |\n\n**Where the analogy breaks down:** Azure permissions are evaluated by APIs, tokens, caches, scopes, and inheritance.",
+      "jargon": [
+        {
+          "term": "Management group",
+          "definition": "An Azure governance container above subscriptions used to apply RBAC and policy at scale."
+        },
+        {
+          "term": "Parent management group",
+          "definition": "The management group directly above a subscription or child management group in the hierarchy."
+        },
+        {
+          "term": "Azure Policy",
+          "definition": "A governance service that evaluates and can enforce rules for Azure resources and subscriptions."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where assignments at a parent scope apply to child scopes below it."
+        },
+        {
+          "term": "Contributor",
+          "definition": "A built-in Azure role that can manage resources but cannot assign Azure RBAC roles."
+        },
+        {
+          "term": "Direct Owner",
+          "definition": "An Owner assignment made directly at the subscription rather than inherited from a parent scope."
+        }
+      ],
+      "watchOut": "- A subscription can have only one parent management group.\n- Moving a subscription changes inherited governance; it does not change the subscription ID.\n- Required permissions involve the child, target parent, and current parent, except documented root management group exceptions.\n- Management group cache and tokens can make updates take time to appear.",
+      "productionTip": {
+        "official": "Microsoft documents that subscriptions inherit governance conditions from their parent management groups, can have only one parent management group, and can be moved by portal, Azure PowerShell, Azure CLI, or tenant-level ARM template when permissions are satisfied.",
+        "recommendation": "Before moving a production subscription, simulate or review Azure Policy effects at the target management group. Confirm that inherited deny, deploy-if-not-exists, and audit policies will not unexpectedly block critical deployments."
+      },
+      "memoryTrick": "To change inherited governance, move the subscription in the management group tree. This simplification does not cover permission prerequisites or policy remediation side effects.",
+      "examTip": "Clue words are **inherit policies**, **management group**, and **parent**. Choose the management group move, not directory change or billing transfer. A harder item may test the inherited Owner limitation or the permissions required on current parent, target parent, and child subscription."
+    },
+    "sources": [
+      {
+        "title": "Manage your Azure subscriptions at scale with management groups",
+        "url": "https://learn.microsoft.com/en-us/azure/governance/management-groups/manage"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.5-08",
+    "objective": "D1.3.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A support lead needs to manage access assignments for an Azure subscription named `Sub1`. The lead must be able to assign Azure RBAC roles to users and groups at the subscription scope, but must not be given general permission to create, modify, or delete Azure resources. A colleague suggests adding the lead as a classic Co-Administrator.\n\nWhich role should you assign?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Reader at the `Sub1` subscription scope"
+      },
+      {
+        "id": "B",
+        "text": "Contributor at the `Sub1` subscription scope"
+      },
+      {
+        "id": "C",
+        "text": "User Access Administrator at the `Sub1` subscription scope"
+      },
+      {
+        "id": "D",
+        "text": "Classic Co-Administrator for `Sub1`"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud in October 2026. The organization uses Azure RBAC for subscription access management. The lead should not be allowed to manage resources except for access management tasks covered by the selected role.",
+    "sections": {
+      "correctAnswer": "**C. User Access Administrator at the `Sub1` subscription scope.** User Access Administrator lets a principal manage user access to Azure resources, while classic administrator roles are fully retired and Reader or Contributor do not meet the access-assignment requirement.",
+      "technical": "Azure RBAC includes built-in roles that can be assigned at management group, subscription, resource group, or resource scope. Owner grants full access to manage resources and includes the ability to assign roles. Contributor grants full access to manage resources but does not allow assigning roles in Azure RBAC. Reader can view resources but does not allow changes or role assignment. User Access Administrator lets a principal manage user access to Azure resources.\n\nThe requirement is specifically to assign Azure RBAC roles at subscription scope without granting general resource-management rights. Among the listed options, User Access Administrator at `Sub1` matches the access-management function with less resource-management power than Owner. Classic Co-Administrator is not a valid modern answer. Microsoft documents that classic administrator roles are fully retired and that access must be managed through Azure RBAC.",
+      "wrongOptions": {
+        "A": "Reader can view resources but cannot assign Azure RBAC roles. Misconception: viewing the Access control page is enough to manage access. Could be correct when the support lead only needs read-only visibility into resources and assignments.",
+        "B": "Contributor can manage resources but cannot assign roles in Azure RBAC, and it grants too much resource-management access for this requirement. Misconception: Contributor is the standard administrator role for every operational task. Could be correct when the lead must create and manage resources but should not manage access.",
+        "D": "Classic Co-Administrator roles are retired and no longer supported as the way to grant subscription access. Misconception: legacy Azure access models are still available for new access management. Could be correct only in historical questions before retirement, not for the current exam timeframe."
+      },
+      "plainEnglish": "The support lead needs to manage who gets access, not to manage the servers, networks, databases, or storage accounts. Azure has a role for that job: User Access Administrator.\n\nReader is too weak because it can only look. Contributor is too broad because it can change resources but still cannot assign Azure RBAC roles. The old Co-Administrator model is not the current way to grant access. Modern Azure access should use Azure RBAC roles at the right scope.",
+      "analogy": "In an office, one employee manages badge permissions but does not repair elevators or redesign rooms. Giving them the badge-admin job fits better than giving them full facilities control.\n\n| Analogy | Azure reality |\n|---|---|\n| Badge-permission manager | User Access Administrator |\n| Building repair worker | Contributor |\n| Visitor who can look around | Reader |\n| Old paper master-key list | Classic Co-Administrator |\n\n**Where the analogy breaks down:** User Access Administrator is still highly privileged because it can grant powerful Azure roles.",
+      "jargon": [
+        {
+          "term": "User Access Administrator",
+          "definition": "An Azure built-in role that lets a principal manage access to Azure resources, including role assignments."
+        },
+        {
+          "term": "Owner",
+          "definition": "An Azure built-in role with full resource management access and permission to assign roles."
+        },
+        {
+          "term": "Contributor",
+          "definition": "An Azure built-in role that can manage resources but cannot assign Azure RBAC roles."
+        },
+        {
+          "term": "Reader",
+          "definition": "An Azure built-in role that can view resources but not change them."
+        },
+        {
+          "term": "Co-Administrator",
+          "definition": "A retired classic subscription administrator role formerly used for broad subscription access."
+        },
+        {
+          "term": "Subscription scope",
+          "definition": "An Azure RBAC scope covering a subscription and its child resource groups and resources."
+        }
+      ],
+      "watchOut": "- User Access Administrator can grant other people powerful access, so it is privileged even though it is not a general resource-management role.\n- Contributor cannot assign Azure RBAC roles.\n- Owner is broader than required when the task is access management only.\n- Classic administrator roles are fully retired for the current exam timeframe.",
+      "productionTip": {
+        "official": "Microsoft's built-in roles documentation lists User Access Administrator as a role for managing user access to Azure resources. Microsoft's classic administrator documentation states that classic administrator roles are fully retired and Azure RBAC must be used to manage access.",
+        "recommendation": "Use groups and Privileged Identity Management for access administrators where available. Review users with User Access Administrator regularly because they can create privilege escalation by assigning Owner or other high-impact roles."
+      },
+      "memoryTrick": "Contributor contributes resources; User Access Administrator administers access. This is a simplification because Owner can also administer access but is broader than needed.",
+      "examTip": "The clue is **assign Azure RBAC roles but not manage resources**. Pick User Access Administrator over Contributor, Reader, or retired classic roles. A harder question may compare User Access Administrator with Role Based Access Control Administrator or ask for a narrower scope."
+    },
+    "sources": [
+      {
+        "title": "Azure built-in roles",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles"
+      },
+      {
+        "title": "Azure roles, Microsoft Entra roles, and classic subscription administrator roles",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+      },
+      {
+        "title": "Azure classic subscription administrators",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/classic-administrators"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.5-09",
+    "objective": "D1.3.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A Bicep deployment to a new Azure subscription fails when it tries to deploy resources from the `Microsoft.Batch` namespace. The error indicates that the resource provider is not registered for the subscription. You have Contributor on the subscription.\n\nWhat should you do before rerunning the deployment?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Register the `Microsoft.Batch` resource provider for the subscription."
+      },
+      {
+        "id": "B",
+        "text": "Move the subscription to a different management group."
+      },
+      {
+        "id": "C",
+        "text": "Request a quota increase for Batch accounts."
+      },
+      {
+        "id": "D",
+        "text": "Change the subscription offer to pay-as-you-go."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The deployment is failing because the provider namespace is unregistered, not because of quota, policy, unsupported region, naming, or missing RBAC on a resource group.",
+    "sections": {
+      "correctAnswer": "**A. Register the `Microsoft.Batch` resource provider for the subscription.** A subscription must be registered for a resource provider before you use that provider, and Contributor includes the `/register/action` permission.",
+      "technical": "Azure Resource Manager uses resource providers to expose service operations. A provider namespace such as `Microsoft.Batch`, `Microsoft.KeyVault`, or `Microsoft.Compute` defines resource types and REST operations for an Azure service. Microsoft documents that before you use a resource provider, you should make sure the subscription is registered for it.\n\nThe troubleshooting flow is: identify the namespace in the deployment error, check the provider registration state for the subscription, register the required provider namespace if it is unregistered, and rerun the deployment after registration has reached the needed region. The Azure portal can register providers from **Subscriptions** > **Resource providers**. Azure PowerShell uses `Register-AzResourceProvider`, and Azure CLI uses `az provider register --namespace`. Microsoft states that the `/register/action` permission is included in Contributor and Owner. Register only providers you are ready to use.",
+      "wrongOptions": {
+        "B": "Management group placement changes inherited governance, not provider namespace registration. Misconception: all subscription deployment failures are caused by management group policy. Could be correct when a policy inherited from the management group blocks deployment and the approved governance action is to move the subscription.",
+        "C": "Quota increases address assigned resource counts, not unregistered provider namespaces. Misconception: every provisioning failure is a capacity or quota issue. Could be correct when the provider is registered but the deployment exceeds a Batch quota.",
+        "D": "Offer type affects billing terms and some capabilities, but it is not the normal fix for an unregistered provider namespace. Misconception: pay-as-you-go enables all Azure services automatically. Could be correct when the current offer has an explicit product limitation unrelated to provider registration."
+      },
+      "plainEnglish": "Azure services are plugged into subscriptions through resource providers. If the Batch provider is not turned on for the subscription, Azure does not know that this subscription is ready to create Batch resources.\n\nBecause the error says the provider is not registered, the fix is to register that provider. This is different from asking for more quota or changing who pays for the subscription. After the provider is registered, the deployment can try to create the resources again.",
+      "analogy": "A building has utility hookups. Before a lab can use compressed air, the building facilities team must enable that utility line for the building. Buying more equipment or changing departments will not help if the utility is not connected.\n\n| Analogy | Azure reality |\n|---|---|\n| Utility line | Resource provider namespace |\n| Building | Azure subscription |\n| Enabling the utility | Registering the resource provider |\n| Lab equipment order | Bicep deployment |\n\n**Where the analogy breaks down:** Azure provider registration can be regional and may enter a `Registering` state where some regions become usable before all registration work completes.",
+      "jargon": [
+        {
+          "term": "Resource provider",
+          "definition": "A set of Azure Resource Manager operations for a specific Azure service."
+        },
+        {
+          "term": "Provider namespace",
+          "definition": "The service namespace, such as `Microsoft.Batch` or `Microsoft.KeyVault`, used in Azure resource types."
+        },
+        {
+          "term": "Bicep",
+          "definition": "A declarative language for deploying Azure resources through Azure Resource Manager."
+        },
+        {
+          "term": "Registering state",
+          "definition": "A provider registration state where registration is in progress and may complete by region."
+        },
+        {
+          "term": "Contributor",
+          "definition": "An Azure built-in role that includes permission to register resource providers."
+        },
+        {
+          "term": "Resource type",
+          "definition": "A provider-defined type such as `Microsoft.KeyVault/vaults` or a Batch account resource type."
+        }
+      ],
+      "watchOut": "- Register only providers you are ready to use.\n- Provider registration is not the same as quota increase.\n- Do not block application logic unnecessarily while a provider is in `Registering` if the needed region is already available.\n- You cannot unregister a provider while resource types from that provider still exist in the subscription.",
+      "productionTip": {
+        "official": "Microsoft documents portal, PowerShell, and Azure CLI methods to view and register resource providers. It states that Contributor and Owner include the `/register/action` permission and recommends registering only providers needed for your subscription.",
+        "recommendation": "In platform landing zones, pre-register provider namespaces required by approved services and leave unapproved providers unregistered where possible. Pair provider registration with Azure Policy so teams know whether a failure is due to governance or provider readiness."
+      },
+      "memoryTrick": "Provider registration is the subscription saying, **I am ready to use this service**. This is a simplification because some providers register automatically and some regions can be ready before all registration completes.",
+      "examTip": "If the error says **resource provider isn't registered**, select provider registration. Do not jump to quota, billing, or management group answers. A harder version may ask whether Contributor can register providers or why registering unused providers can reduce least privilege."
+    },
+    "sources": [
+      {
+        "title": "Azure resource providers and types",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.5-10",
+    "objective": "D1.3.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Your organization wants to prevent subscription owners, including guest users who have access to a subscription, from moving subscriptions out of or into your Microsoft Entra directory unless a central governance team approves an exception.\n\nWhat should a properly authorized administrator configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A billing ownership transfer rule on each invoice section."
+      },
+      {
+        "id": "B",
+        "text": "A resource lock at the root management group to block subscription transfer operations."
+      },
+      {
+        "id": "C",
+        "text": "A deny assignment on every subscription owner that blocks the Microsoft Entra sign-in action."
+      },
+      {
+        "id": "D",
+        "text": "Azure subscription policies for subscriptions leaving and entering the directory, keeping the default **Allow no users** settings and adding exempted users when approved."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud in October 2026. The goal is to control directory movement of subscriptions, not resource moves between resource groups or billing-account invoice-section transfers.",
+    "sections": {
+      "correctAnswer": "**D. Azure subscription policies for subscriptions leaving and entering the directory, keeping the default Allow no users settings and adding exempted users when approved.** Microsoft documents subscription policies that control movements out of and into a directory, with **Allow no users** as the recommended default.",
+      "technical": "Azure subscription policies are tenant-level controls for movement of subscriptions between Microsoft Entra directories. Microsoft documents two policy areas: subscriptions leaving a Microsoft Entra directory and subscriptions entering a Microsoft Entra directory. Each policy can block all users or allow all authorized users. The default behavior was updated on May 1, 2026 so subscriptions can no longer be transferred in to or out of a directory unless a Global Administrator explicitly allows it, unless the organization already configured an explicit setting.\n\nThese policies apply to authorized users, including authorized guest users in the directory. For governance exceptions, the policy supports exempted users who can bypass the general block for both directions. Editing the settings is restricted: only directory Global Administrators with direct role assignment can edit subscription policies, and before editing they must elevate access to manage Azure subscriptions and management groups.",
+      "wrongOptions": {
+        "B": "Resource locks protect Azure resources from delete or write operations at resource scopes; they are not the documented tenant-level control for subscription directory transfers. Misconception: any governance block can be expressed as a resource lock. Could be correct when the goal is to prevent deleting or modifying specific Azure resources.",
+        "C": "Administrators do not normally create custom deny assignments for this purpose, and blocking sign-in would be too broad and unrelated to approved subscription transfer exceptions. Misconception: Azure governance uses deny assignments like firewall rules for every restriction. Could be correct only in service-managed deny-assignment scenarios, not for subscription transfer policy.",
+        "A": "Invoice-section or billing ownership controls affect billing administration, not whether subscriptions can enter or leave a Microsoft Entra directory. Misconception: billing hierarchy and directory transfer controls are the same. Could be correct when the requirement is controlling who can create or move billing products inside a billing account."
+      },
+      "plainEnglish": "The organization wants a rule at the directory gate. Subscriptions should not be carried out of the directory or brought into it unless central governance approves. Azure has a specific policy area for that.\n\nThe safest default is to allow no users. If a particular trusted person needs to perform approved moves, governance can add that person as an exception. This is better than trying to lock individual resources or changing billing settings.",
+      "analogy": "A company headquarters has a loading dock policy. No department can move filing cabinets out of or into the building unless the central facilities team approves an exception.\n\n| Analogy | Azure reality |\n|---|---|\n| Headquarters building | Microsoft Entra directory |\n| Filing cabinet | Azure subscription |\n| Loading dock rule | Subscription policy |\n| Approved mover list | Exempted users |\n\n**Where the analogy breaks down:** Azure policy settings are evaluated through portal and API operations, and billing tenant requirements still apply even when movement is allowed.",
+      "jargon": [
+        {
+          "term": "Subscription policy",
+          "definition": "A tenant-level Azure setting that controls whether subscriptions can be moved into or out of a Microsoft Entra directory."
+        },
+        {
+          "term": "Allow no users",
+          "definition": "The recommended default policy setting that blocks all subscription transfers for that direction."
+        },
+        {
+          "term": "Allow all users",
+          "definition": "A policy setting that permits authorized users to transfer subscriptions for that direction."
+        },
+        {
+          "term": "Exempted users",
+          "definition": "Specific users allowed to bypass the general subscription transfer policy settings."
+        },
+        {
+          "term": "Guest user",
+          "definition": "A user whose home directory is elsewhere but who is invited into the current Microsoft Entra tenant."
+        },
+        {
+          "term": "Elevate access",
+          "definition": "The documented process where a Global Administrator gains User Access Administrator at root scope to manage Azure access settings."
+        }
+      ],
+      "watchOut": "- Since May 1, 2026, default subscription transfer policy behavior is **Allow no users** unless explicitly changed.\n- **Allow all users** includes authorized guest users, not every person on the internet.\n- Only directly assigned Global Administrators with elevated access can edit these policies.\n- The policies control directory movement, not ordinary resource movement between resource groups.",
+      "productionTip": {
+        "official": "Microsoft documents separate policies for subscriptions leaving and entering a Microsoft Entra directory, the **Allow no users** and **Allow all users** settings, exempted users, and the May 1, 2026 security-focused default change.",
+        "recommendation": "Keep both directions blocked by default. Maintain a short-lived exception process with ticket approval, named exempted users, a scheduled removal date, and a post-transfer review of billing tenant, RBAC, and managed identity impact."
+      },
+      "memoryTrick": "Subscription policy is the tenant border guard: leaving and entering are two gates. This is a simplification because billing eligibility and subscription-type support still affect real transfers.",
+      "examTip": "Clue words are **leaving**, **entering**, **directory**, **guest users**, and **central approval**. Choose subscription policies, not resource locks. A harder item may test who can edit the policies: a directly assigned Global Administrator who has elevated access."
+    },
+    "sources": [
+      {
+        "title": "Manage Azure subscription policies",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/manage-azure-subscription-policy"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.3.5-11",
+    "objective": "D1.3.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A developer has a pay-as-you-go Azure subscription and recently activated a Visual Studio Enterprise benefit. The developer wants to switch the subscription to use Visual Studio monthly credits. They also ask what an Azure offer represents.\n\nWhich statement is correct?",
+    "options": [
+      {
+        "id": "A",
+        "text": "An Azure offer is a quota reservation; switching offers preserves all quota increases above the default."
+      },
+      {
+        "id": "B",
+        "text": "An Azure offer is the Microsoft Entra tenant associated with the subscription; switching offers moves the subscription to a new directory."
+      },
+      {
+        "id": "C",
+        "text": "An Azure offer is the management group parent; switching offers changes inherited Azure Policy assignments."
+      },
+      {
+        "id": "D",
+        "text": "An Azure offer is the subscription type with pricing terms and benefits; eligible pay-as-you-go subscriptions can switch to supported Visual Studio offers after the first billing period."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The subscription is a supported pay-as-you-go subscription, the first billing period has ended, and the developer is eligible for the Visual Studio offer.",
+    "sections": {
+      "correctAnswer": "**D. An Azure offer is the subscription type with pricing terms and benefits; eligible pay-as-you-go subscriptions can switch to supported Visual Studio offers after the first billing period.** Microsoft describes offer type as the kind of subscription, such as pay-as-you-go or Visual Studio Enterprise.",
+      "technical": "An Azure offer is the type of Azure subscription. Microsoft gives examples such as a subscription with pay-as-you-go rates, Azure in Open, and Visual Studio Enterprise. Offers have different terms and can include special benefits, such as Visual Studio monthly credits or dev/test restrictions. The offer is shown on the subscription details page.\n\nMicrosoft documents a supported switch path from a pay-as-you-go subscription to specific offers, including Pay-As-You-Go Dev/Test and several Visual Studio subscription offers. The **Switch Offer** option is available only for pay-as-you-go subscriptions and only after the first billing period is complete. Switching offers is not a directory change, management group move, or billing ownership transfer. Microsoft also documents important effects: no service downtime, possible offer restrictions, quota increases above default are reset, outstanding charges are invoiced, and previous usage and billing data is not kept.",
+      "wrongOptions": {
+        "B": "The offer is not the Microsoft Entra tenant, and switching offers does not move the subscription to another directory. Misconception: every subscription setting is part of tenant association. Could be correct when the task is changing the subscription directory, not switching the billing offer.",
+        "C": "Management group parentage controls inherited governance and is unrelated to the offer type. Misconception: subscription type and governance hierarchy are the same metadata. Could be correct when the task is moving a subscription between development and production management groups.",
+        "A": "Microsoft documents that quota increases above the default are reset when switching offers. An offer is not a quota reservation. Misconception: quotas are purchased benefits that always follow billing changes. Could be correct only for existing running resources, which Microsoft says continue to run even if the quota resets below current usage."
+      },
+      "plainEnglish": "An offer is the plan or type of Azure subscription. Pay-as-you-go is one kind of plan. Visual Studio Enterprise is another kind that can include monthly Azure credits. If the developer is eligible and the subscription meets the rules, Azure can switch the subscription to the supported Visual Studio offer.\n\nThis does not move the subscription to a different identity directory or management group. It changes billing terms and benefits. The team should read the warnings because quota increases and old billing history can be affected.",
+      "analogy": "A mobile phone line can be on a standard monthly plan or an employee-discount plan. The phone number may keep working, but pricing, benefits, and allowances can change.\n\n| Analogy | Azure reality |\n|---|---|\n| Phone plan | Azure offer |\n| Standard monthly plan | Pay-as-you-go subscription |\n| Employee discount with credits | Visual Studio benefit offer |\n| Same service continues | No service downtime during supported offer switch |\n| Allowance reset | Quota increases reset to defaults |\n\n**Where the analogy breaks down:** Azure offers can involve enterprise agreements, cloud solution providers, support tickets, usage-data retention differences, and service restrictions.",
+      "jargon": [
+        {
+          "term": "Azure offer",
+          "definition": "The type of Azure subscription, with associated pricing terms, benefits, and restrictions."
+        },
+        {
+          "term": "Pay-as-you-go",
+          "definition": "An Azure offer where charges are billed based on consumed usage."
+        },
+        {
+          "term": "Visual Studio Enterprise subscription",
+          "definition": "A Visual Studio subscriber benefit that can provide Azure monthly credits for eligible users."
+        },
+        {
+          "term": "Switch Offer",
+          "definition": "The Azure portal action for supported changes from pay-as-you-go to certain other offers."
+        },
+        {
+          "term": "Billing anniversary",
+          "definition": "The recurring billing date, which Microsoft says changes to the date the offer is switched."
+        },
+        {
+          "term": "Quota increase reset",
+          "definition": "The documented effect where increases above default limits are reset after switching Azure offers."
+        }
+      ],
+      "watchOut": "- Only pay-as-you-go subscriptions can use the documented Switch Offer path to supported offers.\n- The first billing period must be complete before the option appears.\n- Switching offers has no service downtime, but offer restrictions can still matter.\n- Quota increases above default reset, and previous usage and billing data is not kept after the switch.",
+      "productionTip": {
+        "official": "Microsoft's offer-switch documentation defines an Azure offer as the subscription type, lists supported pay-as-you-go switch targets, and documents effects including no service downtime, quota-increase reset, billing anniversary change, and loss of previous usage and billing data.",
+        "recommendation": "Before switching an offer, export invoices and usage data, record current quota increases, confirm production-use restrictions, and request needed quota increases again immediately after the switch if future scaling requires them."
+      },
+      "memoryTrick": "Offer means **plan and perks**, not tenant or management group. This simplification does not cover every agreement transfer path such as EA, MCA, CSP, or partner-managed subscriptions.",
+      "examTip": "When a question mentions pay-as-you-go, Visual Studio credits, and first billing period, think **Switch Offer**. Rule out answers that confuse offer type with tenant, management group, or quota reservation. A harder version may ask what happens to quota increases or old billing data after the switch."
+    },
+    "sources": [
+      {
+        "title": "Change Azure subscription offer",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/switch-azure-offer"
+      },
+      {
+        "title": "Azure product transfer hub",
+        "url": "https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/subscription-transfer"
+      },
+      {
+        "title": "Quotas overview - Azure Quotas",
+        "url": "https://learn.microsoft.com/en-us/azure/quotas/quotas-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

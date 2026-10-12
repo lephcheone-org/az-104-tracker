@@ -1,0 +1,1228 @@
+[
+  {
+    "id": "D1.2.3-01",
+    "objective": "D1.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an Azure subscription named `Sub1` that contains a resource group named `rg-app`. The resource group contains a virtual machine named `vm1`.\n\n| Principal | Principal type | Role | Scope |\n|---|---|---|---|\n| `CloudOps` | Microsoft Entra security group | Contributor | `Sub1` |\n| `Auditors` | Microsoft Entra security group | Reader | `rg-app` |\n| `Noah` | User | Reader | `vm1` |\n\n| User | Member of |\n|---|---|\n| `Noah` | `CloudOps`, `Auditors` |\n| `Ava` | `Auditors` |\n\nNo deny assignments, role assignment conditions, or locks apply. What can Noah do on `vm1`?",
+    "options": [
+      {
+        "id": "A",
+        "text": "View `vm1` only, because the direct Reader assignment at the resource is most specific"
+      },
+      {
+        "id": "B",
+        "text": "Manage `vm1` but not assign Azure RBAC roles, because Contributor inherited from `Sub1` is effective"
+      },
+      {
+        "id": "C",
+        "text": "Assign Azure RBAC roles on `vm1`, because multiple Reader assignments combine into Owner"
+      },
+      {
+        "id": "D",
+        "text": "No access, because group assignments do not apply to resource-level access"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Group membership has propagated into Noah's token. No deny assignments, conditions, or locks apply.",
+    "sections": {
+      "correctAnswer": "**B. Manage `vm1` but not assign Azure RBAC roles, because Contributor inherited from `Sub1` is effective**. Noah receives Contributor through `CloudOps` at subscription scope; it inherits to the VM and combines additively with Reader.",
+      "technical": "The scope path is `Sub1` to `rg-app` to `vm1`. The `CloudOps` assignment is at the subscription, so it reaches every child resource. Noah is a member of `CloudOps`, so that group assignment counts. The `Auditors` Reader assignment and Noah's direct Reader assignment also apply, but they do not reduce Contributor. Azure RBAC does not choose the most specific assignment; it sums every applicable role assignment. Contributor can manage resources but does not include Azure RBAC role assignment management because those authorization actions are excluded from Contributor.\n\nFor `vm1`, no block or condition exists, so the inherited `CloudOps` Contributor grant remains the strongest effective management role. The direct VM Reader grant is still present, but it adds only read permissions that Contributor already covers for management-plane reads.",
+      "wrongOptions": {
+        "A": "The direct Reader role does not override inherited Contributor. Misconception: the closest assignment wins. Could be correct when the subscription Contributor path was removed or blocked.",
+        "C": "Reader assignments do not combine into Owner, and Contributor alone cannot assign Azure RBAC roles. Misconception: multiple small grants become a privileged role. Could be correct if Noah also had Owner or an access-administrator role.",
+        "D": "Role assignments to groups apply to group members. Misconception: only direct user assignments count. Could be correct if Noah were not actually a group member or group membership had not propagated."
+      },
+      "plainEnglish": "Noah has several badges. One badge comes directly from the VM and says read only. One comes from the auditors group and says read at the resource group. The important badge comes from the operations group at the subscription and says Contributor. Because the VM lives inside that subscription, the Contributor badge still opens the VM management door.\n\nAva's membership helps show the contrast: Ava would only get the auditors' read-only path, while Noah also has the operations path. The extra operations-group path is what changes Noah's result from viewing to managing.",
+      "analogy": "Noah is listed on three access paths for a data-center room: a room visitor sticker, an audit-floor pass, and a site maintenance pass. The site maintenance pass still opens the room even though the other two passes are read-only.\n\n| Analogy | Azure reality |\n|---|---|\n| Site maintenance pass | `CloudOps` Contributor at `Sub1` |\n| Audit-floor pass | `Auditors` Reader at `rg-app` |\n| Room visitor sticker | Noah Reader at `vm1` |\n| Room `vm1` | Target virtual machine |\n\n**Where the analogy breaks down:** Badges do not show Contributor's `NotActions`, so the story must be limited to VM management and not role assignment management.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure resources."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that attaches a role definition to a security principal at a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where a parent-scope assignment applies to child scopes."
+        },
+        {
+          "term": "Security principal",
+          "definition": "A user, group, service principal, or managed identity that can receive access."
+        },
+        {
+          "term": "Contributor",
+          "definition": "A built-in Azure role that can manage resources but cannot assign Azure RBAC roles."
+        },
+        {
+          "term": "Reader",
+          "definition": "A built-in Azure role that can view resources but not change them."
+        },
+        {
+          "term": "Microsoft Entra group",
+          "definition": "An identity group that can be assigned Azure roles."
+        },
+        {
+          "term": "Additive permissions",
+          "definition": "The rule that overlapping role grants combine instead of overriding each other."
+        },
+        {
+          "term": "NotActions",
+          "definition": "Actions removed from a role's allowed actions; they are not deny rules."
+        }
+      ],
+      "watchOut": "- Resource-level Reader is not a limiter.\n- A group at subscription scope can dominate the result for every child resource.\n- Check whether the task is resource management or access delegation before assuming Contributor is enough.\n- Token refresh can matter after recent group changes.",
+      "productionTip": {
+        "official": "Microsoft documents that role assignments have a principal, role definition, and scope; lower scopes inherit parent assignments; group assignments are transitive; and multiple role assignments are additive.",
+        "recommendation": "Use groups for operational access, but review inherited subscription grants before adding resource-level exceptions. For a production VM, verify access with Check access at the VM scope before changing assignments."
+      },
+      "memoryTrick": "RBAC grants stack like transparent sheets; every applicable grant adds ink. This fails when a true deny, lock, or unmet condition applies.",
+      "examTip": "Clue words are **member of**, **subscription scope**, and **direct Reader**. Draw the scope tree and mark every assignment that reaches the VM. Do not choose the most specific assignment unless the question says the broader grant was removed or blocked. A harder version may hide Noah's operations access through nested groups or add a deny assignment on `vm1`; without such a blocker, the inherited Contributor grant wins for management actions."
+    },
+    "sources": [
+      {
+        "title": "What is Azure role-based access control (Azure RBAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"
+      },
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      },
+      {
+        "title": "Azure roles, Microsoft Entra roles, and classic subscription administrator roles",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.3-02",
+    "objective": "D1.2.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Mia has the following assignments for a resource group named `rg-data`.\n\n| Assignment | Principal | Role | Scope |\n|---|---|---|---|\n| 1 | Mia | Contributor | `Sub1` |\n| 2 | Mia | Role Based Access Control Administrator | `rg-data` |\n\nNo deny assignments, conditions, or locks apply. Mia tries to create a Reader role assignment for a colleague at `rg-data`. Will the operation succeed?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Yes, because the RBAC Administrator assignment at `rg-data` grants role assignment management there"
+      },
+      {
+        "id": "B",
+        "text": "No, because Contributor has `NotActions` for `Microsoft.Authorization/*/Write`, which denies the action everywhere"
+      },
+      {
+        "id": "C",
+        "text": "No, because only Owner can assign Azure RBAC roles"
+      },
+      {
+        "id": "D",
+        "text": "Yes, but only at subscription scope because Contributor was assigned at `Sub1`"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The RBAC Administrator assignment is active and unconstrained.",
+    "sections": {
+      "correctAnswer": "**A. Yes, because the RBAC Administrator assignment at `rg-data` grants role assignment management there**. Contributor's `NotActions` subtract actions from Contributor only; they are not a deny rule against other roles.",
+      "technical": "Contributor is defined by broad `Actions` with `NotActions` that remove authorization write and delete operations from that role. A separate Role Based Access Control Administrator assignment at `rg-data` grants access-management capabilities at that scope. Azure adds applicable grants. Therefore Mia can create the Reader assignment at `rg-data` through the access-administrator role even though Contributor itself does not grant that operation. This would be different if a real deny assignment blocked `Microsoft.Authorization/roleAssignments/write`.\n\nFor Mia, the decisive scope is `rg-data`: that is where the new Reader assignment is being created and where the access-administrator role is assigned. If the same operation targeted another resource group, the RBAC Administrator assignment shown here would not automatically apply there.",
+      "wrongOptions": {
+        "B": "`NotActions` is not a global deny. Misconception: excluded actions in one role block all other roles. Could be correct if a deny assignment blocked the authorization write action.",
+        "C": "Owner is not the only role that can assign Azure RBAC roles. Misconception: all access delegation requires Owner. Could be correct if no access-administrator role was assigned.",
+        "D": "Contributor at subscription scope does not grant role assignment management. Misconception: the broadest role must be the reason access succeeds. Could be correct for ordinary resource write operations allowed by Contributor."
+      },
+      "plainEnglish": "Mia has two permission cards. One card says she can manage resources but not access. Another card says she can manage access in this resource group. The missing permission on the first card does not erase the permission on the second card.\n\nThink of Contributor as a card with one important hole punched out: it does not let Mia manage access. The second card fills that access-management hole, but only for `rg-data`.",
+      "analogy": "Mia has a workshop badge that can operate machines but not issue badges, plus a badge-office stamp for one department. She cannot issue badges from the workshop badge, but the badge-office stamp works inside that department.\n\n| Analogy | Azure reality |\n|---|---|\n| Workshop badge | Contributor at `Sub1` |\n| Hole punched for badge issuing | Contributor `NotActions` |\n| Badge-office stamp | RBAC Administrator at `rg-data` |\n| Department boundary | Resource group scope |\n\n**Where the analogy breaks down:** Azure calculates actions from role definitions and checks API operation names; a physical stamp cannot represent `Microsoft.Authorization/roleAssignments/write` precisely.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure resources."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that attaches a role definition to a security principal at a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where a parent-scope assignment applies to child scopes."
+        },
+        {
+          "term": "Security principal",
+          "definition": "A user, group, service principal, or managed identity that can receive access."
+        },
+        {
+          "term": "Role Based Access Control Administrator",
+          "definition": "A built-in Azure role for managing user access to Azure resources."
+        },
+        {
+          "term": "User Access Administrator",
+          "definition": "A built-in Azure role that can manage Azure resource access."
+        },
+        {
+          "term": "Owner",
+          "definition": "A privileged built-in role that can manage resources and role assignments."
+        },
+        {
+          "term": "`Microsoft.Authorization/roleAssignments/write`",
+          "definition": "The operation used to create Azure RBAC role assignments."
+        },
+        {
+          "term": "Deny assignment",
+          "definition": "An Azure-managed object that blocks actions even when a role grants them."
+        }
+      ],
+      "watchOut": "- Read `NotActions` as a subtraction from one role, not a user-wide block.\n- RBAC Administrator should be scoped to the delegation boundary.\n- A condition on the access-administrator role could restrict assignable roles or principals.\n- A real deny assignment would change the result.",
+      "productionTip": {
+        "official": "Microsoft states that effective permissions for one role are computed as `Actions - NotActions` and explicitly notes that `NotActions` is not a deny rule if another role grants the same action.",
+        "recommendation": "Delegate access management with narrow scopes and, where appropriate, role assignment conditions. Avoid broad Owner grants merely to let an operator assign Reader or Contributor within one resource group."
+      },
+      "memoryTrick": "`NotActions` means 'not from this role,' not 'never for this user.' The shortcut fails when a real deny assignment exists.",
+      "examTip": "When you see Contributor `NotActions` plus another role that grants the same operation, choose additive evaluation. If an option says `NotActions` denies the action everywhere, eliminate it. A harder version may add an ABAC condition on the RBAC Administrator assignment that limits which roles Mia can assign; then the role grant and the condition both matter."
+    },
+    "sources": [
+      {
+        "title": "Understand Azure role definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions"
+      },
+      {
+        "title": "What is Azure role-based access control (Azure RBAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"
+      },
+      {
+        "title": "Azure roles, Microsoft Entra roles, and classic subscription administrator roles",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+      },
+      {
+        "title": "List Azure deny assignments",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/deny-assignments"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.3-03",
+    "objective": "D1.2.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You open a storage account named `stapp` and select **Access control (IAM)**. You need to understand what **Check access** and **View my access** show for this selected storage account scope.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "They show role assignments at `stapp` and assignments inherited to `stapp` from parent scopes"
+      },
+      {
+        "id": "B",
+        "text": "They show role assignments at child scopes under `stapp`, such as a blob container, by default"
+      },
+      {
+        "id": "C",
+        "text": "**View my access** shows your own assignments at the selected scope and inherited to that scope"
+      },
+      {
+        "id": "D",
+        "text": "They create a temporary Reader role assignment so the portal can calculate effective access"
+      },
+      {
+        "id": "E",
+        "text": "They show only direct user assignments and omit group assignments"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The portal is used at the selected storage account scope.",
+    "sections": {
+      "correctAnswer": "**A and C. Assignments at `stapp` and inherited to it are shown, and View my access shows your own access at that selected scope**. Check access is scoped to the resource you open; it includes current-scope and inherited assignments, not child-scope assignments by default.",
+      "technical": "To check access, first open the exact management group, subscription, resource group, or resource. At `stapp`, Check access can show Azure RBAC role assignments and deny assignments that apply at the storage account and inherited from parent scopes. View my access is the self-check path for the signed-in user. Assignments at child scopes, such as an individual blob container beneath the storage account, are not automatically listed from the parent Check access view. PIM-integrated tenants can also show eligible or time-bound assignments in the relevant tab.\n\nAt `stapp`, the portal pane is a scoped explanation view. If Lina's real problem is a blob container assignment below the account, the administrator must move to that container scope or use a role-assignment inventory method that includes children.",
+      "wrongOptions": {
+        "B": "Child-scope assignments are not listed by default from the selected parent scope. Misconception: checking a parent inventories everything below it. Could be correct if you separately opened the child resource scope.",
+        "D": "Check access reads assignments; it does not create Reader access. Misconception: access checking changes authorization. Could be correct only if an administrator intentionally added a role assignment.",
+        "E": "Group-based assignments can be shown and are part of RBAC evaluation. Misconception: only direct user assignments matter. Could be correct when the principal truly has no group grants."
+      },
+      "plainEnglish": "The portal answers, 'Why does this person have access here?' If you stand at the storage account, it shows permissions placed on that storage account and permissions that flow down from above. It does not automatically inspect every smaller thing inside the account.\n\nSo if Lina asks, 'why can I see this storage account?', checking the account is useful. If she asks, 'why can I read this one container?', checking only the account may miss the container-level answer.",
+      "analogy": "A receptionist checks keys for one warehouse entrance. The check shows keys issued for that entrance and keys issued for the whole warehouse campus, but it does not open every locker inside the warehouse.\n\n| Analogy | Azure reality |\n|---|---|\n| Warehouse entrance | Storage account `stapp` |\n| Campus-wide key | Inherited subscription or resource group assignment |\n| Entrance key | Assignment at `stapp` |\n| Locker key | Child container assignment |\n\n**Where the analogy breaks down:** The portal can also display deny assignments and PIM states, which a simple key desk would not track.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure resources."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that attaches a role definition to a security principal at a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where a parent-scope assignment applies to child scopes."
+        },
+        {
+          "term": "Security principal",
+          "definition": "A user, group, service principal, or managed identity that can receive access."
+        },
+        {
+          "term": "Access control (IAM)",
+          "definition": "The Azure portal page for viewing and managing Azure RBAC at a selected scope."
+        },
+        {
+          "term": "Check access",
+          "definition": "A portal feature that shows a selected principal's assignments at and inherited to a scope."
+        },
+        {
+          "term": "View my access",
+          "definition": "A portal action for showing the signed-in user's own access."
+        },
+        {
+          "term": "Child scope",
+          "definition": "A more specific scope below the selected object, such as a blob container below a storage account."
+        },
+        {
+          "term": "PIM",
+          "definition": "Microsoft Entra Privileged Identity Management, which can show eligible or time-bound role assignments."
+        }
+      ],
+      "watchOut": "- Check access is anchored to the blade you opened.\n- Container data access can be invisible from a storage-account-only check.\n- PIM tenants may show eligible assignments separately.\n- Deny assignments can appear in the pane alongside role assignments.",
+      "productionTip": {
+        "official": "Microsoft documents that Check access and View my access show assignments at the selected scope and inherited to it, and that assignments at child scopes are not listed in that pane.",
+        "recommendation": "Record the exact resource ID checked during troubleshooting. For storage, separately check the storage account and container scopes because management-plane and data-plane needs often differ."
+      },
+      "memoryTrick": "Check access looks here and upward, not downward. This is simplified because other inventory features can export children.",
+      "examTip": "Clue words are **at this scope**, **inherited**, and **child scopes**. Reject answers saying Check access changes permissions or lists every child assignment automatically. A harder version may ask why a user can read blobs even when the storage account Check access page looks empty; that points you toward a child container scope or data-plane assignment."
+    },
+    "sources": [
+      {
+        "title": "Quickstart - Check access for a user to a single Azure resource",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/check-access"
+      },
+      {
+        "title": "List Azure role assignments using the Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+      },
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.3-04",
+    "objective": "D1.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You need to troubleshoot access for `jordan@contoso.com` to a virtual machine named `vm2`. Jordan might receive access through direct assignments, inherited parent-scope assignments, and Microsoft Entra group membership. The full VM resource ID is stored in `$vmScope`.\n\nWhich Azure CLI command should you run first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`az role assignment list --assignee jordan@contoso.com --scope $vmScope --include-inherited --include-groups`"
+      },
+      {
+        "id": "B",
+        "text": "`az role assignment list --assignee jordan@contoso.com --scope $vmScope --all`"
+      },
+      {
+        "id": "C",
+        "text": "`az role assignment list --resource-group rg-prod --role Reader`"
+      },
+      {
+        "id": "D",
+        "text": "`az monitor activity-log list --namespace Microsoft.Authorization --start-time 2026-10-01`"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. Azure CLI is signed in with permission to read role assignments.",
+    "sections": {
+      "correctAnswer": "**A. `az role assignment list --assignee jordan@contoso.com --scope $vmScope --include-inherited --include-groups`**. The command filters to Jordan and the VM scope, includes parent-scope assignments, and expands transitive group assignments.",
+      "technical": "The command must specify the principal, the target scope, inherited grants, and group grants. `--assignee` identifies Jordan. `--scope` points at the VM. `--include-inherited` includes role assignments from parent scopes such as the resource group or subscription. `--include-groups` includes extra assignments to groups of which Jordan is a transitive member. PowerShell has a related troubleshooting pattern with `Get-AzRoleAssignment`; for user group paths, the `-ExpandPrincipalGroups` switch is documented for determining access through group membership.\n\nThis command is a starting inventory, not a final authorization verdict. After it returns assignments, investigate any deny assignments, conditions on assignments, management locks, and recent token refresh issues that are specific to `vm2`.",
+      "wrongOptions": {
+        "B": "`--all` is a broad inventory option, not the targeted effective path with group and inherited switches. Misconception: a bigger list is automatically better. Could be correct for subscription-wide inventory.",
+        "C": "Filtering only Reader in one resource group misses other roles, VM assignments, subscription assignments, and groups. Misconception: troubleshooting only needs the expected role. Could be correct for a narrow Reader-only audit.",
+        "D": "Activity Log shows historical changes, not Jordan's current role assignments. Misconception: audit history and current access inventory are interchangeable. Could be correct when asking who changed access."
+      },
+      "plainEnglish": "You need a command that checks Jordan, checks the VM, looks upward to parent folders, and looks through Jordan's groups. Option A does all four. The other commands either make a broad list, look only for one role, or search historical logs.\n\nIf Jordan belongs to a group that has access, a direct-user-only command would look empty and mislead you. If the grant is at the resource group, a VM-only-at-current-scope search would also miss it.",
+      "analogy": "Troubleshooting Jordan is like checking a turnstile system for a server cage. You search Jordan's badge number, the cage door, floor-wide permissions, and team badges in one query.\n\n| Analogy | Azure reality |\n|---|---|\n| Jordan's badge number | `--assignee jordan@contoso.com` |\n| Server cage door | `$vmScope` |\n| Floor-wide permissions | `--include-inherited` |\n| Team badges | `--include-groups` |\n\n**Where the analogy breaks down:** A CLI listing does not test every future Azure API call; conditions, locks, and token timing still require separate checks.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure resources."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that attaches a role definition to a security principal at a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where a parent-scope assignment applies to child scopes."
+        },
+        {
+          "term": "Security principal",
+          "definition": "A user, group, service principal, or managed identity that can receive access."
+        },
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's `az` command-line tool for Azure management."
+        },
+        {
+          "term": "`az role assignment list`",
+          "definition": "The CLI command for listing Azure RBAC role assignments."
+        },
+        {
+          "term": "`--include-inherited`",
+          "definition": "A switch that includes assignments applied on parent scopes."
+        },
+        {
+          "term": "`--include-groups`",
+          "definition": "A switch that includes assignments to groups of which the user is a transitive member."
+        },
+        {
+          "term": "`Get-AzRoleAssignment`",
+          "definition": "An Azure PowerShell cmdlet for listing role assignments."
+        },
+        {
+          "term": "Transitive membership",
+          "definition": "Membership through nested groups, not only direct group membership."
+        }
+      ],
+      "watchOut": "- Use group and inherited switches together for user troubleshooting.\n- `--all` is inventory-oriented, not a focused effective-access query.\n- Use object IDs when directory lookup warnings get in the way.\n- Activity Log is for historical changes, not the current assignment list.",
+      "productionTip": {
+        "official": "The Azure CLI reference documents `az role assignment list` parameters including `--assignee`, `--scope`, `--include-inherited`, and `--include-groups`. The PowerShell reference documents `Get-AzRoleAssignment` and group expansion for user access analysis.",
+        "recommendation": "Use principal object IDs and exact resource IDs in production scripts. After listing assignments, separately check deny assignments, locks, conditions, and recent propagation before changing access."
+      },
+      "memoryTrick": "A-S-I-G: Assignee, Scope, Inherited, Groups. It is a shortcut for listing paths, not a full proof of every operation.",
+      "examTip": "The clue is **direct, inherited, and group membership**. Choose the command with both inherited and group switches. A harder version may include `--assignee-object-id` to avoid directory lookup issues. A harder version may replace Jordan's user principal name with an object ID or ask why Graph lookup fails; then `--assignee-object-id` becomes relevant while inherited and group expansion still matter."
+    },
+    "sources": [
+      {
+        "title": "az role assignment",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/role/assignment?view=azure-cli-latest"
+      },
+      {
+        "title": "Get-AzRoleAssignment",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.resources/get-azroleassignment?view=azps-16.3.0"
+      },
+      {
+        "title": "What is Azure role-based access control (Azure RBAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.3-05",
+    "objective": "D1.2.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A resource group named `rg-stack` contains a virtual network named `vnet-prod` managed by an Azure deployment stack.\n\n| Type | Principal | Permission | Scope | Notes |\n|---|---|---|---|---|\n| Role assignment | `NetworkAdmins` | Owner | `rg-stack` | Inherited to `vnet-prod` |\n| Deny assignment | All Principals | `*/delete` | `vnet-prod` | Created by deployment stack, system protected |\n| Deny assignment exclusion | `StackOperators` | Excluded | `vnet-prod` | Sam is not a member |\n\nSam is a member of `NetworkAdmins` but not `StackOperators`. Sam attempts to delete `vnet-prod`. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The delete succeeds because Owner overrides a deny assignment"
+      },
+      {
+        "id": "B",
+        "text": "The delete is blocked because the deny assignment applies before role grants"
+      },
+      {
+        "id": "C",
+        "text": "The delete succeeds because customers can directly edit system-protected deny assignments"
+      },
+      {
+        "id": "D",
+        "text": "The delete is blocked only if Sam also has a ReadOnly resource lock"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The deny assignment applies to Sam and no lock is required for the denial.",
+    "sections": {
+      "correctAnswer": "**B. The delete is blocked because the deny assignment applies before role grants**. The system-protected deny assignment applies to All Principals, Sam is not excluded, and deny assignments block even Owner grants.",
+      "technical": "A deny assignment attaches denied actions to principals at a scope. Microsoft documents that deny assignments block users from specific actions even if role assignments grant access, and that customers cannot directly create arbitrary deny assignments. Deployment stacks can create deny assignments through deny settings to protect managed resources. During Sam's delete request, Azure Resource Manager retrieves the applicable deny and role assignments. The `*/delete` deny applies to All Principals at `vnet-prod`, and Sam is not an excluded principal. Access is blocked before the inherited Owner role can allow the delete.\n\nThe exclusion list is the key detail in this table. If Sam were in `StackOperators`, the same Owner grant might allow deletion; because Sam is not excluded, the deployment stack's protection remains effective.",
+      "wrongOptions": {
+        "A": "Owner cannot override an applicable deny assignment. Misconception: Owner is absolute. Could be correct if Sam were excluded from the deny.",
+        "C": "System-protected deny assignments are Azure-managed, not directly edited by customers. Misconception: deny assignments are normal customer-created RBAC rules. Could be correct only by changing the owning service settings.",
+        "D": "The deny assignment alone blocks delete; no resource lock is needed. Misconception: all delete protection is a lock. Could be correct in a scenario with a CanNotDelete or ReadOnly lock and no deny assignment."
+      },
+      "plainEnglish": "Sam has a powerful owner badge, but the virtual network has a special Azure-managed stop sign saying deletion is blocked for everyone except excluded operators. Azure checks the stop sign first, and Sam is not on the exception list.\n\nThe table's exclusion row matters as much as the deny row. Exclusions are the escape hatch, and Sam is not listed in the escaping group.",
+      "analogy": "Sam is a building owner trying to demolish a machine room that is under a deployment-stack preservation order. Only named stack operators are exempt from the order.\n\n| Analogy | Azure reality |\n|---|---|\n| Building owner | Sam's inherited Owner role |\n| Preservation order | Deployment stack deny assignment |\n| Everyone covered by order | All Principals |\n| Named exempt operators | `StackOperators` exclusion |\n\n**Where the analogy breaks down:** The preservation order is not a human policy document; it is an Azure authorization object evaluated before role grants.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure resources."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that attaches a role definition to a security principal at a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where a parent-scope assignment applies to child scopes."
+        },
+        {
+          "term": "Security principal",
+          "definition": "A user, group, service principal, or managed identity that can receive access."
+        },
+        {
+          "term": "Deny assignment",
+          "definition": "An Azure-managed assignment that blocks specified actions even when role assignments allow them."
+        },
+        {
+          "term": "All Principals",
+          "definition": "A system-defined deny-assignment principal representing all users, groups, service principals, and managed identities."
+        },
+        {
+          "term": "Excluded principal",
+          "definition": "A principal that a deny assignment does not apply to."
+        },
+        {
+          "term": "System protected",
+          "definition": "A property showing Azure manages the deny assignment and it cannot be directly edited or deleted."
+        },
+        {
+          "term": "Deployment stack",
+          "definition": "An Azure Resource Manager resource that manages resources and can protect them with deny settings."
+        },
+        {
+          "term": "Owner",
+          "definition": "A built-in role with full resource and access management, subject to denies and locks."
+        }
+      ],
+      "watchOut": "- Verify both who is denied and who is excluded.\n- System-protected deny assignments are managed by the owning Azure service.\n- Deployment stack protection is not the same as a ReadOnly lock.\n- Removing Owner will not be the correct fix for this deletion failure.",
+      "productionTip": {
+        "official": "Microsoft documents that deny assignments block actions even when role assignments grant them, that all current deny assignments are system protected, and that deployment stacks can create deny assignments through deny settings.",
+        "recommendation": "When an Owner cannot delete a resource, inspect the Deny assignments tab before changing RBAC. Change deployment stack protection only through controlled infrastructure-as-code review."
+      },
+      "memoryTrick": "Deny is a red light before RBAC green lights. The simplification fails when the user is explicitly excluded from the deny assignment.",
+      "examTip": "Clues are **deny assignment**, **All Principals**, **not excluded**, and **Owner**. Pick deny-overrides-allow. A harder item may contrast deny assignments with `NotActions`; only deny is a true block. A harder version may list an excluded principal; if the user is excluded from the deny assignment, you then continue to evaluate the Owner grant and any locks."
+    },
+    "sources": [
+      {
+        "title": "List Azure deny assignments",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/deny-assignments"
+      },
+      {
+        "title": "What is Azure role-based access control (Azure RBAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"
+      },
+      {
+        "title": "Create and deploy Azure deployment stacks in Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deployment-stacks"
+      },
+      {
+        "title": "Overview of Azure Managed Applications",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.3-06",
+    "objective": "D1.2.3",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "During an access review, you find an old runbook that checks whether a user is listed as a subscription **Co-Administrator** before allowing the user to manage Azure resources. The runbook was written years ago for the classic deployment model.\n\nWhat should you conclude for current Azure public cloud administration in October 2026?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Continue using Co-Administrator because it is the preferred current role for subscription owners"
+      },
+      {
+        "id": "B",
+        "text": "Replace the check with Azure RBAC role assignments because classic administrator roles are fully retired"
+      },
+      {
+        "id": "C",
+        "text": "Use Microsoft Entra User Administrator because it now maps to subscription Owner"
+      },
+      {
+        "id": "D",
+        "text": "Use Account Administrator because it is the only role that can manage resources after retirement"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud as of October 2026. Resources are managed through Azure Resource Manager and Azure RBAC.",
+    "sections": {
+      "correctAnswer": "**B. Replace the check with Azure RBAC role assignments because classic administrator roles are fully retired**. Microsoft documents that classic subscription administrator roles are retired and current access management must use Azure RBAC.",
+      "technical": "Classic administrator roles included Account Administrator, Service Administrator, and Co-Administrator. They predate Azure RBAC and the Azure Resource Manager authorization model. Microsoft states that Azure classic administrator roles, classic resources, and Azure Service Manager were retired and no longer supported as of August 31, 2024; public-cloud users who still had Service Administrator or Co-Administrator were automatically assigned Owner at subscription scope starting December 2025; and as of May 2026 classic administrator roles are fully retired. Current interpretation should use Azure RBAC roles and scopes.\n\nFor a modern script, the durable test is not whether a person had a classic title; it is whether a current Azure RBAC assignment grants the required action at the required scope. Old labels are useful only when interpreting historical migrations.",
+      "wrongOptions": {
+        "A": "Co-Administrator is retired, not preferred. Misconception: old Azure roles remain normal forever. Could be correct only for historical records before retirement.",
+        "C": "Microsoft Entra User Administrator manages directory users and groups, not Azure subscription resources by default. Misconception: directory roles map to Azure resource roles. Could be correct for user-management tasks.",
+        "D": "Account Administrator is not the current resource-management role after retirement. Misconception: the oldest billing role survived as resource admin. Could be correct only in a historical billing context."
+      },
+      "plainEnglish": "The runbook is checking an old Azure role type that Microsoft has retired. Today, you should check Azure RBAC assignments, such as Owner at a subscription, Contributor at a resource group, or Reader at a resource.\n\nA current administrator should not approve access because an old Co-Administrator field says yes. They should ask, 'Which Azure RBAC role grants the action now, and at what scope?'",
+      "analogy": "The runbook is like a guard using a laminated access list from a closed factory. The company moved to electronic badges, so the old list can explain history but cannot approve today's entry.\n\n| Analogy | Azure reality |\n|---|---|\n| Closed factory access list | Classic administrator roles |\n| Electronic badge system | Azure RBAC |\n| Old Co-Administrator row | Retired classic role record |\n| Current door rule | RBAC role at a scope |\n\n**Where the analogy breaks down:** Azure performed migration steps for some classic admins; a paper-list analogy does not capture automatic Owner assignment during retirement.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure resources."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that attaches a role definition to a security principal at a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where a parent-scope assignment applies to child scopes."
+        },
+        {
+          "term": "Security principal",
+          "definition": "A user, group, service principal, or managed identity that can receive access."
+        },
+        {
+          "term": "Co-Administrator",
+          "definition": "A retired classic subscription administrator role that formerly had Owner-equivalent access."
+        },
+        {
+          "term": "Service Administrator",
+          "definition": "A retired classic role for managing services in a subscription."
+        },
+        {
+          "term": "Account Administrator",
+          "definition": "A classic billing/account role."
+        },
+        {
+          "term": "Azure Service Manager",
+          "definition": "The retired classic deployment model that preceded Azure Resource Manager."
+        },
+        {
+          "term": "Azure Resource Manager",
+          "definition": "The current Azure management plane for deploying and managing resources."
+        },
+        {
+          "term": "Microsoft Entra role",
+          "definition": "A directory role for identity resources, separate from Azure resource roles by default."
+        }
+      ],
+      "watchOut": "- Treat Co-Administrator references as legacy migration signals.\n- Current authorization decisions should use Azure RBAC roles and scopes.\n- Microsoft Entra directory roles do not automatically grant subscription management.\n- Historical scripts can silently approve the wrong users if left unchanged.",
+      "productionTip": {
+        "official": "Microsoft documents the classic administrator retirement timeline and states that as of May 2026 classic administrator roles are fully retired and Azure RBAC roles must be used to manage access.",
+        "recommendation": "Remove classic-role checks from automation. Replace them with action-based Azure RBAC checks at the exact scope required, and document any migration from historical classic admin records."
+      },
+      "memoryTrick": "Classic admins are history; RBAC explains current Azure resource access. This rule is for current public cloud, not old audit snapshots.",
+      "examTip": "The clue is **Co-Administrator** plus the current date. Choose RBAC. A harder item may mention Global Administrator; remember that directory roles and Azure resource roles are separate by default. A harder version may show an automatically created Owner assignment after classic retirement; treat that as a current RBAC assignment, not as continuing Co-Administrator support."
+    },
+    "sources": [
+      {
+        "title": "Azure roles, Microsoft Entra roles, and classic subscription administrator roles",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+      },
+      {
+        "title": "What is Azure role-based access control (Azure RBAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.3-07",
+    "objective": "D1.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A security analyst asks who granted the Contributor role to `dev-team@contoso.com` on `rg-api` last week. You need the caller and time of the Azure RBAC change, not a current effective-access list.\n\nWhich data source should you check?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The Azure Activity Log filtered for `Microsoft.Authorization/roleAssignments/write` at the relevant scope"
+      },
+      {
+        "id": "B",
+        "text": "The **View my access** button on `rg-api`"
+      },
+      {
+        "id": "C",
+        "text": "The downloaded role assignment JSON from the **Role assignments** tab only"
+      },
+      {
+        "id": "D",
+        "text": "The Microsoft Entra user profile for `dev-team@contoso.com`"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The change occurred within the Activity Log period available to the analyst.",
+    "sections": {
+      "correctAnswer": "**A. The Azure Activity Log filtered for `Microsoft.Authorization/roleAssignments/write` at the relevant scope**. Azure RBAC role assignment creates are logged in Activity Log with fields such as caller, timestamp, action, scope, and status.",
+      "technical": "Current access inventory and change history are different. To find who granted access, query the audit trail. Microsoft documents that Activity Log records create role assignment, delete role assignment, create or update custom role definition, and delete custom role definition operations for Azure RBAC changes. For a grant, filter for `Microsoft.Authorization/roleAssignments/write`. Useful fields include `caller`, `eventTimestamp`, `authorization:action`, `authorization:scope`, and `status:value`. Azure CLI can query the Authorization namespace with `az monitor activity-log list`; PowerShell can use `Get-AzLog` and filter authorization actions.\n\nFor the analyst's question, a successful `roleAssignments/write` record is stronger evidence than today's role list because it records the management operation itself. If the caller is a service principal object ID, directory lookup may be needed to map it to an application name.",
+      "wrongOptions": {
+        "B": "View my access shows current access for the signed-in user, not who changed a grant last week. Misconception: current access pages are audit logs. Could be correct when asking what access you have now.",
+        "C": "Downloaded role assignments show current inventory, not necessarily caller and creation time. Misconception: current state includes full history. Could be correct for inventory or migration review.",
+        "D": "A Microsoft Entra profile describes the identity object, not Azure role assignment write events. Misconception: identity metadata records every resource permission change. Could be correct for checking group object IDs or membership."
+      },
+      "plainEnglish": "If you want to know who changed access, read the logbook. A current role list may show that the team has Contributor now, but the Activity Log can show who added it and when.\n\nThe analyst is not asking whether the team still has Contributor. They are asking who pressed the button last week. That makes the audit trail the right place to start.",
+      "analogy": "The security analyst is reading the change register for a vault, not the current list of people who can enter. The register shows who added a name, when, and whether the change succeeded.\n\n| Analogy | Azure reality |\n|---|---|\n| Vault change register | Azure Activity Log |\n| Add name operation | `roleAssignments/write` |\n| Clerk who made the change | `caller` |\n| Time on the register | `eventTimestamp` |\n\n**Where the analogy breaks down:** Activity Log entries are structured JSON records and may show service principal object IDs rather than friendly human names.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure resources."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that attaches a role definition to a security principal at a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where a parent-scope assignment applies to child scopes."
+        },
+        {
+          "term": "Security principal",
+          "definition": "A user, group, service principal, or managed identity that can receive access."
+        },
+        {
+          "term": "Azure Activity Log",
+          "definition": "A platform log for subscription-level management events, including RBAC changes."
+        },
+        {
+          "term": "`Microsoft.Authorization/roleAssignments/write`",
+          "definition": "The operation for creating a role assignment."
+        },
+        {
+          "term": "Caller",
+          "definition": "The identity recorded as initiating an Azure management operation."
+        },
+        {
+          "term": "Event timestamp",
+          "definition": "The recorded time for an Activity Log event."
+        },
+        {
+          "term": "Administrative category",
+          "definition": "The log category used for many management-plane operations."
+        },
+        {
+          "term": "Current effective access",
+          "definition": "The access a principal has now after current assignments and controls are evaluated."
+        }
+      ],
+      "watchOut": "- Filter for the Authorization namespace to reduce noise.\n- Confirm the status is succeeded before treating the grant as completed.\n- Service principal callers may need object ID lookup.\n- Export logs if the organization needs retention beyond portal troubleshooting.",
+      "productionTip": {
+        "official": "Microsoft documents Azure RBAC change operations in Activity Log and lists key fields including caller, event timestamp, authorization action, scope, and status.",
+        "recommendation": "Export Activity Log to Log Analytics or a SIEM for longer retention and alert on privileged role assignments at broad scopes such as subscription or management group."
+      },
+      "memoryTrick": "Current access is the guest list; Activity Log is the camera recording who edited it. This fails if logs aged out without external retention.",
+      "examTip": "Clues are **who granted**, **last week**, and **caller/time**. Choose Activity Log, not Check access. For creates, remember `roleAssignments/write`; for removals, remember delete. A harder version may show two records for one write operation, one started and one succeeded. Prefer the succeeded record and inspect JSON details for principal ID, role definition ID, and scope."
+    },
+    "sources": [
+      {
+        "title": "View activity logs for Azure RBAC changes",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/change-history-report"
+      },
+      {
+        "title": "List Azure role assignments using the Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+      },
+      {
+        "title": "Quickstart - Check access for a user to a single Azure resource",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/check-access"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.3-08",
+    "objective": "D1.2.3",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Chandra has `Storage Blob Data Reader` at a storage account scope. The role assignment condition requires blob reads to match this resource attribute expression:\n\n```text\n@Resource[Microsoft.Storage/storageAccounts/blobServices/containers/blobs/tags:Project<$key_case_sensitive$>] StringEqualsIgnoreCase 'Cascade'\n```\n\nA blob named `report.csv` has tag `Project=Cascade`. A blob named `draft.csv` has tag `Project=Skagit`. No other blob data role applies.\n\nWhat can Chandra read?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Both blobs, because conditions cannot filter permissions after a role is assigned"
+      },
+      {
+        "id": "B",
+        "text": "`report.csv` only, because its blob index tag matches the condition"
+      },
+      {
+        "id": "C",
+        "text": "Neither blob, because conditions are supported only on management-plane roles"
+      },
+      {
+        "id": "D",
+        "text": "`draft.csv` only, because `StringEqualsIgnoreCase` reverses the match"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Blob access uses Microsoft Entra authorization, the condition is active, and the blobs have the stated tags.",
+    "sections": {
+      "correctAnswer": "**B. `report.csv` only, because its blob index tag matches the condition**. Azure ABAC conditions filter the permissions granted by the role assignment; `Project=Cascade` matches and `Project=Skagit` does not.",
+      "technical": "Azure ABAC builds on Azure RBAC by adding role assignment conditions. Conditions can be added to supported built-in or custom role assignments with blob or queue storage data actions, including Storage Blob Data Reader. The condition uses a resource attribute from the blob's tags and a case-insensitive equality comparison. A targeted blob read for `report.csv` satisfies the expression because the `Project` tag value is `Cascade`. A read for `draft.csv` does not satisfy the expression because `Skagit` is not equal to `Cascade`. Conditions filter the grant on which they are configured; they are not a universal deny across other assignments.\n\nThis condition is evaluated only when the storage service checks the data action on the conditioned assignment. If another unconditioned blob data assignment existed at the container or account, that separate grant would need to be evaluated too.",
+      "wrongOptions": {
+        "A": "Conditions can filter supported role assignment permissions. Misconception: conditions are documentation only. Could be correct if the assignment had no condition or another unconditional data role applied.",
+        "C": "Conditions are supported for supported blob and queue storage data actions. Misconception: ABAC is only for management-plane roles. Could be correct for an unsupported role or service.",
+        "D": "`StringEqualsIgnoreCase` performs a case-insensitive equality check; it does not reverse the result. Misconception: ignore-case means not-equal. Could be correct if `draft.csv` had the Cascade tag."
+      },
+      "plainEnglish": "Chandra has a read permission with a rule attached. The rule says the blob must have a `Project` tag with the value `Cascade`. The report has that tag, so Chandra can read it. The draft has a different value, so this role assignment does not allow it.\n\nThe tag is like a label on each blob. The permission checks the label each time this assignment is used for a matching read, so two blobs in the same account can have different results.",
+      "analogy": "Chandra's reader pass works only for boxes with a Cascade project sticker. `report.csv` has the sticker; `draft.csv` has a Skagit sticker, so the pass does not open it.\n\n| Analogy | Azure reality |\n|---|---|\n| Reader pass | Storage Blob Data Reader assignment |\n| Cascade project sticker | Blob tag `Project=Cascade` |\n| Skagit sticker | Blob tag `Project=Skagit` |\n| Sticker rule on the pass | Role assignment condition |\n\n**Where the analogy breaks down:** The real condition is evaluated by storage authorization code and applies only to this assignment, while another independent pass could still grant access.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure resources."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that attaches a role definition to a security principal at a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where a parent-scope assignment applies to child scopes."
+        },
+        {
+          "term": "Security principal",
+          "definition": "A user, group, service principal, or managed identity that can receive access."
+        },
+        {
+          "term": "Azure ABAC",
+          "definition": "Azure attribute-based access control, implemented through role assignment conditions."
+        },
+        {
+          "term": "Role assignment condition",
+          "definition": "An optional check that filters permissions granted by a role assignment."
+        },
+        {
+          "term": "Storage Blob Data Reader",
+          "definition": "A built-in role for reading blob containers and blob data."
+        },
+        {
+          "term": "Blob index tag",
+          "definition": "A key-value tag on a blob that can be used in storage conditions."
+        },
+        {
+          "term": "Resource attribute",
+          "definition": "An attribute on the requested resource, such as a blob tag."
+        },
+        {
+          "term": "`StringEqualsIgnoreCase`",
+          "definition": "A string operator that matches equal values without case sensitivity."
+        },
+        {
+          "term": "Data action",
+          "definition": "A role permission for operations on data inside a resource, such as blob reads."
+        }
+      ],
+      "watchOut": "- The tag key and value must match the condition logic.\n- Conditions are supported only for specific storage data-action roles.\n- Another blob data role without this condition could still allow access.\n- List and read operations can be handled differently in condition syntax.",
+      "productionTip": {
+        "official": "Microsoft documents Azure ABAC conditions for supported storage data roles and examples that require blob tags such as `Project=Cascade` to allow blob reads.",
+        "recommendation": "Use ABAC to reduce role-assignment sprawl, but enforce consistent tagging and test positive and negative objects. Monitor for untagged data if the condition depends on tags."
+      },
+      "memoryTrick": "A condition is a filter on one grant, not a wall around every possible grant. The simplification fails if no other grant exists, where it effectively decides access.",
+      "examTip": "Clue words are **condition**, **blob tag**, and `StringEqualsIgnoreCase`. Match the tag value. A harder item may add a second unconditioned data role that grants both blobs. A harder version may include `Blob.List` or a second assignment. Read the action and suboperation first, then ask whether this exact blob's attributes satisfy the expression."
+    },
+    "sources": [
+      {
+        "title": "What is Azure attribute-based access control (Azure ABAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/conditions-overview"
+      },
+      {
+        "title": "Azure role assignment condition format and syntax",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/conditions-format"
+      },
+      {
+        "title": "Add or edit Azure role assignment conditions using the Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/conditions-role-assignments-portal"
+      },
+      {
+        "title": "Understand Azure role definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.3-09",
+    "objective": "D1.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A resource group named `rg-ops` contains a virtual machine named `vm3`. Omar has the Owner role at `rg-ops`. A **Read-only** management lock is applied directly to `vm3`. No deny assignments or role assignment conditions apply.\n\nOmar attempts to update a tag on `vm3` without first removing the lock. What happens?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The update succeeds because Owner includes all permissions on the resource"
+      },
+      {
+        "id": "B",
+        "text": "The update fails because the Read-only lock overrides user permissions for control-plane updates"
+      },
+      {
+        "id": "C",
+        "text": "The update succeeds because resource locks affect only users with Reader"
+      },
+      {
+        "id": "D",
+        "text": "The update fails only if a deny assignment also exists"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Omar is performing a control-plane Azure Resource Manager tag update while the lock remains in place.",
+    "sections": {
+      "correctAnswer": "**B. The update fails because the Read-only lock overrides user permissions for control-plane updates**. Management locks apply across users and roles; a Read-only lock blocks control-plane updates even for Owner until the lock is removed.",
+      "technical": "RBAC and management locks are separate controls. RBAC grants Omar Owner at the resource group, so Omar would normally be able to manage the VM. A Read-only lock on the VM means authorized users can read the resource but cannot update or delete it through Azure Resource Manager. Microsoft documents that locks override user permissions and apply to control-plane operations. Updating a tag is a control-plane update, so it is blocked. Locks are different from deny assignments and different from data-plane authorization.\n\nThe tag update goes to Azure Resource Manager, so it is exactly the type of management operation a Read-only lock can block. A data operation inside a service, such as some blob data changes, would require separate analysis.",
+      "wrongOptions": {
+        "A": "Owner is broad, but locks override permissions. Misconception: Owner bypasses every control. Could be correct if no lock, deny, or condition existed.",
+        "C": "Locks apply across users and roles, not only Reader. Misconception: locks are just Reader permissions. Could be correct only in the sense that a Reader also cannot update, but not because locks target Reader.",
+        "D": "No deny assignment is required; the lock blocks the update. Misconception: only denies override RBAC. Could be correct in a no-lock scenario with an applicable deny assignment."
+      },
+      "plainEnglish": "Omar has the key to manage the VM, but the VM has a read-only protective cover. Azure will not let him change the tag until the lock is removed by someone with permission to manage locks.\n\nOmar's Owner role answers 'is Omar normally allowed to edit the VM?' The lock answers 'is this VM currently protected from edits anyway?' The lock changes the outcome.",
+      "analogy": "Omar owns the equipment room, but a red maintenance clamp is attached to one machine saying settings must not be changed. His ownership key does not remove the clamp.\n\n| Analogy | Azure reality |\n|---|---|\n| Equipment room owner | Owner at `rg-ops` |\n| Machine | VM `vm3` |\n| Red maintenance clamp | Read-only management lock |\n| Changing the machine label | Updating a VM tag |\n\n**Where the analogy breaks down:** Azure locks apply to control-plane operations; the clamp image does not explain why some service data-plane operations are outside the lock's protection.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure resources."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that attaches a role definition to a security principal at a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where a parent-scope assignment applies to child scopes."
+        },
+        {
+          "term": "Security principal",
+          "definition": "A user, group, service principal, or managed identity that can receive access."
+        },
+        {
+          "term": "Management lock",
+          "definition": "An Azure feature that prevents deletion or modification of a subscription, resource group, or resource."
+        },
+        {
+          "term": "Read-only lock",
+          "definition": "A lock level that allows reads but blocks updates and deletes through the control plane."
+        },
+        {
+          "term": "Control plane",
+          "definition": "Azure Resource Manager operations for resource configuration."
+        },
+        {
+          "term": "Data plane",
+          "definition": "Service-specific operations against data inside a resource."
+        },
+        {
+          "term": "Tag",
+          "definition": "A key-value metadata label on an Azure resource."
+        },
+        {
+          "term": "CanNotDelete",
+          "definition": "The command-line name for a delete-prevention lock level."
+        },
+        {
+          "term": "Owner",
+          "definition": "A built-in role with full resource and access-management permissions, subject to locks and denies."
+        }
+      ],
+      "watchOut": "- Read-only locks block updates, not just deletes.\n- Locks affect Owners too.\n- Locks apply to control-plane operations; data-plane protection must be assessed separately.\n- Removing a lock should be a governed change, not an ad hoc workaround.",
+      "productionTip": {
+        "official": "Microsoft documents that management locks override user permissions, that ReadOnly means authorized users can read but not update or delete, and that locks apply to control-plane Azure operations.",
+        "recommendation": "Use locks for critical accidental-change protection, document who owns each lock, and include lock removal and reapplication in formal change procedures. Do not use locks as a substitute for least-privilege RBAC."
+      },
+      "memoryTrick": "RBAC is the key; a lock is a cover over the keyhole. This is simplified because authorized users can remove locks when governance permits.",
+      "examTip": "Clues are **Owner** and **Read-only lock**. Pick the option where the lock blocks control-plane changes. A harder version may ask about deleting blob data, where data-plane behavior can differ. A harder version may switch to a CanNotDelete lock; then updates can succeed but deletes fail. Here the word **Read-only** is the reason tag update is blocked."
+    },
+    "sources": [
+      {
+        "title": "Lock your Azure resources to protect your infrastructure",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources"
+      },
+      {
+        "title": "Azure roles, Microsoft Entra roles, and classic subscription administrator roles",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/rbac-and-directory-admin-roles"
+      },
+      {
+        "title": "What is Azure role-based access control (Azure RBAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.3-10",
+    "objective": "D1.2.3",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You open **Access control (IAM)** for a subscription and see this role assignment.\n\n| Role | Scope | Principal name | Principal type |\n|---|---|---|---|\n| Storage Blob Data Contributor | Subscription | Identity not found | Unknown |\n\nA previous administrator says the assignment was for a managed identity that was deleted after a migration. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Leave the assignment because `Identity not found` means the principal still has hidden access"
+      },
+      {
+        "id": "B",
+        "text": "Remove the unused role assignment after confirming it is no longer needed"
+      },
+      {
+        "id": "C",
+        "text": "Assign the same role again to `Identity not found` to repair the display name"
+      },
+      {
+        "id": "D",
+        "text": "Convert the assignment to a deny assignment so it cannot be used"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The principal was deleted and no workload still depends on that object ID. You can remove role assignments at the subscription scope.",
+    "sections": {
+      "correctAnswer": "**B. Remove the unused role assignment after confirming it is no longer needed**. `Identity not found` commonly indicates a deleted principal that still has a role assignment record; stale unused assignments should be removed.",
+      "technical": "Azure role assignments reference a principal object ID. If a user, group, service principal, or managed identity is deleted before its role assignments are removed, Azure may no longer resolve the principal. The portal can display **Identity not found** and **Unknown**. PowerShell may show blank display or sign-in names or `ObjectType` as unknown; Azure CLI may show an empty `principalName`. Microsoft also notes that a newly invited or newly created principal can briefly show resolution problems during replication, but here the administrator confirms deletion after migration. After verifying the assignment is not needed, remove it using normal role assignment removal steps and specify the scope if needed to avoid ambiguity.\n\nThe visible role assignment still consumes administrative attention even though the old identity cannot be resolved. Cleanup should be tied to the exact role, principal ID, and subscription scope so that a replacement managed identity is not affected.",
+      "wrongOptions": {
+        "A": "A deleted principal cannot use hidden access, and stale records confuse audits. Misconception: unresolved display means secret active access. Could be correct only as a temporary wait if the principal was newly created.",
+        "C": "`Identity not found` is a placeholder, not a selectable principal. Misconception: the display text is an identity object. Could be correct if assigning the role to a real replacement managed identity.",
+        "D": "Customers cannot convert ordinary role assignments into deny assignments. Misconception: deny assignments are cleanup wrappers. Could be correct only in an Azure-managed protection scenario."
+      },
+      "plainEnglish": "The permission record points to an identity that no longer exists. It is like an access list with an old badge number for a badge that was destroyed. Clean up the old entry after confirming no current system needs it.\n\nDo not grant access to the words `Identity not found`. Find the new workload identity, if one exists, and make a fresh assignment to that real object.",
+      "analogy": "The subscription access list contains a badge serial number whose employee record was deleted. Auditors should remove the stale serial number, not create a new person named 'unknown badge holder.'\n\n| Analogy | Azure reality |\n|---|---|\n| Badge serial number | Principal object ID |\n| Deleted employee record | Deleted managed identity |\n| Unknown badge holder | `Identity not found` |\n| Removing stale serial | Deleting unused role assignment |\n\n**Where the analogy breaks down:** Azure can temporarily fail to resolve a brand-new principal during replication, so not every unknown display means permanent deletion.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure resources."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that attaches a role definition to a security principal at a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where a parent-scope assignment applies to child scopes."
+        },
+        {
+          "term": "Security principal",
+          "definition": "A user, group, service principal, or managed identity that can receive access."
+        },
+        {
+          "term": "Identity not found",
+          "definition": "A portal display meaning Azure cannot resolve the principal for a role assignment."
+        },
+        {
+          "term": "Managed identity",
+          "definition": "An Azure-managed Microsoft Entra identity for a resource or workload."
+        },
+        {
+          "term": "Principal object ID",
+          "definition": "The unique ID of a security principal in Microsoft Entra ID."
+        },
+        {
+          "term": "Stale role assignment",
+          "definition": "A role assignment that remains after its intended principal is gone or no longer needs access."
+        },
+        {
+          "term": "Storage Blob Data Contributor",
+          "definition": "A storage data role that can read, write, and delete blob data in scope."
+        },
+        {
+          "term": "`principalName`",
+          "definition": "An Azure CLI output field that can be blank for unresolved principals."
+        },
+        {
+          "term": "Replication delay",
+          "definition": "A temporary delay while identity information becomes available across regions or services."
+        }
+      ],
+      "watchOut": "- New principals can look unresolved temporarily; deleted principals leave stale assignments.\n- Recreated managed identities have different principal IDs.\n- Scope is important when removing matching stale assignments.\n- Stale entries make access reviews harder even if the old identity is gone.",
+      "productionTip": {
+        "official": "Microsoft's troubleshooting guidance documents the `Identity not found` symptom, explains deleted principals and replication delay as causes, and recommends removing role assignments that are not being used.",
+        "recommendation": "Include RBAC cleanup in decommissioning runbooks for managed identities and applications. For replacement workloads, assign access to the new principal object ID rather than trying to repair the old record."
+      },
+      "memoryTrick": "If the identity is gone, clean up the grant. Pause only when the identity is new, because replication delay can mimic the symptom.",
+      "examTip": "Clues are **Identity not found**, **Unknown**, and **deleted managed identity**. Choose cleanup of the stale assignment. If the clue says the user was just invited, waiting for replication may be better. A harder version may say the identity was invited minutes ago rather than deleted after migration. That points to waiting for replication instead of deleting the assignment."
+    },
+    "sources": [
+      {
+        "title": "Troubleshoot Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/troubleshooting"
+      },
+      {
+        "title": "List Azure role assignments using the Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-list-portal"
+      },
+      {
+        "title": "az role assignment",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/role/assignment?view=azure-cli-latest"
+      },
+      {
+        "title": "Get-AzRoleAssignment",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.resources/get-azroleassignment?view=azps-16.3.0"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D1.2.3-11",
+    "objective": "D1.2.3",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have `Sub1` with resource group `rg-payroll` and storage account `stpayroll`.\n\n| Principal | Role | Scope | Condition |\n|---|---|---|---|\n| `PayrollReaders` group | Reader | `Sub1` | None |\n| `DataReaders` group | Storage Blob Data Reader | `stpayroll` | Blob tag `Department` must equal `Payroll` |\n| `Kim` | Contributor | `rg-payroll` | None |\n| `Kim` | Reader | `stpayroll` | None |\n\nKim is a member of `PayrollReaders` and `DataReaders`. `stpayroll` is in `rg-payroll`. Blob `tax.csv` has tag `Department=Payroll`; blob `hr.csv` has tag `Department=HR`. No denies or locks apply.\n\nWhich two statements are true for Kim? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Kim can manage the storage account resource configuration because Contributor at `rg-payroll` is inherited to `stpayroll`"
+      },
+      {
+        "id": "B",
+        "text": "Kim can read both `tax.csv` and `hr.csv` blob data because Reader at subscription scope includes data actions"
+      },
+      {
+        "id": "C",
+        "text": "Kim can read `tax.csv` blob data through the conditioned Storage Blob Data Reader assignment"
+      },
+      {
+        "id": "D",
+        "text": "Kim cannot manage the storage account because the direct Reader assignment at `stpayroll` overrides Contributor"
+      },
+      {
+        "id": "E",
+        "text": "Kim can assign Azure RBAC roles at `stpayroll` because Contributor includes `Microsoft.Authorization/*/Write`"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. Blob access uses Microsoft Entra authorization and the condition is satisfied only by blobs with `Department=Payroll`.",
+    "sections": {
+      "correctAnswer": "**A and C. Kim can manage the storage account configuration through inherited Contributor and can read `tax.csv` through the conditioned data role**. The management-plane Contributor grant is inherited from the resource group, while the data-plane read grant is filtered to Payroll-tagged blobs.",
+      "technical": "The scope path places `stpayroll` under `rg-payroll`, so Kim's Contributor assignment at the resource group applies to the storage account resource. The direct Reader assignment at the storage account does not reduce that inherited Contributor grant because RBAC is additive. However, management-plane roles such as Reader and Contributor do not automatically grant blob data reads by Microsoft Entra authorization. Kim gets blob read permission through membership in `DataReaders`, which has Storage Blob Data Reader at the storage account. That assignment has a condition requiring the `Department` tag to equal `Payroll`. `tax.csv` matches; `hr.csv` does not. Contributor also excludes Azure RBAC role assignment management, so it does not let Kim assign roles by itself.\n\nKim's result is intentionally split: resource configuration follows management-plane Contributor at the resource group, while blob contents follow the conditioned storage data role. Treating those as one permission system produces the wrong answer.",
+      "wrongOptions": {
+        "B": "Reader is a control-plane role and does not include blob data actions by default. Misconception: viewing storage account metadata means reading all data. Could be correct with an unconditional Storage Blob Data Reader assignment for both blobs.",
+        "D": "Direct Reader does not override inherited Contributor. Misconception: closest assignment wins. Could be correct if the Contributor assignment were removed or blocked.",
+        "E": "Contributor excludes Azure RBAC role assignment writes through `NotActions`. Misconception: Contributor can delegate access. Could be correct if Kim also had Owner or an access-administrator role."
+      },
+      "plainEnglish": "Kim has one permission for managing the storage account as an Azure resource and another permission for reading blob contents. The content-reading permission has a tag rule. Tax data has the Payroll tag, so Kim can read it. HR data has a different tag, so this assignment does not allow it. Kim's read-only storage account assignment does not cancel the stronger Contributor permission inherited from the resource group.\n\nThe storage account is the box and the blobs are the contents. Kim can manage the box, but the contents have their own Payroll label rule.",
+      "analogy": "Kim is a facilities technician for the payroll records room and also has a folder-reading rule. The technician badge controls shelves and lights; the folder rule controls which stamped files can be opened.\n\n| Analogy | Azure reality |\n|---|---|\n| Facilities technician badge | Contributor at `rg-payroll` |\n| Payroll records room | Storage account `stpayroll` |\n| Folder-reading rule | Storage Blob Data Reader assignment |\n| Payroll stamp on `tax.csv` | `Department=Payroll` tag condition |\n\n**Where the analogy breaks down:** Azure separates management-plane configuration from blob data access more strictly than a physical room analogy suggests.",
+      "jargon": [
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, the authorization system for Azure resources."
+        },
+        {
+          "term": "Role assignment",
+          "definition": "A grant that attaches a role definition to a security principal at a scope."
+        },
+        {
+          "term": "Scope",
+          "definition": "The boundary where a role applies, such as management group, subscription, resource group, or resource."
+        },
+        {
+          "term": "Inheritance",
+          "definition": "The behavior where a parent-scope assignment applies to child scopes."
+        },
+        {
+          "term": "Security principal",
+          "definition": "A user, group, service principal, or managed identity that can receive access."
+        },
+        {
+          "term": "Storage account",
+          "definition": "An Azure resource that stores data such as blobs, files, queues, and tables."
+        },
+        {
+          "term": "Storage Blob Data Reader",
+          "definition": "A built-in data-plane role for reading blobs."
+        },
+        {
+          "term": "Blob index tag",
+          "definition": "A key-value tag on a blob used by the condition."
+        },
+        {
+          "term": "Condition",
+          "definition": "An additional check on a role assignment that filters permissions."
+        },
+        {
+          "term": "Control plane",
+          "definition": "Azure Resource Manager operations for resource configuration."
+        },
+        {
+          "term": "Data plane",
+          "definition": "Service-specific operations against data inside a resource."
+        },
+        {
+          "term": "Contributor",
+          "definition": "A built-in management role that cannot assign Azure RBAC roles."
+        },
+        {
+          "term": "Reader",
+          "definition": "A built-in control-plane viewing role with no data actions by default."
+        }
+      ],
+      "watchOut": "- Reader is not Storage Blob Data Reader.\n- Contributor on the resource group reaches the storage account configuration.\n- The direct Reader assignment does not downgrade Contributor.\n- The Payroll tag condition is decisive for blob data reads.",
+      "productionTip": {
+        "official": "Microsoft documents additive RBAC evaluation, scope inheritance, control-plane versus data-plane role definitions, Reader's control-plane read behavior, and ABAC conditions for blob tags.",
+        "recommendation": "Document management-access groups separately from data-access groups. Use ABAC for high-cardinality data segmentation, but test tagged and untagged blobs before relying on it in production."
+      },
+      "memoryTrick": "Management role for the box, data role for what's inside the box, condition for which contents. This is simplified because some services and roles have special behavior.",
+      "examTip": "Separate scope, role type, and condition before choosing. A harder version may add a deny assignment or ReadOnly lock; evaluate those blockers before assuming additive grants succeed. A harder version may add a deny assignment on the storage account or a second unconditioned data role. Process management-plane access and data-plane access separately before combining results."
+    },
+    "sources": [
+      {
+        "title": "What is Azure role-based access control (Azure RBAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/overview"
+      },
+      {
+        "title": "Understand scope for Azure RBAC",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/scope-overview"
+      },
+      {
+        "title": "Understand Azure role definitions",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions"
+      },
+      {
+        "title": "What is Azure attribute-based access control (Azure ABAC)?",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/conditions-overview"
+      },
+      {
+        "title": "Azure built-in roles for General",
+        "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/general"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

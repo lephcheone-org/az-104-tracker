@@ -1,0 +1,753 @@
+[
+  {
+    "id": "D2.3.2-01",
+    "objective": "D2.3.2",
+    "type": "multiple",
+    "difficulty": "foundation",
+    "prompt": "You have a storage account named `stcontosoweb`. A developer is creating containers for three workloads:\n\n| Workload | Requirement |\n|---|---|\n| Export files | Store daily CSV files in a normal blob container |\n| Root documents | Let `https://stcontosoweb.blob.core.windows.net/default.html` refer to a blob without a container segment |\n| Static website | Host static HTML, CSS, and image files from Azure Storage static website hosting |\n\nWhich two configuration choices are valid? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a normal container named `exports-2026` for the export files"
+      },
+      {
+        "id": "B",
+        "text": "Create a normal container named `Daily_Exports` because underscores are allowed in DNS labels"
+      },
+      {
+        "id": "C",
+        "text": "Create the special `$root` container for the root documents"
+      },
+      {
+        "id": "D",
+        "text": "Create a nested container named `reports/2026` beneath a parent container named `reports`"
+      },
+      {
+        "id": "E",
+        "text": "Rename the static website container to `$static` so that it is not confused with normal containers"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The storage account already exists. Static website hosting, if used, is the Azure Storage static website feature, not Azure Static Web Apps or Azure App Service.",
+    "sections": {
+      "correctAnswer": "**A. Create a normal container named `exports-2026` for the export files** and **C. Create the special `$root` container for the root documents**. `exports-2026` follows the documented container naming rules, and `$root` is the reserved root container name that lets blobs be addressed at the account root URI.",
+      "technical": "Azure Blob Storage containers sit directly under a storage account. Microsoft states that containers cannot be nested under other containers, so hierarchy below a container is created with blob names or, in a hierarchical namespace account, with directories. For an ordinary container name, the rules are DNS-like: 3 through 63 characters, lowercase letters, numbers, and hyphens only; the name must start and end with a letter or number; and consecutive hyphens are not permitted. A request that violates the rules fails instead of creating a partly corrected name.\n\n`exports-2026` is valid because it is lowercase, is longer than three characters, uses one hyphen between alphanumeric characters, and contains no spaces or underscores. `Daily_Exports` fails both the lowercase rule and the allowed-character rule. `reports/2026` is a blob path style, not a container name, because slash characters are not valid in container names and Azure Storage does not support container nesting.\n\nTwo reserved container names matter for this scenario. `$root` is a root container that must be explicitly created or deleted. A blob in `$root` can be referenced without including `$root` in the URL, such as `https://account.blob.core.windows.net/default.html`. `$web` is the container used by static website hosting; when you enable the static website feature, Azure creates `$web` if needed and serves files in it through the static website endpoint. The static website container name is not arbitrary, so changing it to `$static` would break the feature's expected convention.",
+      "wrongOptions": {
+        "B": "`Daily_Exports` is not a valid container name because container names must use lowercase letters, numbers, and hyphens, and underscores are not allowed. Misconception: Container names follow Windows folder naming rules. Could be correct when naming local files or some application labels, but not an Azure Blob Storage container.",
+        "D": "`reports/2026` looks like a path, but containers are created immediately beneath the storage account and cannot be nested. Misconception: A slash in a storage name creates a child container. Could be correct when naming a blob such as `reports/2026/january.csv`, where the slash is part of the blob name or directory path.",
+        "E": "Azure Storage static website hosting uses the special `$web` container; the feature does not use a renamed `$static` container. Misconception: Special containers can be renamed to any memorable label. Could be correct only for an unrelated normal container that is not intended to serve the static website endpoint."
+      },
+      "plainEnglish": "A storage account is like a building, and containers are the rooms directly inside that building. You can name normal rooms only with simple internet-safe names: lowercase letters, numbers, and hyphens, with a length between 3 and 63 characters. You cannot put one container room inside another room. If you want a path such as `reports/2026`, that belongs in the blob name inside a container, not in the container name itself. Azure also has two special room names. `$root` is the room used when a blob should look as if it is at the top of the account. `$web` is the room used by the static website feature. Those special names are not examples of the normal naming pattern; they are reserved feature names.",
+      "analogy": "Imagine a warehouse with numbered rooms. A standard room can be called `exports-2026`, but the sign printer refuses uppercase letters, underscores, spaces, and room names that are too short. The warehouse also has two reserved signs: `$root` for items placed at the front counter and `$web` for the public display window.\n\n| Analogy | Azure reality |\n|---|---|\n| Warehouse | Storage account |\n| Room | Blob container |\n| `exports-2026` room sign | Valid normal container name |\n| Front counter | `$root` container |\n| Public display window | `$web` static website container |\n\n**Where the analogy breaks down:** Azure validates names as URL and DNS-related strings, not as physical signs, and `$web` content is served through a separate static website endpoint with its own behavior.",
+      "jargon": [
+        {
+          "term": "Storage account",
+          "definition": "The Azure resource that provides a namespace for Blob Storage containers and other storage services."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical grouping of blobs directly under a storage account."
+        },
+        {
+          "term": "DNS name",
+          "definition": "A name format compatible with Domain Name System label rules used in URLs."
+        },
+        {
+          "term": "Hyphen",
+          "definition": "The `-` character, allowed in normal container names when placed between letters or numbers."
+        },
+        {
+          "term": "`$root`",
+          "definition": "The reserved root container name that lets blobs be referenced without a container segment in the blob service URI."
+        },
+        {
+          "term": "`$web`",
+          "definition": "The reserved container used by Azure Storage static website hosting."
+        },
+        {
+          "term": "Static website hosting",
+          "definition": "An Azure Storage Blob feature for serving static files such as HTML, CSS, JavaScript, and images."
+        },
+        {
+          "term": "Blob URI",
+          "definition": "The web address used to reference a storage account, container, and blob."
+        }
+      ],
+      "watchOut": "- Normal container names are not the same as Windows folder names.\n- `$root` and `$web` are special names; do not use them as examples of ordinary naming syntax.\n- Slashes organize blob names or directories, not containers.\n- Static website files are placed in `$web`, while root-container blobs use `$root` and the blob service endpoint.",
+      "productionTip": {
+        "official": "Microsoft documents that containers are created immediately beneath the storage account and cannot be nested. The same documentation describes normal container naming rules and separately explains that `$root` is the root container and `$web` is created for static website hosting.",
+        "recommendation": "Choose short, stable container names that describe ownership or workload, such as `exports-2026` or `raw-invoices`. Reserve `$root` and `$web` only for their documented features, and validate names in deployment scripts before sending create requests."
+      },
+      "memoryTrick": "For normal containers, remember **lowercase DNS label**: lowercase, digits, and single hyphens between characters. This shortcut excludes special feature containers such as `$root` and `$web`.",
+      "examTip": "Clue words such as **container name**, **root URL**, and **static website** point to three different rules. Pick the DNS-valid ordinary name for routine data, `$root` when the URL omits the container, and `$web` for static website hosting. If an option contains uppercase letters, underscores, spaces, consecutive hyphens, or a slash in the container name, eliminate it quickly."
+    },
+    "sources": [
+      {
+        "title": "Create a blob container with .NET - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-container-create"
+      },
+      {
+        "title": "Naming and Referencing Containers, Blobs, and Metadata - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata"
+      },
+      {
+        "title": "Static website hosting in Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-static-website"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.2-02",
+    "objective": "D2.3.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stmediahub` that contains a container named `publicclips`. The storage account setting **Allow Blob anonymous access** is currently disabled.\n\nA partner web page must download specific blob URLs in `publicclips` without sending credentials. The partner must not be able to list all blobs in the container anonymously.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Leave **Allow Blob anonymous access** disabled, and set the container anonymous access level to **Blob**"
+      },
+      {
+        "id": "B",
+        "text": "Enable **Allow Blob anonymous access** on the storage account, and set the container anonymous access level to **Blob**"
+      },
+      {
+        "id": "C",
+        "text": "Enable **Allow Blob anonymous access** on the storage account, and set the container anonymous access level to **Container**"
+      },
+      {
+        "id": "D",
+        "text": "Assign **Storage Blob Data Reader** to the public internet principal at the container scope"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. Anonymous access is intentionally approved for these media files. The goal is anonymous read access to individual blob URLs only, not authenticated Microsoft Entra access and not public container enumeration.",
+    "sections": {
+      "correctAnswer": "**B. Enable Allow Blob anonymous access on the storage account, and set the container anonymous access level to Blob**. Anonymous blob reads require both the account-level allowance and a container-level public access setting; **Blob** permits anonymous reads of blobs without allowing anonymous container listing.",
+      "technical": "Azure Blob Storage uses two settings to decide whether an unauthenticated read request can succeed. The account-level setting, shown in the portal as **Allow Blob anonymous access**, acts as the outer gate. If anonymous access is disallowed for the storage account, Azure Storage blocks anonymous reads for every container in the account, even if an individual container is configured as **Blob** or **Container**. Microsoft documents that the storage account setting overrides the container setting in that case.\n\nAfter the account permits anonymous access, the container still remains private until its own anonymous access level is changed. The container-level choices are commonly tested:\n\n| Container level | Anonymous result when the account allows anonymous access |\n|---|---|\n| Private | No anonymous reads for the container or blobs |\n| Blob | Anonymous clients can read blob data when they know the blob URL, but cannot list container contents |\n| Container | Anonymous clients can read blobs and enumerate blobs in the container |\n\nThe requirement asks for downloads of specific URLs and explicitly rejects anonymous listing. That makes **Blob** the right container setting. **Container** would grant more anonymous visibility than requested. RBAC is not used for anonymous internet callers because Azure RBAC grants permissions to Microsoft Entra security principals, not to anyone who happens to possess a public URL.",
+      "wrongOptions": {
+        "A": "The account-level setting is still disabled, so the container setting is overridden and anonymous reads fail. Misconception: Container public access alone is enough. Could be correct only in an account where anonymous access is already allowed at the storage account level.",
+        "C": "This would allow anonymous reads, but it also permits anonymous enumeration of blobs in the container, which the scenario forbids. Misconception: Blob and Container public access levels both expose only individual files. Could be correct when a site or dataset is intended to publish the container listing anonymously.",
+        "D": "Azure RBAC roles are assigned to Microsoft Entra users, groups, service principals, or managed identities; they do not create anonymous internet access. Misconception: A data reader role can stand in for a public access level. Could be correct when authenticated users or applications need read access through Microsoft Entra ID."
+      },
+      "plainEnglish": "Public blob access has two switches. The first switch is on the whole storage account and says whether any container is even allowed to become public. The second switch is on the container and says how public that container should be. If the account switch is off, the container switch cannot make the blobs public. Once the account switch is on, choosing **Blob** means people can open a known file link, but they cannot browse the whole container like a directory. Choosing **Container** is broader because anonymous users can list the blobs in that container.",
+      "analogy": "Picture a building with a public visitor policy and separate room signs. If the building manager bans visitors, a room sign saying `Visitors may read brochures` has no effect. If the building allows visitors, a room sign can either allow visitors to pick up a named brochure or let them walk around the whole room catalog.\n\n| Analogy | Azure reality |\n|---|---|\n| Building visitor policy | Storage account **Allow Blob anonymous access** |\n| Room sign | Container anonymous access level |\n| Named brochure only | **Blob** access level |\n| Browse all brochures | **Container** access level |\n\n**Where the analogy breaks down:** Azure distinguishes requests with and without an `Authorization` header, and authenticated requests are evaluated using the supplied credentials rather than a physical visitor pass.",
+      "jargon": [
+        {
+          "term": "Anonymous access",
+          "definition": "A request that does not include credentials such as a Microsoft Entra token, account key, or SAS token."
+        },
+        {
+          "term": "Allow Blob anonymous access",
+          "definition": "A storage account setting that permits or disallows anonymous blob access for containers in that account."
+        },
+        {
+          "term": "Private",
+          "definition": "The default container access level requiring authorization for container and blob access."
+        },
+        {
+          "term": "Blob access level",
+          "definition": "A container setting that permits anonymous reads of blobs but does not permit anonymous listing of the container."
+        },
+        {
+          "term": "Container access level",
+          "definition": "A container setting that permits anonymous reads of blobs and anonymous listing of blobs in the container."
+        },
+        {
+          "term": "Authorization header",
+          "definition": "An HTTP header carrying credentials used by Azure Storage to authorize a request."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, used to grant permissions to security principals at defined scopes."
+        },
+        {
+          "term": "Storage Blob Data Reader",
+          "definition": "A built-in Azure role that allows reading blob data when assigned to an authenticated principal."
+        }
+      ],
+      "watchOut": "- Disabling anonymous access at the account blocks public reads even when a container says **Blob** or **Container**.\n- **Blob** and **Container** are not synonyms; only **Container** allows anonymous listing.\n- Anonymous public access is different from SAS and different from Microsoft Entra authentication.\n- If a request includes credentials, Azure Storage evaluates those credentials instead of treating it as a public read.",
+      "productionTip": {
+        "official": "Microsoft documents that anonymous access is never permitted by default, that the account setting can disallow anonymous access for all containers, and that **Blob** access allows anonymous blob reads without making container data available for listing.",
+        "recommendation": "Keep anonymous access disabled unless the business case is explicit. When it is required, place only intended public files in a dedicated container, choose **Blob** rather than **Container** unless listing is necessary, and monitor for accidental public exposure."
+      },
+      "memoryTrick": "Think **account allows, container decides**. The memory aid is simplified because authenticated requests and static website endpoints have additional behavior, but it matches ordinary anonymous blob reads.",
+      "examTip": "Look for the phrase **without credentials** to focus on anonymous access rather than RBAC. Then check whether the question allows listing. If listing is not wanted, choose **Blob**, not **Container**. If the account-level setting is disabled, any answer that changes only the container cannot satisfy anonymous access."
+    },
+    "sources": [
+      {
+        "title": "Configure anonymous read access for containers and blobs - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-configure"
+      },
+      {
+        "title": "Get Container Properties (REST API) - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/get-container-properties"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.2-03",
+    "objective": "D2.3.2",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are designing Blob Storage containers for three workloads in a storage account:\n\n| Workload | Write pattern |\n|---|---|\n| Application logs | Each process continually adds new log entries to the end of an existing object |\n| VM disk exports | Administrators upload virtual hard disk files that need random read and write behavior while used as disks |\n| Product images | A web application uploads and replaces complete image files |\n\nWhich three blob type choices should you use? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use append blobs for the application logs"
+      },
+      {
+        "id": "B",
+        "text": "Use page blobs for the application logs because pages are appended automatically"
+      },
+      {
+        "id": "C",
+        "text": "Use page blobs for the VM disk exports"
+      },
+      {
+        "id": "D",
+        "text": "Use block blobs for the product images"
+      },
+      {
+        "id": "E",
+        "text": "Use append blobs for the product images so old image bytes can be overwritten in place"
+      }
+    ],
+    "correct": [
+      "A",
+      "C",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The question is about choosing blob object types inside containers, not selecting redundancy, access tier, lifecycle rules, or Azure managed disk SKUs.",
+    "sections": {
+      "correctAnswer": "**A. Use append blobs for the application logs**, **C. Use page blobs for the VM disk exports**, and **D. Use block blobs for the product images**. Append blobs fit end-only log writes, page blobs are optimized for random read/write pages and back Azure VM disks, and block blobs are the common choice for whole-file uploads such as images.",
+      "technical": "Azure Storage has three blob types, and the type is selected when the blob is created. Microsoft documents that after a blob exists, its type cannot be changed. The update operations also differ by type, so choosing the wrong type is more than a label mistake.\n\nBlock blobs are built from blocks and are optimized for uploading large amounts of data efficiently. Client libraries can split large files into blocks, upload blocks in parallel, and commit the block list. That model fits documents, images, media files, backups, and other objects commonly uploaded or replaced as files.\n\nAppend blobs are also block-based, but they are optimized for append operations. When an append blob is modified, blocks are added only to the end by using append operations. Existing blocks are not updated or deleted in place. That is why append blobs match logging streams where each new line belongs after the previous line.\n\nPage blobs are organized as 512-byte pages and are optimized for random read and write operations. Microsoft states that Azure virtual machine disks are backed by page blobs. A virtual hard disk workload needs page-like random updates rather than append-only log growth or whole-object block replacement.\n\nThe evaluation order in an exam item is to identify the write pattern first, then map it to the type. Appending means append blob. Random disk-style I/O means page blob. Complete file upload or large-object transfer usually means block blob.",
+      "wrongOptions": {
+        "B": "Page blobs are for random page reads and writes, not automatic log appends. Misconception: The word page means sequential log pages. Could be correct when the object is a VHD or another workload that needs random 512-byte aligned page operations.",
+        "E": "Append blobs add blocks to the end and do not support updating or deleting existing blocks, so they are not the right fit for replacing image bytes in place. Misconception: Append blob is a general-purpose editable file type. Could be correct when the application only adds new records to the end, such as audit or application logs."
+      },
+      "plainEnglish": "A blob type is like choosing the shape of a notebook before you start writing. A block blob is good for files that are uploaded as chunks and then used as one complete file, such as pictures. An append blob is like a diary where every new entry goes at the end; that is perfect for logs. A page blob is like a large grid where software can jump to one square and change it without rewriting the whole thing; that behavior fits virtual hard disks. Because Azure does not let you change the blob type after creation, the write pattern matters before the first upload.",
+      "analogy": "Use three office supplies. A block blob is a binder assembled from pages that can be uploaded in batches. An append blob is a receipt roll where new text is added at the end. A page blob is a whiteboard grid where a specific square can be updated directly.\n\n| Analogy | Azure reality |\n|---|---|\n| Binder assembled from batches | Block blob for efficient file upload |\n| Receipt roll | Append blob for logs |\n| Whiteboard grid | Page blob for random read/write pages |\n| Choosing the supply first | Blob type chosen at creation |\n\n**Where the analogy breaks down:** Azure operations are API calls with size, alignment, and service-version limits; a physical binder does not capture block IDs, page boundaries, or disk performance characteristics.",
+      "jargon": [
+        {
+          "term": "Blob type",
+          "definition": "The storage format selected when a blob is created: block blob, append blob, or page blob."
+        },
+        {
+          "term": "Block blob",
+          "definition": "A blob type composed of blocks and optimized for efficient upload of large amounts of data."
+        },
+        {
+          "term": "Append blob",
+          "definition": "A blob type optimized for adding new blocks to the end of the blob."
+        },
+        {
+          "term": "Page blob",
+          "definition": "A blob type made of 512-byte pages and optimized for random read and write operations."
+        },
+        {
+          "term": "VHD",
+          "definition": "Virtual hard disk, a disk file format commonly associated with virtual machine disk data."
+        },
+        {
+          "term": "Random read/write",
+          "definition": "An access pattern where software reads or writes data at different offsets rather than sequentially from beginning to end."
+        },
+        {
+          "term": "Put Block List",
+          "definition": "A Blob Storage operation that commits uploaded blocks to form or update a block blob."
+        },
+        {
+          "term": "Append Block",
+          "definition": "A Blob Storage operation that adds a block to the end of an append blob."
+        }
+      ],
+      "watchOut": "- Blob type is selected at creation and cannot simply be switched later.\n- Append blobs are not a replacement for a database table; they are for end-only append patterns.\n- Page blobs are the tested answer for Azure VM disk backing and random page I/O.\n- Block blobs are usually the answer for ordinary files such as images, documents, and media.",
+      "productionTip": {
+        "official": "Microsoft documents three blob types and states that the type cannot be changed after creation. The documentation describes block blobs for efficient large uploads, append blobs for append operations, and page blobs as 512-byte page collections used by Azure virtual machine disks.",
+        "recommendation": "Confirm the application's update pattern before coding upload logic. Use block blobs for most object-file workloads, append blobs for write-forward logs with rotation, and page blobs only when the workload genuinely needs page-style random updates."
+      },
+      "memoryTrick": "**Block for files, Append for logs, Page for disks**. The phrase is a useful exam shortcut, but always check whether the scenario describes an unusual API requirement.",
+      "examTip": "The exam often hides the answer in verbs: **upload files**, **append log entries**, or **random writes**. Do not choose page blobs merely because data is large, and do not choose append blobs for content that must be edited or replaced. A harder version may ask what happens after creating the wrong type; the practical answer is to create a new blob of the correct type and copy or re-upload data."
+    },
+    "sources": [
+      {
+        "title": "Understanding block blobs, append blobs, and page blobs - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/understanding-block-blobs--append-blobs--and-page-blobs"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.2-04",
+    "objective": "D2.3.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a storage account with a flat namespace. A container named `landing` contains blobs with names such as `raw/2026/10/05/orders.parquet` and `raw/2026/10/06/orders.parquet`. In the Azure portal, users see folder-like entries under `landing`.\n\nA new analytics process must frequently rename and delete entire directory trees as single directory operations. You are creating a replacement storage design for the process.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Continue using slashes in blob names because every slash creates a real directory object"
+      },
+      {
+        "id": "B",
+        "text": "Use a storage account with hierarchical namespace enabled and create the container there"
+      },
+      {
+        "id": "C",
+        "text": "Create one Azure Blob container for each folder level, such as `raw`, `2026`, and `10`"
+      },
+      {
+        "id": "D",
+        "text": "Set container metadata named `hierarchicalNamespace=true` on `landing`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The replacement design can use a new or upgraded account after compatibility review. The question is about namespace behavior, not access tiers, lifecycle management, or soft delete.",
+    "sections": {
+      "correctAnswer": "**B. Use a storage account with hierarchical namespace enabled and create the container there**. In a flat Blob Storage namespace, slashes in blob names create a virtual hierarchy for listing, but hierarchical namespace provides real directory semantics and atomic directory operations for analytics workloads.",
+      "technical": "A standard Blob Storage account uses a flat object namespace by default. Blob names can include the forward slash character, and tools can treat the slash as a delimiter when listing blobs. That convention creates virtual directories in the user interface, but the underlying objects are still blobs with long names. Without a hierarchical namespace, a directory-level move, rename, or delete must be approximated by processing the individual blobs under that prefix.\n\nAzure Data Lake Storage hierarchical namespace changes that behavior. Microsoft describes it as organizing objects and files into directories and nested subdirectories, similar to a computer file system. The key exam phrase is **atomic directory manipulation**: with hierarchical namespace, directory tasks such as moving, renaming, and deleting directories can be processed by updating a single parent-directory entry rather than operating on potentially millions of separate blobs. This is especially relevant for analytics frameworks that write temporary output and rename it at the end of a job.\n\nThe design implication is important. Slashes in blob names help humans and listing operations, but they do not create the same directory semantics in a flat account. Container metadata cannot turn a flat account into a hierarchical namespace account. Creating separate containers for each folder level is also not equivalent because containers are top-level Blob Storage resources and do not model a file-system tree beneath one dataset. Microsoft also warns that after hierarchical namespace is enabled on an account, you cannot revert it to a flat namespace, so compatibility should be reviewed before choosing it.",
+      "wrongOptions": {
+        "A": "In a flat namespace, a slash is part of the blob name and can create a virtual hierarchy, but it does not provide real directory objects or atomic directory manipulation. Misconception: Portal folders always equal real directories. Could be correct when the only requirement is visual grouping or prefix-based listing.",
+        "C": "Containers are not folder levels and cannot be nested under one another, so this design would fragment the dataset rather than create a directory tree. Misconception: More containers reproduce a file system hierarchy. Could be correct when separate workloads need different container-level permissions or policies.",
+        "D": "Container metadata stores user-defined name-value pairs; it does not change the account namespace architecture. Misconception: A metadata flag can enable platform features. Could be correct when you only need to record a descriptive label about how an application treats the container."
+      },
+      "plainEnglish": "A slash in a blob name can make Azure tools show folders, but in a normal flat account it is mostly a naming trick. The blob is still one object whose name contains slashes. If an analytics job needs to move or rename a whole folder as one unit, the storage account needs hierarchical namespace. That feature gives the account real directory behavior that big data tools understand. You choose it at the account design level, not by adding metadata to a container or by inventing containers for each folder level.",
+      "analogy": "Think of two libraries. One library prints shelf locations in each book title, such as `raw/2026/orders`, but there are no actual shelves to move. The other library has real shelves and aisles; a worker can move an entire shelf label and its contents as a directory operation.\n\n| Analogy | Azure reality |\n|---|---|\n| Shelf path printed in title | Slash-delimited blob name in a flat namespace |\n| Fake folders in catalog | Virtual directories shown by tools |\n| Real shelves and aisles | Hierarchical namespace directories |\n| Moving one shelf entry | Atomic directory manipulation |\n\n**Where the analogy breaks down:** Azure still stores objects at cloud scale and exposes REST APIs; hierarchical namespace adds file-system semantics without turning Blob Storage into a local disk.",
+      "jargon": [
+        {
+          "term": "Flat namespace",
+          "definition": "A Blob Storage naming model where blobs are independent objects in a container, even if their names contain delimiters."
+        },
+        {
+          "term": "Hierarchical namespace",
+          "definition": "An Azure Data Lake Storage capability that organizes objects into directories and subdirectories with file-system semantics."
+        },
+        {
+          "term": "Virtual directory",
+          "definition": "A folder-like grouping inferred from delimiters such as `/` in blob names."
+        },
+        {
+          "term": "Delimiter",
+          "definition": "A character, often `/`, used by listing tools to split blob names into path-like segments."
+        },
+        {
+          "term": "Atomic directory manipulation",
+          "definition": "A directory operation handled as one logical update rather than many separate blob operations."
+        },
+        {
+          "term": "Azure Data Lake Storage",
+          "definition": "Azure Storage capabilities for analytics workloads, including hierarchical namespace on Blob Storage accounts."
+        },
+        {
+          "term": "Container metadata",
+          "definition": "User-defined name-value pairs stored with a container for descriptive application use."
+        },
+        {
+          "term": "Prefix",
+          "definition": "The beginning portion of a blob name used to filter or group blobs during listing."
+        }
+      ],
+      "watchOut": "- Portal folder visuals do not prove that a flat account has real directories.\n- Hierarchical namespace is an account capability; it is not toggled with container metadata.\n- Microsoft documents that hierarchical namespace cannot be reverted to flat namespace after it is enabled.\n- Prefix naming is still useful, but it is not the same as atomic directory rename or delete behavior.",
+      "productionTip": {
+        "official": "Microsoft documents that object stores without hierarchical namespace approximate directories by embedding slashes in object names, while hierarchical namespace provides atomic directory manipulation. The documentation also states that after hierarchical namespace is enabled, the account cannot be reverted to a flat namespace.",
+        "recommendation": "Use hierarchical namespace for analytics platforms that depend on directory renames, job commit patterns, or access control at directory granularity. For simple backup, image, or archive containers where a database tracks organization, prefix-based blob names may be simpler."
+      },
+      "memoryTrick": "A slash is a **hint** in flat Blob Storage; hierarchical namespace is the **handle** for real directory operations. This is simplified because listing APIs can still use delimiters effectively.",
+      "examTip": "Clues such as **rename entire directory**, **delete directory tree**, and **analytics framework** point to hierarchical namespace. Clues such as **looks like folders** or **contains `/` in names** are not enough. A harder question may mention that the feature cannot be reverted, so you may need a new account if compatibility is uncertain."
+    },
+    "sources": [
+      {
+        "title": "Naming and Referencing Containers, Blobs, and Metadata - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata"
+      },
+      {
+        "title": "Azure Data Lake Storage hierarchical namespace - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-namespace"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.2-05",
+    "objective": "D2.3.2",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You manage a storage account that contains containers for multiple projects. You need to implement two labeling requirements:\n\n- Store the owning team and data steward for a container named `research`. These values are informational and should be retrieved with the container's properties.\n- Find all blobs tagged as project `Phoenix` across containers, even when the blob names use different prefixes.\n\nWhich two actions should you take? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set user-defined metadata on the `research` container for the owning team and data steward"
+      },
+      {
+        "id": "B",
+        "text": "Set the container's system properties to arbitrary keys named `owner` and `steward`"
+      },
+      {
+        "id": "C",
+        "text": "Put project names only in blob metadata, because metadata is automatically indexed across the storage account"
+      },
+      {
+        "id": "D",
+        "text": "Apply blob index tags such as `Project=Phoenix` to blobs that must be searchable across containers"
+      },
+      {
+        "id": "E",
+        "text": "Change the anonymous access level to **Container** so labels are returned in public listing responses"
+      }
+    ],
+    "correct": [
+      "A",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The labels are not secrets. The search requirement is for Blob Storage native tag queries, not Azure Cognitive Search, inventory reports, or lifecycle management configuration.",
+    "sections": {
+      "correctAnswer": "**A. Set user-defined metadata on the `research` container for the owning team and data steward** and **D. Apply blob index tags such as `Project=Phoenix` to blobs that must be searchable across containers**. Container metadata is appropriate for descriptive container-level name-value pairs, while blob index tags are the native indexed mechanism for finding blobs by key-value criteria.",
+      "technical": "Containers have system properties and user-defined metadata. System properties are service-defined values such as public access level, ETag, lease state, and last modified time; some are read-only and some are controlled by specific operations. User-defined metadata is one or more name-value pairs that you specify for the storage resource. Microsoft documents that metadata values are for your own purposes only and do not affect how the resource behaves. The `Get Container Properties` operation returns user-defined metadata and system properties for a container, which matches the owning-team and steward requirement.\n\nBlob index tags solve a different problem. Microsoft describes blob index tags as key-value attributes that are automatically indexed and exposed as a searchable multidimensional index. They can categorize blobs and find tagged objects within one container or across all containers in a storage account. This is exactly the requirement for finding all `Project=Phoenix` blobs even if path prefixes differ. Blob index tag keys and values are strings, are case-sensitive, and each blob can have up to ten index tags.\n\nMetadata and index tags are easy to confuse. Metadata can store descriptive information on containers or blobs, but the fetched documentation does not state that arbitrary metadata is indexed for native cross-container searching. Blob index tags are stored as a subresource beside blob data and have dedicated operations such as finding blobs by tags. Anonymous access settings do not create labeling, and making a container public to return labels would be an unnecessary data exposure risk.",
+      "wrongOptions": {
+        "B": "System properties are not an open dictionary for arbitrary business labels; user-defined metadata is the documented place for custom name-value pairs. Misconception: Any value visible in properties can be freely edited. Could be correct when changing a supported property through its proper operation, such as a container's public access level.",
+        "C": "Blob metadata can store name-value pairs, but the native indexed search feature described by Microsoft is blob index tags, not arbitrary metadata. Misconception: Metadata and index tags have the same query behavior. Could be correct when an application already knows the blob and only needs descriptive values returned with its properties.",
+        "E": "Anonymous access controls who can read blobs or list a container; it does not create metadata or blob index tags. Misconception: Public listing is a tagging or discovery system. Could be correct when the business explicitly wants unauthenticated users to enumerate public blobs, which is not this requirement."
+      },
+      "plainEnglish": "Use container metadata like a note card attached to the container. It can say who owns the container or who to contact, and you can read it when you ask for the container's properties. Use blob index tags like searchable labels on individual files. If the same project has files in many containers or under many different names, a tag such as `Project=Phoenix` lets Azure find those blobs by the label instead of by their path. Metadata is good for description; blob index tags are the native searchable labels for blobs.",
+      "analogy": "Imagine archive boxes and documents. A box can have a sticky note saying `Owner: Research Team`; that helps someone inspecting the box. Individual documents can also have barcode labels that the catalog system indexes, letting you find every `Phoenix` document wherever it is stored.\n\n| Analogy | Azure reality |\n|---|---|\n| Sticky note on a box | Container metadata |\n| Service-maintained box facts | System properties |\n| Barcode label on a document | Blob index tag |\n| Catalog search by barcode | Find blobs by tags |\n\n**Where the analogy breaks down:** Azure metadata and tags are HTTP/API name-value pairs with naming rules, permissions, and indexing delays rather than physical notes and barcodes.",
+      "jargon": [
+        {
+          "term": "System properties",
+          "definition": "Service-maintained properties of a Blob Storage resource, such as ETag, last modified time, public access level, or lease state."
+        },
+        {
+          "term": "User-defined metadata",
+          "definition": "Custom name-value pairs associated with a container or blob for application use."
+        },
+        {
+          "term": "Get Container Properties",
+          "definition": "A Blob Storage operation that returns system properties and user-defined metadata for a specified container."
+        },
+        {
+          "term": "Blob index tags",
+          "definition": "Key-value attributes on blobs that are indexed by Blob Storage and can be queried to find matching blobs."
+        },
+        {
+          "term": "Multidimensional index",
+          "definition": "An index that can categorize and search using several tag keys and values instead of only a path prefix."
+        },
+        {
+          "term": "Prefix",
+          "definition": "A beginning portion of a blob name, often used to organize blobs in path-like groups."
+        },
+        {
+          "term": "Case-sensitive",
+          "definition": "A comparison rule where `Phoenix` and `phoenix` are treated as different values."
+        },
+        {
+          "term": "Anonymous access level",
+          "definition": "A container setting controlling unauthenticated read or list access, not labeling behavior."
+        }
+      ],
+      "watchOut": "- Container metadata is descriptive; it does not change how the container behaves.\n- Blob index tags are attached to blobs, not to the container as a whole.\n- Tag values are strings and case-sensitive, so standardize values such as `Phoenix` versus `phoenix`.\n- Making a container public is not a safe substitute for an indexed discovery feature.",
+      "productionTip": {
+        "official": "Microsoft documents container metadata as user-defined name-value pairs returned with container properties, while blob index tags are key-value attributes that can find blobs within a single container or across all containers in a storage account.",
+        "recommendation": "Keep ownership labels in container metadata for operations teams, and use blob index tags only for search dimensions you will query. Define allowed tag keys and casing in a data standard to avoid missing results caused by inconsistent strings."
+      },
+      "memoryTrick": "**Metadata describes; index tags discover.** The phrase is a shortcut because metadata can also be read by applications, but native cross-container blob searching belongs to index tags.",
+      "examTip": "When the question says **returned with container properties**, choose container metadata. When it says **find blobs across containers by key-value**, choose blob index tags. Do not be distracted by public access or system properties unless the scenario is about authorization or service-maintained values."
+    },
+    "sources": [
+      {
+        "title": "Use .NET to manage properties and metadata for a blob container - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-container-properties-metadata"
+      },
+      {
+        "title": "Get Container Properties (REST API) - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/get-container-properties"
+      },
+      {
+        "title": "Manage and find Azure Blob data with blob index tags",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-manage-find-blobs"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.2-06",
+    "objective": "D2.3.2",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "Woodgrove Bank has a container named `statements` for monthly PDF statements. The compliance team requires every statement in the container to be protected from modification and deletion for seven years. The team has tested the policy in a nonproduction account and is ready to make the production configuration compliant.\n\nWhich configuration should you apply?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Configure a legal hold only, because a legal hold automatically expires after seven years"
+      },
+      {
+        "id": "B",
+        "text": "Leave the time-based retention policy unlocked so administrators can shorten it during the seven-year period"
+      },
+      {
+        "id": "C",
+        "text": "Configure a container-level time-based retention policy for seven years and lock the policy after validation"
+      },
+      {
+        "id": "D",
+        "text": "Set container metadata named `retentionYears=7` because metadata enforces write-once behavior"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The requirement is WORM protection for blob data in one container. The organization has already tested the design and is not asking about soft delete, versioning recovery, lifecycle movement, or access tiers.",
+    "sections": {
+      "correctAnswer": "**C. Configure a container-level time-based retention policy for seven years and lock the policy after validation**. A time-based retention policy protects objects for a specified interval, and locking the policy is the documented production step for compliant immutable storage after testing.",
+      "technical": "Immutable storage for Azure Blob Storage stores data in a WORM state: Write Once, Read Many. While protected, blob data can be created and read but cannot be modified or deleted according to the policy rules. Microsoft documents two immutability policy types. A time-based retention policy protects data for a specified interval. A legal hold protects data until the hold is explicitly cleared.\n\nThe scenario gives a known duration: seven years. That points to time-based retention rather than legal hold. Container-level WORM applies at the container level, so all blobs in `statements` are covered by the container policy. Microsoft documents that a container-level time-based policy applies to all blobs in the container and that individual blobs cannot have their own immutability policies under container-level WORM.\n\nThe locked versus unlocked state is a common exam trap. When a time-based retention policy is first configured, it is unlocked for testing. Both locked and unlocked policies protect against deletes and overwrites, but an unlocked policy can be shortened or deleted. A locked time-based retention policy cannot be deleted, and its retention period can be increased but not decreased. Microsoft recommends locking the policy in a reasonable amount of time after testing and states that locking is required for the policy to be in a compliant immutable state for regulations such as SEC 17a-4(f).\n\nMetadata has no enforcement role here. It can record a retention value for humans, but it cannot make blobs immutable.",
+      "wrongOptions": {
+        "A": "A legal hold lasts until explicitly cleared; it is not the right tool for a known seven-year retention interval. Misconception: Every immutability option is time based. Could be correct when the retention period is unknown, such as preserving data during litigation until a case closes.",
+        "B": "An unlocked policy is useful for testing, but it can be shortened or deleted and is not the documented compliant final state. Misconception: Leaving policy flexibility is always safer. Could be correct in a lab or short validation window before production lock-in.",
+        "D": "Metadata stores descriptive name-value pairs and does not enforce WORM protection. Misconception: A label that says `retention` causes Azure Storage to apply retention behavior. Could be correct as an additional documentation label, not as the enforcement mechanism."
+      },
+      "plainEnglish": "The bank wants the statements to become tamper-resistant for a known time: seven years. Azure's immutable storage feature is made for that. A time-based retention policy says how long the files must be kept unchanged. After the team has tested it, locking the policy makes it much harder to weaken: administrators cannot delete it or reduce the retention period. A legal hold is different because it stays until someone clears it, which fits an unknown investigation period rather than a known seven-year rule. A metadata label is only a note; it does not stop deletion.",
+      "analogy": "Think of financial records placed in sealed archive boxes. A seven-year seal has a printed release date, and after the compliance officer locks the seal, nobody can shorten the date. A legal hold is a separate red tag that says `keep until the investigation team removes this tag`.\n\n| Analogy | Azure reality |\n|---|---|\n| Sealed archive box | Container with immutable storage |\n| Seven-year seal | Time-based retention policy |\n| Compliance officer locking the seal | Locked retention policy |\n| Red investigation tag | Legal hold |\n| Note on the box | Metadata without enforcement |\n\n**Where the analogy breaks down:** Azure enforces immutability through service authorization and storage operations, and legal holds or retention policies can exist at different WORM feature scopes depending on account capabilities.",
+      "jargon": [
+        {
+          "term": "Immutable storage",
+          "definition": "Azure Blob Storage capability for protecting blob data from modification and deletion."
+        },
+        {
+          "term": "WORM",
+          "definition": "Write Once, Read Many; data can be written and read but not modified or deleted while protection applies."
+        },
+        {
+          "term": "Time-based retention policy",
+          "definition": "An immutability policy that protects blob data for a specified retention interval."
+        },
+        {
+          "term": "Legal hold",
+          "definition": "An immutability policy that protects data until the hold is explicitly cleared."
+        },
+        {
+          "term": "Container-level WORM",
+          "definition": "Immutable storage configuration that applies policies at the container level."
+        },
+        {
+          "term": "Locked policy",
+          "definition": "A time-based retention policy state in which the policy cannot be deleted or reduced."
+        },
+        {
+          "term": "Unlocked policy",
+          "definition": "The initial testing state for a time-based retention policy, where it can be shortened, extended, or deleted."
+        },
+        {
+          "term": "Metadata",
+          "definition": "User-defined name-value pairs that describe a resource but do not enforce retention behavior."
+        }
+      ],
+      "watchOut": "- Legal hold is for unknown or event-driven duration; time-based retention is for a specified interval.\n- Unlocked does not mean unprotected, but it is not the compliance-ready final state described in the docs.\n- A locked policy can be extended but not decreased or deleted.\n- Do not confuse immutable storage with soft delete, versioning, lifecycle rules, or metadata labels.",
+      "productionTip": {
+        "official": "Microsoft documents time-based retention and legal hold as the two immutability policy types. The documentation states that locked time-based policies cannot be deleted or decreased and that Microsoft recommends locking after testing for compliant immutable storage.",
+        "recommendation": "Test retention periods, upload workflows, restore processes, and emergency procedures in a nonproduction account before locking a production policy. Once locked, treat extensions as formal compliance changes and document who approved them."
+      },
+      "memoryTrick": "**Known clock: retention. Unknown case: legal hold. Compliance final: lock it.** This compresses several rules, so still read the scenario for scope and readiness.",
+      "examTip": "The words **seven years** and **ready to make production compliant** point to a locked time-based retention policy. If the scenario says the end date is unknown or tied to litigation, consider legal hold. If an answer says metadata enforces retention, eliminate it because metadata is descriptive only."
+    },
+    "sources": [
+      {
+        "title": "Immutable Storage for Blob Data Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-storage-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.2-07",
+    "objective": "D2.3.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A container named `vendor-drop` receives files from three contractors. You issue each contractor a service SAS URL that references a stored access policy named `contractor-write` on the container. One contractor accidentally posts its SAS URL in a public chat.\n\nYou need to stop every SAS URL associated with `contractor-write` before its original expiry time. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a new stored access policy named `contractor-write-new` with the same permissions"
+      },
+      {
+        "id": "B",
+        "text": "Set the container anonymous access level to **Private**"
+      },
+      {
+        "id": "C",
+        "text": "Move the leaked blob into the `$root` container"
+      },
+      {
+        "id": "D",
+        "text": "Delete, rename, or expire the `contractor-write` stored access policy on the `vendor-drop` container"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The leaked URLs are service SAS URLs that all reference the same stored access policy on a blob container. Revoking all contractors temporarily is acceptable.",
+    "sections": {
+      "correctAnswer": "**D. Delete, rename, or expire the `contractor-write` stored access policy on the `vendor-drop` container**. Azure Storage evaluates the stored access policy referenced by the service SAS, and Microsoft documents deleting, changing the signed identifier, or setting expiry in the past as revocation methods.",
+      "technical": "A stored access policy is a server-side control for service-level SAS tokens. For Blob Storage, the policy is stored on a container and can be associated with a SAS for the container or for blobs in that container. The policy can define the start time, expiry time, and permissions for signatures bound to it. Stored access policies are not supported for user delegation SAS or account SAS, but the question specifically says service SAS.\n\nWhen a request arrives with a service SAS that references a policy, Azure Storage validates the SAS and the signed identifier that points to the stored access policy. The policy's current settings matter at request time. Microsoft documents three ways to revoke a stored access policy relationship: delete the policy, rename it by changing the signed identifier, or change the policy expiry time to a value in the past. Any of those actions breaks or expires every SAS associated with the policy.\n\nCreating a new policy is useful only for replacement access after the incident. It does not alter old SAS URLs that still reference `contractor-write`. Setting the container to **Private** affects anonymous requests, not SAS-authorized requests. Moving one blob or using a special container name does not revoke the access tokens.\n\nTwo operational limits are worth remembering. A container can have at most five stored access policies at one time, so policies should represent meaningful revocation groups. Also, policy changes can take up to 30 seconds to take effect, so incident response runbooks should include a retry and verification window.",
+      "wrongOptions": {
+        "A": "A replacement policy does not change previously issued SAS URLs that reference the old signed identifier. Misconception: Newer access policies automatically supersede older ones. Could be correct after revocation, when issuing fresh contractor URLs under a new policy name.",
+        "B": "The **Private** public access level blocks anonymous access, but SAS requests are authorized by the SAS token and policy rather than by container anonymous access. Misconception: Private containers reject every non-RBAC access method. Could be correct when the exposure is an unauthenticated public container setting.",
+        "C": "Moving data to `$root` changes where a blob is addressed; it does not revoke service SAS URLs for the original container policy. Misconception: Special containers control token validity. Could be correct only for a separate requirement to serve a blob at the account root URI."
+      },
+      "plainEnglish": "The contractors' SAS links are like temporary keys that all point back to one rule card named `contractor-write`. If a key is leaked, changing unrelated settings is not enough. You need to invalidate the rule card that the keys depend on. Delete the card, change its name so the old keys cannot find it, or set its expiry in the past. After that, issue new keys only to the contractors that should still have access. Making the container private only turns off public anonymous access; it does not cancel SAS keys.",
+      "analogy": "A loading dock gives contractors badges that say `valid under dock policy contractor-write`. When one badge number appears online, the dock supervisor cancels that policy card. Every badge depending on the card stops working, even if someone still holds the plastic badge.\n\n| Analogy | Azure reality |\n|---|---|\n| Contractor badge | Service SAS URL |\n| Dock policy card | Stored access policy |\n| Card name | Signed identifier |\n| Cancel, rename, or backdate card | Delete, rename, or expire the policy |\n| Public lobby sign | Anonymous access level |\n\n**Where the analogy breaks down:** Azure Storage uses signed query strings and may require a short propagation interval before every request path sees the changed policy.",
+      "jargon": [
+        {
+          "term": "Service SAS",
+          "definition": "A shared access signature signed with the storage account key for a resource in one Azure Storage service."
+        },
+        {
+          "term": "Stored access policy",
+          "definition": "A named server-side policy on a container, file share, queue, or table that can constrain service SAS tokens."
+        },
+        {
+          "term": "Signed identifier",
+          "definition": "The policy ID referenced by a service SAS to bind the token to a stored access policy."
+        },
+        {
+          "term": "Expiry time",
+          "definition": "The time after which a SAS or stored access policy no longer grants access."
+        },
+        {
+          "term": "Revocation",
+          "definition": "Making previously issued access unusable before its expected end time."
+        },
+        {
+          "term": "Anonymous access",
+          "definition": "A request made without credentials such as a SAS token or Microsoft Entra token."
+        },
+        {
+          "term": "`$root`",
+          "definition": "The special root container used for blobs addressed at the storage account root."
+        },
+        {
+          "term": "Container",
+          "definition": "A Blob Storage resource that groups blobs and can host stored access policies."
+        }
+      ],
+      "watchOut": "- Stored access policies work with service SAS, not account SAS or user delegation SAS.\n- Creating a new policy does not revoke tokens bound to the old policy name.\n- Public access level and SAS authorization are separate controls.\n- Keep the five-policy limit in mind when designing contractor groups.",
+      "productionTip": {
+        "official": "Microsoft documents stored access policies as a way to group shared access signatures and revoke them after issuance. The same page lists deletion, signed-identifier changes, and past expiry times as ways to revoke associated signatures.",
+        "recommendation": "Use one stored access policy per meaningful partner or access group, not per individual token. Keep policy names in your issuance log so incident responders can quickly identify which policy to expire without rotating unrelated workloads."
+      },
+      "memoryTrick": "For a policy-bound SAS, **break the policy to break the links**. The simplification assumes the SAS is a service SAS that actually references that policy.",
+      "examTip": "Clue words are **service SAS**, **references a stored access policy**, and **before original expiry**. Choose the action that modifies the existing policy. If an option changes anonymous access, moves blobs, or creates a new policy without touching the old one, it does not revoke the leaked SAS group."
+    },
+    "sources": [
+      {
+        "title": "Define a stored access policy - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/define-stored-access-policy"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.2-08",
+    "objective": "D2.3.2",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a storage account named `stfinanceprod` with containers named `payroll`, `audit`, and `public`. A managed identity named `mi-payroll-loader` must upload and overwrite blobs only in the `payroll` container by using Microsoft Entra authentication. The identity must not be able to write blobs in the other containers.\n\nWhich role assignment should you create?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Assign **Storage Account Contributor** to `mi-payroll-loader` at the storage account scope"
+      },
+      {
+        "id": "B",
+        "text": "Assign **Storage Blob Data Contributor** to `mi-payroll-loader` at the `payroll` container scope"
+      },
+      {
+        "id": "C",
+        "text": "Assign **Reader** to `mi-payroll-loader` at the resource group scope"
+      },
+      {
+        "id": "D",
+        "text": "Set the `payroll` container anonymous access level to **Blob**"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The workload uses Microsoft Entra ID authorization through the managed identity and an SDK or tool that requests OAuth tokens. The task is data-plane upload and overwrite access to one container, not portal browsing by a human operator.",
+    "sections": {
+      "correctAnswer": "**B. Assign Storage Blob Data Contributor to `mi-payroll-loader` at the `payroll` container scope**. Blob data access through Microsoft Entra ID requires an Azure Storage data role, and assigning it at the container scope satisfies least privilege for one container.",
+      "technical": "Azure Storage supports Microsoft Entra ID authorization for blob data. A security principal such as a managed identity authenticates to Microsoft Entra ID, obtains an OAuth token, and sends that token to Blob Storage. Blob Storage then authorizes the request based on Azure RBAC role assignments for data access. Microsoft states that when you create a storage account, you are not automatically assigned permissions to access data through Microsoft Entra ID; data access roles must be assigned explicitly.\n\nScope controls where the permissions apply. Microsoft documents that blob data roles can be assigned at subscription, resource group, storage account, or container scope. For a single-container writer, the least-privilege scope is the container. The documented container scope string uses the storage account and the path `/blobServices/default/containers/<container-name>`.\n\nThe role also matters. **Storage Blob Data Contributor** is the appropriate built-in data role for reading, writing, and deleting blob data as required by upload and overwrite workflows. **Storage Account Contributor** is a management-plane role for managing storage account resources; it is too broad and not the clean data-plane answer for Microsoft Entra blob writes. **Reader** is a management-plane viewing role and does not grant blob upload. Anonymous access would allow unauthenticated reads, not authenticated writes by a managed identity.\n\nFor portal users, an additional Azure Resource Manager **Reader** role is often needed to navigate to the account in the portal, but this scenario is an application identity using Microsoft Entra authentication to write data, so the container-scoped data role is the essential assignment.",
+      "wrongOptions": {
+        "A": "Storage Account Contributor is broader than required and is aimed at managing the storage account resource rather than granting narrow Microsoft Entra blob data writes to one container. Misconception: Contributor on the account is the standard way to write blobs. Could be correct for an administrator who must manage account configuration, not for least-privilege container data access.",
+        "C": "Reader at the resource group scope helps view management resources but does not grant permission to upload or overwrite blob data. Misconception: Seeing a resource in Azure means the principal can use its data plane. Could be correct as an extra portal navigation role for a human who already has a blob data role.",
+        "D": "The Blob anonymous access level permits unauthenticated reads of blobs when account settings allow it; it does not let a managed identity upload or overwrite blobs. Misconception: Public access settings control all read and write authorization. Could be correct when publishing specific blob URLs for public download, not for authenticated writes."
+      },
+      "plainEnglish": "The managed identity needs a job badge that works only in the payroll container. Azure has special data roles for blob contents, and those roles can be scoped to just one container. Giving **Storage Blob Data Contributor** on `payroll` lets the app write payroll blobs without giving the same write power over `audit` or `public`. A storage account contributor role is like handing over building-management powers. A reader role only lets someone look at management information. Anonymous access is for public reading, not for an app identity uploading files.",
+      "analogy": "A delivery robot needs access to one mailroom, not the whole office building. Give it a badge that opens the `payroll` mailroom and permits deliveries. Do not give it the building manager's master badge, a visitor map, or a public brochure rack.\n\n| Analogy | Azure reality |\n|---|---|\n| Delivery robot | Managed identity |\n| Payroll mailroom | `payroll` blob container |\n| Delivery badge | Storage Blob Data Contributor |\n| Badge limited to one room | Container-scoped RBAC assignment |\n| Building manager badge | Storage Account Contributor |\n\n**Where the analogy breaks down:** Azure authorization is evaluated through tokens, role definitions, and resource scope strings rather than physical locks.",
+      "jargon": [
+        {
+          "term": "Managed identity",
+          "definition": "An Azure-managed identity that an Azure resource can use to authenticate to services without storing credentials."
+        },
+        {
+          "term": "Microsoft Entra ID",
+          "definition": "Microsoft's cloud identity platform used to authenticate users, applications, service principals, and managed identities."
+        },
+        {
+          "term": "Azure RBAC",
+          "definition": "Azure role-based access control, which grants permissions to security principals at a defined scope."
+        },
+        {
+          "term": "Security principal",
+          "definition": "An identity such as a user, group, application service principal, or managed identity that can receive role assignments."
+        },
+        {
+          "term": "Storage Blob Data Contributor",
+          "definition": "A built-in Azure role for reading, writing, and deleting Azure Storage blob data."
+        },
+        {
+          "term": "Storage Account Contributor",
+          "definition": "A management role for storage account resources, broader than a container-level blob data writer."
+        },
+        {
+          "term": "Scope",
+          "definition": "The resource boundary at which an Azure role assignment applies, such as a subscription, resource group, storage account, or container."
+        },
+        {
+          "term": "Data plane",
+          "definition": "Operations that read or modify data in a service, such as uploading blobs."
+        }
+      ],
+      "watchOut": "- Management roles and blob data roles are not interchangeable.\n- Container scope is narrower than storage account, resource group, or subscription scope.\n- Portal browsing by people can require management-plane Reader in addition to a data role, but application data access does not become broader for that reason.\n- Anonymous access is read-oriented and public; it is not a write permission for managed identities.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure roles for blob data can be assigned at subscription, resource group, storage account, or container level. The role-assignment guidance shows the container scope format and recommends limiting scope to follow least privilege.",
+        "recommendation": "Assign data roles to managed identities at the narrowest container that supports the workload. Use separate identities per application component so that revoking or rotating one workload's access does not affect unrelated containers."
+      },
+      "memoryTrick": "For Entra-based blob writes, remember **Data role + narrow scope**. This is a simplification because some operators also need management-plane roles for portal navigation.",
+      "examTip": "The phrases **managed identity**, **Microsoft Entra authentication**, and **only in one container** point to an Azure Storage data role at container scope. Rule out Storage Account Contributor when the task is blob data access with least privilege, and rule out anonymous access whenever the caller has an identity and needs to write."
+    },
+    "sources": [
+      {
+        "title": "Assign an Azure Role for Blob Data Access - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/assign-azure-role-data-access"
+      },
+      {
+        "title": "Authorize Blob Access with Microsoft Entra ID - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/authorize-access-azure-active-directory"
+      },
+      {
+        "title": "Use .NET to manage properties and metadata for a blob container - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-container-properties-metadata"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

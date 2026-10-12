@@ -1,0 +1,375 @@
+[
+  {
+    "id": "D4.3.1-01",
+    "objective": "D4.3.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You buy the public domain `fabrikamshipping.com` from a third-party registrar. You create an Azure DNS zone named `fabrikamshipping.com` and add an A record for `www`. Internet clients still receive responses from the registrar's old name servers.\n\nYou need public recursive resolvers to find the records hosted in Azure DNS with the least administrative effort.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Copy the four Azure DNS name servers from the zone overview and configure them as NS records for `fabrikamshipping.com` at the domain registrar"
+      },
+      {
+        "id": "B",
+        "text": "Create four A records named `ns1`, `ns2`, `ns3`, and `ns4` in the Azure DNS zone that point to the registrar's name servers"
+      },
+      {
+        "id": "C",
+        "text": "Create a private DNS zone named `fabrikamshipping.com` and link it to the virtual network that contains the web server"
+      },
+      {
+        "id": "D",
+        "text": "Add an NS record set named `www` in the Azure DNS zone so that only `www.fabrikamshipping.com` is delegated to Azure"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. You own the public domain and can change its name server settings at the registrar. The goal is Internet DNS resolution, not private name resolution inside a virtual network.",
+    "sections": {
+      "correctAnswer": "**A. Copy the four Azure DNS name servers from the zone overview and configure them as NS records for `fabrikamshipping.com` at the domain registrar**. Creating the zone in Azure gives Azure DNS authority only inside Azure until the parent side of the DNS hierarchy is delegated to those assigned name servers.",
+      "technical": "Azure DNS can host the records for a public DNS domain, but DNS clients do not discover that hosting relationship by inspecting your Azure subscription. Public DNS follows a delegation chain. A resolver starts at the root, goes to the top-level domain, then follows the NS records that the registrar placed in the parent zone for your registered domain.\n\nFor a domain such as `fabrikamshipping.com`, the practical sequence is:\n\n1. Create an Azure DNS zone named exactly `fabrikamshipping.com`.\n2. Create the record sets you need, such as `www` A or AAAA records.\n3. Read the Azure DNS name servers assigned to that zone from the zone overview.\n4. At the registrar, replace the domain's delegated name servers with all four Azure DNS name servers.\n5. Wait for DNS propagation, then verify by querying the SOA record or a known host name.\n\nAzure DNS automatically creates the authoritative NS record set at the zone apex for the assigned Azure name servers. That record set is necessary inside the zone, but the Internet also needs the parent delegation changed at the registrar. Microsoft notes that you should use all four provided name servers and preserve the trailing period when the registrar requires a fully qualified name. Azure DNS currently does not support vanity name servers that live inside the same zone, so the answer is not to invent `ns1.fabrikamshipping.com` host names.\n\nThe key scope rule is that an Azure DNS zone is a management container for records. Domain ownership and public delegation remain with the registrar until you update the registrar's NS settings.",
+      "wrongOptions": {
+        "B": "Creating A records for `ns1` through `ns4` in the Azure zone does not tell the `.com` parent zone to send resolvers to Azure DNS. Misconception: name server host names inside the child zone cause delegation by themselves. Could be correct when you are publishing ordinary host records for servers, but not when delegating the registered domain.",
+        "C": "A private DNS zone is resolvable only from linked virtual networks, not from the Internet. Misconception: any Azure DNS zone with the right name can replace public delegation. Could be correct when the same name must resolve privately for Azure workloads, not when public clients must use Azure DNS.",
+        "D": "An NS record set named `www` would delegate a child name below the zone, not the registered domain itself, and it would not make the existing A record authoritative for all Internet users. Misconception: delegation should be placed at the label that users browse to. Could be correct when intentionally delegating a child DNS zone to another provider."
+      },
+      "plainEnglish": "Think of the registrar as the public directory for your domain. You created a new filing cabinet in Azure DNS and put records in it, but the public directory still points visitors to the old cabinet. To fix that, take the four Azure DNS name server names that Azure assigned to your zone and enter them at the registrar for the domain. After the change spreads through DNS caches, Internet resolvers follow the registrar's pointer to Azure DNS and then read the records that you manage in Azure.",
+      "analogy": "A company moves its reception desk to a new building. Staff have arranged the new desk perfectly, but delivery drivers still go to the old address because the city directory has not been updated.\n\n| Analogy | Azure reality |\n|---|---|\n| New reception desk | Azure DNS zone |\n| City directory | Registrar and parent DNS zone |\n| Four official addresses | Azure DNS name servers |\n| Delivery driver lookup | Recursive DNS resolver |\n| Updating the directory | Registrar NS delegation change |\n\n**Where the analogy breaks down:** DNS uses cached, hierarchical referrals, so some resolvers can continue using old information until TTLs and propagation delays pass.",
+      "jargon": [
+        {
+          "term": "Azure DNS",
+          "definition": "Microsoft's DNS hosting service for public and private DNS zones."
+        },
+        {
+          "term": "DNS zone",
+          "definition": "A container that holds DNS record sets for a domain name."
+        },
+        {
+          "term": "Registrar",
+          "definition": "The organization where a public domain name is registered and where parent-zone name server settings are configured."
+        },
+        {
+          "term": "NS record",
+          "definition": "A DNS record that identifies authoritative name servers for a zone or delegated child zone."
+        },
+        {
+          "term": "SOA record",
+          "definition": "The start of authority record that identifies administrative information for a DNS zone."
+        },
+        {
+          "term": "A record",
+          "definition": "A DNS record that maps a host name to an IPv4 address."
+        },
+        {
+          "term": "Fully qualified domain name",
+          "definition": "A complete DNS name that ends at the root of the DNS hierarchy, often shown with a trailing period."
+        },
+        {
+          "term": "Vanity name server",
+          "definition": "A custom name server name inside the same domain, such as `ns1.contoso.com`; Microsoft documents that this delegation pattern is not currently supported in Azure DNS."
+        }
+      ],
+      "watchOut": "- Creating a public zone in Azure DNS is not enough; the registrar still controls public delegation.\n- Use all four Azure DNS name servers assigned to that zone.\n- A trailing period can matter in registrar tools that expect a fully qualified name.\n- You do not need to query Azure name servers directly to verify final behavior; a normal SOA lookup should follow the chain after delegation works.",
+      "productionTip": {
+        "official": "Microsoft documents the public hosting flow as creating the DNS zone, creating resource records, retrieving the Azure name servers, and delegating the domain to Azure's name servers at the registrar. The same documentation says Azure DNS automatically creates authoritative NS records in the zone for the assigned name servers.",
+        "recommendation": "Before changing production delegation, lower TTLs at the current provider if you can, export the old zone, recreate required records in Azure, and schedule the registrar change during a support window. Keep registrar credentials controlled separately from day-to-day DNS record management."
+      },
+      "memoryTrick": "Zone first, delegation second: Azure can answer only after the public chain points at Azure. This is a simplification because caches can keep old answers for a while.",
+      "examTip": "Clue words are **public domain**, **registrar**, and **Internet clients**. The exam is testing the parent-child DNS delegation boundary, not record creation inside the zone. A harder version might ask about a child zone; then an NS record inside the parent zone can be appropriate, but for the registered domain you update the registrar's NS records."
+    },
+    "sources": [
+      {
+        "title": "Tutorial: Host your domain in Azure DNS",
+        "url": "https://learn.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns"
+      },
+      {
+        "title": "DNS Zones and Records Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.3.1-02",
+    "objective": "D4.3.1",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You host the public zone `tailspinadventures.com` in Azure DNS. The marketing site must be reachable at both `www.tailspinadventures.com` and the zone apex `tailspinadventures.com`. The site uses a Standard public IP resource today, and operations wants to avoid dangling DNS records if that public IP changes during a redeployment.\n\nWhich two record design choices should you use? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create an A alias record set at the zone apex that targets the Standard public IP resource"
+      },
+      {
+        "id": "B",
+        "text": "Create a CNAME record set at the zone apex that points to `www.tailspinadventures.com`"
+      },
+      {
+        "id": "C",
+        "text": "Create a CNAME record set named `www` that points to the provider name used by the web platform, if that platform requires a canonical host name"
+      },
+      {
+        "id": "D",
+        "text": "Create a second SOA record set named `www` so that `www` has independent authority data"
+      },
+      {
+        "id": "E",
+        "text": "Use an SPF record type for sender policy data because Azure DNS supports that dedicated record type"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The apex target is an Azure Standard SKU public IP resource. The `www` target may be a platform-provided DNS name. The question is about DNS record behavior, not TLS certificate validation.",
+    "sections": {
+      "correctAnswer": "**A. Create an A alias record set at the zone apex that targets the Standard public IP resource** and **C. Create a CNAME record set named `www` that points to the provider name used by the web platform, if that platform requires a canonical host name**. Azure DNS alias records let an A record set point at supported Azure resources, while an ordinary CNAME is valid for a non-apex label such as `www`.",
+      "technical": "Azure DNS stores records as record sets: the same name and type grouped together. Common public DNS record types include A, AAAA, CNAME, MX, NS, PTR, SOA, SRV, TXT, and CAA. Two rules matter in this scenario.\n\nFirst, a CNAME record cannot coexist with other record sets that have the same name. The zone apex already has NS and SOA record sets that Azure creates when the zone is created, so a standards-compliant CNAME at `@` is not allowed. This is not just an Azure preference; it follows DNS standards.\n\nSecond, Azure DNS alias records are a qualification on a record set. An alias record set can be created for A, AAAA, or CNAME in an Azure DNS zone. For A or AAAA, one supported target is a Standard SKU public IP resource. When the underlying public IP changes or is deleted, the alias record avoids the traditional stale-record problem by following the Azure resource relationship instead of hard-coding a numeric address.\n\nFor the `www` name, a CNAME can be fine because `www` is not the apex and does not already need SOA and NS records. If the web platform asks you to point `www` to a canonical host name, CNAME is the ordinary record type. If the `www` endpoint is also an Azure resource that alias records support, an alias could be considered, but the exam point here is that apex needs alias A, not apex CNAME.\n\nSPF is another trap. Microsoft documents that SPF data must be represented by TXT records in Azure DNS; the obsolete SPF record type is not supported.",
+      "wrongOptions": {
+        "B": "A CNAME at the zone apex conflicts with the apex NS and SOA record sets. Misconception: CNAME is the universal answer whenever one name should point to another. Could be correct for a non-apex label such as `www` when no other record set with that name is required.",
+        "D": "SOA records are created at the apex of each zone and are not used to make a web host authoritative. Misconception: authority records should be added to important host names. Could be correct only when discussing the existing zone apex SOA properties, not a `www` web endpoint.",
+        "E": "Azure DNS documents that SPF data is created by using TXT records and that the obsolete SPF record type is not supported. Misconception: every named DNS standard has a separately supported Azure record type. Could be correct in a historical DNS discussion, not for configuring Azure DNS."
+      },
+      "plainEnglish": "The root of the domain, `tailspinadventures.com`, already carries special DNS records that describe the zone itself. Because of that, you cannot place a CNAME there. Azure gives you a safer substitute for Azure targets: make the apex an A alias that follows the Standard public IP resource. For `www`, which is just a normal host label, you can use a CNAME if the website service gives you another name to point at. That keeps the two names working without breaking DNS rules.",
+      "analogy": "A building has a legal property record at its street address and a sign for the shop entrance. You cannot replace the property record with a forwarding note, but you can put a managed pointer on it that follows the official city asset. The shop sign can still say, \"use the entrance around the corner.\"\n\n| Analogy | Azure reality |\n|---|---|\n| Property record | Apex NS and SOA records |\n| Managed pointer | Alias A record set |\n| City asset | Standard public IP resource |\n| Shop sign | `www` CNAME |\n| Old wrong phone number | Dangling DNS record |\n\n**Where the analogy breaks down:** DNS resolvers process exact record types, TTLs, and protocol rules; a building sign does not have type-specific coexistence constraints.",
+      "jargon": [
+        {
+          "term": "Apex",
+          "definition": "The root name of a DNS zone, represented as `@` in Azure DNS."
+        },
+        {
+          "term": "Alias record",
+          "definition": "An Azure DNS record set setting that points to a supported Azure resource or same-zone record set instead of storing only static data."
+        },
+        {
+          "term": "Standard public IP",
+          "definition": "An Azure public IP resource SKU that is supported as an A or AAAA alias target."
+        },
+        {
+          "term": "CNAME",
+          "definition": "A canonical name record that makes one DNS name an alias of another DNS name."
+        },
+        {
+          "term": "SOA",
+          "definition": "Start of Authority; the apex record that contains zone administration data."
+        },
+        {
+          "term": "TXT",
+          "definition": "A DNS record type used to store text strings, including SPF policy text."
+        },
+        {
+          "term": "SPF",
+          "definition": "Sender Policy Framework, an email anti-spoofing policy now represented with TXT records in Azure DNS."
+        },
+        {
+          "term": "Dangling DNS",
+          "definition": "A DNS record that points to a target that no longer belongs to the intended application or resource."
+        }
+      ],
+      "watchOut": "- Alias records are supported for A, AAAA, and CNAME record sets in Azure DNS.\n- The apex cannot have a CNAME because NS and SOA already live there.\n- Alias A or AAAA records can point to a Standard SKU public IP resource.\n- SPF text belongs in TXT records, not an SPF record type in Azure DNS.",
+      "productionTip": {
+        "official": "Microsoft documents alias records as record set qualifications that can reference Azure resources and says A or AAAA alias record sets can point to a Standard SKU public IP resource. Microsoft also documents the CNAME coexistence and apex restrictions that prevent a CNAME at the zone root.",
+        "recommendation": "Use alias records for Azure-owned targets when lifecycle coupling reduces outage risk. For non-Azure SaaS targets, document who owns the target name and validate custom domain ownership before lowering old records, because DNS correctness does not prove application readiness."
+      },
+      "memoryTrick": "At the apex, avoid CNAME and use an Azure alias when the target is supported. This shortcut fails if the target is not one of the alias-capable Azure resources.",
+      "examTip": "Look for **zone apex**, **CNAME**, and **Standard public IP**. The correct reasoning is about record-type constraints and Azure alias capabilities, not about which web server is behind the address. A more difficult version might mention Traffic Manager, Front Door, or CDN; verify whether the alias target type is supported before choosing it."
+    },
+    "sources": [
+      {
+        "title": "DNS Zones and Records Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/dns/dns-zones-records"
+      },
+      {
+        "title": "Alias records overview - Azure DNS",
+        "url": "https://learn.microsoft.com/en-us/azure/dns/dns-alias"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.3.1-03",
+    "objective": "D4.3.1",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You manage private name resolution for `corp.contoso.com`. The private DNS zone is linked to 12 spoke virtual networks. Virtual machines in each spoke must resolve records in the zone. Only the hub virtual network should automatically create and remove DNS records for its virtual machines.\n\nA colleague proposes enabling autoregistration on every virtual network link so that each spoke registers its own VM records.\n\nWill this design meet the goal?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Yes. A private DNS zone can have multiple registration virtual networks, so enabling autoregistration on every link is always the recommended design"
+      },
+      {
+        "id": "B",
+        "text": "Yes, but only if the private DNS zone name is also created as a public Azure DNS zone"
+      },
+      {
+        "id": "C",
+        "text": "No. Link the spokes as resolution virtual networks and enable autoregistration only on the hub link"
+      },
+      {
+        "id": "D",
+        "text": "No. Private DNS zones cannot be linked to more than one virtual network"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The VNets use Azure-provided DNS or otherwise forward the private zone to Azure DNS correctly. The design is for Azure Private DNS, not an on-premises Active Directory DNS zone.",
+    "sections": {
+      "correctAnswer": "**C. No. Link the spokes as resolution virtual networks and enable autoregistration only on the hub link**. Linked VNets can resolve records without autoregistration, and the goal says only hub VMs should automatically register records.",
+      "technical": "Azure Private DNS zones are not resolvable from the Internet. Resolution works from virtual networks linked to the private zone. A virtual network link can be used in two different ways.\n\nA registration virtual network has autoregistration enabled. Azure automatically creates DNS records for virtual machines deployed in that virtual network and creates records for VMs that are already present when the link is enabled. From the VNet perspective, that private zone becomes the registration zone for that virtual network.\n\nA resolution virtual network is linked without autoregistration. VMs in that VNet can query records in the private zone, including manual records and records auto-registered from other linked VNets, but their own VM records are not automatically created in the zone.\n\nThe goal separates these two behaviors. All 12 spokes need query access, so they need links. Only the hub should publish automatic VM records, so only the hub link should have autoregistration enabled. Microsoft documents that a private DNS zone can have multiple registration virtual networks, but every virtual network can have only one registration zone associated with it. Microsoft also publishes limits: a private DNS zone can have 1,000 virtual network links, 100 virtual network links with autoregistration enabled, a virtual network can be linked to 1,000 private DNS zones, and a virtual network can be linked to only one private DNS zone with autoregistration enabled.\n\nCustom DNS changes the evaluation path. With default VNet DNS settings, linked private zones are queried first and Azure-provided DNS is queried next. If custom DNS servers are configured, the custom setting overrides that order, so a conditional forwarder or Azure DNS Private Resolver design is needed.",
+      "wrongOptions": {
+        "A": "The first sentence is partly true because a private zone can have multiple registration VNets, but enabling registration everywhere violates the requirement that only the hub create automatic records. Misconception: if a feature is supported, it should be applied uniformly. Could be correct when every linked VNet is intended to publish its VM names into the same private zone and limits are respected.",
+        "B": "A matching public zone is not required for linked VNets to resolve a private DNS zone. Misconception: private DNS needs a public twin before it can answer queries. Could be correct in a split-horizon design where public clients also need public answers for the same domain, but it is not required for private resolution.",
+        "D": "Private DNS zones can be linked to multiple virtual networks; Microsoft documents large link limits. Misconception: a private zone behaves like a single-VNet setting. Could be correct only for a different resource that has a one-to-one attachment limit, not Azure Private DNS zone links."
+      },
+      "plainEnglish": "Autoregistration is the publishing switch, not the reading switch. A spoke network can read names from the private zone without automatically writing its own VM names there. In this scenario, the hub is the only network that should write VM records automatically, so the hub link gets autoregistration. The spokes get ordinary links. That lets their machines look up hub records while keeping the zone from filling with every spoke VM name.",
+      "analogy": "A shared office directory is visible to many departments. Only Human Resources is allowed to add employee cards automatically; other departments can read the directory but cannot auto-file new cards.\n\n| Analogy | Azure reality |\n|---|---|\n| Shared directory | Private DNS zone |\n| Department connection | Virtual network link |\n| HR auto-files cards | Registration VNet with autoregistration |\n| Other departments read cards | Resolution VNet link |\n| Directory capacity rules | Azure Private DNS link limits |\n\n**Where the analogy breaks down:** DNS records are created and deleted by Azure based on VM lifecycle, not by people manually filing cards after every employee change.",
+      "jargon": [
+        {
+          "term": "Private DNS zone",
+          "definition": "An Azure DNS zone whose records are resolvable from linked virtual networks rather than from the public Internet."
+        },
+        {
+          "term": "Virtual network link",
+          "definition": "A child resource that connects a private DNS zone to a virtual network for resolution and optionally registration."
+        },
+        {
+          "term": "Autoregistration",
+          "definition": "A setting that automatically manages DNS records for virtual machines in the linked virtual network."
+        },
+        {
+          "term": "Registration virtual network",
+          "definition": "A linked VNet with autoregistration enabled for a private DNS zone."
+        },
+        {
+          "term": "Resolution virtual network",
+          "definition": "A linked VNet that can query the private DNS zone but does not automatically register its VM records."
+        },
+        {
+          "term": "Azure DNS Private Resolver",
+          "definition": "An Azure service used to forward DNS queries between Azure DNS and custom or on-premises DNS architectures."
+        },
+        {
+          "term": "Conditional forwarder",
+          "definition": "A DNS server rule that forwards queries for selected DNS zones to a specified DNS server."
+        },
+        {
+          "term": "Custom DNS server",
+          "definition": "A DNS server explicitly configured for a VNet instead of using Azure-provided DNS directly."
+        }
+      ],
+      "watchOut": "- A VNet can resolve a linked private zone without being a registration VNet.\n- A VNet can have only one private DNS zone linked with autoregistration enabled.\n- A private zone supports up to 100 VNet links with autoregistration enabled and up to 1,000 total VNet links.\n- Custom DNS servers override the default private-zone-first resolution order unless forwarding is configured.",
+      "productionTip": {
+        "official": "Microsoft documents registration and resolution virtual networks as separate link modes. It also lists Azure Private DNS limits, including 1,000 virtual network links per private zone, 100 links with autoregistration enabled, and one autoregistration-enabled private zone link per virtual network.",
+        "recommendation": "Decide which networks own names before enabling autoregistration. In hub-and-spoke estates, keep registration limited to controlled VNets or create separate zones per ownership boundary, then test name resolution from spokes after any custom DNS or resolver change."
+      },
+      "memoryTrick": "Resolution reads; registration writes. This is a simplification because a registration VNet also resolves, but it helps separate query access from automatic record creation.",
+      "examTip": "The clue is **only the hub should automatically create records**. Do not choose the answer that turns every link into a registration link just because multiple registration networks are supported. A harder item may hide the one-registration-zone-per-VNet limit behind several private zones with autoregistration enabled."
+    },
+    "sources": [
+      {
+        "title": "Azure Private DNS Zone Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/dns/private-dns-privatednszone"
+      },
+      {
+        "title": "What is a virtual network link subresource of Azure DNS private zones",
+        "url": "https://learn.microsoft.com/en-us/azure/dns/private-dns-virtual-network-links"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D4.3.1-04",
+    "objective": "D4.3.1",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank uses the private DNS zone `apps.woodgrove.local` linked to a virtual network. Virtual machines in the VNet use the default DNS settings and can resolve `api.apps.woodgrove.local`. After the network team configures the VNet to use a custom DNS appliance, the same VMs can no longer resolve records from the linked private zone.\n\nYou need to restore private-zone resolution while keeping the custom DNS appliance.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a public Azure DNS zone with the same name and copy the private records into it"
+      },
+      {
+        "id": "B",
+        "text": "Add an outbound NSG deny rule for the `AzurePlatformDNS` service tag"
+      },
+      {
+        "id": "C",
+        "text": "Configure a reverse DNS record for `168.63.129.16` so the appliance trusts the Azure DNS virtual server"
+      },
+      {
+        "id": "D",
+        "text": "Configure the custom DNS appliance to forward queries for `apps.woodgrove.local` to Azure DNS at `168.63.129.16`"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The custom DNS appliance is a VM or DNS server in a network path that can reach Azure DNS for the linked private zone. The requirement is split private/public resolution behavior, not publishing private names on the Internet.",
+    "sections": {
+      "correctAnswer": "**D. Configure the custom DNS appliance to forward queries for `apps.woodgrove.local` to Azure DNS at `168.63.129.16`**. Microsoft documents that custom DNS settings override the automatic private-zone lookup order, so the custom server must forward the private zone to Azure DNS or use an Azure DNS Private Resolver pattern.",
+      "technical": "With default DNS settings on a virtual network, Azure handles name resolution in a particular order: linked private DNS zones are queried first, and Azure-provided DNS is queried next. That is why the VMs could resolve `api.apps.woodgrove.local` before the custom appliance was introduced.\n\nWhen a VNet is configured with custom DNS servers, the custom setting overrides that built-in order. Azure does not automatically ask linked private zones on behalf of the custom DNS appliance. The appliance must either be part of a documented resolver architecture or have a conditional forwarder for the private zone. Microsoft specifically documents that if the custom DNS server is a virtual machine, you must configure a conditional forwarder that points to Azure DNS at `168.63.129.16` for the private zone.\n\nThe IP address `168.63.129.16` is a special virtual public IP address owned by Microsoft and used in all Azure regions and national clouds. It supports several Azure platform functions, including DNS service for VMs that do not use a custom DNS server, VM Agent communication, DHCP, and Azure Load Balancer health probes. It is not subject to user-defined routes. DNS traffic to that address uses TCP and UDP port 53. Microsoft notes that DNS communication is not subject to configured NSGs by default unless targeted with the `AzurePlatformDNS` service tag.\n\nThis is a split-horizon-style scenario: the same organization can keep private names private inside Azure while public DNS continues to serve Internet answers elsewhere. The fix is not to publish private records publicly; it is to make the custom resolver forward the private suffix correctly.",
+      "wrongOptions": {
+        "A": "A public zone would expose records to Internet DNS and is not required for linked private-zone resolution. Misconception: private resolution problems should be fixed by making records public. Could be correct when public clients genuinely need public answers for a public domain, but not for private application names.",
+        "B": "Denying `AzurePlatformDNS` blocks DNS traffic to Azure DNS rather than restoring it. Misconception: a security service tag must be added whenever platform DNS is involved. Could be correct when an organization intentionally wants to prevent direct Azure DNS use, but this scenario needs forwarding to Azure DNS.",
+        "C": "Microsoft documents that `168.63.129.16` does not support reverse DNS lookup, and reverse DNS is not required for the forwarding path. Misconception: DNS servers must trust a forwarder by resolving its PTR record. Could be correct in a different DNS policy design that relies on reverse lookup, not with this Azure platform IP."
+      },
+      "plainEnglish": "Originally, Azure's built-in DNS knew to check the private zone before going elsewhere. After you told the VNet to use your own DNS appliance, the VMs started asking that appliance instead. The appliance does not magically know about Azure Private DNS links. Teach it that names ending in `apps.woodgrove.local` should be sent to Azure DNS at `168.63.129.16`, or use the Azure resolver service that implements that forwarding pattern.",
+      "analogy": "A bank installs a new reception switchboard. Before the switchboard, employees could call internal extensions directly. After the switchboard, callers reach the operator first, so the operator needs a rule: calls for the internal app department go to the internal directory desk.\n\n| Analogy | Azure reality |\n|---|---|\n| Switchboard | Custom DNS appliance |\n| Internal directory desk | Azure DNS for linked private zones |\n| Special desk number | `168.63.129.16` |\n| Call rule for a department | Conditional forwarder for the private suffix |\n| Public phone book | Public DNS zone |\n\n**Where the analogy breaks down:** DNS forwarding decisions depend on suffix matching and network reachability, while a human operator can make judgment calls from conversation context.",
+      "jargon": [
+        {
+          "term": "`168.63.129.16`",
+          "definition": "A Microsoft-owned virtual public IP address used by Azure platform services, including Azure-provided DNS."
+        },
+        {
+          "term": "Azure-provided DNS",
+          "definition": "The default DNS service available to Azure virtual machines when a VNet does not use custom DNS servers."
+        },
+        {
+          "term": "Custom DNS",
+          "definition": "DNS servers configured on a VNet or VM instead of using Azure's default name resolution directly."
+        },
+        {
+          "term": "Conditional forwarder",
+          "definition": "A DNS rule that sends queries for a selected DNS suffix to another resolver."
+        },
+        {
+          "term": "Private DNS zone",
+          "definition": "An Azure DNS zone whose records are reachable only from linked virtual networks or through configured resolver paths."
+        },
+        {
+          "term": "Split horizon",
+          "definition": "A DNS design where private clients and public clients can receive different answers for related names."
+        },
+        {
+          "term": "NSG",
+          "definition": "Network Security Group, an Azure packet filter applied to subnets or network interfaces."
+        },
+        {
+          "term": "AzurePlatformDNS",
+          "definition": "A service tag that can target DNS traffic to Azure platform DNS in NSG rules."
+        }
+      ],
+      "watchOut": "- Default VNet DNS checks linked private DNS zones first; custom DNS overrides that behavior.\n- Use a conditional forwarder or Azure DNS Private Resolver architecture for private-zone queries behind custom DNS.\n- `168.63.129.16` is not subject to user-defined routes and does not support reverse DNS lookup.\n- Blocking `AzurePlatformDNS` is a deliberate denial action, not a resolution fix.",
+      "productionTip": {
+        "official": "Microsoft documents that linked private zones are queried before Azure-provided DNS only when the VNet uses default DNS settings. If custom DNS is configured, Microsoft says to use Azure DNS Private Resolver or configure a conditional forwarder to Azure DNS at `168.63.129.16` for the private zone.",
+        "recommendation": "Treat DNS appliances as part of the application dependency chain. Monitor conditional forwarder health, keep a runbook for private zone suffixes, and avoid copying private records into public zones just to bypass resolver configuration."
+      },
+      "memoryTrick": "Custom DNS becomes the driver; give it a map back to Azure. This rule of thumb fails if your architecture uses Private Resolver inbound endpoints instead of direct forwarding to `168.63.129.16`.",
+      "examTip": "Clue words are **default DNS worked**, **custom DNS appliance**, and **linked private zone**. Choose the forwarding or resolver answer. A harder version may include an NSG rule: remember that denying `AzurePlatformDNS` blocks Azure DNS traffic rather than helping custom DNS resolve private zones."
+    },
+    "sources": [
+      {
+        "title": "Azure Private DNS Zone Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/dns/private-dns-privatednszone"
+      },
+      {
+        "title": "Azure IP Address 168.63.129.16 Overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-network/what-is-ip-address-168-63-129-16"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

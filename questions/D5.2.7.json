@@ -1,0 +1,395 @@
+[
+  {
+    "id": "D5.2.7-01",
+    "objective": "D5.2.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You administer 20 Recovery Services vaults and 3 Backup vaults across several Azure subscriptions. A compliance team wants Azure Backup reports that show backup jobs, backup instances, usage, policies, and policy adherence over a long period.\n\nYou open the report workbook, but several new vaults show no data. The vaults were created yesterday and no diagnostic settings were configured.\n\nWhat should you do first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Configure each vault's diagnostic settings to send backup diagnostic data to a Log Analytics workspace."
+      },
+      {
+        "id": "B",
+        "text": "Create an Azure Monitor action group for each vault so the reports can receive alert notifications."
+      },
+      {
+        "id": "C",
+        "text": "Enable a test failover for each protected VM so reports can collect Site Recovery job history."
+      },
+      {
+        "id": "D",
+        "text": "Disable built-in Azure Monitor alerts because reports cannot display data while alerts are enabled."
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The requirement is Azure Backup reporting by using the Microsoft reporting solution, not a custom CMDB export or billing-only cost report.",
+    "sections": {
+      "correctAnswer": "**A. Configure each vault's diagnostic settings to send backup diagnostic data to a Log Analytics workspace**. Azure Backup reports use Azure Monitor Logs and Azure workbooks, and Microsoft states that vault diagnostic settings must send data to Log Analytics before report data is available.",
+      "technical": "Azure Backup reports are not populated directly from an action group or from the alert blade. The reporting solution uses Azure Monitor Logs as the data store and Azure workbooks as the visualization layer. Recovery Services vaults and Backup vaults are Azure Resource Manager resources that record scheduled operations and user-triggered operations as diagnostic data. To make that data available to the reports, each vault must have diagnostic settings that send the relevant data to a Log Analytics workspace.\n\nThe setup sequence is:\n\n1. Create or choose a Log Analytics workspace.\n2. Configure vault diagnostic settings for the Recovery Services vaults and Backup vaults.\n3. Set retention on the workspace or tables to match the reporting horizon.\n4. Wait for the initial data push and report conventions to catch up.\n5. Open the Backup reports or the Resiliency reporting experience and select the correct filters.\n\nThere are two timing traps. Microsoft says the initial diagnostic data push can take up to 24 hours after diagnostics are configured. The reports also do not show data for the current partial day, so Microsoft recommends starting to view reports two days after configuring vaults. If newly created vaults show no data one day after creation and diagnostics were never configured, the first fix is diagnostic settings, not alerting.\n\nAction groups are for notification routing. They do not feed historical job, policy, usage, or instance records into the report data model.",
+      "wrongOptions": {
+        "B": "Action groups choose where alerts are sent, such as email or webhook. They do not populate Backup reports with vault diagnostic records. Misconception: every monitoring feature starts with an action group. Could be correct when the requirement is to notify operators after an alert fires.",
+        "C": "Test failover belongs to Azure Site Recovery drills and is not required to show Azure Backup reports for vaults. Misconception: BCDR reports need a recovery drill before any data appears. Could be correct when validating disaster recovery for replicated machines, not when enabling backup reporting.",
+        "D": "Built-in Azure Monitor alerts do not block reports. Reports and alerts are different monitoring paths. Misconception: alerts consume or hide the same data that reports need. Could be correct only if the business deliberately wants to change alert behavior, not to fix missing report data."
+      },
+      "plainEnglish": "The report workbook needs a database of backup events to read from. Azure uses Log Analytics for that database. A vault does not automatically send all the report-ready history there just because it exists. You must turn on diagnostic settings for each vault and point those settings to the workspace. After that, wait for the first data transfer and remember that today's partial data may not appear immediately. Email notification settings are useful later, but they are not the pipeline that fills the report.",
+      "analogy": "A finance dashboard cannot show branch spending until every branch sends receipts to the accounting system. The dashboard is the workbook, the accounting system is Log Analytics, and diagnostic settings are the rule that tells each branch to send its receipts.\n\n| Analogy | Azure reality |\n|---|---|\n| Branch office | Recovery Services vault or Backup vault |\n| Receipt stream | Diagnostic data |\n| Accounting database | Log Analytics workspace |\n| Finance dashboard | Azure Backup reports workbook |\n| Waiting for mail to arrive | Initial data push and completed-day reporting delay |\n\n**Where the analogy breaks down:** Azure diagnostic events are structured platform logs, and workbooks query them through Azure Monitor rather than through a manual accounting process.",
+      "jargon": [
+        {
+          "term": "Recovery Services vault",
+          "definition": "An Azure vault used by services such as Azure Backup and Azure Site Recovery to manage protection data and jobs."
+        },
+        {
+          "term": "Backup vault",
+          "definition": "An Azure vault type used by newer Azure Backup workloads such as operational backup scenarios and data protection workloads."
+        },
+        {
+          "term": "Diagnostic settings",
+          "definition": "Azure Monitor configuration that sends platform logs and metrics from a resource to destinations such as Log Analytics."
+        },
+        {
+          "term": "Log Analytics workspace",
+          "definition": "An Azure Monitor Logs workspace that stores log data and supports Kusto queries and workbooks."
+        },
+        {
+          "term": "Azure workbook",
+          "definition": "An Azure Monitor interactive report surface for visualizing and querying monitoring data."
+        },
+        {
+          "term": "Policy adherence",
+          "definition": "Reporting about whether protected items meet the schedule and retention expectations of their backup policies."
+        },
+        {
+          "term": "Protected instance",
+          "definition": "A data source or workload that is configured for backup protection."
+        },
+        {
+          "term": "Retention",
+          "definition": "The period for which data, such as workspace logs or backup recovery points, is kept."
+        }
+      ],
+      "watchOut": "- Reports need vault diagnostics sent to Log Analytics.\n- Data can take up to 24 hours for the first push after diagnostics are configured.\n- The current partial day is not shown in Backup reports.\n- Action groups notify people; they are not the reporting ingestion path.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure Backup reports use Azure Monitor Logs and Azure workbooks, and instructs administrators to configure diagnostic settings for Recovery Services vaults and Backup vaults to send diagnostic data to Log Analytics. Microsoft also notes the initial push delay and completed-day reporting convention.",
+        "recommendation": "Recommendation: use Azure Policy or infrastructure as code to deploy vault diagnostic settings at scale, and align workspace retention with audit requirements before auditors ask for old data. Keep report-reader access separate from backup-operator access so people can review compliance without being able to change protection."
+      },
+      "memoryTrick": "**No diagnostics, no report history**. The phrase is a simplification because filters, workspace retention, and report latency can still hide data after diagnostics are correctly configured.",
+      "examTip": "Clue words are **reports**, **long period**, **Log Analytics**, and **diagnostic settings**. Do not pick action groups unless the question asks about notifications. If a question says diagnostics were configured yesterday, remember the 24-hour initial push and the current-day reporting convention before assuming a broken report."
+    },
+    "sources": [
+      {
+        "title": "Configure Azure Backup reports",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/configure-reports"
+      },
+      {
+        "title": "Tutorial - Set up and view reports in Resiliency",
+        "url": "https://learn.microsoft.com/en-us/azure/resiliency/tutorial-reporting-for-data-insights"
+      },
+      {
+        "title": "Azure Monitor Logs in Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-monitoring-use-azuremonitor"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.7-02",
+    "objective": "D5.2.7",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "A backup operator needs a single Azure portal experience to view backup and disaster recovery posture across many vaults, subscriptions, regions, and Azure Lighthouse tenants. The operator also wants to view jobs and alerts from the same at-scale business continuity area.\n\nWhich portal experience should the operator use in October 2026?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use **Azure Advisor** because it replaces Backup center job and alert views."
+      },
+      {
+        "id": "B",
+        "text": "Use only the **Backup Items** blade inside each individual Recovery Services vault."
+      },
+      {
+        "id": "C",
+        "text": "Use **Resiliency** in Azure, noting that Azure Business Continuity Center capabilities are now part of that experience."
+      },
+      {
+        "id": "D",
+        "text": "Use **Cleanup test failover** because it opens the reporting experience after a drill."
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The question asks for the current Azure portal experience for at-scale BCDR management, not for a workload-specific blade inside one vault.",
+    "sections": {
+      "correctAnswer": "**C. Use Resiliency in Azure, noting that Azure Business Continuity Center capabilities are now part of that experience**. Microsoft states that Azure Business Continuity Center is now Resiliency in Azure, and that Resiliency provides unified backup, disaster recovery, jobs, alerts, and reports views across the protection estate.",
+      "technical": "Microsoft's naming has changed, which makes this an exam trap. Backup center is documented as a legacy experience that evolved toward broader BCDR management capabilities. Its article says Backup center is no longer available from Azure portal search and recommends Azure Business Continuity Center for comprehensive BCDR management. The current Resiliency documentation then states that Azure Business Continuity Center is now **Resiliency in Azure**.\n\nResiliency is the current cloud-native unified experience for resiliency posture management. It consolidates data resiliency, backup, disaster recovery, ransomware-related protections, and broader resiliency views. For the backup administrator, the relevant capabilities are at-scale views across multiple workload types, vaults, subscriptions, regions, and Azure Lighthouse tenants. The Resiliency tutorials include **Monitoring + Reporting > Jobs**, **Alerts**, **Metrics**, and **Reports**.\n\nAn individual Recovery Services vault remains useful when you already know which vault owns a protected item. That blade can show backup instances and jobs for that vault. It is not the best match when the question asks for one cross-estate experience. Azure Advisor can provide recommendations, but it is not the documented replacement for the BCDR monitoring portal. Cleanup test failover belongs to Site Recovery drills and has no role as the central view.\n\nThe safe current wording is to call out **Resiliency** and, if helpful for legacy materials, mention that it includes the capabilities formerly associated with Azure Business Continuity Center.",
+      "wrongOptions": {
+        "A": "Azure Advisor is not the documented unified BCDR operations surface for jobs, alerts, and reports. Misconception: every Azure recommendation or posture feature is surfaced through Advisor. Could be correct when reviewing Advisor recommendations, but not when operating Backup and Site Recovery monitoring views.",
+        "B": "A single vault blade is scoped to that vault and does not satisfy the requirement for many vaults, subscriptions, regions, and tenants. Misconception: backup administration always starts inside the vault that stores the item. Could be correct when troubleshooting one known protected item or one vault's job history.",
+        "D": "Cleanup test failover is an action that removes resources from a Site Recovery drill. It is not a portal hub for backup or disaster recovery reporting. Misconception: a disaster recovery operation opens the broader BCDR management center. Could be correct after a test failover has been validated and temporary VMs should be removed."
+      },
+      "plainEnglish": "Azure has a current central page for looking after resilience across many protected resources. Older study material may mention Backup center or Azure Business Continuity Center. In current Microsoft documentation, the broad experience is Resiliency in Azure. Use it when the task is not about one known vault but about seeing jobs, alerts, reports, and protection status across the estate. The individual vault pages still exist, but they are narrower.",
+      "analogy": "A company used to have separate front desks for different safety programs. It now has a central operations room called Resiliency. You can still visit one building's local desk, but the operations room is where leadership sees activity across the company.\n\n| Analogy | Azure reality |\n|---|---|\n| Central operations room | Resiliency in Azure |\n| Former desk name | Azure Business Continuity Center capabilities |\n| Local building desk | Individual Recovery Services vault blade |\n| Incident board | Jobs and alerts views |\n| Executive binder | Reports view |\n\n**Where the analogy breaks down:** Azure portal experiences are software views with permissions and filters; they are not physical rooms with shared paper boards.",
+      "jargon": [
+        {
+          "term": "Resiliency in Azure",
+          "definition": "The current Azure portal experience for managing resiliency posture and BCDR protection across solutions and environments."
+        },
+        {
+          "term": "Azure Business Continuity Center",
+          "definition": "The former name for capabilities that Microsoft documents as now being part of Resiliency in Azure."
+        },
+        {
+          "term": "Backup center",
+          "definition": "A legacy Azure Backup and Site Recovery management experience that Microsoft says has transitioned toward Resiliency."
+        },
+        {
+          "term": "Azure Lighthouse",
+          "definition": "An Azure delegated-resource-management capability often used by service providers to manage customer resources across tenants."
+        },
+        {
+          "term": "BCDR",
+          "definition": "Business continuity and disaster recovery; practices that keep services available and recoverable during disruptions."
+        },
+        {
+          "term": "Recovery Services vault",
+          "definition": "A vault that stores management information for Azure Backup and Azure Site Recovery protected items."
+        },
+        {
+          "term": "Backup instance",
+          "definition": "A protected data source tracked by Azure Backup in a vault."
+        },
+        {
+          "term": "Monitoring + Reporting",
+          "definition": "The Resiliency area that exposes operational views such as jobs, alerts, metrics, and reports."
+        }
+      ],
+      "watchOut": "- Current docs identify Azure Business Continuity Center as Resiliency in Azure.\n- Backup center is described as a legacy experience and is no longer the portal-search answer.\n- Individual vault views are still useful but are narrower than Resiliency.\n- Expect exams to test current names and old-name recognition in the same scenario.",
+      "productionTip": {
+        "official": "Microsoft documents Resiliency in Azure as a unified platform for managing backup and disaster recovery at scale, including jobs, alerts, metrics, and reports. The Backup center overview states that Backup center is a legacy experience and recommends the newer comprehensive BCDR management experience.",
+        "recommendation": "Recommendation: update runbooks and screenshots to use the Resiliency name while adding one parenthetical note for staff who know the older Business Continuity Center label. Grant read-only monitoring roles broadly enough for operations visibility, but reserve backup and Site Recovery contributor roles for teams that need to change protection."
+      },
+      "memoryTrick": "**Resiliency is the current room; Backup center is the older doorway**. This is a naming aid, not a rule about every vault-specific task.",
+      "examTip": "When a question asks for **single pane of glass**, **many vaults**, **jobs**, **alerts**, or **reports**, choose Resiliency. If it asks for settings on one protected item, a vault blade may be appropriate. If it uses the old Business Continuity Center name, translate that to Resiliency rather than assuming a separate service."
+    },
+    "sources": [
+      {
+        "title": "Backup center overview and transition to Resiliency",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-center-overview"
+      },
+      {
+        "title": "What is Resiliency?",
+        "url": "https://learn.microsoft.com/en-us/azure/resiliency/resiliency-overview"
+      },
+      {
+        "title": "Tutorial - Monitor and operate jobs",
+        "url": "https://learn.microsoft.com/en-us/azure/resiliency/tutorial-monitor-operate"
+      },
+      {
+        "title": "Tutorial - Monitor alerts and metrics in Resiliency",
+        "url": "https://learn.microsoft.com/en-us/azure/resiliency/tutorial-monitor-alerts-metrics"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.7-03",
+    "objective": "D5.2.7",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You manage Azure Backup for several Recovery Services vaults. The operations team wants near-standard notifications for critical backup scenarios such as backup job failures, restore failures, deletion of backup data, and disabling of soft delete.\n\nThe team also has custom Kusto queries for special cases that are acceptable with Log Analytics delay. You want to avoid duplicate emails from the older classic alerting path.\n\nWhich two actions should you take? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Use built-in Azure Monitor alerts for the default critical Azure Backup scenarios, including backup and restore failures."
+      },
+      {
+        "id": "B",
+        "text": "Configure alert processing rules and action groups to route Azure Monitor alerts to the required notification channels."
+      },
+      {
+        "id": "C",
+        "text": "Keep classic alerts enabled in every vault because built-in Azure Monitor alerts only support reports, not notifications."
+      },
+      {
+        "id": "D",
+        "text": "Send custom query alerts directly from Backup reports without creating Azure Monitor alert rules."
+      },
+      {
+        "id": "E",
+        "text": "Use Site Recovery network mapping to suppress duplicate backup failure emails."
+      }
+    ],
+    "correct": [
+      "A",
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The vaults are eligible for Azure Monitor based Azure Backup alerting, and the organization wants the current alerting path rather than relying on the older classic alert solution.",
+    "sections": {
+      "correctAnswer": "**A. Use built-in Azure Monitor alerts for the default critical Azure Backup scenarios, including backup and restore failures** and **B. Configure alert processing rules and action groups to route Azure Monitor alerts to the required notification channels**. Microsoft documents built-in Azure Monitor alerts for default Azure Backup scenarios and uses alert processing rules plus action groups for notifications.",
+      "technical": "Azure Backup supports several Azure Monitor based alerting approaches. The one closest to the older classic backup alert experience is **built-in Azure Monitor alerts**. Microsoft lists default scenarios such as deletion of backup data, disabling soft delete, backup failures, restore failures, and related critical events. For job failure scenarios, built-in Azure Monitor alerts are generated by default, and administrators can manage monitoring settings on the vault.\n\nAlerts and notifications are different objects. The alert is the signal that something happened. The notification path is configured by Azure Monitor mechanisms. For built-in Azure Monitor alerts, Microsoft documents using alert processing rules and action groups. The alert processing rule decides which fired alerts are routed, and the action group contains destinations such as email, SMS, push, voice, webhook, function, logic app, or other Azure Monitor-supported channels.\n\nThe migration detail is another exam target. Microsoft compares classic backup alerts with built-in Azure Monitor alerts and provides a setting to use only Azure Monitor alerts so that the older classic alert path does not create duplicate notifications. Existing custom Log Analytics alerts can still be used for custom scenarios after vault diagnostics are sent to Log Analytics, but those are separate log alert rules and are appropriate when some delay is acceptable.\n\nTherefore, use built-in alerts for the standard critical scenarios and configure Azure Monitor routing for notifications. Do not keep classic alerts just to get email if the goal is to avoid duplicate emails.",
+      "wrongOptions": {
+        "C": "Keeping classic alerts enabled can cause duplicate notifications during migration, and built-in Azure Monitor alerts do support notification routing through alert processing rules and action groups. Misconception: classic alerts are the only way Azure Backup can send email. Could be correct temporarily during a staged migration when duplicates are explicitly accepted and documented.",
+        "D": "Backup reports visualize historical data; they are not the mechanism that fires custom query alerts. Custom query alerts are created as Azure Monitor log alerts against Log Analytics data. Misconception: every workbook chart can notify directly without an alert rule. Could be correct only if the task were to inspect trends manually in a report.",
+        "E": "Network mapping is an Azure Site Recovery networking feature and has no relationship to Azure Backup alert notification routing. Misconception: any BCDR setting can affect backup monitoring behavior. Could be correct when choosing target VNets for replicated VMs, not when suppressing or routing backup alerts."
+      },
+      "plainEnglish": "Azure Backup can raise standard alerts for common serious events, such as failed backups or someone disabling a safety feature. Those alerts do not automatically know whom to contact. You attach routing rules and contact groups so the alert goes to email, webhook, or another channel. If the old classic alert path is still turned on at the same time, people may receive duplicates. Custom Kusto alerts are possible, but they are built as Azure Monitor log alert rules, not as magic buttons inside the report workbook.",
+      "analogy": "A building has smoke detectors and a phone tree. The detector noticing smoke is the alert. The phone tree that calls the fire wardens is the action group and routing rule. If an old alarm panel and a new alarm panel both call everyone, people get duplicate calls.\n\n| Analogy | Azure reality |\n|---|---|\n| Smoke detector | Built-in Azure Monitor alert |\n| Phone tree | Action group |\n| Rule deciding who is called | Alert processing rule |\n| Old alarm panel | Classic backup alerts |\n| Special sensor script | Custom Log Analytics alert |\n\n**Where the analogy breaks down:** Azure Monitor can route to many programmable endpoints and can filter by scopes and alert properties, while a simple phone tree usually cannot query log data.",
+      "jargon": [
+        {
+          "term": "Built-in Azure Monitor alerts",
+          "definition": "Azure Monitor based alerts that Azure Backup generates for documented default scenarios such as job failures and destructive operations."
+        },
+        {
+          "term": "Classic alerts",
+          "definition": "The older Azure Backup alerting solution that can be opted out of when using Azure Monitor based alerts."
+        },
+        {
+          "term": "Alert processing rule",
+          "definition": "An Azure Monitor rule that modifies or routes fired alerts, commonly used to attach action groups or suppress notifications."
+        },
+        {
+          "term": "Action group",
+          "definition": "A reusable Azure Monitor notification target set, such as email, SMS, webhook, function, or logic app receivers."
+        },
+        {
+          "term": "Soft delete",
+          "definition": "A backup protection feature that retains deleted backup data for a period to help recover from accidental or malicious deletion."
+        },
+        {
+          "term": "Kusto query",
+          "definition": "A query written in Kusto Query Language, often used against Log Analytics tables."
+        },
+        {
+          "term": "Log Analytics delay",
+          "definition": "The time between an event and when diagnostic data is available in Azure Monitor Logs for query-based alerts."
+        },
+        {
+          "term": "Restore failure",
+          "definition": "A failed Azure Backup job that attempted to recover data from a backup."
+        }
+      ],
+      "watchOut": "- Built-in alerts can be generated by default, but notification routing is still your configuration.\n- Action groups are notification endpoints; alert processing rules decide how alerts use them.\n- Classic alerts can cause duplicate emails during migration.\n- Custom Log Analytics alerts are powerful but rely on diagnostic data latency and query design.",
+      "productionTip": {
+        "official": "Microsoft documents built-in Azure Monitor alerts for Azure Backup default scenarios such as deletion of backup data, disabling soft delete, backup failures, and restore failures. Microsoft also documents using alert processing rules and action groups to route notifications, and provides settings to use only Azure Monitor alerts instead of the classic solution.",
+        "recommendation": "Recommendation: migrate vaults in waves, verify one action group path end to end, and create severity-based routing so critical destructive events page responders while routine job failures create tickets. Keep Monitoring Contributor access limited to alert administrators and avoid giving notification maintainers unnecessary backup-delete permissions."
+      },
+      "memoryTrick": "**Alert first, route second, retire classic last**. This is a simplified migration order; large estates may need temporary coexistence while testing duplicate suppression.",
+      "examTip": "If the scenario names **backup failures**, **restore failures**, **soft-delete disabled**, or **deletion of backup data**, think built-in Azure Monitor alerts. If it asks who receives email or webhooks, add action groups and alert processing rules. If it mentions custom Kusto logic, switch to Log Analytics alert rules rather than classic alerts."
+    },
+    "sources": [
+      {
+        "title": "Manage Azure Monitor based alerts for Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-monitoring-alerts"
+      },
+      {
+        "title": "Tutorial - Monitor alerts and metrics in Resiliency",
+        "url": "https://learn.microsoft.com/en-us/azure/resiliency/tutorial-monitor-alerts-metrics"
+      },
+      {
+        "title": "Azure Monitor Logs in Azure Backup",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-monitoring-use-azuremonitor"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D5.2.7-04",
+    "objective": "D5.2.7",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You are on call for Azure Backup. A manager asks for a current operational view of backup jobs across the company's resiliency estate. The manager wants to filter by job status such as completed, failed, canceled, in progress, completed with warning, and completed with information, and then open the details of an individual job.\n\nWhich view should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "In **Storage accounts**, open metrics for the storage account used by the vault."
+      },
+      {
+        "id": "B",
+        "text": "In **Cost Management**, open cost analysis and group charges by meter."
+      },
+      {
+        "id": "C",
+        "text": "In **Azure Policy**, open compliance and filter policy assignments by vault name."
+      },
+      {
+        "id": "D",
+        "text": "In **Resiliency**, open **Monitoring + Reporting > Jobs** and use the status filters or job operation details."
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The request is for operational job monitoring for protected items across the resiliency estate, not cost analysis, policy compliance, or storage performance metrics.",
+    "sections": {
+      "correctAnswer": "**D. In Resiliency, open Monitoring + Reporting > Jobs and use the status filters or job operation details**. Microsoft documents the Resiliency Jobs view as the at-scale place to monitor jobs, filter by summarized status, and open individual job details.",
+      "technical": "Job monitoring answers the question, \"What operation is running or what operation finished, and what happened?\" In Resiliency, Microsoft documents **Monitoring + Reporting > Jobs** as the view for jobs across the resiliency estate. The status column summarizes job states including completed, failed, canceled, in progress, completed with warning, and completed with information. The operator can filter by those statuses. The view also allows opening job details by selecting a value under the Operation column or using the action menu.\n\nThe scope picker matters because Resiliency can include different job sources. For protected-item jobs, the view includes operations such as backup jobs, restore jobs, and test failover jobs. Another scope can show jobs associated with other entities, such as Azure Site Recovery network or replication policy jobs. If the manager asks for backup jobs, start with protected items and then narrow by workload, subscription, vault, status, or time range as available in the portal experience.\n\nThis is distinct from reporting. Reports are better for historical analysis, trends, audit evidence, cloud storage consumption, policy adherence, and completed-day views. Jobs are better for the current operator workflow of checking failures, in-progress work, or job details. It is also distinct from alerts: an alert tells you that a condition needs attention, while the job view lets you inspect the actual operation record.",
+      "wrongOptions": {
+        "A": "Storage account metrics do not provide the Azure Backup job status list requested in the scenario. Misconception: because backup data is stored somewhere, storage metrics must show backup operations. Could be correct when troubleshooting a storage account workload's own metrics, not Azure Backup job monitoring.",
+        "B": "Cost analysis helps investigate Azure spending, not operational backup job status or individual job details. Misconception: every management summary is a cost-management report. Could be correct when the manager asks why backup storage charges increased.",
+        "C": "Azure Policy compliance can show whether required configurations are assigned or compliant, but it is not the job monitor for completed, failed, or in-progress backup operations. Misconception: policy compliance and operational job state are the same control plane. Could be correct when checking whether vault diagnostics or backup policies are enforced by policy."
+      },
+      "plainEnglish": "When someone asks, \"Which backup jobs failed or are still running?\" you need the job list, not a long-term report or a cost chart. Resiliency has a Jobs page for that purpose. It lets you look across the estate, filter by status, and drill into a specific operation. Reports are still useful, but they answer broader historical questions such as trends, audit history, and storage usage. Alerts are useful too, but they are the notification layer, not the full job list.",
+      "analogy": "A restaurant manager wants to know which orders are cooking, delivered, canceled, or delayed. The right screen is the live order board, not the monthly finance spreadsheet or the kitchen equipment electricity meter.\n\n| Analogy | Azure reality |\n|---|---|\n| Live order board | Resiliency Jobs view |\n| Order status | Backup job status |\n| Opening an order ticket | Viewing individual job details |\n| Monthly finance spreadsheet | Backup reports or cost analysis |\n| Equipment meter | Storage or platform metrics |\n\n**Where the analogy breaks down:** Azure jobs can represent many services and protected item types, and the portal uses Azure role permissions and scopes to decide what each operator can see.",
+      "jargon": [
+        {
+          "term": "Job",
+          "definition": "An Azure Backup or Site Recovery operation record, such as a backup, restore, or test failover task."
+        },
+        {
+          "term": "Resiliency estate",
+          "definition": "The collection of resources and workloads protected or assessed by Resiliency in Azure across scopes and environments."
+        },
+        {
+          "term": "Monitoring + Reporting",
+          "definition": "The Resiliency portal area that contains operational and analytical views, including jobs, alerts, metrics, and reports."
+        },
+        {
+          "term": "Completed with warning",
+          "definition": "A job state indicating the operation finished but encountered warning conditions that should be reviewed."
+        },
+        {
+          "term": "Completed with information",
+          "definition": "A job state indicating the operation finished with informational messages that may be useful to operators."
+        },
+        {
+          "term": "Protected item",
+          "definition": "A workload or data source configured for backup or disaster recovery protection."
+        },
+        {
+          "term": "Scope picker",
+          "definition": "A portal control used to decide which subscriptions, resource types, or job sources are included in a view."
+        },
+        {
+          "term": "Azure Policy",
+          "definition": "An Azure governance service that can audit or enforce resource configuration rules."
+        }
+      ],
+      "watchOut": "- Jobs are for operational status and details.\n- Reports are for longer-term trends and audit-style analysis.\n- Alerts notify you about conditions, but the Jobs page shows operation records.\n- Use the scope picker if the list does not include the resources or job sources you expect.",
+      "productionTip": {
+        "official": "Microsoft documents that Resiliency allows administrators to view jobs across Azure Backup and Azure Site Recovery, filter by job status, open action menus, and view details of an individual job. The documented statuses include completed, failed, canceled, in progress, completed with warning, and completed with information.",
+        "recommendation": "Recommendation: make the Jobs view part of the daily operations checklist and pair it with alert queues so failures are both noticed and investigated. Give on-call staff enough read access to see job details across subscriptions, but require separate approval for destructive backup actions such as stopping protection with data deletion."
+      },
+      "memoryTrick": "**Jobs are the live order board; reports are the history book**. The comparison is simplified because reports can include job history, but the operator's first stop for current job status is the Jobs view.",
+      "examTip": "Look for status words such as **failed**, **in progress**, **canceled**, or **completed with warning**. Those clues point to job monitoring in Resiliency. If the stem asks for email notification, switch to alerts and action groups. If it asks for trends over months, switch to reports with Log Analytics diagnostics."
+    },
+    "sources": [
+      {
+        "title": "Tutorial - Monitor and operate jobs",
+        "url": "https://learn.microsoft.com/en-us/azure/resiliency/tutorial-monitor-operate"
+      },
+      {
+        "title": "Monitor Azure Backup protected workloads",
+        "url": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-monitoring-built-in-monitor"
+      },
+      {
+        "title": "What is Resiliency?",
+        "url": "https://learn.microsoft.com/en-us/azure/resiliency/resiliency-overview"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

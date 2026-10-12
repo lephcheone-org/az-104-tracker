@@ -1,0 +1,729 @@
+[
+  {
+    "id": "D3.1.5-01",
+    "objective": "D3.1.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have a resource group named `rg-payroll-prod`. Six months ago, a deployment named `baseline-vnet` created a virtual network and two subnets by using an ARM JSON template and a parameter file. Since then, an administrator added one subnet manually in the Azure portal.\n\nYou need a template that is easiest to redeploy as the original baseline deployment, including the original parameter structure. The manually added subnet must not be included.\n\nWhich export option should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "From the resource group, select all current networking resources and choose **Export template**"
+      },
+      {
+        "id": "B",
+        "text": "Run `az group export --name rg-payroll-prod` and save the output to a JSON file"
+      },
+      {
+        "id": "C",
+        "text": "Open the `baseline-vnet` deployment in deployment history and export the deployment template"
+      },
+      {
+        "id": "D",
+        "text": "Export the virtual network resource as Bicep from the resource blade in the portal"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The original deployment is still available in the resource group's deployment history. The question asks for the original ARM JSON deployment template, not a new snapshot of today's resource state.",
+    "sections": {
+      "correctAnswer": "**C. Open the `baseline-vnet` deployment in deployment history and export the deployment template**. Exporting from history retrieves the exact template used for that deployment, while exporting from a resource group or resource generates a new current-state snapshot.",
+      "technical": "Azure Resource Manager has two export paths that look similar but answer different questions. Exporting from a resource group or from selected resources builds a new template from existing resources. Microsoft describes that result as a snapshot of the current state of the resource group. It can include manual changes made after the original deployment, and it can contain properties that you would normally clean up before reuse.\n\nSaving from deployment history is different. For a resource group deployment, the portal deployment-history view and `az deployment group export --resource-group <group> --name <deployment>` return the template used for that named deployment. The Azure PowerShell equivalent is `Save-AzResourceGroupDeploymentTemplate -ResourceGroupName <group> -DeploymentName <deployment>`. The history export includes all resources in that specific deployment and doesn't let you choose a different subset.\n\nThe decision order for this scenario is:\n\n1. Identify whether the target is current state or original deployment intent.\n2. Because the manually added subnet must be excluded, avoid resource-group snapshot export.\n3. Because the original parameter structure matters, choose the recorded deployment template.\n4. If you later want Bicep, decompile the exported ARM JSON template after saving it.\n\nA limitation is that history export supports ARM JSON templates. The Bicep portal export option applies to exporting current resources, not to directly getting Bicep from a deployment-history record.",
+      "wrongOptions": {
+        "A": "Selecting current networking resources exports a generated snapshot of today's resources, so the manually added subnet can be captured. Misconception: The portal export button always returns the original code. Could be correct when you intentionally want current resource state, including post-deployment edits.",
+        "B": "`az group export` captures a resource group as a template generated from existing resources. It is not the command that retrieves the template attached to one named deployment. Misconception: Resource group export and deployment export are interchangeable because both produce JSON. Could be correct when the requirement is to model the current resource group.",
+        "D": "Resource-level Bicep export would describe the selected current virtual network resource, not the original multi-resource deployment and its parameters. Misconception: Bicep output is automatically a better representation of deployment history. Could be correct when you need a starting Bicep file for one existing resource."
+      },
+      "plainEnglish": "There are two ways to ask Azure for code. One says, \"Look at what exists right now and write a new template for it.\" That is useful when you want today's configuration, but it can include changes people made by hand. The other says, \"Show me the template that was used in this earlier deployment.\" In this question, you want the baseline as it was originally deployed and you do not want the extra subnet. So you go to the deployment record named `baseline-vnet` and export that deployment's template.",
+      "analogy": "Think about a building renovation. A current-state export is like sending an inspector through the building today to draw what exists, including an extra room someone added later. A deployment-history export is like retrieving the architect's original approved plan for one construction job.\n\n| Analogy | Azure reality |\n|---|---|\n| Inspector's new drawing | Resource group or resource export |\n| Original approved plan | Deployment history template |\n| Extra room added later | Manually added subnet |\n| One renovation job | Named ARM deployment |\n\n**Where the analogy breaks down:** Azure deployment history stores template data for deployments, but real buildings do not have a cloud control plane that can export JSON from a recorded operation.",
+      "jargon": [
+        {
+          "term": "Azure Resource Manager",
+          "definition": "The Azure deployment and management layer that processes ARM templates, Bicep files, deployments, and resource operations."
+        },
+        {
+          "term": "ARM JSON template",
+          "definition": "A JSON file that declaratively describes Azure resources for Azure Resource Manager deployment."
+        },
+        {
+          "term": "Bicep",
+          "definition": "A domain-specific language for Azure deployments that compiles to ARM JSON templates."
+        },
+        {
+          "term": "Resource group",
+          "definition": "A logical container for Azure resources that share lifecycle and management boundaries."
+        },
+        {
+          "term": "Deployment history",
+          "definition": "Records of Azure Resource Manager deployments at a scope, including named resource group deployments."
+        },
+        {
+          "term": "`az deployment group export`",
+          "definition": "An Azure CLI command that exports the template used for a resource group deployment."
+        },
+        {
+          "term": "`az group export`",
+          "definition": "An Azure CLI command that captures existing resources in a resource group as a generated template."
+        },
+        {
+          "term": "Parameter structure",
+          "definition": "The set of template parameters and their names, types, and defaults that make a template reusable."
+        },
+        {
+          "term": "Current-state snapshot",
+          "definition": "A template generated from resources as they exist now, including supported changes made after original deployment."
+        }
+      ],
+      "watchOut": "- **Current resources** means a generated snapshot; **deployment history** means the template used for that deployment.\n- History export includes all resources from the selected deployment, not a hand-picked subset.\n- The portal can export Bicep for current resources, but history export is ARM JSON.\n- If a resource was never created by that deployment, it will not appear in the exported history template.",
+      "productionTip": {
+        "official": "Microsoft documents that exporting from a resource group or resource generates an autogenerated snapshot of current state, while saving from history retrieves an exact copy of the template used for deployment. The CLI command for a resource group deployment is `az deployment group export`.",
+        "recommendation": "Keep source-controlled Bicep or ARM files as the authoritative deployment source. Use history export for recovery or comparison, then run validation and a what-if review before redeploying recovered templates."
+      },
+      "memoryTrick": "Remember **group equals now, history equals then**. This shortcut fails when deployment records are missing or when the original deployment used linked artifacts that you must recover separately.",
+      "examTip": "Clue words are **original baseline**, **parameter structure**, and **manual change must not be included**. Those point to deployment history. If the question says to capture portal changes made after deployment, flip to resource group or selected-resource export instead. A harder version may ask for subscription, management group, or tenant deployments; the same concept applies, but the CLI command changes to the matching deployment scope."
+    },
+    "sources": [
+      {
+        "title": "Export template in Azure portal - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+      },
+      {
+        "title": "Export template in Azure CLI - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-cli"
+      },
+      {
+        "title": "Export template in Azure PowerShell - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-powershell"
+      },
+      {
+        "title": "az deployment group - az deployment group export",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/deployment/group?view=azure-cli-latest#az-deployment-group-export"
+      },
+      {
+        "title": "Save-AzResourceGroupDeploymentTemplate",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.resources/save-azresourcegroupdeploymenttemplate?view=azps-16.3.0"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.5-02",
+    "objective": "D3.1.5",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You manage a resource group named `rg-analytics-prod` that contains 236 resources, including several Azure Data Factory resources and multiple services whose passwords were supplied during deployment. A manager asks you to export the resource group and redeploy the output unchanged into a disaster recovery subscription.\n\nWhich three limitations or risks should you explain? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Resource group export has a documented 200-resource limit for the resource group being exported"
+      },
+      {
+        "id": "B",
+        "text": "The export template feature doesn't support exporting Azure Data Factory resources"
+      },
+      {
+        "id": "C",
+        "text": "Password parameters might be missing and may need to be added manually before deployment"
+      },
+      {
+        "id": "D",
+        "text": "Exported templates always include secrets as secure default values, so unchanged redeployment is safest"
+      },
+      {
+        "id": "E",
+        "text": "Classic deployment model resources can be exported directly without migration"
+      },
+      {
+        "id": "F",
+        "text": "Any export warning means Azure deletes the generated template and prevents all partial output"
+      }
+    ],
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The question focuses on documented export-template limitations for exporting from a resource group or resource, not on general ARM template size limits or application-level disaster recovery design.",
+    "sections": {
+      "correctAnswer": "**A. Resource group export has a documented 200-resource limit for the resource group being exported**, **B. The export template feature doesn't support exporting Azure Data Factory resources**, and **C. Password parameters might be missing and may need to be added manually before deployment**. Those are explicit Microsoft-documented limitations that directly affect this resource group.",
+      "technical": "The export feature is a helpful starting point, not a guaranteed production cloning method. Microsoft says export isn't guaranteed to succeed and isn't a reliable way to turn pre-existing resources into production-ready templates. The reason is that export is generated from published schemas and from the current control-plane view of each resource type.\n\nThree facts directly block the manager's plan in this scenario. First, there's a limit of 200 resources in the resource group you create the exported template for. When a resource group has more than 200 resources, the documented error message says export template isn't supported for resource groups with more than 200 resources. This resource group has 236 resources.\n\nSecond, Azure Data Factory is specifically named as unsupported by the export template feature. Data Factory has its own copy or clone guidance, so a resource group export cannot be trusted to capture those factories.\n\nThird, Microsoft warns that some password parameters might be missing from exported templates. That does not mean secrets are safely copied. It means you must check the template reference and manually add parameters before deployment.\n\nA related but separate behavior is that tools can warn when a resource type wasn't exported, yet still generate a template for successful parts. That is important, but the question asks for three limitations that apply to the stated resource group.",
+      "wrongOptions": {
+        "D": "Exported templates do not become a safe secret backup. Microsoft says password parameters might be missing, and best practice is to use `securestring` or `secureObject` without default secret values. Misconception: Export is a complete copy operation. Could be correct only as a description of a deliberately authored secure parameter, not as export behavior.",
+        "E": "Resources created through the classic deployment model must be migrated to the Resource Manager deployment model before export. Misconception: Azure Resource Manager export can read every historical Azure resource model. Could be correct after a supported migration has already been completed.",
+        "F": "Microsoft says a warning can indicate a resource type was not exported, but you can still discover properties elsewhere and successful parts can still be generated. Misconception: Export is all-or-nothing when one resource type has a problem. Could be correct only if a specific tool operation completely failed before producing any output, which is not the documented warning behavior here."
+      },
+      "plainEnglish": "The manager is asking Azure to copy a complicated room by taking a quick scan. Azure can often produce a useful starter file, but it has boundaries. This resource group is too large for the documented resource group export limit. It also contains Data Factory, which the export feature does not support. Finally, passwords are not something you should expect the export to preserve for you. You would need to redesign the recovery template with proper parameters and secrets handling rather than redeploying the export unchanged.",
+      "analogy": "Imagine using a scanner to copy a workshop. The scanner refuses rooms with more than 200 labeled items, skips one special machine category entirely, and never prints the safe's combination onto the new plan.\n\n| Analogy | Azure reality |\n|---|---|\n| Scanner item cap | 200-resource export limit |\n| Special machine category | Azure Data Factory unsupported by export |\n| Safe combination | Password or secret parameters |\n| Partial scan report | Export warnings for resources that failed |\n\n**Where the analogy breaks down:** Azure export works from resource provider schemas and deployment APIs, not from physical scanning. Some generated JSON may deploy after edits, while a workshop diagram is not executable infrastructure code.",
+      "jargon": [
+        {
+          "term": "Azure Data Factory",
+          "definition": "An Azure data integration service for pipelines, datasets, linked services, and related orchestration resources."
+        },
+        {
+          "term": "Resource group export",
+          "definition": "A Resource Manager feature that generates a template from existing resources in a resource group or a selected subset of resources."
+        },
+        {
+          "term": "Published schema",
+          "definition": "A resource type schema used by tooling to understand properties that can be represented in exported templates."
+        },
+        {
+          "term": "Password parameter",
+          "definition": "A template input intended to receive a password or secret value at deployment time."
+        },
+        {
+          "term": "`securestring`",
+          "definition": "An ARM template parameter type for sensitive string values that should not be readable after deployment."
+        },
+        {
+          "term": "`secureObject`",
+          "definition": "An ARM template parameter type for sensitive JSON objects."
+        },
+        {
+          "term": "Classic deployment model",
+          "definition": "The older Azure management model that predates Azure Resource Manager and must be migrated for ARM-based export."
+        },
+        {
+          "term": "Disaster recovery subscription",
+          "definition": "A separate Azure subscription prepared to host resources if the primary environment is unavailable."
+        },
+        {
+          "term": "Template reference",
+          "definition": "Microsoft documentation for Azure resource types, API versions, and deployable properties."
+        }
+      ],
+      "watchOut": "- Do not treat export as a disaster recovery strategy by itself.\n- The documented resource group export cap is 200 resources for the resource group you export.\n- Azure Data Factory resources are specifically called out as unsupported by the export template feature.\n- Missing password parameters mean you must add secure inputs; exported files should not be expected to contain secrets.",
+      "productionTip": {
+        "official": "Microsoft documents that export isn't guaranteed to succeed, uses published schemas, may miss password parameters, doesn't support Azure Data Factory resources, and has a 200-resource limit for resource group export.",
+        "recommendation": "For disaster recovery, author and test Bicep or ARM templates intentionally. Split large solutions into modules, store secrets in a secure service such as Key Vault, and use export only as a discovery aid when source files are unavailable."
+      },
+      "memoryTrick": "For export limitations, remember **too many, unsupported, no secrets**. The phrase is a memory aid, not a full checklist, because API-version gaps and classic-resource migration can also matter.",
+      "examTip": "Clue words are **236 resources**, **Data Factory**, **passwords**, and **unchanged**. Select the options tied to those facts. A distractor may be technically true in general, such as partial export warnings, but multiple-answer questions expect the statements that solve the actual scenario. If the resource count were under 200 and no Data Factory existed, the answer set would change."
+    },
+    "sources": [
+      {
+        "title": "Export template in Azure portal - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+      },
+      {
+        "title": "Export template in Azure CLI - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-cli"
+      },
+      {
+        "title": "Export template in Azure PowerShell - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-powershell"
+      },
+      {
+        "title": "Best practices for templates - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/best-practices"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.5-03",
+    "objective": "D3.1.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You are writing automation for a resource group named `rg-web-aue`. You need to export only two selected resources to an ARM JSON template. The generated parameters for resource names should include default values equal to the current names, so a test deployment can use the current values unless the operator overrides them.\n\nWhich command should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`az deployment group export --resource-group rg-web-aue --name webBaseline > web.json`"
+      },
+      {
+        "id": "B",
+        "text": "`az group export --resource-group rg-web-aue --resource-ids $appId $planId --include-parameter-default-value > web.json`"
+      },
+      {
+        "id": "C",
+        "text": "`Export-AzResourceGroup -ResourceGroupName rg-web-aue -SkipAllParameterization -Resource @($appId,$planId)`"
+      },
+      {
+        "id": "D",
+        "text": "`az group export --name rg-web-aue --resource-ids $appId $planId --skip-resource-name-params > web.json`"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. `$appId` and `$planId` already contain the full resource IDs for the two resources. The task is to export current resources, not retrieve a template from deployment history.",
+    "sections": {
+      "correctAnswer": "**B. `az group export --resource-group rg-web-aue --resource-ids $appId $planId --include-parameter-default-value > web.json`**. `az group export` captures existing resources, `--resource-ids` filters the export, and `--include-parameter-default-value` adds current values as defaults for generated parameters.",
+      "technical": "For Azure CLI, `az group export` is the command that captures a resource group as a template. It can export all resources or a filtered set. The `--resource-ids` option accepts space-separated resource IDs to filter the export; if you omit that argument or supply `*`, the export targets all resources.\n\nParameter handling is the key detail. Microsoft documents that exported templates include parameters for resource names by default, but those generated parameters don't have default values. The `--include-parameter-default-value` option changes that behavior by adding a default value set to the current value. That matches the requirement: test deployments can use existing names automatically or override them at deployment time.\n\nThere are two similar options that do not match the requirement. `--skip-resource-name-params` removes resource-name parameters and hard-codes names directly in resource declarations. `--skip-all-params` skips parameterization entirely, which is the opposite of keeping overridable parameters.\n\nPowerShell can do a similar current-resource export with `Export-AzResourceGroup -ResourceGroupName rg-web-aue -Resource @($appId,$planId) -IncludeParameterDefaultValue -Path .\\web.json`. The question asks for a command, and only option B combines selected resources and parameter default values.",
+      "wrongOptions": {
+        "A": "`az deployment group export` retrieves the template used for a named deployment. It does not select two current resources by resource ID or add generated resource-name defaults. Misconception: Any export command can filter current resources. Could be correct when the goal is to recover the original template for `webBaseline`.",
+        "C": "`-SkipAllParameterization` removes generated parameters, so operators would not get resource-name parameters with current defaults. Misconception: Skipping parameterization makes redeployment easier in every case. Could be correct for a quick fixed-name starter template where no values should be configurable.",
+        "D": "`--skip-resource-name-params` hard-codes resource names instead of creating name parameters with default values. Misconception: Skipping name parameters is the same as providing name defaults. Could be correct when the template must always target the same resource names."
+      },
+      "plainEnglish": "You want Azure to write a template for exactly two things and still make the names easy to change later. Option B does both. The resource IDs tell Azure which two things to include. The include-default-values flag tells Azure to put today's names into the parameter defaults. That means a person can run the template quickly for testing, but the names are still parameters rather than permanently baked into every resource declaration.",
+      "analogy": "Think of ordering a printed form for two office assets. You ask the clerk to include only the laptop and monitor, then prefill their current labels in editable boxes. You do not ask for the whole inventory, and you do not ask for the labels to be printed as unchangeable ink.\n\n| Analogy | Azure reality |\n|---|---|\n| Laptop and monitor IDs | Resource IDs in `--resource-ids` |\n| Editable boxes | Template parameters |\n| Prefilled current labels | `--include-parameter-default-value` |\n| Unchangeable ink | `--skip-resource-name-params` or no parameterization |\n\n**Where the analogy breaks down:** ARM template parameters are evaluated by Azure Resource Manager at deployment time, not by a human editing a paper form.",
+      "jargon": [
+        {
+          "term": "Azure CLI",
+          "definition": "Microsoft's cross-platform command-line tool for managing Azure resources."
+        },
+        {
+          "term": "`az group export`",
+          "definition": "An Azure CLI command that captures a resource group or selected resources as a generated template."
+        },
+        {
+          "term": "`--resource-ids`",
+          "definition": "An Azure CLI option for `az group export` that filters export output to the specified resource IDs."
+        },
+        {
+          "term": "`--include-parameter-default-value`",
+          "definition": "An export option that adds current values as default values for generated template parameters."
+        },
+        {
+          "term": "`--skip-resource-name-params`",
+          "definition": "An export option that avoids generating parameters for resource names and places names directly in resource definitions."
+        },
+        {
+          "term": "`--skip-all-params`",
+          "definition": "An export option that skips all parameterization in the generated template."
+        },
+        {
+          "term": "Resource ID",
+          "definition": "The full Azure identifier for a resource, including subscription, resource group, provider namespace, type, and name."
+        },
+        {
+          "term": "ARM JSON template",
+          "definition": "A JSON deployment file processed by Azure Resource Manager."
+        },
+        {
+          "term": "Default value",
+          "definition": "A parameter value used when the deployment doesn't supply an override."
+        }
+      ],
+      "watchOut": "- `az group export` is for current resources; `az deployment group export` is for a recorded deployment template.\n- `--include-parameter-default-value` keeps parameters and adds current values.\n- `--skip-resource-name-params` removes resource-name parameters instead of adding defaults.\n- Space-separated resource IDs are accepted by `--resource-ids` for exporting selected resources.",
+      "productionTip": {
+        "official": "Microsoft documents `az group export` with `--resource-ids`, `--include-parameter-default-value`, `--skip-all-params`, and `--skip-resource-name-params`. The PowerShell cmdlet exposes equivalent concepts through `-Resource`, `-IncludeParameterDefaultValue`, and parameterization switches.",
+        "recommendation": "After exporting, commit only reviewed templates. Replace environment-specific defaults where needed, add parameter descriptions, and use secure parameters for sensitive values before a template becomes a reusable deployment artifact."
+      },
+      "memoryTrick": "**Include default** means the parameter stays editable and starts with today's value. This reminder does not apply to secret values, because sensitive parameters should not be stored as defaults.",
+      "examTip": "The command is tested through verbs and switches. **Group export** plus **resource IDs** points to selected current resources. **Include parameter default value** points to current values as defaults. Options using deployment history, skip-all, or skip-resource-name are close-looking distractors that change the export intent."
+    },
+    "sources": [
+      {
+        "title": "Export template in Azure CLI - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-cli"
+      },
+      {
+        "title": "Export template in Azure PowerShell - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-powershell"
+      },
+      {
+        "title": "az group - az group export",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/group?view=azure-cli-latest#az-group-export"
+      },
+      {
+        "title": "Export-AzResourceGroup",
+        "url": "https://learn.microsoft.com/en-us/powershell/module/az.resources/export-azresourcegroup?view=azps-16.3.0"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.5-04",
+    "objective": "D3.1.5",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an ARM JSON template named `main.json`. Your team is moving future infrastructure work to Bicep. You need to create an initial Bicep file from `main.json`, but you also need to warn the team that the generated file might require edits before it becomes production-quality code.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Run `az bicep build --file main.json` and treat the output as final Bicep"
+      },
+      {
+        "id": "B",
+        "text": "Run `az group export --name main.json --export-format bicep` to convert the local template"
+      },
+      {
+        "id": "C",
+        "text": "Run `az bicep decompile --file main.json`, then review warnings, names, and converted expressions"
+      },
+      {
+        "id": "D",
+        "text": "Open `main.json` in deployment history and select **Bicep** from the history export page"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The Bicep CLI is installed or available through Azure CLI. `main.json` is a local ARM template file rather than a resource group name.",
+    "sections": {
+      "correctAnswer": "**C. Run `az bicep decompile --file main.json`, then review warnings, names, and converted expressions**. Decompile converts ARM JSON to Bicep, and Microsoft states that decompilation is best-effort with no guaranteed mapping from ARM JSON to Bicep.",
+      "technical": "The direction matters. Bicep `build` converts Bicep to ARM JSON. Bicep `decompile` converts ARM JSON to Bicep. With Azure CLI, the documented command is:\n\n```azurecli\naz bicep decompile --file main.json\n```\n\nWithout the Azure CLI wrapper, the equivalent Bicep CLI command is:\n\n```bicepcli\nbicep decompile main.json\n```\n\nThe command creates `main.bicep` in the same directory as `main.json`. If a Bicep file with that name already exists, the Azure CLI command supports `--force` to overwrite it.\n\nThe quality warning is not optional. Microsoft says decompilation attempts to convert the file but there's no guaranteed mapping from JSON ARM templates to Bicep. You might need to fix warnings and errors, and decompilation can fail if accurate conversion isn't possible. The generated file can also contain awkward symbolic names or renamed parameters, such as replacing periods with underscores because Bicep identifiers can't contain periods.\n\nThe correct process is therefore convert, inspect, fix, lint or build, and then use the resulting Bicep as maintained source.",
+      "wrongOptions": {
+        "A": "`build` goes from Bicep to ARM JSON, not from ARM JSON to Bicep. It also doesn't make sense to treat generated conversion output as final without review. Misconception: Build and decompile are opposite names for the same conversion. Could be correct when the source file is `main.bicep` and the desired output is `main.json`.",
+        "B": "`az group export` captures Azure resources from a resource group. It doesn't convert a local file named `main.json`. Misconception: Export-format Bicep is a general-purpose file conversion switch. Could be correct when exporting existing resources from a real resource group in Bicep format.",
+        "D": "Deployment-history export supports ARM JSON templates, not direct Bicep output from the history page. Misconception: Every portal export surface offers the same format choices. Could be correct after exporting ARM JSON from history and then decompiling it separately."
+      },
+      "plainEnglish": "You already have JSON deployment code and want a Bicep starting point. The tool for that direction is decompile. It reads the JSON file and writes a `.bicep` file next to it. But the tool is not a human architect. It may choose clumsy names or struggle with patterns that do not map neatly into Bicep. So you use it to start the migration, then review and clean the generated Bicep before you rely on it.",
+      "analogy": "Decompilation is like translating a legal contract from one language to another with translation software. The result can be very useful, but a specialist still reviews names, phrasing, and clauses before signing it.\n\n| Analogy | Azure reality |\n|---|---|\n| Original contract | ARM JSON template |\n| Translated draft | Decompiled Bicep file |\n| Translation warnings | Decompiler warnings and errors |\n| Specialist review | Developer cleanup, linting, and testing |\n\n**Where the analogy breaks down:** The Bicep decompiler targets functional equivalence for deployment output, not literary style. Some template constructs can fail conversion rather than merely sounding awkward.",
+      "jargon": [
+        {
+          "term": "Decompile",
+          "definition": "Convert an ARM JSON template into a Bicep file."
+        },
+        {
+          "term": "`az bicep decompile`",
+          "definition": "The Azure CLI command that attempts to decompile an ARM template file to Bicep."
+        },
+        {
+          "term": "`bicep decompile`",
+          "definition": "The direct Bicep CLI command for converting ARM JSON to Bicep without the `az` wrapper."
+        },
+        {
+          "term": "Build",
+          "definition": "For Bicep, convert a Bicep file into ARM JSON."
+        },
+        {
+          "term": "Symbolic name",
+          "definition": "The local Bicep identifier used to refer to a resource declaration inside a Bicep file."
+        },
+        {
+          "term": "Identifier",
+          "definition": "A valid Bicep name for a parameter, variable, resource symbol, or output."
+        },
+        {
+          "term": "`--force`",
+          "definition": "An option that allows overwriting an existing output Bicep file during decompilation."
+        },
+        {
+          "term": "Functional equivalence",
+          "definition": "Converted templates deploy the same resource results even if syntax and structure differ from the original."
+        }
+      ],
+      "watchOut": "- Decompile is JSON to Bicep; build is Bicep to JSON.\n- Decompilation is best-effort, not a guarantee of idiomatic Bicep.\n- Parameter names containing periods in JSON are changed because Bicep identifiers can't contain periods.\n- Use `--force` only when you intentionally want to overwrite an existing `.bicep` file.",
+      "productionTip": {
+        "official": "Microsoft documents `az bicep decompile --file main.json` and states that decompilation has no guaranteed mapping from JSON ARM templates to Bicep. The same guidance says warnings and errors may need to be fixed before the generated file is usable.",
+        "recommendation": "Treat decompiled Bicep as a migration draft. Rename symbols, extract modules, add descriptions, run `az bicep build` or lint, and perform a what-if deployment before replacing maintained ARM JSON files."
+      },
+      "memoryTrick": "**Decompile D goes Down from JSON to Bicep draft; build B goes Back to JSON for deployment.** The wording is only a mnemonic, because real command behavior is defined by the Bicep CLI documentation.",
+      "examTip": "Look for the source file extension. If the source is `.json` and the target is Bicep, choose `decompile`. If the source is `.bicep` and the target is ARM JSON, choose `build`. A harder exam item might include both `az bicep decompile --file main.json` and `bicep decompile main.json`; both are valid if the corresponding tooling is installed."
+    },
+    "sources": [
+      {
+        "title": "Decompile a JSON Azure Resource Manager template to Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+      },
+      {
+        "title": "Bicep CLI commands",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/bicep-cli"
+      },
+      {
+        "title": "az bicep",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/bicep?view=azure-cli-latest"
+      },
+      {
+        "title": "Export Bicep files in Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/export-bicep-portal"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.5-05",
+    "objective": "D3.1.5",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You create a Bicep file named `main.bicep`. A release process still expects a JSON ARM template artifact named `azuredeploy.json` in the `c:\\jsontemplates` directory.\n\nWhich command should you run to create the required JSON file?",
+    "options": [
+      {
+        "id": "A",
+        "text": "`az bicep build --file main.bicep --outfile c:\\jsontemplates\\azuredeploy.json`"
+      },
+      {
+        "id": "B",
+        "text": "`az bicep decompile --file main.bicep --outfile c:\\jsontemplates\\azuredeploy.json`"
+      },
+      {
+        "id": "C",
+        "text": "`az group export --name main.bicep --export-format json --outfile c:\\jsontemplates\\azuredeploy.json`"
+      },
+      {
+        "id": "D",
+        "text": "`bicep decompile c:\\jsontemplates\\azuredeploy.json --force`"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The command runs from a working directory that contains `main.bicep`, and the output directory exists or can be written by the operator.",
+    "sections": {
+      "correctAnswer": "**A. `az bicep build --file main.bicep --outfile c:\\jsontemplates\\azuredeploy.json`**. The Bicep `build` command converts a Bicep file to a JSON ARM template and `--outfile` specifies the exact output path.",
+      "technical": "Bicep is a source language for Azure Resource Manager deployments. Before Azure Resource Manager receives a Bicep deployment, Bicep is compiled into ARM JSON. The command that performs this conversion is `build`.\n\nMicrosoft documents both direct Bicep CLI and Azure CLI forms:\n\n```bicepcli\nbicep build main.bicep --outfile c:\\jsontemplates\\azuredeploy.json\n```\n\n```azurecli\naz bicep build --file main.bicep --outfile c:\\jsontemplates\\azuredeploy.json\n```\n\nIf you omit output options, a build of `main.bicep` creates `main.json` in the same directory. `--outdir` chooses an output directory while keeping the generated name. `--outfile` chooses the exact output file name and location, which is required here because the pipeline expects `azuredeploy.json`.\n\nThe build command can automatically restore external modules referenced by the Bicep file. The `--no-restore` option exists, but using it can fail when registry modules are not already in the local cache. That is unrelated to the file-conversion direction tested in this question.\n\nDecompile is the reverse operation: ARM JSON to Bicep. Resource group export is a live Azure resource operation, not a local Bicep compilation step.",
+      "wrongOptions": {
+        "B": "`decompile` converts ARM JSON to Bicep and doesn't accept a Bicep source file for JSON output. Misconception: Decompile means produce deployable output from any source. Could be correct when the source is an ARM JSON template and the desired output is a `.bicep` file.",
+        "C": "`az group export` captures resources from an Azure resource group. A local file name isn't a resource group export target, and this option doesn't use the documented Bicep build command. Misconception: Export-format JSON is how Bicep produces JSON. Could be correct when exporting existing Azure resources rather than compiling local Bicep.",
+        "D": "This command would try to turn `azuredeploy.json` into Bicep, which is the opposite of the release requirement. Misconception: The output file path should be passed to the conversion command as the input. Could be correct when you are migrating an existing `azuredeploy.json` to Bicep."
+      },
+      "plainEnglish": "Bicep is the cleaner language you write. ARM JSON is the format many older tools and deployment systems still understand. To turn your Bicep file into the JSON file the release process wants, you build it. The command names are directional: build takes Bicep and produces JSON; decompile takes JSON and produces Bicep.",
+      "analogy": "Writing Bicep is like writing a recipe in a friendly shorthand. Building it is like printing the full kitchen instruction sheet required by an automated cooking machine.\n\n| Analogy | Azure reality |\n|---|---|\n| Friendly recipe shorthand | `main.bicep` |\n| Machine instruction sheet | `azuredeploy.json` ARM template |\n| Print to exact folder | `--outfile c:\\jsontemplates\\azuredeploy.json` |\n| Reverse translation | `decompile` from JSON to Bicep |\n\n**Where the analogy breaks down:** ARM JSON is not merely printed text. It is a structured deployment document with schemas, expressions, resources, and outputs evaluated by Azure Resource Manager.",
+      "jargon": [
+        {
+          "term": "Bicep file",
+          "definition": "A `.bicep` source file that defines Azure resources in Bicep syntax."
+        },
+        {
+          "term": "ARM template",
+          "definition": "A JSON file accepted by Azure Resource Manager for declarative deployment."
+        },
+        {
+          "term": "`az bicep build`",
+          "definition": "The Azure CLI command that builds a Bicep file into an ARM JSON template."
+        },
+        {
+          "term": "`--file`",
+          "definition": "The Azure CLI option that identifies the Bicep file to build."
+        },
+        {
+          "term": "`--outfile`",
+          "definition": "An option that writes the generated output to a specific file path."
+        },
+        {
+          "term": "`--outdir`",
+          "definition": "An option that writes generated output into a directory while keeping the default output file name."
+        },
+        {
+          "term": "Restore",
+          "definition": "The process of downloading referenced external Bicep modules into the local cache before build or lint operations."
+        },
+        {
+          "term": "Release process",
+          "definition": "An automated pipeline or procedure that packages and deploys application or infrastructure artifacts."
+        }
+      ],
+      "watchOut": "- `build` compiles Bicep to JSON; `decompile` converts JSON to Bicep.\n- `--outfile` is the exact-file option; `--outdir` is only the directory option.\n- Many deployments build Bicep automatically, but manual build is useful when another process needs the JSON artifact.\n- External modules may require restore unless they are already cached.",
+      "productionTip": {
+        "official": "Microsoft documents that `build` converts a Bicep file to a JSON Azure Resource Manager template. The examples include `az bicep build --file main.bicep --outfile c:\\jsontemplates\\azuredeploy.json` for specifying an exact file path.",
+        "recommendation": "Keep Bicep as the source of truth and generate JSON artifacts during the pipeline. Avoid manually editing generated JSON because those edits will be lost the next time the Bicep source is built."
+      },
+      "memoryTrick": "**Build makes JSON; decompile makes Bicep.** It is a simple direction rule, but it doesn't replace checking options such as `--outfile`, `--stdout`, and module restore behavior.",
+      "examTip": "This question tests command direction and output-file flags. The presence of `main.bicep` as the source and `azuredeploy.json` as the required artifact should make `build` unavoidable. If the item instead gives `main.json` and asks for `main.bicep`, choose decompile."
+    },
+    "sources": [
+      {
+        "title": "Bicep CLI commands",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/bicep-cli"
+      },
+      {
+        "title": "az bicep",
+        "url": "https://learn.microsoft.com/en-us/cli/azure/bicep?view=azure-cli-latest"
+      },
+      {
+        "title": "Create Bicep files with Visual Studio Code",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/visual-studio-code"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.5-06",
+    "objective": "D3.1.5",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You are authoring `network.bicep` in Visual Studio Code with the Bicep extension installed. You need two productivity aids. First, you want to create a Bicep declaration for an existing Azure resource by providing its resource ID. Second, a teammate has copied a single ARM JSON resource definition and wants to paste it into the Bicep file as Bicep syntax.\n\nWhich two Visual Studio Code Bicep features should you use? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "**Build ARM Template** for both tasks, because it imports current resources and JSON snippets"
+      },
+      {
+        "id": "B",
+        "text": "**Insert Resource** for the existing Azure resource ID"
+      },
+      {
+        "id": "C",
+        "text": "**Deploy Bicep File** to translate the copied JSON before deployment"
+      },
+      {
+        "id": "D",
+        "text": "**Open Bicep Visualizer** to create missing resource declarations automatically"
+      },
+      {
+        "id": "E",
+        "text": "**Paste JSON as Bicep** for the copied ARM JSON resource definition"
+      }
+    ],
+    "correct": [
+      "B",
+      "E"
+    ],
+    "assumptions": "Azure public cloud. Visual Studio Code and the Bicep extension are installed, and the existing resource can be identified by its Azure resource ID.",
+    "sections": {
+      "correctAnswer": "**B. Insert Resource for the existing Azure resource ID** and **E. Paste JSON as Bicep for the copied ARM JSON resource definition**. Microsoft documents Insert Resource as creating a resource declaration from a resource ID, and Paste JSON as Bicep as automatically decompiling pasted JSON into Bicep.",
+      "technical": "The Bicep extension for Visual Studio Code exposes multiple commands, and the command names map to different authoring workflows.\n\n**Insert Resource** declares a resource in the open Bicep file by asking for the resource ID of an existing resource. Microsoft notes that this process is similar to exporting templates: it tries to create a usable resource declaration, but most inserted resources need changes before they can be used to deploy Azure resources. You can find a resource ID through the portal, the Azure Resources extension, Azure CLI such as `az resource list`, or Azure PowerShell such as `Get-AzResource`.\n\n**Paste JSON as Bicep** is a different feature. When you paste JSON from an ARM template into a Bicep file, Visual Studio Code automatically decompiles that JSON into Bicep. Microsoft documents that it can handle full ARM templates, one or more resources, and JSON values such as objects or arrays. The original JSON can be restored immediately with undo.\n\nThe other Visual Studio Code commands do not import definitions. Build creates ARM JSON from Bicep. Deploy sends a Bicep file for deployment. Visualizer shows declared resources and dependencies, but it doesn't create declarations from live resources.",
+      "wrongOptions": {
+        "A": "Build ARM Template converts Bicep to ARM JSON. It doesn't import a live resource from a resource ID or turn pasted JSON into Bicep. Misconception: Build is a general import tool. Could be correct when you want to generate `main.json` from `main.bicep`.",
+        "C": "Deploy Bicep File starts a deployment workflow; it is not the editor feature for translating a copied JSON resource into Bicep syntax. Misconception: Deployment commands prepare source code automatically. Could be correct after the Bicep file is authored, reviewed, and ready to deploy.",
+        "D": "Bicep Visualizer displays resources and dependencies already declared in the file. It does not create missing declarations from Azure resource IDs. Misconception: A diagram view can reverse-engineer infrastructure. Could be correct when you want to inspect dependencies in an existing Bicep file."
+      },
+      "plainEnglish": "Visual Studio Code has more than one Bicep helper. If you have the ID of something that already exists in Azure, use Insert Resource. It asks for that ID and writes a starting resource block. If you have copied JSON text, use Paste JSON as Bicep. It changes the pasted JSON into Bicep syntax. Both are starting points, not promises that the final file is perfect.",
+      "analogy": "The editor is like a drafting desk with two special tools. One tool traces an item by its catalog number. Another translates a paragraph from the old format into the new drawing language.\n\n| Analogy | Azure reality |\n|---|---|\n| Catalog number | Azure resource ID |\n| Trace existing item | Insert Resource |\n| Old-format paragraph | ARM JSON snippet |\n| Translate while pasting | Paste JSON as Bicep |\n| Drafting desk | Visual Studio Code with Bicep extension |\n\n**Where the analogy breaks down:** The inserted or pasted Bicep is source code that must obey Azure resource schemas and deployment rules. A desk tool cannot check live Azure provider behavior the way deployment validation can.",
+      "jargon": [
+        {
+          "term": "Visual Studio Code",
+          "definition": "Microsoft's cross-platform code editor."
+        },
+        {
+          "term": "Bicep extension",
+          "definition": "The Visual Studio Code extension that adds Bicep language support, commands, validation, and editor features."
+        },
+        {
+          "term": "Insert Resource",
+          "definition": "A Bicep extension command that inserts a resource declaration from an existing Azure resource ID."
+        },
+        {
+          "term": "Paste JSON as Bicep",
+          "definition": "A Bicep extension feature that decompiles pasted ARM JSON into Bicep syntax in the editor."
+        },
+        {
+          "term": "Resource ID",
+          "definition": "The full Azure path identifying a resource, including subscription, resource group, provider, type, and name."
+        },
+        {
+          "term": "ARM JSON resource definition",
+          "definition": "The JSON object in an ARM template that declares one Azure resource."
+        },
+        {
+          "term": "Bicep Visualizer",
+          "definition": "A Visual Studio Code view that shows resources and dependencies from a Bicep file."
+        },
+        {
+          "term": "Deploy Bicep File",
+          "definition": "A Visual Studio Code Bicep command that runs an interactive deployment workflow for a Bicep file."
+        },
+        {
+          "term": "Decompile",
+          "definition": "Convert ARM JSON into Bicep syntax."
+        }
+      ],
+      "watchOut": "- Insert Resource and Paste JSON as Bicep create starting code, not necessarily polished reusable modules.\n- Build is the reverse direction: Bicep to ARM JSON.\n- Visualizer helps you inspect declared dependencies; it is not an import engine.\n- After using either import aid, review parameters, symbolic names, API versions, and environment-specific values.",
+      "productionTip": {
+        "official": "Microsoft documents Visual Studio Code Bicep commands including Insert Resource, Paste JSON as Bicep, Build ARM Template, Deploy Bicep File, and Open Bicep Visualizer. The docs state that inserted resources often need changes before deployment use.",
+        "recommendation": "Use these editor features to accelerate discovery, then refactor the result into maintainable Bicep. Add meaningful parameter descriptions, remove unnecessary properties, and validate with build or what-if before merging."
+      },
+      "memoryTrick": "**ID means Insert; JSON means Paste.** It is a useful editor mnemonic, but the generated result still needs review because imported code may carry current-state clutter.",
+      "examTip": "The clue phrases are **resource ID** and **copied ARM JSON**. Match each phrase to the specialized editor command. Do not choose Build, Deploy, or Visualizer just because they are also Bicep extension commands. A harder version may ask for command-palette access; open a Bicep file and use the Bicep commands from the command palette."
+    },
+    "sources": [
+      {
+        "title": "Create Bicep files with Visual Studio Code",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/visual-studio-code"
+      },
+      {
+        "title": "Decompile a JSON Azure Resource Manager template to Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.1.5-07",
+    "objective": "D3.1.5",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You select three resources in a resource group named `rg-kiosk-prod` and use the Azure portal **Export template** action. You choose **Bicep** and download the file. You plan to reuse it as the basis for deployments to development and test resource groups.\n\nWhat should you do before treating the exported file as reusable infrastructure-as-code?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Deploy it unchanged because portal Bicep export produces production-ready source by design"
+      },
+      {
+        "id": "B",
+        "text": "Convert it to ARM JSON with `az bicep decompile --file` before review"
+      },
+      {
+        "id": "C",
+        "text": "Remove all parameters because exported Bicep files can't include template parameters"
+      },
+      {
+        "id": "D",
+        "text": "Review the exported Bicep, clean up properties you wouldn't normally set, check API versions, and add parameters for environment-specific values"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The selected resources are supported by the export feature. The goal is to create maintainable reusable code for other environments, not merely inspect one current resource.",
+    "sections": {
+      "correctAnswer": "**D. Review the exported Bicep, clean up properties you wouldn't normally set, check API versions, and add parameters for environment-specific values**. Microsoft says exported templates are a starting point and most require adjustments before deployment or reuse.",
+      "technical": "The Azure portal can export Bicep files from a resource group or from a single resource. For a resource group, you select one or more resources, choose **Export template**, and then select **Bicep**. Microsoft currently documents that Bicep files can only be exported from the Azure portal. Azure CLI and Azure PowerShell can export ARM JSON templates, and those can be decompiled later.\n\nThe downloaded Bicep file should not automatically become production source. Microsoft states that the exported template helps you understand syntax and properties, but most exported templates require adjustments before they can be used for deployment. It also warns that export from a resource group or resource is generated from published schemas; a schema might not have the latest resource type version, so you should check that the template contains the properties you need and edit the API version if necessary.\n\nThe current-state export can include all properties for resources, including properties you wouldn't normally set during deployment. It also probably doesn't include all parameters needed for reuse, and many values can be hard-coded. For development and test environments, you normally need parameters for values that vary by environment, such as names, locations, SKU, size, or capacity.\n\nTemplate best practices support this cleanup: use parameters for environment-varying settings, describe parameters, use secure types for secrets, and avoid default values for sensitive data.",
+      "wrongOptions": {
+        "A": "Portal export produces a useful starting file, not guaranteed production-ready source. Misconception: Export means the same as curated infrastructure-as-code. Could be correct only for a quick lab inspection where maintainability and environment reuse are irrelevant.",
+        "B": "`decompile` converts ARM JSON to Bicep. To convert Bicep to ARM JSON, use `build`; however, conversion to JSON is not the required cleanup step. Misconception: Every exported file must be converted before it can be reviewed. Could be correct if you had exported ARM JSON and wanted a Bicep draft.",
+        "C": "Portal-exported Bicep includes template parameters, and reusable templates often need more parameters, not fewer. Misconception: Hard-coding everything makes a template safer for reuse. Could be correct for a one-off exact reconstruction where no values should be configurable."
+      },
+      "plainEnglish": "The portal can write a Bicep file for selected existing resources, which is convenient. But the file is more like a generated draft than a carefully designed template. It may contain current production values and extra properties that are not good choices for every environment. Before using it for development and test, read it, simplify it, check versions, and turn values that change between environments into parameters.",
+      "analogy": "Exported Bicep is like a tailor tracing a suit someone is wearing today. The tracing helps a lot, but you still adjust measurements, remove wrinkles from the drawing, and decide which parts should be customizable before making suits for other people.\n\n| Analogy | Azure reality |\n|---|---|\n| Tracing today's suit | Portal Bicep export from current resources |\n| Wrinkles in the tracing | Properties you wouldn't normally set |\n| Different people | Development and test environments |\n| Adjustable measurements | Parameters for names, SKU, size, or location |\n\n**Where the analogy breaks down:** Azure resources follow provider schemas and API versions, not fabric measurements. Some export warnings or unsupported resource types require documentation review rather than tailoring skill.",
+      "jargon": [
+        {
+          "term": "Azure portal",
+          "definition": "The web-based Azure management interface."
+        },
+        {
+          "term": "Export template",
+          "definition": "A portal action that exports selected Azure resources or a resource group to ARM JSON or, for current resources, Bicep."
+        },
+        {
+          "term": "Bicep",
+          "definition": "A declarative language that compiles to ARM JSON templates for Azure deployments."
+        },
+        {
+          "term": "Infrastructure-as-code",
+          "definition": "Managing infrastructure through source-controlled declarative files instead of manual configuration."
+        },
+        {
+          "term": "API version",
+          "definition": "The version of a resource provider's deployment schema used by a template resource declaration."
+        },
+        {
+          "term": "Published schema",
+          "definition": "The resource type schema used by export tooling to generate template content."
+        },
+        {
+          "term": "Parameter",
+          "definition": "A template input value supplied by the person or pipeline running the deployment."
+        },
+        {
+          "term": "SKU",
+          "definition": "A stock keeping unit or service tier that controls capabilities, performance, or cost for an Azure resource."
+        },
+        {
+          "term": "Secure parameter",
+          "definition": "A template parameter using `securestring` or `secureObject` for sensitive values."
+        }
+      ],
+      "watchOut": "- Portal can export Bicep for current resources, but deployment-history export supports only ARM JSON.\n- Exported current-state templates can include properties you wouldn't normally deploy.\n- Schema lag can mean you need to verify or update API versions and properties.\n- Reusable templates usually need parameters for values that differ by environment.",
+      "productionTip": {
+        "official": "Microsoft documents portal Bicep export for resource groups and resources, but warns that export isn't guaranteed to succeed and isn't a reliable way to turn pre-existing resources into production templates. Template best practices recommend parameters for environment-varying settings and secure types for secrets.",
+        "recommendation": "Use portal Bicep export for learning or bootstrapping. Before reuse, refactor into modules, remove environment-specific clutter, add parameter descriptions, run `az bicep build`, and perform a what-if deployment in a nonproduction resource group."
+      },
+      "memoryTrick": "**Export is a draft, not a design.** The phrase is intentionally conservative; in small lab cases the draft may deploy, but production reuse still deserves review and validation.",
+      "examTip": "The answer hinges on **reuse across environments**. That wording means parameters, cleanup, and validation matter more than simply downloading the file. Be careful with conversion verbs: Bicep to JSON is build, JSON to Bicep is decompile. If the question says the source is deployment history, remember that history export is ARM JSON and must be decompiled separately for Bicep."
+    },
+    "sources": [
+      {
+        "title": "Export Bicep files in Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/export-bicep-portal"
+      },
+      {
+        "title": "Export template in Azure portal - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+      },
+      {
+        "title": "Best practices for templates - Azure Resource Manager",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/best-practices"
+      },
+      {
+        "title": "Bicep CLI commands",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/bicep-cli"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

@@ -1,0 +1,792 @@
+[
+  {
+    "id": "D2.3.4-01",
+    "objective": "D2.3.4",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have a storage account named `stlab104` that contains a blob container named `invoices`. Blob soft delete is enabled with a seven-day retention period. Container soft delete is disabled.\n\nAn administrator deletes `invoices` by mistake. You need to recover the container and all blobs that were in it.\n\nWhat should you have configured before the deletion?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Only blob soft delete, because it protects every blob in the deleted container"
+      },
+      {
+        "id": "B",
+        "text": "Only blob versioning, because deleting a container converts each blob into a previous version"
+      },
+      {
+        "id": "C",
+        "text": "Container soft delete on the storage account"
+      },
+      {
+        "id": "D",
+        "text": "A lifecycle management rule that keeps base blobs for seven days"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The storage account contains Azure Blob Storage data. The container was deleted after any protection setting would have been enabled, and the task is to recover a deleted container rather than one deleted blob inside a live container.",
+    "sections": {
+      "correctAnswer": "**C. Container soft delete on the storage account**. Blob soft delete protects individual blob-level objects, but Microsoft documents container soft delete as the feature that restores a deleted container and its contents during the configured retention period.",
+      "technical": "Blob soft delete and container soft delete are separate settings with separate scopes. They are both configured for the storage account's Blob service, yet they are evaluated for different operations. Blob soft delete applies when an individual blob, snapshot, version, or supported hierarchical namespace directory is deleted. In flat-namespace accounts it can also help with supported overwrites. Container soft delete applies when the container resource itself is deleted.\n\nFor `stlab104`, Azure treats the event as a container deletion. First, the administrator deletes `invoices`. Second, the service checks whether container soft delete was enabled before that delete operation. Third, if it was enabled, Azure keeps the soft-deleted container for the configured interval and can restore it with its contents. Blob soft delete does not turn the deleted parent container into a set of recoverable child blobs. Microsoft explicitly says blob soft delete does not protect at container or account scope.\n\nThe two settings are complementary. Blob soft delete would be useful if `invoices` still existed and someone deleted `invoice-17.pdf` inside it. Container soft delete is needed when the whole `invoices` container is gone. Blob versioning does not change a deleted container into previous blob versions, and lifecycle management rules are for planned tiering or deletion rather than recovery from an accidental container removal.",
+      "wrongOptions": {
+        "A": "Blob soft delete is the correct feature for an individual blob, snapshot, version, or supported directory, but the whole container was deleted here. Misconception: because blobs live inside a container, blob-level recovery automatically survives deletion of the parent container. Could be correct when `invoices` still exists and only one blob in it was deleted.",
+        "B": "Blob versioning tracks supported blob-level writes and deletes, but it does not restore a deleted container. Misconception: any deletion involving blob data becomes a previous version. Could be correct when a flat-namespace account has versioning enabled and the operation deletes or overwrites an individual blob.",
+        "D": "Lifecycle management can remove or tier data according to rules, but it is not the restore mechanism for an accidentally deleted container. Misconception: a retention-sounding policy is equivalent to soft delete. Could be correct when the goal is controlled cleanup of old blobs, snapshots, or versions."
+      },
+      "plainEnglish": "Think of a container as a folder and blobs as files inside the folder. Blob soft delete is like a recycle bin for deleted files. If one file is removed, the file can be brought back. But if the entire folder is deleted, you need a folder-level recycle bin. That folder-level protection is container soft delete. The exam trap is that both settings sound similar and both live on the storage account, but each catches a different accident. To recover the whole `invoices` container with everything it held, container soft delete must have been enabled before the deletion.",
+      "analogy": "A warehouse has boxes inside rooms. Workers can recover a discarded box if the box-recovery tag was enabled. A facilities team can recover a closed room only if the room-recovery seal was enabled. Losing the `invoices` room is not the same as losing one box.\n\n| Analogy | Azure reality |\n|---|---|\n| Warehouse room | Blob container |\n| Box in the room | Blob |\n| Box-recovery tag | Blob soft delete |\n| Room-recovery seal | Container soft delete |\n\n**Where the analogy breaks down:** Azure recovery uses service metadata, retention timers, permissions, and storage APIs. A physical warehouse does not model snapshots, blob versions, or storage account features.",
+      "jargon": [
+        {
+          "term": "Blob",
+          "definition": "An object stored in Azure Blob Storage, such as a document, image, backup file, or application data file."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical grouping inside a storage account that holds blobs and is the target of container-level operations."
+        },
+        {
+          "term": "Blob soft delete",
+          "definition": "A Blob Storage protection setting that keeps deleted blob-level data recoverable for a configured retention period."
+        },
+        {
+          "term": "Container soft delete",
+          "definition": "A Blob Storage protection setting that keeps a deleted container and its contents recoverable for a configured retention period."
+        },
+        {
+          "term": "Retention period",
+          "definition": "The number of days Azure keeps soft-deleted data before permanently deleting it."
+        },
+        {
+          "term": "Snapshot",
+          "definition": "A read-only point-in-time copy of a blob. Soft delete can create or retain snapshots in specific scenarios."
+        },
+        {
+          "term": "Blob versioning",
+          "definition": "A feature that automatically maintains previous versions of a blob when supported write or delete operations occur."
+        },
+        {
+          "term": "Lifecycle management",
+          "definition": "Azure Storage rules that automatically tier or delete blobs, snapshots, or versions according to conditions."
+        }
+      ],
+      "watchOut": "- Blob soft delete and container soft delete are independent settings.\n- Blob soft delete cannot recover a deleted container.\n- Container soft delete restores the deleted container as a whole.\n- Protection must be enabled before the delete event.\n- A deleted storage account is outside both soft delete features.",
+      "productionTip": {
+        "official": "Microsoft documents blob soft delete for restoring individual blobs, snapshots, or versions, and container soft delete for restoring a deleted container and its contents. Microsoft also recommends enabling both soft delete features for better blob data protection.",
+        "recommendation": "Enable both settings for production accounts that hold business data. Use different storage accounts when applications need different recovery intervals, and rehearse both restore paths so responders know whether to undelete a blob or restore a container."
+      },
+      "memoryTrick": "Remember **object needs blob soft delete; bucket needs container soft delete**. The shortcut is safe for this scope, but it does not cover storage account deletion.",
+      "examTip": "The clue is **the container was deleted**. Choose container soft delete, not blob soft delete. A harder item may reverse the facts and say the container is still active but one blob disappeared; then blob soft delete or versioning becomes the relevant layer."
+    },
+    "sources": [
+      {
+        "title": "Soft Delete for Blobs to Recover Data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+      },
+      {
+        "title": "Soft Delete for Containers in Azure Storage - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+      },
+      {
+        "title": "Data protection overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/data-protection-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.4-02",
+    "objective": "D2.3.4",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You manage a storage account named `stclaims`. A compliance analyst asks you to configure soft delete so that administrators have time to notice accidental deletions but do not keep recoverable data longer than necessary. You will enable both blob soft delete and container soft delete.\n\nWhich two statements are correct about the retention settings? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "The retention period must be at least 14 days and at most 730 days"
+      },
+      {
+        "id": "B",
+        "text": "The retention period can be configured from 1 through 365 days"
+      },
+      {
+        "id": "C",
+        "text": "Changing the container soft delete retention period immediately recalculates the permanent deletion time for containers that are already soft-deleted"
+      },
+      {
+        "id": "D",
+        "text": "For container soft delete, containers already deleted keep the retention period that was in effect when each container was deleted"
+      },
+      {
+        "id": "E",
+        "text": "Disabling soft delete instantly purges every soft-deleted blob and container in the account"
+      }
+    ],
+    "correct": [
+      "B",
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The question is about Blob Storage blob soft delete and container soft delete, not Azure Backup vault retention, immutable storage retention, or retention labels in Microsoft Purview.",
+    "sections": {
+      "correctAnswer": "**B. The retention period can be configured from 1 through 365 days** and **D. For container soft delete, containers already deleted keep the retention period that was in effect when each container was deleted**. Microsoft documents the 1-to-365-day range, and container retention changes are not retroactive for already deleted containers.",
+      "technical": "Both blob soft delete and container soft delete use a retention period measured in days. For each feature, current Microsoft Learn pages document a configurable value from 1 through 365 days. Seven days appears in the documentation as the default or minimum recommended period, but it is not the technical minimum value.\n\nThe timing detail is important. Container soft delete documentation says the retention clock starts when the container is deleted. You can update the configured retention period later, but the new value applies only to containers deleted after the update. A container deleted yesterday while the setting was seven days does not automatically gain a thirty-day window because an administrator changes the account today. Microsoft documents the way to apply a longer period to an already soft-deleted container: restore it and delete it again while the longer setting is in effect.\n\nBlob soft delete has the same practical idea at the object level: when an object is deleted or overwritten, the retention expiration time is set for that object. Disabling soft delete is not a purge button. Existing soft-deleted objects or containers remain recoverable until their retention periods expire. Choose the shortest interval that still gives the operations team time to detect, investigate, and recover from mistakes, because retained data remains billable.",
+      "wrongOptions": {
+        "A": "The 14-to-730-day range is not the documented range for Blob Storage soft delete. Misconception: all Azure retention controls share one range. Could be correct for a different service if that service's documentation states those limits.",
+        "C": "Container soft delete retention changes are not retroactive for containers already soft-deleted. Misconception: the storage account setting is a live slider over every previous deletion. Could be correct only for containers deleted after the new value is saved.",
+        "E": "Disabling soft delete does not instantly purge existing soft-deleted blobs or containers. Misconception: turning off a feature deletes every recovery artifact it previously created. Could be correct for a different product with explicit purge semantics, but not for Blob Storage soft delete."
+      },
+      "plainEnglish": "The retention setting is the number of days Azure keeps deleted things in a recoverable state. For blob and container soft delete, the valid configuration range is 1 to 365 days. A deleted item receives its countdown when the delete or overwrite happens. If a container was deleted while the account used seven days, changing the setting later to 30 days does not add time to that deleted container. Future deletions use the new value. Turning the feature off also does not immediately empty the recovery area.",
+      "analogy": "A secure shredding room attaches a destruction-date tag to each box when the box enters the room. If the manager changes tomorrow's rule from 7 days to 30 days, boxes that arrive tomorrow get new tags. Yesterday's boxes keep their original tags unless staff restore and resubmit them.\n\n| Analogy | Azure reality |\n|---|---|\n| Shredding room | Soft-deleted state |\n| Date tag | Retention expiration time |\n| New rule | Updated retention setting |\n| Yesterday's box | Already soft-deleted container |\n\n**Where the analogy breaks down:** Azure retention is service-managed metadata, and blob overwrites can create snapshots or versions rather than physical boxes.",
+      "jargon": [
+        {
+          "term": "Blob soft delete",
+          "definition": "A Blob Storage protection setting that keeps deleted blob-level data recoverable for a configured retention period."
+        },
+        {
+          "term": "Container soft delete",
+          "definition": "A Blob Storage protection setting that keeps a deleted container and its contents recoverable for a configured retention period."
+        },
+        {
+          "term": "Retention period",
+          "definition": "The number of days Azure keeps soft-deleted data before permanently deleting it."
+        },
+        {
+          "term": "Blob",
+          "definition": "An object stored in Azure Blob Storage, such as a document, image, backup file, or application data file."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical grouping inside a storage account that holds blobs and is the target of container-level operations."
+        },
+        {
+          "term": "Snapshot",
+          "definition": "A read-only point-in-time copy of a blob. Soft delete can create or retain snapshots in specific scenarios."
+        },
+        {
+          "term": "Blob versioning",
+          "definition": "A feature that automatically maintains previous versions of a blob when supported write or delete operations occur."
+        },
+        {
+          "term": "Azure Backup",
+          "definition": "A separate backup service that can add protection for broader data loss scenarios."
+        }
+      ],
+      "watchOut": "- The allowed soft delete range is 1 through 365 days.\n- Seven days is a Microsoft recommendation, not the smallest valid value.\n- Container retention changes affect future deletions only.\n- Disabling soft delete does not purge already soft-deleted data.\n- Longer retention increases the time recoverable data remains billable.",
+      "productionTip": {
+        "official": "Microsoft documents the 1-to-365-day retention range for blob and container soft delete. The container soft delete overview states that retention changes apply only to containers deleted after the update and that disabling the feature does not immediately remove already soft-deleted containers.",
+        "recommendation": "Pick retention from operational evidence. If alerts are reviewed daily, seven days may be enough for many workloads; if deletion detection happens during monthly reconciliation, use a longer value or add backup rather than pretending a short soft delete window is adequate."
+      },
+      "memoryTrick": "Use **1-365, stamped at deletion**. This is a simplification because each feature has its own object type and restore behavior.",
+      "examTip": "Separate the valid range from Microsoft's recommended minimum. If an answer says seven days is the minimum allowed value, reject it. Also reject answers that make current setting changes retroactive for containers that are already soft-deleted."
+    },
+    "sources": [
+      {
+        "title": "Enable soft delete for blobs - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-enable"
+      },
+      {
+        "title": "Soft Delete for Containers in Azure Storage - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+      },
+      {
+        "title": "Enable and manage soft delete for containers - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-enable"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.4-03",
+    "objective": "D2.3.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "A storage account named `stmedia` has blob soft delete and container soft delete enabled. A container named `raw` is accidentally deleted. Before you restore it, a developer creates a new empty container also named `raw` for testing.\n\nYou need to recover the deleted container and the blobs, versions, and snapshots it contained when it was deleted. What should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Delete or rename the new `raw` container, then restore the soft-deleted container to its original name"
+      },
+      {
+        "id": "B",
+        "text": "Use Undelete Blob on any blob that used to be in `raw`; Azure will recreate the container automatically"
+      },
+      {
+        "id": "C",
+        "text": "Restore the deleted container as `raw-restored` so it can coexist with the new `raw` container"
+      },
+      {
+        "id": "D",
+        "text": "Wait until the retention period expires, then use List Containers with `include=deleted` to recover it"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The deleted container is still inside the container soft delete retention period, and the operator has appropriate data-plane permissions such as Storage Blob Data Contributor.",
+    "sections": {
+      "correctAnswer": "**A. Delete or rename the new `raw` container, then restore the soft-deleted container to its original name**. Microsoft documents that a soft-deleted container can be restored only to its original name, so a newly created container with that name blocks recovery until the conflict is removed.",
+      "technical": "Container recovery and blob recovery use different operations. For a soft-deleted blob, the Undelete Blob operation restores the blob and associated soft-deleted snapshots or versions. For a deleted container, container soft delete restores the container. Microsoft documents that restoring a container also restores the container's blobs and any blob versions and snapshots that existed when the container was deleted.\n\nThe name rule drives this scenario. Container soft delete guidance says a soft-deleted container must be restored to its original name. If a new active container uses that name, the service cannot restore the deleted container until the active name conflict is resolved. The safe sequence is to confirm the original deleted `raw` container is still inside the retention period, preserve any data in the new test container if needed, rename or delete that new container, and then restore the soft-deleted `raw` container.\n\nThe REST operation identifies the soft-deleted source with deleted-container headers and restores the contents and properties to a container. For exam purposes, use the overview's practical statement: restore to the original name and clear conflicts first. Waiting for the retention period to expire is the opposite of recovery, because Azure permanently removes the deleted container after that time.",
+      "wrongOptions": {
+        "B": "Undelete Blob is blob-level recovery and does not recreate a deleted parent container. Misconception: restoring one child object can rebuild the container around it. Could be correct when the container still exists and only a blob or snapshot was soft-deleted.",
+        "C": "Current Learn guidance says the deleted container must be restored to its original name. Misconception: container restore behaves like a copy operation to any convenient new name. Could be correct in a manual copy workflow after data has been restored elsewhere, but not for container soft delete restoration.",
+        "D": "After retention expires, the container and its contents are permanently deleted. Misconception: `include=deleted` searches an archive that outlives retention. Could be correct only for listing deleted containers while they are still inside the retention period."
+      },
+      "plainEnglish": "The deleted `raw` container is like a folder Azure is holding for a limited time. Azure can bring back that folder and what was inside it. But the restored folder has to use the same name. If someone already made a new folder named `raw`, Azure cannot put the old one back under that name. Save or remove the new test folder first, then restore the old one before the retention clock runs out.",
+      "analogy": "A records office can restore an archived box to shelf label `raw`, but the label must be free. If a trainee creates a new empty shelf with the same label, the archive team must clear that label before placing the original box back.\n\n| Analogy | Azure reality |\n|---|---|\n| Archived box | Soft-deleted container |\n| Shelf label `raw` | Original container name |\n| New empty shelf | Conflicting active container |\n| Archive restoration | Container restore |\n\n**Where the analogy breaks down:** Azure restore depends on authenticated service operations, deleted-container identifiers, retention status, and role assignments rather than a human shelf clerk.",
+      "jargon": [
+        {
+          "term": "Restore Container",
+          "definition": "The operation that restores the contents and properties of a soft-deleted container."
+        },
+        {
+          "term": "Undelete Blob",
+          "definition": "The Blob Storage operation that restores a soft-deleted blob and associated soft-deleted snapshots or versions."
+        },
+        {
+          "term": "Blob container",
+          "definition": "A logical grouping inside a storage account that holds blobs and is the target of container-level operations."
+        },
+        {
+          "term": "Blob",
+          "definition": "An object stored in Azure Blob Storage, such as a document, image, backup file, or application data file."
+        },
+        {
+          "term": "Blob versioning",
+          "definition": "A feature that automatically maintains previous versions of a blob when supported write or delete operations occur."
+        },
+        {
+          "term": "Snapshot",
+          "definition": "A read-only point-in-time copy of a blob. Soft delete can create or retain snapshots in specific scenarios."
+        },
+        {
+          "term": "Storage Blob Data Contributor",
+          "definition": "A built-in Azure data role that includes permissions needed for many blob and container write operations."
+        },
+        {
+          "term": "Retention period",
+          "definition": "The number of days Azure keeps soft-deleted data before permanently deleting it."
+        }
+      ],
+      "watchOut": "- Container restore is all-or-nothing for the deleted container state.\n- The original container name must be available.\n- Undelete Blob does not restore a deleted container.\n- Once retention expires, soft delete cannot recover the container.\n- HNS accounts require knowing the exact deleted container name because enumeration is limited.",
+      "productionTip": {
+        "official": "Microsoft documents that restoring a container restores its blobs and any blob versions and snapshots. The container soft delete article warns that the container must be restored to its original name and that a new container with that name prevents restoration.",
+        "recommendation": "During a container deletion incident, pause test activity in the affected account. If the name has been reused, copy any new test data elsewhere, remove the conflicting container, and restore the original container before the recovery timer expires."
+      },
+      "memoryTrick": "For containers, **free the old name before restore**. This shorthand assumes the retention period has not expired and the operator has restore permission.",
+      "examTip": "The phrase **new empty container also named** is the clue. The answer must resolve the name conflict and use container restore. Do not choose Undelete Blob unless the parent container still exists. A harder version may mention REST headers or deleted container versions, but the same name-conflict rule still controls the recovery step."
+    },
+    "sources": [
+      {
+        "title": "Soft Delete for Containers in Azure Storage - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+      },
+      {
+        "title": "Enable and manage soft delete for containers - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-enable"
+      },
+      {
+        "title": "Restore Container (REST API) - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/rest/api/storageservices/restore-container"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.4-04",
+    "objective": "D2.3.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have a flat-namespace general-purpose v2 storage account named `stops`. Blob soft delete is enabled. Blob versioning is not enabled. An application overwrites a block blob named `orders.json` by calling `Put Blob`. A second operation updates the blob metadata by calling `Set Blob Metadata`.\n\nWhich data can blob soft delete help you recover?",
+    "options": [
+      {
+        "id": "A",
+        "text": "The blob contents from before the `Put Blob` overwrite, and the metadata from before `Set Blob Metadata`"
+      },
+      {
+        "id": "B",
+        "text": "The blob contents from before the `Put Blob` overwrite, by using the soft-deleted snapshot created for the overwrite"
+      },
+      {
+        "id": "C",
+        "text": "Only the metadata from before `Set Blob Metadata`, because metadata updates are smaller than content overwrites"
+      },
+      {
+        "id": "D",
+        "text": "Neither change, because blob soft delete protects deletes only and never protects overwrites"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The account does not have hierarchical namespace enabled, the overwritten object is a supported block blob, and the restore attempt occurs before the blob soft delete retention period expires.",
+    "sections": {
+      "correctAnswer": "**B. The blob contents from before the `Put Blob` overwrite, by using the soft-deleted snapshot created for the overwrite**. In a flat-namespace account without versioning, blob soft delete creates a soft-deleted snapshot for supported overwrites, but it does not protect metadata or property updates.",
+      "technical": "Blob soft delete is not limited to explicit Delete Blob calls. In a storage account without hierarchical namespace, if blob versioning is disabled, supported overwrite operations such as Put Blob, Put Block List, Copy Blob, and Copy Blob from URL cause Azure to create a soft-deleted snapshot of the blob's state before the write. That snapshot is hidden unless deleted objects are shown or listed, and it remains recoverable until the retention period expires.\n\nThe order of operations in `stops` matters. First, `orders.json` exists as an active block blob. Second, the application calls `Put Blob`, which overwrites the blob content. Third, because blob soft delete is enabled and versioning is off, Azure creates a soft-deleted snapshot that captures the old content. Fourth, the application calls `Set Blob Metadata`. Microsoft documents that blob soft delete does not protect writes to metadata or properties, so the previous metadata value cannot be recovered through soft delete alone.\n\nThis behavior changes when versioning is enabled: overwrites create versions instead of soft-deleted snapshots. It also changes for hierarchical namespace accounts, where current documentation says soft delete protects deletes only and does not recover overwrites. The API names are the exam clue: `Put Blob` is a supported content overwrite for this account type, while `Set Blob Metadata` is excluded from soft delete protection.",
+      "wrongOptions": {
+        "A": "The old content can be recoverable, but the old metadata is not protected by blob soft delete. Misconception: every blob mutation creates a restorable prior state. Could be correct when blob versioning is enabled and a supported metadata change creates a previous version.",
+        "C": "Metadata updates are specifically excluded from blob soft delete overwrite protection. Misconception: smaller changes should be easier for Azure to reverse. Could be correct in a versioning scenario, not in soft delete alone.",
+        "D": "Blob soft delete can protect supported overwrites in flat-namespace accounts by creating soft-deleted snapshots. Misconception: the feature name covers only explicit deletes. Could be correct for unsupported write operations or HNS overwrite recovery, but not for `Put Blob` here."
+      },
+      "plainEnglish": "The app replaced the contents of `orders.json`. Because blob soft delete was on and versioning was off, Azure kept a hidden recoverable copy of the old contents. That hidden copy is a soft-deleted snapshot. Later the app changed metadata, which is descriptive information about the blob. Blob soft delete does not save a hidden copy just because metadata changed. So the previous file contents can be recovered, but the previous metadata cannot be recovered by soft delete alone.",
+      "analogy": "A clerk replaces the pages in a contract binder, and the office copier automatically keeps the previous pages. Later the clerk changes the label sticker on the binder. The copier never photographed the label, so the old sticker is gone.\n\n| Analogy | Azure reality |\n|---|---|\n| Contract pages | Blob contents |\n| Copier copy | Soft-deleted snapshot |\n| Replacing pages | `Put Blob` overwrite |\n| Binder label | Blob metadata |\n\n**Where the analogy breaks down:** Azure snapshots are service-managed data objects with billing and listing behavior. Paper copies do not model unsupported APIs, versioning, or HNS limitations.",
+      "jargon": [
+        {
+          "term": "Flat namespace",
+          "definition": "A storage account layout without hierarchical namespace; it supports blob versioning where the account type also supports it."
+        },
+        {
+          "term": "Blob soft delete",
+          "definition": "A Blob Storage protection setting that keeps deleted blob-level data recoverable for a configured retention period."
+        },
+        {
+          "term": "Blob versioning",
+          "definition": "A feature that automatically maintains previous versions of a blob when supported write or delete operations occur."
+        },
+        {
+          "term": "Soft-deleted snapshot",
+          "definition": "A recoverable snapshot created by blob soft delete for supported overwrites in flat-namespace accounts when versioning is off."
+        },
+        {
+          "term": "Blob",
+          "definition": "An object stored in Azure Blob Storage, such as a document, image, backup file, or application data file."
+        },
+        {
+          "term": "Snapshot",
+          "definition": "A read-only point-in-time copy of a blob. Soft delete can create or retain snapshots in specific scenarios."
+        },
+        {
+          "term": "Retention period",
+          "definition": "The number of days Azure keeps soft-deleted data before permanently deleting it."
+        },
+        {
+          "term": "Hierarchical namespace",
+          "definition": "A storage account capability used by Azure Data Lake Storage Gen2 that provides directory semantics."
+        }
+      ],
+      "watchOut": "- Supported overwrites can create soft-deleted snapshots when versioning is off.\n- Metadata and property changes are not protected by blob soft delete alone.\n- HNS accounts do not get overwrite recovery from blob soft delete.\n- Soft-deleted snapshots are hidden unless explicitly shown or listed.\n- With versioning enabled, previous versions replace this snapshot behavior for overwrites.",
+      "productionTip": {
+        "official": "Microsoft documents that supported overwrite operations create soft-deleted snapshots when blob soft delete is enabled on flat-namespace accounts without versioning. The same page states that metadata and property writes are not protected by blob soft delete.",
+        "recommendation": "For overwrite-heavy applications, decide whether versioning is more appropriate, especially when metadata recovery matters. Add lifecycle rules or Storage Actions where supported so retained snapshots or versions do not grow without governance."
+      },
+      "memoryTrick": "Soft delete can save **old content, not old labels**. The phrase fails when versioning or HNS changes the behavior, so always check the account features.",
+      "examTip": "Focus on the operation names. `Put Blob` is in the supported overwrite pattern for soft-deleted snapshots. `Set Blob Metadata` is the trap because it changes a blob but is outside soft delete recovery."
+    },
+    "sources": [
+      {
+        "title": "Soft Delete for Blobs to Recover Data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+      },
+      {
+        "title": "Manage and restore soft-deleted blobs - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-manage"
+      },
+      {
+        "title": "Best practices for choosing between blob soft delete and blob versioning - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-vs-versioning-options"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.4-05",
+    "objective": "D2.3.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "A storage account named `stcontracts` has both blob soft delete and blob versioning enabled. A user deletes the current version of `agreement.pdf`. Later, the user asks you to make the most recent previous version available again as the current blob.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Call Undelete Blob and expect the base blob to be restored automatically as the current version"
+      },
+      {
+        "id": "B",
+        "text": "Disable blob soft delete, because versioning and soft delete cannot be enabled together"
+      },
+      {
+        "id": "C",
+        "text": "Use container soft delete to restore only `agreement.pdf` from the container"
+      },
+      {
+        "id": "D",
+        "text": "Promote or copy the desired previous version so it becomes the current version"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The storage account is a flat-namespace account that supports blob versioning, and the desired previous version still exists and is readable.",
+    "sections": {
+      "correctAnswer": "**D. Promote or copy the desired previous version so it becomes the current version**. When versioning is enabled, deleting the current blob makes it a previous version and leaves no current version; recovery requires making a chosen previous version current.",
+      "technical": "Blob soft delete and blob versioning interact in a defined order. With versioning enabled, deleting the current version of a blob does not create a soft-deleted base blob. Instead, the current version becomes a previous version, and the blob has no current version. Existing previous versions remain available according to versioning rules. The Azure portal recovery flow therefore asks you to choose a version and make it current; an SDK or REST workflow can copy a previous version over the base blob to create a new current version.\n\nSoft delete still matters, but it protects a different part of this workflow. If someone deletes a previous version, blob soft delete can retain that deleted version for the soft delete retention period. The Undelete Blob operation restores soft-deleted versions, and Microsoft notes that it restores all soft-deleted versions at once rather than one selected version. But Undelete Blob does not promote any version to become the current version.\n\nThe recovery decision tree is specific. If the desired previous version is visible and not soft-deleted, promote it or copy it to the base blob. If the desired version was itself soft-deleted, call Undelete Blob first to restore deleted versions. After it is visible, make the chosen previous version current. Container soft delete is not part of this one-blob recovery unless the entire container was deleted.",
+      "wrongOptions": {
+        "A": "Undelete Blob can restore soft-deleted versions or snapshots, but it does not promote a version to be the current base blob. Misconception: undelete always recreates the visible blob. Could be correct when versioning is disabled and a soft-deleted base blob is being restored.",
+        "B": "Blob soft delete and blob versioning can be used together on supported flat-namespace accounts. Misconception: overlapping data protection features are mutually exclusive. Could be correct only when the account type or HNS setting does not support versioning.",
+        "C": "Container soft delete restores an entire deleted container, not one blob version inside an active container. Misconception: container recovery can surgically extract a single blob. Could be correct when the whole container was deleted and container soft delete was enabled."
+      },
+      "plainEnglish": "Versioning keeps older copies of a blob. When the current `agreement.pdf` is deleted, Azure does not put it back as the live file just because soft delete exists. The deleted current copy becomes another older version. To make the normal blob address work again, choose the version you want and make it current. If the version you need was also deleted, soft delete can help recover that version first, but you still must promote or copy it afterward.",
+      "analogy": "A contract office keeps every revision in a cabinet. When the copy at the front desk is removed, the cabinet still contains older revisions, but no revision is at the desk. The clerk must choose one cabinet revision and place it at the desk.\n\n| Analogy | Azure reality |\n|---|---|\n| Front-desk copy | Current blob version |\n| Cabinet revision | Previous blob version |\n| Retrieve deleted cabinet record | Undelete a soft-deleted version |\n| Place revision at desk | Promote or copy previous version |\n\n**Where the analogy breaks down:** Azure operations use version IDs, copy semantics, permissions, and retention rules rather than physically moving papers.",
+      "jargon": [
+        {
+          "term": "Blob soft delete",
+          "definition": "A Blob Storage protection setting that keeps deleted blob-level data recoverable for a configured retention period."
+        },
+        {
+          "term": "Blob versioning",
+          "definition": "A feature that automatically maintains previous versions of a blob when supported write or delete operations occur."
+        },
+        {
+          "term": "Current version",
+          "definition": "The blob version returned when a request does not specify a version ID."
+        },
+        {
+          "term": "Previous version",
+          "definition": "An older state of a blob retained by blob versioning."
+        },
+        {
+          "term": "Version ID",
+          "definition": "The unique identifier used to address a specific blob version."
+        },
+        {
+          "term": "Undelete Blob",
+          "definition": "The Blob Storage operation that restores a soft-deleted blob and associated soft-deleted snapshots or versions."
+        },
+        {
+          "term": "Flat namespace",
+          "definition": "A storage account layout without hierarchical namespace; it supports blob versioning where the account type also supports it."
+        },
+        {
+          "term": "Blob",
+          "definition": "An object stored in Azure Blob Storage, such as a document, image, backup file, or application data file."
+        }
+      ],
+      "watchOut": "- With versioning on, deleting the current blob makes it a previous version.\n- Undelete Blob does not select a current version.\n- Soft delete helps if a previous version is deleted.\n- Blob versioning is not supported for HNS accounts.\n- Many versions can increase listing latency and capacity cost.",
+      "productionTip": {
+        "official": "Microsoft documents that when versioning is enabled, deleting a blob makes the current version a previous version and removes the current version. The restore guidance says a previous version must be made current to restore the base blob.",
+        "recommendation": "Restore runbooks should record the version ID that is promoted and who approved it. Preserve evidence before replacing the current state, and use lifecycle management only after the audit and recovery period has passed."
+      },
+      "memoryTrick": "With versioning, **undelete finds deleted versions; promote makes one live**. The button name may differ by tool, but the recovery idea is the same.",
+      "examTip": "The words **both soft delete and versioning enabled** change the answer. Do not answer as if soft delete alone controls the base blob. If the question asks about deleting a previous version, then soft delete retention becomes the key detail."
+    },
+    "sources": [
+      {
+        "title": "Blob Versioning in Azure Storage - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      },
+      {
+        "title": "Manage and restore soft-deleted blobs - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-manage"
+      },
+      {
+        "title": "Soft Delete for Blobs to Recover Data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.4-06",
+    "objective": "D2.3.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You enabled blob soft delete on a storage account used by a logging application. The application overwrites the same large blob many times per day. After one month, the finance team reports that storage capacity charges increased even though users regularly delete old logs.\n\nWhat is the most likely reason?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Azure charges an extra monthly fee just for enabling blob soft delete"
+      },
+      {
+        "id": "B",
+        "text": "Soft-deleted data is always moved to the Archive tier, which has early deletion charges"
+      },
+      {
+        "id": "C",
+        "text": "Soft-deleted blobs, snapshots, and versions remain billable at the same rate as active data until they are permanently deleted"
+      },
+      {
+        "id": "D",
+        "text": "Container soft delete automatically duplicates every container into a second storage account"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The cost increase is related to Blob Storage capacity retained by soft delete, not unrelated transaction growth, object replication, vaulted backup, or a separate copy process.",
+    "sections": {
+      "correctAnswer": "**C. Soft-deleted blobs, snapshots, and versions remain billable at the same rate as active data until they are permanently deleted**. Microsoft documents that soft-deleted data remains billed like active data, so frequent deletes or overwrites can increase retained capacity during the recovery window.",
+      "technical": "Soft delete is a recovery feature, not a free recycle bin. There is no separate charge merely to enable blob soft delete or container soft delete, but the behavior of these features keeps data that otherwise would no longer be stored. That retained data contributes to capacity charges until the retention period ends or the data is permanently deleted according to documented rules.\n\nThe logging pattern is a classic cost trigger. In a flat-namespace account without versioning, supported overwrites create soft-deleted snapshots that capture the prior blob state. If the application overwrites one large blob many times each day, the account can accumulate many recoverable prior states during the retention period. If versioning is enabled, writes create versions instead, and those versions also consume capacity until they are explicitly deleted or controlled by lifecycle management.\n\nThe sequence is simple. A user deletes a blob or an application overwrites a supported blob. Azure keeps the prior data as a recoverable soft-deleted object, snapshot, or version-related state. The retained data stays in its tier and is billed like active data. When the retention period expires and Azure permanently deletes the data, that retained copy stops contributing to capacity. The correct response is to tune retention, monitor deleted data, and apply lifecycle controls where appropriate, not to assume the billing is an unexplained platform fee.",
+      "wrongOptions": {
+        "A": "Microsoft states there is no charge to enable or configure soft delete; the cost comes from retained data. Misconception: every protection switch has a license fee. Could be correct for a separate paid backup service, not Blob Storage soft delete itself.",
+        "B": "Soft delete does not automatically move data to Archive. Misconception: deleted-looking data always goes to the cheapest offline tier. Could be correct when a lifecycle rule explicitly tiers data to Archive, which is separate from soft delete.",
+        "D": "Container soft delete does not copy containers to another storage account. Misconception: all data protection means replication. Could be correct when object replication, vaulted backup, or a manual copy process is separately configured."
+      },
+      "plainEnglish": "Soft delete keeps deleted information around so you can rescue it. Keeping it around still uses storage. If a logging app replaces a large blob repeatedly, Azure may keep recoverable old states for the configured number of days. Users may think they deleted old logs, but the account still holds recoverable copies until the retention window closes. That extra retained data is useful after a mistake, but it is billable.",
+      "analogy": "A restaurant saves every discarded receipt bundle in a locked cabinet for seven days in case an auditor asks for it. The cabinet has no subscription fee, but it takes floor space. If staff replace a thick binder every hour and save the old binder, the storage closet fills quickly.\n\n| Analogy | Azure reality |\n|---|---|\n| Locked cabinet | Soft-deleted retention area |\n| Old binder | Soft-deleted snapshot or version |\n| Floor space | Capacity billing |\n| Seven-day hold | Retention period |\n\n**Where the analogy breaks down:** Azure billing depends on bytes, tiers, unique blocks, and operations. Paper binders do not model block-level storage economics.",
+      "jargon": [
+        {
+          "term": "Blob soft delete",
+          "definition": "A Blob Storage protection setting that keeps deleted blob-level data recoverable for a configured retention period."
+        },
+        {
+          "term": "Container soft delete",
+          "definition": "A Blob Storage protection setting that keeps a deleted container and its contents recoverable for a configured retention period."
+        },
+        {
+          "term": "Capacity charge",
+          "definition": "A storage charge based on the amount of data retained in an account."
+        },
+        {
+          "term": "Soft-deleted snapshot",
+          "definition": "A recoverable snapshot created by blob soft delete for supported overwrites in flat-namespace accounts when versioning is off."
+        },
+        {
+          "term": "Snapshot",
+          "definition": "A read-only point-in-time copy of a blob. Soft delete can create or retain snapshots in specific scenarios."
+        },
+        {
+          "term": "Blob versioning",
+          "definition": "A feature that automatically maintains previous versions of a blob when supported write or delete operations occur."
+        },
+        {
+          "term": "Access tier",
+          "definition": "A Blob Storage pricing and access category such as Hot, Cool, Cold, or Archive where supported."
+        },
+        {
+          "term": "Lifecycle management",
+          "definition": "Azure Storage rules that automatically tier or delete blobs, snapshots, or versions according to conditions."
+        }
+      ],
+      "watchOut": "- Soft delete has no separate enablement fee, but retained data is billable.\n- Overwrite-heavy workloads can create many retained states.\n- Hidden deleted data may explain higher capacity charges.\n- Shorter retention reduces cost exposure but also narrows the recovery window.\n- Lifecycle management is for cost control, not a replacement for recovery planning.",
+      "productionTip": {
+        "official": "Microsoft documents that all soft-deleted data is billed at the same rate as active data until permanently deleted. The blob soft delete overview warns that frequently overwritten data can increase capacity charges and listing latency.",
+        "recommendation": "Before enabling soft delete on high-churn accounts, estimate overwrites per retention period. Start with a recovery window your team can justify, use blob inventory to measure deleted data, and separate temporary logs into accounts with less retention when business risk allows."
+      },
+      "memoryTrick": "Soft delete is **paid parking for deleted bytes**, not a free shredder. This phrase simplifies exact billing because unique blocks and tiers can affect charges.",
+      "examTip": "When the scenario combines **soft delete**, **many overwrites**, and **higher capacity charges**, choose retained-data billing. Rule out feature fees and off-account copies unless the question explicitly configured those services."
+    },
+    "sources": [
+      {
+        "title": "Soft Delete for Blobs to Recover Data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+      },
+      {
+        "title": "Soft Delete for Containers in Azure Storage - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+      },
+      {
+        "title": "Data protection overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/data-protection-overview"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.4-07",
+    "objective": "D2.3.4",
+    "type": "multiple",
+    "difficulty": "advanced",
+    "prompt": "You are designing protection for a storage account named `stlakeprod`. The account has hierarchical namespace enabled for Azure Data Lake Storage Gen2 workloads. You need protection against accidental blob and container deletions, and you also need to reduce the chance that an administrator deletes the entire storage account.\n\nWhich two statements are correct? Each correct answer presents part of the solution. Select TWO.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Blob soft delete and container soft delete are supported when hierarchical namespace is enabled"
+      },
+      {
+        "id": "B",
+        "text": "Blob versioning is the required soft delete mechanism for hierarchical namespace accounts"
+      },
+      {
+        "id": "C",
+        "text": "Apply an Azure Resource Manager lock to help protect the storage account from deletion"
+      },
+      {
+        "id": "D",
+        "text": "Blob soft delete alone can recover containers and blobs after the storage account resource is deleted"
+      },
+      {
+        "id": "E",
+        "text": "Container soft delete lets you enumerate soft-deleted containers in hierarchical namespace accounts without knowing their original names"
+      }
+    ],
+    "correct": [
+      "A",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The account already has hierarchical namespace enabled, and the question is about Microsoft-documented Blob Storage and Data Lake Storage Gen2 protection features.",
+    "sections": {
+      "correctAnswer": "**A. Blob soft delete and container soft delete are supported when hierarchical namespace is enabled** and **C. Apply an Azure Resource Manager lock to help protect the storage account from deletion**. Microsoft Learn shows both soft delete features supported with HNS, and Microsoft recommends storage account resource locks to prevent accidental or malicious account deletion.",
+      "technical": "Hierarchical namespace changes feature support, so you must verify it instead of assuming flat-namespace behavior. The Blob Storage feature support table shows soft delete for blobs and soft delete for containers as supported with HNS. Blob soft delete documentation also says blobs and directories in HNS accounts can be restored. The protection is narrower than flat-namespace overwrite behavior: Microsoft documents that HNS soft delete protects deletes, not overwrites.\n\nStorage account deletion is a different management-plane risk. Blob soft delete and container soft delete are in-account, data-plane recovery features. If the storage account resource itself is deleted, those features are not the normal recovery mechanism for the containers and blobs in that account. Microsoft recommends locking storage accounts with Azure Resource Manager locks to prevent accidental or malicious deletion. A `CanNotDelete` lock blocks deletion while allowing reads and many configuration changes. A `ReadOnly` lock is stricter and can affect management operations such as List Keys.\n\nA sound HNS design therefore enables blob soft delete for deleted files or directories, enables container soft delete for deleted containers, and applies a resource lock to the storage account. It does not depend on blob versioning, because current documentation says versioning is not supported for hierarchical namespace accounts. It also records container names, because HNS accounts cannot enumerate soft-deleted containers; restoration requires the exact original name.",
+      "wrongOptions": {
+        "B": "Blob versioning is not supported for hierarchical namespace accounts, so it cannot be the required soft delete mechanism there. Misconception: versioning always replaces soft delete. Could be correct for a flat-namespace account where versioning is supported and desired.",
+        "D": "Blob soft delete does not protect against storage account deletion. Misconception: data-plane recovery settings survive deletion of the containing Azure resource. Could be correct only when the account still exists and the event was a blob-level delete within retention.",
+        "E": "Container soft delete documentation says HNS accounts cannot enumerate soft-deleted containers. Misconception: deleted-container listing works the same in every namespace mode. Could be correct for non-HNS accounts during the retention period."
+      },
+      "plainEnglish": "The account uses the Data Lake style namespace. Microsoft still supports blob soft delete and container soft delete there, so you can protect against accidental deletes. But deleting the whole storage account is like demolishing the building that contains the recycle bins. Blob and container soft delete are not enough for that. To reduce the chance of account deletion, put an Azure Resource Manager lock on the storage account. Do not choose versioning for HNS accounts.",
+      "analogy": "A library has file cabinets inside a locked building. Soft delete is the recovery process for removed folders and rooms. A demolition lock is a different safety control that stops someone from tearing down the building.\n\n| Analogy | Azure reality |\n|---|---|\n| Library building | Storage account resource |\n| Cabinet folders | HNS blobs and directories |\n| Room recovery | Container soft delete |\n| Demolition lock | Azure Resource Manager lock |\n\n**Where the analogy breaks down:** Azure locks control management-plane authorization. Data operations and management operations are separate paths with different roles and side effects.",
+      "jargon": [
+        {
+          "term": "Hierarchical namespace",
+          "definition": "A storage account capability used by Azure Data Lake Storage Gen2 that provides directory semantics."
+        },
+        {
+          "term": "Azure Resource Manager lock",
+          "definition": "A management-plane lock that can block deletion or modification of an Azure resource such as a storage account."
+        },
+        {
+          "term": "Control plane",
+          "definition": "Azure management operations such as deleting or locking a storage account resource."
+        },
+        {
+          "term": "Data plane",
+          "definition": "Storage service operations against data, such as deleting a blob or restoring a container."
+        },
+        {
+          "term": "Blob soft delete",
+          "definition": "A Blob Storage protection setting that keeps deleted blob-level data recoverable for a configured retention period."
+        },
+        {
+          "term": "Container soft delete",
+          "definition": "A Blob Storage protection setting that keeps a deleted container and its contents recoverable for a configured retention period."
+        },
+        {
+          "term": "Blob versioning",
+          "definition": "A feature that automatically maintains previous versions of a blob when supported write or delete operations occur."
+        },
+        {
+          "term": "Azure Backup",
+          "definition": "A separate backup service that can add protection for broader data loss scenarios."
+        }
+      ],
+      "watchOut": "- HNS supports blob and container soft delete.\n- Blob versioning is not supported for HNS accounts.\n- HNS blob soft delete protects deletes, not overwrites.\n- Soft-deleted containers cannot be enumerated in HNS accounts.\n- Soft delete does not protect the storage account resource from deletion.",
+      "productionTip": {
+        "official": "Microsoft's feature support table shows blob soft delete and container soft delete supported for HNS-enabled accounts while blob versioning is not supported. Microsoft also recommends applying Azure Resource Manager locks to storage accounts to prevent deletion.",
+        "recommendation": "For Data Lake accounts, keep an inventory of container names and critical paths so restore teams are not blocked by HNS enumeration limits. Prefer a `CanNotDelete` lock for most production accounts unless you have tested the operational impact of a stricter `ReadOnly` lock."
+      },
+      "memoryTrick": "For HNS: **soft delete yes, versions no, account lock separately**. Recheck the feature support table when NFS, SFTP, or unusual account types are involved.",
+      "examTip": "Separate scopes. If the risk is deleting a blob or container, use soft delete. If the risk is deleting the storage account, use a resource lock. If HNS appears in the question, do not make blob versioning the answer."
+    },
+    "sources": [
+      {
+        "title": "Blob Storage feature support in Azure storage accounts",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-feature-support-in-storage-accounts"
+      },
+      {
+        "title": "Soft Delete for Blobs to Recover Data - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-blob-overview"
+      },
+      {
+        "title": "Soft Delete for Containers in Azure Storage - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+      },
+      {
+        "title": "Apply an Azure Resource Manager lock to a storage account",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/lock-account-resource"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D2.3.4-08",
+    "objective": "D2.3.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "Woodgrove Bank stores critical block blobs in a flat-namespace general-purpose v2 storage account. The operations team wants the configuration that best matches current Microsoft Learn recommendations for layered protection against accidental blob deletion, accidental overwrites, deleted containers, and accidental storage account deletion.\n\nWhich configuration should you recommend?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable container soft delete only, because it includes all blob-level recovery features"
+      },
+      {
+        "id": "B",
+        "text": "Configure an Azure Resource Manager lock, enable container soft delete, enable blob soft delete, and enable blob versioning where supported"
+      },
+      {
+        "id": "C",
+        "text": "Enable blob soft delete only, because it protects containers and storage accounts from deletion"
+      },
+      {
+        "id": "D",
+        "text": "Use lifecycle management to delete old versions, and leave soft delete disabled to avoid hidden data"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The account uses a flat namespace that supports blob versioning. The recommendation is for critical blob data and does not replace separate disaster recovery, vaulted backup, immutable storage, or ransomware planning where those are required.",
+    "sections": {
+      "correctAnswer": "**B. Configure an Azure Resource Manager lock, enable container soft delete, enable blob soft delete, and enable blob versioning where supported**. Microsoft Learn recommends account locks, container soft delete, and blob soft delete for basic protection, and separately recommends soft delete plus versioning for critical blob data that needs layered protection.",
+      "technical": "This design uses layers because no single feature covers every failure mode. Microsoft Learn's data protection overview recommends basic protection steps for a storage account: configure an Azure Resource Manager lock to protect the account from deletion or configuration changes, enable container soft delete to recover a deleted container and its contents, and enable blob soft delete to recover a deleted or overwritten blob. The soft-delete-versus-versioning guidance adds that customers storing critical data should enable soft delete and versioning for layered protection against unintended deletions and overwrites.\n\nFor this flat-namespace account, the layers map cleanly. An Azure Resource Manager lock addresses accidental deletion of the storage account resource. Container soft delete addresses accidental deletion of a whole container. Blob soft delete addresses deleted blob-level data and adds retention for deleted versions or snapshots. Blob versioning, where supported, keeps previous states for supported writes and deletes, which is useful for overwrites and metadata changes that soft delete alone may not capture.\n\nThe words **where supported** are essential. Blob versioning is not available for hierarchical namespace accounts, but the scenario says flat namespace. This configuration still is not the whole business continuity story. Microsoft notes that broader scenarios such as ransomware or off-account recovery may require Azure Backup or other methods. Among the choices, however, only the layered answer covers account, container, blob delete, and overwrite risks using documented Microsoft recommendations.",
+      "wrongOptions": {
+        "A": "Container soft delete restores deleted containers, but it does not protect an individual blob deleted from a live container or every overwrite scenario. Misconception: parent-container recovery includes all child-object accidents. Could be correct when the only risk is accidental deletion of entire containers.",
+        "C": "Blob soft delete does not restore deleted containers and does not protect the storage account from deletion. Misconception: blob-level protection expands upward to parent resources. Could be correct when the only goal is blob-level recovery in an existing container and account protection is handled elsewhere.",
+        "D": "Lifecycle management is useful for cost control, including deleting old versions, but disabling soft delete removes the requested recovery layer. Misconception: cleanup policies are data protection policies. Could be correct as an additional cost-control rule after versioning and soft delete are enabled."
+      },
+      "plainEnglish": "Critical data needs more than one safety net. A storage account lock helps stop someone from deleting the whole account. Container soft delete helps bring back a deleted container. Blob soft delete helps bring back deleted blob-level data for a limited time. Versioning keeps earlier blob states when supported, which is helpful for overwrites and for choosing a known good copy. Microsoft presents these as different tools for different risks, not as one magic switch.",
+      "analogy": "Woodgrove's records room uses several safeguards: a building demolition lock, a room restore process, a document recycle bin, and revision history for important contracts. Each catches a different mistake.\n\n| Analogy | Azure reality |\n|---|---|\n| Building demolition lock | Azure Resource Manager lock |\n| Room restore process | Container soft delete |\n| Document recycle bin | Blob soft delete |\n| Contract revision history | Blob versioning |\n\n**Where the analogy breaks down:** Azure features have support limits, retention timers, billing effects, and namespace restrictions. A records room does not model version IDs or management-plane authorization.",
+      "jargon": [
+        {
+          "term": "Microsoft recommendation",
+          "definition": "Guidance in Microsoft Learn that describes recommended protection patterns; it is not always a hard technical requirement."
+        },
+        {
+          "term": "General-purpose v2 account",
+          "definition": "A modern Azure Storage account type that supports Blob Storage and other storage services."
+        },
+        {
+          "term": "Flat namespace",
+          "definition": "A storage account layout without hierarchical namespace; it supports blob versioning where the account type also supports it."
+        },
+        {
+          "term": "Azure Resource Manager lock",
+          "definition": "A management-plane lock that can block deletion or modification of an Azure resource such as a storage account."
+        },
+        {
+          "term": "Container soft delete",
+          "definition": "A Blob Storage protection setting that keeps a deleted container and its contents recoverable for a configured retention period."
+        },
+        {
+          "term": "Blob soft delete",
+          "definition": "A Blob Storage protection setting that keeps deleted blob-level data recoverable for a configured retention period."
+        },
+        {
+          "term": "Blob versioning",
+          "definition": "A feature that automatically maintains previous versions of a blob when supported write or delete operations occur."
+        },
+        {
+          "term": "Lifecycle management",
+          "definition": "Azure Storage rules that automatically tier or delete blobs, snapshots, or versions according to conditions."
+        },
+        {
+          "term": "Azure Backup",
+          "definition": "A separate backup service that can add protection for broader data loss scenarios."
+        }
+      ],
+      "watchOut": "- This is a Microsoft recommendation pattern, not a mandatory setting for every account.\n- Blob versioning is valid only where supported.\n- Container soft delete does not recover a single blob deleted from a live container.\n- Blob soft delete does not protect against storage account deletion.\n- Versioning and soft delete can increase capacity cost, so lifecycle rules may still be needed.",
+      "productionTip": {
+        "official": "Microsoft Learn recommends resource locks, container soft delete, and blob soft delete as basic data protection steps. Microsoft Learn also recommends that customers storing critical data enable soft delete and versioning for layered protection against unintended deletions and overwrites where versioning is supported.",
+        "recommendation": "Adopt the layered configuration for critical flat-namespace blob accounts, then tune retention and lifecycle rules by workload. Document which feature restores which resource so responders do not try blob undelete for a deleted container or container restore for one overwritten blob."
+      },
+      "memoryTrick": "Use **Lock, Container, Blob, Version**: lock the account, recover the bucket, recover the object, keep the revisions. This mnemonic is simplified because some workloads also need backup, immutability, or replication.",
+      "examTip": "When the question asks for **Microsoft Learn recommendations** and lists several failure modes, avoid one-feature answers. Match each risk to its documented layer: account lock, container soft delete, blob soft delete, and versioning where supported."
+    },
+    "sources": [
+      {
+        "title": "Data protection overview - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/data-protection-overview"
+      },
+      {
+        "title": "Best practices for choosing between blob soft delete and blob versioning - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-vs-versioning-options"
+      },
+      {
+        "title": "Blob Versioning in Azure Storage - Azure Storage",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      },
+      {
+        "title": "Apply an Azure Resource Manager lock to a storage account",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/lock-account-resource"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]

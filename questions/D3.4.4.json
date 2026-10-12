@@ -1,0 +1,686 @@
+[
+  {
+    "id": "D3.4.4-01",
+    "objective": "D3.4.4",
+    "type": "single",
+    "difficulty": "foundation",
+    "prompt": "You have an App Service app named `app-retail-prod` in the Basic B1 tier. The app has a validated custom subdomain `shop.contoso.com`. The DNS team currently has a CNAME record that maps `shop` directly to `app-retail-prod.azurewebsites.net`, and there are no private DNS zones involved. You need to secure the subdomain with the least administrative effort and no certificate purchase.\n\nWhich certificate option should you use?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create a free App Service managed certificate for `shop.contoso.com` and bind it to the custom domain"
+      },
+      {
+        "id": "B",
+        "text": "Create a free App Service managed wildcard certificate for `*.contoso.com` and bind it to the app"
+      },
+      {
+        "id": "C",
+        "text": "Upload a public `.cer` certificate and select it in the custom domain TLS binding"
+      },
+      {
+        "id": "D",
+        "text": "Buy an App Service certificate because free managed certificates require Standard tier or higher"
+      }
+    ],
+    "correct": [
+      "A"
+    ],
+    "assumptions": "Azure public cloud. The app is a multitenant App Service web app, not App Service Environment. The custom subdomain is public, already mapped to the app, and the DNS CNAME points directly to the app default hostname.",
+    "sections": {
+      "correctAnswer": "**A. Create a free App Service managed certificate for `shop.contoso.com` and bind it to the custom domain**. A free App Service managed certificate is the lowest-effort option for a supported mapped custom domain, and the Basic tier satisfies the certificate prerequisite.",
+      "technical": "A free App Service managed certificate is a private TLS certificate that App Service creates and manages for a custom domain. The workflow has two separate pieces: the custom domain must be mapped to the app, and then the certificate must be bound to that hostname. In the scenario, `shop.contoso.com` is a subdomain with a CNAME record mapped directly to `app-retail-prod.azurewebsites.net`, which matches the documented subdomain requirement for the managed certificate path.\n\nThe order of checks is important:\n\n1. The app's plan must be in a supported tier. The certificate article lists Basic, Standard, Premium, or Isolated for adding private certificates, and the binding article also lists Basic, Standard, or Premium for TLS/SSL bindings.\n2. The custom domain must already be mapped to App Service. For a subdomain, Microsoft documents a direct CNAME to `<app-name>.azurewebsites.net` or to the supported Traffic Manager target.\n3. The certificate is created for one supported custom domain. App Service then needs a TLS/SSL binding so the hostname presents that certificate over HTTPS.\n4. App Service manages renewal as long as the same prerequisites remain true.\n\nThe limitations decide the distractors. The free managed certificate doesn't support wildcard certificates, isn't exportable, doesn't support private DNS, and isn't supported in App Service Environment. It also isn't used as a client certificate by thumbprint. For root domains, the documented path is different: an apex such as `contoso.com` needs an A record to the app IP, and creation or renewal depends on the app being reachable from the internet if the root domain scenario has IP restrictions. None of those root-domain complications are present here.",
+      "wrongOptions": {
+        "B": "A wildcard hostname is not supported by the free App Service managed certificate option, even though wildcard custom domains can be mapped to App Service with DNS. Misconception: a managed certificate can cover every host pattern that custom domain mapping accepts. Could be correct when you buy a wildcard-capable App Service certificate or import your own wildcard private certificate that satisfies App Service requirements.",
+        "C": "A public `.cer` certificate uploaded to App Service is for application code scenarios, not for securing a custom domain binding. Custom domain TLS bindings need a private certificate source, such as managed, App Service certificate, Key Vault import, or uploaded PFX. Misconception: any certificate file uploaded into App Service can be selected for inbound HTTPS. Could be correct when the app code needs to load a public certificate to call or validate a remote resource.",
+        "D": "A purchased App Service certificate would work, but the reason is wrong and it is not the least-effort, no-purchase answer. The docs allow certificate work in Basic tier, and the app is already Basic B1. Misconception: free managed certificates are available only in Standard or Premium. Could be correct when the hostname needs a wildcard certificate, export options, or certificate management features not provided by the free managed certificate."
+      },
+      "plainEnglish": "The app already has the two things the free option needs: it runs in a paid tier and its public subdomain points straight at the App Service app. A free App Service managed certificate is like asking Azure to make and look after the HTTPS certificate for that one website name. You still attach the certificate to the custom domain, but you do not buy a certificate or upload a PFX file. The free option is not a general-purpose certificate service. It is only for supported App Service custom domain names and has limits, especially no wildcard and no export.",
+      "analogy": "Imagine a shopping centre gives each approved store one free name badge for its exact shop name. `shop.contoso.com` is one exact shop name, so the centre can print and maintain that badge. It won't print a badge that says every possible Contoso shop, and it won't let the store take the badge away to use in another building.\n\n| Analogy | Azure reality |\n|---|---|\n| Shopping centre | Azure App Service |\n| Exact shop name badge | Free App Service managed certificate |\n| Store directory entry | Custom domain DNS mapping |\n| Badge clipped to the shop door | TLS/SSL binding |\n| Badge for every Contoso shop | Unsupported wildcard managed certificate |\n\n**Where the analogy breaks down:** Real certificates use domain validation, certificate authorities, cryptographic keys, and browser trust chains. A name badge does not model DNS CNAME requirements or certificate renewal checks.",
+      "jargon": [
+        {
+          "term": "App Service managed certificate",
+          "definition": "A free private TLS certificate that Azure App Service creates, manages, and renews for a supported custom domain."
+        },
+        {
+          "term": "Custom domain",
+          "definition": "A DNS name that you own, such as `shop.contoso.com`, mapped to an App Service app instead of using only the default `azurewebsites.net` name."
+        },
+        {
+          "term": "CNAME record",
+          "definition": "A DNS alias record that points one hostname to another hostname, commonly used for App Service subdomains."
+        },
+        {
+          "term": "TLS/SSL binding",
+          "definition": "The App Service configuration that associates a custom hostname with a certificate for HTTPS traffic."
+        },
+        {
+          "term": "Wildcard certificate",
+          "definition": "A certificate issued for a wildcard hostname such as `*.contoso.com`, covering multiple matching subdomains."
+        },
+        {
+          "term": "PFX",
+          "definition": "A password-protected certificate package format that can include the private key and certificate chain."
+        },
+        {
+          "term": "Public certificate",
+          "definition": "A certificate without the private key; in App Service it can be uploaded for code use but not selected for custom domain TLS binding."
+        },
+        {
+          "term": "Basic tier",
+          "definition": "A dedicated compute App Service pricing tier that supports custom TLS/SSL certificate scenarios described in the App Service documentation."
+        }
+      ],
+      "watchOut": "- A free managed certificate is per supported custom domain; it is not a wildcard certificate.\n- A subdomain CNAME for the managed certificate must be mapped directly to the supported App Service or Traffic Manager target, not through an extra intermediate alias.\n- Creating the certificate and binding it are separate steps; a listed certificate alone does not secure browser traffic.\n- For root domains, check the documented A-record and reachability conditions instead of assuming the subdomain rule applies unchanged.",
+      "productionTip": {
+        "official": "Microsoft documents that App Service managed certificates are fully managed and automatically renewed as long as prerequisites stay the same. The same page lists important limitations, including no wildcard support, no export, no private DNS support, and no support in App Service Environment.",
+        "recommendation": "Use the free managed certificate for simple public hostnames where you do not need export, wildcard coverage, or certificate pinning. Record the DNS dependency in your runbook, because changing the CNAME target can break later issuance or renewal."
+      },
+      "memoryTrick": "Free managed means **one public mapped name, no suitcase**: one supported hostname, and you cannot export it. The phrase is a simplification because root domains and Traffic Manager have additional documented conditions.",
+      "examTip": "Clue words are **least administrative effort**, **no certificate purchase**, **Basic tier**, and **CNAME directly to azurewebsites.net**. Those point to the free App Service managed certificate. A harder version may change the hostname to `*.contoso.com`, add private DNS, move the app to App Service Environment, or require exporting the private key; any of those pushes you away from the free managed certificate answer."
+    },
+    "sources": [
+      {
+        "title": "Install a TLS/SSL Certificate for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+      },
+      {
+        "title": "Secure Your Domain with TLS/SSL - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+      },
+      {
+        "title": "Set Up an Existing Custom Domain Name for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.4-02",
+    "objective": "D3.4.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You manage an App Service app named `api-woodgrove`. The app must secure both `woodgrovebank.com` and `www.woodgrovebank.com` with a certificate purchased through Azure. The operations team also wants Azure to store the certificate in Key Vault, support automatic renewal, and synchronize renewed certificate copies to imported App Service apps.\n\nWhat should you create and configure first?",
+    "options": [
+      {
+        "id": "A",
+        "text": "A free App Service managed certificate for `*.woodgrovebank.com`, then export it to Key Vault"
+      },
+      {
+        "id": "B",
+        "text": "An App Service certificate for the naked domain hostname, then complete Key Vault storage and domain verification"
+      },
+      {
+        "id": "C",
+        "text": "A public `.cer` certificate in App Service, then create a TLS/SSL binding to the root domain"
+      },
+      {
+        "id": "D",
+        "text": "An uploaded PFX certificate without a Key Vault dependency, then wait for App Service to rekey it automatically"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud, not a national cloud. The App Service app is in a supported paid tier. The organization can edit public DNS records and complete any required domain verification steps.",
+    "sections": {
+      "correctAnswer": "**B. An App Service certificate for the naked domain hostname, then complete Key Vault storage and domain verification**. A purchased App Service certificate is managed by Azure, stored in Key Vault, can be set to auto renew, and a standard certificate for the root domain includes both the root and `www` name.",
+      "technical": "An App Service certificate is a purchased private certificate managed by Azure for App Service scenarios. Microsoft describes it as combining automated certificate management with renewal and export options. The lifecycle is broader than simply selecting a certificate in an app: you buy the certificate order, authorize and store it in Key Vault, verify the domain, import it into the App Service app, and then bind it to the hostname.\n\nFor the exact naming in the scenario, the purchase page has a specific behavior. If you specify the root domain as the naked domain hostname, the issued standard certificate secures both the root domain and the `www` subdomain. The Common Name uses the root domain, and the Subject Alternative Name includes `www`. That is why the root-domain App Service certificate is the right first object when both `woodgrovebank.com` and `www.woodgrovebank.com` must be covered through the Azure purchase flow.\n\nRenewal and synchronization have their own rules. App Service certificates have a one-year validity period. Automatic renewal can start 32 days before expiration when auto renewal is on. During renewal, auto renewal, or rekey, domain verification can be required if the domain hasn't been verified in the last 395 days. After renewal or rekey completes, the Sync action updates hostname bindings without downtime; if you do not select Sync, App Service automatically syncs within 24 hours. The certificate provider permissions on the Key Vault must remain in place, because removing them prevents store, renew, or rekey operations.",
+      "wrongOptions": {
+        "C": "A public `.cer` certificate doesn't include a private key and isn't the certificate type used for custom domain TLS/SSL bindings. It also doesn't represent an Azure-purchased certificate order with Key Vault-backed renewal. Misconception: a public certificate upload is enough to terminate HTTPS for a custom domain. Could be correct when application code needs a public certificate file for outbound trust or cryptographic checks.",
+        "D": "Uploading a PFX can secure a custom domain, but an uploaded certificate doesn't become an App Service certificate purchase and doesn't get automatic rekey or renewal from the App Service certificate service. Misconception: App Service automatically manages every private certificate after upload. Could be correct when the company already has a third-party certificate and will manage renewal and binding updates itself.",
+        "A": "A free managed certificate doesn't support wildcard certificates and isn't exportable, so it cannot satisfy the request to purchase through Azure and store/export through Key Vault. Misconception: all Azure-created App Service certificates have the same lifecycle and export behavior. Could be correct only for a simple supported single hostname where the team accepts the managed certificate limitations."
+      },
+      "plainEnglish": "This scenario asks for a certificate bought through Azure and managed through Azure's certificate workflow. The App Service certificate is that product. You don't just upload a file; Azure helps with purchase, domain verification, Key Vault storage, renewal, and synchronization to apps that imported the certificate. The root-domain choice matters because the documented standard certificate for a naked domain also includes the matching `www` name. After the certificate exists and is verified, you import it into the app and bind the hostnames so browsers receive the renewed certificate.",
+      "analogy": "Think of a bank ordering official branch signage through a corporate supplier. The supplier creates the sign package, stores the master design in a secure vault, verifies the bank owns the branch names, and ships updated signs when the design is renewed. Ordering the correct main branch sign also includes the matching `www` lobby sign.\n\n| Analogy | Azure reality |\n|---|---|\n| Corporate sign supplier | App Service certificate purchase flow |\n| Secure vault for the master design | Azure Key Vault |\n| Ownership check for the branch name | Domain verification |\n| Shipping updated signs | Certificate Sync to App Service apps |\n| Main branch and lobby sign | Root domain plus `www` subject alternative name |\n\n**Where the analogy breaks down:** Certificates are cryptographic assets issued by a certificate authority, and the Key Vault permissions are Azure identity permissions, not a physical storage agreement.",
+      "jargon": [
+        {
+          "term": "App Service certificate",
+          "definition": "A private certificate purchased from Azure for App Service use, with Azure-managed purchase, Key Vault storage, renewal, and synchronization capabilities."
+        },
+        {
+          "term": "Naked domain",
+          "definition": "The root domain without a host prefix, such as `woodgrovebank.com`."
+        },
+        {
+          "term": "Subject Alternative Name",
+          "definition": "A certificate field that lists additional DNS names the certificate secures."
+        },
+        {
+          "term": "Key Vault",
+          "definition": "An Azure service for safeguarding certificates, keys, and secrets."
+        },
+        {
+          "term": "Auto renewal",
+          "definition": "A setting that lets Azure renew an App Service certificate before it expires, subject to verification and permissions."
+        },
+        {
+          "term": "Rekey",
+          "definition": "Replacing the private key and issuing a new certificate when key compromise or policy requires rotation."
+        },
+        {
+          "term": "Sync",
+          "definition": "The App Service certificate operation that updates imported copies and hostname bindings with the current certificate version."
+        },
+        {
+          "term": "Common Name",
+          "definition": "A certificate subject field that identifies the primary name requested for the certificate."
+        }
+      ],
+      "watchOut": "- App Service certificate purchases are not supported in Azure national clouds according to the current article.\n- Don't remove the documented Key Vault permissions for the App Service certificate provider after setup.\n- Automatic renewal doesn't remove the need for domain verification when the documented 395-day condition applies.\n- Importing the certificate into the app and adding hostname bindings are still required before the custom domains are secured.",
+      "productionTip": {
+        "official": "Microsoft documents that Azure handles App Service certificate purchase, domain verification, Key Vault storage, renewal, and synchronization with imported copies in App Service apps. The renewal section states that Sync updates hostname bindings without downtime and that automatic sync occurs within 24 hours if Sync isn't selected.",
+        "recommendation": "For production, keep a calendar alert before the 32-day renewal window and periodically test that Key Vault permissions and domain verification methods still work. Avoid relying only on auto renewal notifications; verify the bound certificate thumbprint after renewal."
+      },
+      "memoryTrick": "Purchased App Service certificate means **buy, vault, verify, import, bind, sync**. This checklist is simplified because the portal can guide some steps, but missing Key Vault permissions or domain verification can still stop renewal.",
+      "examTip": "Clue words are **purchased through Azure**, **Key Vault**, **auto renewal**, and **root plus www**. Those are App Service certificate signals, not free managed certificate or uploaded PFX signals. A harder question may ask what happens after renewal; remember that selecting Sync updates bindings, otherwise App Service syncs within 24 hours."
+    },
+    "sources": [
+      {
+        "title": "Manage App Service Certificates - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-app-service-certificate"
+      },
+      {
+        "title": "Install a TLS/SSL Certificate for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+      },
+      {
+        "title": "Secure Your Domain with TLS/SSL - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.4-03",
+    "objective": "D3.4.4",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have an App Service app named `portal-litware` in a Premium plan. Litware has received a private certificate from a non-Microsoft certificate authority for `portal.litware.com`. You plan to upload the certificate as a PFX and use it for an inbound custom domain TLS binding.\n\nWhich three requirements must the certificate meet? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "The certificate must be exported as a password-protected PFX file"
+      },
+      {
+        "id": "B",
+        "text": "The certificate file must contain all intermediate certificates and the root certificate in the certificate chain"
+      },
+      {
+        "id": "C",
+        "text": "The certificate must contain extended key usage for server authentication and be signed by a trusted certificate authority"
+      },
+      {
+        "id": "D",
+        "text": "The certificate must be uploaded as a `.cer` file because custom domain bindings use public certificates"
+      },
+      {
+        "id": "E",
+        "text": "The certificate must be stored in Key Vault before it can ever be used by App Service"
+      },
+      {
+        "id": "F",
+        "text": "The certificate can omit the private key if the App Service app already has HTTPS Only enabled"
+      }
+    ],
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The certificate is being uploaded or imported as a private certificate for an App Service custom domain TLS binding, not merely loaded by application code for outbound calls.",
+    "sections": {
+      "correctAnswer": "**A. The certificate must be exported as a password-protected PFX file**, **B. The certificate file must contain all intermediate certificates and the root certificate in the certificate chain**, and **C. The certificate must contain extended key usage for server authentication and be signed by a trusted certificate authority**. Those are documented App Service requirements for uploaded or imported private certificates used to secure a custom domain.",
+      "technical": "App Service separates private certificates for inbound TLS bindings from public certificates for code use. A custom domain TLS binding needs a certificate source that includes the private key material. When the organization brings its own certificate from a non-Microsoft certificate authority, the documented upload path is **Bring your own certificates (.pfx)**, not public key certificates.\n\nThe base private certificate requirements are that the certificate is exported as a password-protected PFX file and contains the intermediate certificates plus the root certificate in the certificate chain. The upload workflow asks for the PFX file and the password that was created during export. The article also gives a merge-and-export pattern: put the certificate chain in the correct sequence, export it with the private key to a PFX, and then upload the PFX to App Service.\n\nFor a certificate that secures a custom domain in a TLS binding, App Service adds two more requirements. The certificate must contain extended key usage for server authentication, identified by OID `1.3.6.1.5.5.7.3.1`, and it must be signed by a trusted certificate authority. These conditions matter because browsers and the App Service front end need a server-authentication certificate chain that clients can trust.\n\nAfter the upload, the certificate appears in the **Bring your own certificates (.pfx)** list. That does not automatically secure the hostname; a TLS/SSL binding on the custom domain is still required. The certificate is stored in an App Service deployment unit, or webspace, for the App Service plan's resource group, region, and operating-system combination.",
+      "wrongOptions": {
+        "D": "A `.cer` upload is a public certificate path and isn't selected for an inbound custom domain TLS binding because it lacks private key material. Misconception: the certificate shown to browsers is public, so uploading only the public certificate must be enough. Could be correct when the app code only needs a public key certificate to access or validate a remote resource.",
+        "E": "Key Vault import is one supported certificate source, but it is not mandatory for every App Service private certificate. The docs also support uploading a PFX directly. Misconception: because Key Vault is recommended for certificate management, it is a required precondition for all certificate use. Could be correct when the organization chooses the Key Vault import workflow and grants App Service read access to the vault.",
+        "F": "HTTPS Only redirects HTTP requests to HTTPS; it doesn't supply the private key required for TLS handshake on a custom hostname. Misconception: an HTTPS platform switch replaces certificate material. Could be correct only in the sense that HTTPS Only is a separate hardening setting after a valid certificate binding exists."
+      },
+      "plainEnglish": "A browser can trust `portal.litware.com` only if the web server can prove it owns the private key for a valid server certificate. That is why App Service needs a protected PFX package, not just a public certificate file. The PFX must include the full chain so clients can build trust from the site certificate through intermediate issuers to the root. For a website, the certificate also needs to say it is meant for server authentication and be issued by a trusted certificate authority. HTTPS Only is useful, but it cannot replace the certificate and private key.",
+      "analogy": "Picture a secure office door. The badge shown to visitors is public, but the door controller also needs the matching hidden key and the complete authority chain proving the badge issuer is trusted. Uploading only a photocopy of the badge is not enough to operate the door.\n\n| Analogy | Azure reality |\n|---|---|\n| Hidden door key | Certificate private key inside the PFX |\n| Sealed badge packet | Password-protected PFX file |\n| Issuer chain letters | Intermediate and root certificates |\n| Badge approved for doors | Server authentication extended key usage |\n| Trusted security office | Trusted certificate authority |\n\n**Where the analogy breaks down:** TLS uses asymmetric cryptography and certificate path validation rather than physical badges. The root certificate in a PFX doesn't mean browsers trust a private root unless their trust stores trust it.",
+      "jargon": [
+        {
+          "term": "Private certificate",
+          "definition": "A certificate package that includes private key material and can be used by App Service for TLS termination or by app code."
+        },
+        {
+          "term": "PFX",
+          "definition": "A PKCS #12 package commonly used to store a certificate, private key, and chain protected by a password."
+        },
+        {
+          "term": "Certificate chain",
+          "definition": "The linked set of certificates from the server certificate through intermediate authorities to a root authority."
+        },
+        {
+          "term": "Intermediate certificate",
+          "definition": "A certificate authority certificate between the server certificate and a trusted root."
+        },
+        {
+          "term": "Root certificate",
+          "definition": "A top-level certificate authority certificate that anchors a certificate chain."
+        },
+        {
+          "term": "Extended key usage",
+          "definition": "A certificate extension describing what the certificate is allowed to be used for, such as server authentication."
+        },
+        {
+          "term": "Trusted certificate authority",
+          "definition": "An issuer whose certificates are trusted by clients or by the relevant platform trust store."
+        },
+        {
+          "term": "HTTPS Only",
+          "definition": "An App Service setting that redirects HTTP traffic to HTTPS; it doesn't create a certificate."
+        }
+      ],
+      "watchOut": "- A private certificate upload and a public certificate upload appear under different panes in the App Service certificate experience.\n- The private key used to generate the certificate request must be included when exporting the merged certificate to PFX.\n- Leaving out intermediate certificates can produce browser validation errors even after the binding is added.\n- App Service managed certificates and App Service certificates already satisfy App Service's private certificate requirements, so this checklist mainly matters for imported or uploaded certificates.",
+      "productionTip": {
+        "official": "Microsoft documents that uploaded or imported private certificates must be password-protected PFX files with the certificate chain, and that custom domain TLS bindings additionally require server authentication extended key usage and a trusted certificate authority signature.",
+        "recommendation": "Before uploading, test the PFX in a staging app or slot, document the export password handling process, and verify the bound hostname from an external client. Keep renewal steps explicit because direct uploaded certificates don't automatically update bindings the way Key Vault-imported certificates can."
+      },
+      "memoryTrick": "For a BYO inbound certificate, remember **PFX, password, path, purpose**: package it as PFX, protect it with a password, include the chain path, and mark it for server authentication. This shortcut doesn't cover every CA policy but matches the App Service upload checks used here.",
+      "examTip": "The words **private certificate**, **PFX**, and **custom domain TLS binding** are the giveaway. Pick requirements about private-key packaging, chain completeness, and server authentication. If the option says `.cer`, public certificate, app code, or HTTPS Only, it is probably describing a different App Service certificate scenario."
+    },
+    "sources": [
+      {
+        "title": "Install a TLS/SSL Certificate for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+      },
+      {
+        "title": "Secure Your Domain with TLS/SSL - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.4-04",
+    "objective": "D3.4.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have an App Service app named `web-fabrikam-prod` in the Standard S1 tier. The app already has custom domains for `orders.fabrikam.com` and `admin.fabrikam.com`. Both names will use separate certificates. The DNS team wants to avoid changing A records and wants to keep using the same shared inbound IP address where possible. All client browsers are modern.\n\nWhich TLS/SSL binding type should you choose?",
+    "options": [
+      {
+        "id": "A",
+        "text": "IP-based SSL for both hostnames because Standard tier includes dedicated IP binding support"
+      },
+      {
+        "id": "B",
+        "text": "SNI SSL for both hostnames"
+      },
+      {
+        "id": "C",
+        "text": "A public `.cer` certificate binding because multiple certificates require public key certificates"
+      },
+      {
+        "id": "D",
+        "text": "No TLS/SSL binding because HTTPS Only automatically selects the certificate by hostname"
+      }
+    ],
+    "correct": [
+      "B"
+    ],
+    "assumptions": "Azure public cloud. The client population supports Server Name Indication, and the domains are already mapped and validated for the app. The requirement is inbound custom domain HTTPS, not client-certificate authentication.",
+    "sections": {
+      "correctAnswer": "**B. SNI SSL for both hostnames**. SNI SSL lets multiple TLS/SSL certificates secure multiple domains on the same IP address, which matches the requirement to avoid dedicated IP changes for modern browsers.",
+      "technical": "App Service offers two binding types for custom domain TLS: SNI SSL and IP-based SSL. SNI stands for Server Name Indication. With SNI, the client includes the hostname it wants during the TLS handshake, so the App Service front end can choose the correct certificate while multiple secured hostnames share the same IP address. Microsoft states that SNI SSL allows multiple TLS/SSL certificates to secure multiple domains on the same IP address, and that most modern browsers support SNI.\n\nIP-based SSL has a different behavior. It allows only one TLS/SSL certificate to secure a dedicated public IP address. When you configure an IP SSL binding, App Service creates a new dedicated IP address for the app. If the hostname is mapped with an A record, the DNS record must be remapped to that new dedicated IP. Microsoft also notes that IP-based SSL is supported only in Standard tier or higher. The scenario is in Standard, so IP-based SSL is allowed, but it conflicts with the stated goal to avoid A-record changes and dedicated IP behavior.\n\nPricing also reinforces the decision. App Service plan documentation says Server Name Indication TLS connections are free, while IP-based TLS connections have an hourly charge, although some Standard or higher tiers provide one IP-based TLS connection for free. Because the clients are modern and there are two hostnames, SNI is the practical binding type. HTTPS Only is a redirect setting and doesn't replace the binding. Public `.cer` uploads are for app code, not host bindings.",
+      "wrongOptions": {
+        "C": "Public `.cer` certificates aren't the binding source for securing custom domains. Custom domain TLS bindings use private certificate options. Misconception: multiple hostnames need public key certificates because browsers receive public certificate data. Could be correct when application code needs a public certificate loaded for outbound communication, not for inbound hostname binding.",
+        "D": "HTTPS Only redirects HTTP requests to HTTPS, but it doesn't choose or install a certificate for a custom hostname. A custom domain still needs a valid TLS/SSL binding to avoid browser warnings. Misconception: the redirect switch is the same as certificate binding. Could be correct as an additional hardening setting after the certificate bindings are configured.",
+        "A": "The Standard tier supports IP-based SSL, but IP-based SSL creates a dedicated public IP address and supports one certificate for that dedicated IP binding pattern. That works against the requirement to avoid A-record changes and keep shared-IP behavior. Misconception: if a feature is available in the tier, it must be the best binding type. Could be correct when a legacy client can't use SNI and a dedicated IP binding is explicitly required."
+      },
+      "plainEnglish": "Modern browsers can tell Azure which website name they are trying to reach before the secure session is fully established. That feature is SNI. It lets one App Service front end use the right certificate for `orders.fabrikam.com` and a different certificate for `admin.fabrikam.com` while they share an IP address. IP-based SSL is the older-style choice where Azure gives the app a dedicated IP for the binding, which can force DNS updates. The question says to avoid that, so SNI is the right answer.",
+      "analogy": "Imagine an office reception desk in a shared building. A visitor says the company name at the desk, and the receptionist hands over the correct visitor badge for that company. The building doesn't need a separate street entrance for every company. IP-based SSL is more like giving one company its own dedicated entrance, which means maps and signs may need updates.\n\n| Analogy | Azure reality |\n|---|---|\n| Visitor says company name | Client sends SNI hostname |\n| Shared building entrance | Shared inbound IP address |\n| Correct visitor badge | Correct certificate selected by hostname |\n| Dedicated entrance | IP-based SSL dedicated public IP |\n| Updating maps | Remapping DNS A records |\n\n**Where the analogy breaks down:** TLS certificate selection happens inside a cryptographic handshake, and the browser validates certificate names and trust chains rather than simply accepting a badge.",
+      "jargon": [
+        {
+          "term": "SNI",
+          "definition": "Server Name Indication, a TLS feature where the client sends the requested hostname so the server can select the right certificate."
+        },
+        {
+          "term": "IP-based SSL",
+          "definition": "An App Service binding type that uses a dedicated public IP address for a certificate binding."
+        },
+        {
+          "term": "TLS/SSL binding",
+          "definition": "The App Service association between a hostname, a certificate, and a binding type for HTTPS."
+        },
+        {
+          "term": "Inbound IP address",
+          "definition": "The public IP address used by clients to reach an App Service app."
+        },
+        {
+          "term": "A record",
+          "definition": "A DNS record mapping a hostname directly to an IPv4 address."
+        },
+        {
+          "term": "Modern browser",
+          "definition": "A browser capable of sending SNI during TLS handshake, such as current Microsoft Edge, Chrome, Firefox, or Opera."
+        },
+        {
+          "term": "HTTPS Only",
+          "definition": "An App Service setting that redirects HTTP requests to HTTPS after certificate configuration exists."
+        },
+        {
+          "term": "Dedicated IP",
+          "definition": "A public IP address assigned for a specific IP-based SSL binding instead of shared across multiple hostnames."
+        }
+      ],
+      "watchOut": "- IP-based SSL can change the app's inbound IP, and deleting a binding can also affect inbound IP behavior.\n- If an A record points at the old inbound IP, IP-based SSL requires a remap to the new dedicated IP.\n- SNI is usually the exam answer when the scenario mentions multiple hostnames and modern browsers.\n- Standard tier makes IP SSL possible, but possible isn't the same as minimal DNS disruption.",
+      "productionTip": {
+        "official": "Microsoft documents SNI SSL as supporting multiple certificate bindings on the same IP address, and IP-based SSL as using a dedicated public IP with follow-up DNS remapping for A records. The App Service plan article notes that SNI TLS connections are free while IP-based TLS connections can incur hourly charges.",
+        "recommendation": "Default to SNI for public web apps unless you have a documented legacy-client reason for IP-based SSL. Before changing an existing IP-based binding, capture current DNS records and follow the documented replace-binding approach to reduce unintended inbound IP changes."
+      },
+      "memoryTrick": "**SNI shares by name; IP SSL separates by address**. The mnemonic assumes clients support SNI, so it fails for rare legacy clients that cannot send the hostname during TLS negotiation.",
+      "examTip": "Look for the pairing: **multiple hostnames**, **modern browsers**, and **avoid changing DNS A records**. That combination strongly favors SNI SSL. A tougher item may say a partner appliance doesn't support SNI; then IP-based SSL becomes more plausible despite cost and IP remapping."
+    },
+    "sources": [
+      {
+        "title": "Secure Your Domain with TLS/SSL - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+      },
+      {
+        "title": "Set Up an Existing Custom Domain Name for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-tutorial-custom-domain"
+      },
+      {
+        "title": "Azure App Service Plans - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-hosting-plans"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.4-05",
+    "objective": "D3.4.4",
+    "type": "multiple",
+    "difficulty": "applied",
+    "prompt": "You have an App Service app named `claims-adatum` that is secured with a custom domain TLS binding. Security reviewers require three changes: HTTP requests must be redirected to HTTPS, inbound clients must use TLS 1.2 or later, and application code must correctly detect whether the original client request used HTTPS even though App Service terminates TLS before the request reaches the worker.\n\nWhich three actions should you perform? Each correct answer presents part of the solution. Select THREE.",
+    "options": [
+      {
+        "id": "A",
+        "text": "Enable HTTPS Only in the app's General settings"
+      },
+      {
+        "id": "B",
+        "text": "Set the app's minimum TLS version to at least TLS 1.2"
+      },
+      {
+        "id": "C",
+        "text": "Inspect the forwarded protocol header, such as `X-Forwarded-Proto`, in the application when it needs to know the original scheme"
+      },
+      {
+        "id": "D",
+        "text": "Disable the TLS/SSL binding because HTTPS Only encrypts traffic without a certificate"
+      },
+      {
+        "id": "E",
+        "text": "Lower the minimum TLS version to 1.0 so App Service can complete end-to-end TLS to the worker"
+      },
+      {
+        "id": "F",
+        "text": "Use a public `.cer` certificate upload to force HTTP requests to become HTTPS requests"
+      }
+    ],
+    "correct": [
+      "A",
+      "B",
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The custom domain certificate binding already exists and presents a trusted certificate to clients. The question concerns App Service platform settings and request detection, not Azure Front Door or Application Gateway.",
+    "sections": {
+      "correctAnswer": "**A. Enable HTTPS Only in the app's General settings**, **B. Set the app's minimum TLS version to at least TLS 1.2**, and **C. Inspect the forwarded protocol header, such as `X-Forwarded-Proto`, in the application when it needs to know the original scheme**. These actions match the documented redirect, minimum TLS, and TLS-termination behavior in App Service.",
+      "technical": "App Service handles several related but different TLS controls. A certificate binding proves the custom hostname over HTTPS. HTTPS Only is a separate platform setting that redirects HTTP requests to HTTPS. The General settings blade includes HTTPS Only and Minimum TLS version. Microsoft security guidance says HTTPS-only redirect isn't on by default and should be enabled explicitly when you need all client communication encrypted.\n\nMinimum TLS version controls which TLS protocol versions clients may use when connecting to the app. Microsoft documents TLS 1.2 as the default minimum and TLS 1.3 as supported, with TLS 1.1 and 1.0 kept for backward compatibility only. Security reviewers asking for TLS 1.2 or later can be satisfied by selecting at least TLS 1.2; organizations with client compatibility testing may raise it to TLS 1.3 where supported. The security guidance also says to configure minimum TLS for both the web app and the SCM site, so production hardening should not ignore the deployment endpoint.\n\nRequest handling has a common trap. App Service terminates TLS at the network load balancers, and HTTPS requests reach the app worker as unencrypted HTTP requests. If application code needs to know whether the user originally arrived over HTTPS, the app shouldn't infer it from the local worker connection. The TLS binding article says application code can inspect the `x-appservice-proto` header, and the FAQ explains inspecting `X-Forwarded-Proto` to detect an HTTPS session. Language-specific stacks often need forwarded-header middleware or equivalent configuration.\n\nNone of these settings removes the need for the certificate binding. HTTPS Only cannot encrypt a custom hostname without a valid certificate, and public certificate upload doesn't create redirects.",
+      "wrongOptions": {
+        "D": "HTTPS Only is a redirect setting; it doesn't replace the custom domain certificate binding needed for browsers to trust HTTPS. Misconception: a redirect switch automatically provisions certificate material. Could be correct only if a different valid TLS termination layer, such as a properly configured front door, is intentionally handling the public hostname before traffic reaches App Service.",
+        "E": "TLS 1.0 is weaker legacy compatibility, not a way to create end-to-end TLS to the worker. App Service terminates TLS at load balancers regardless of lowering the minimum. Misconception: older TLS versions pass deeper into the service. Could be correct only for a temporary compatibility exception when a legacy client cannot use modern TLS and risk is accepted.",
+        "F": "A public `.cer` upload doesn't force redirects and isn't a substitute for HTTPS Only or a private certificate binding. Misconception: any certificate uploaded to App Service changes inbound transport behavior. Could be correct when code needs to load a public certificate for an outbound trust scenario."
+      },
+      "plainEnglish": "There are three knobs, and they do different jobs. The certificate binding lets the browser trust the secure site. HTTPS Only tells Azure to send plain HTTP visitors to the HTTPS address. Minimum TLS says how old a security protocol the app will accept from visitors. Finally, Azure's front end unwraps the secure connection before sending the request to your app code, so the code must read the special forwarded-protocol header if it needs to know whether the user's original connection was HTTPS.",
+      "analogy": "A hotel has a secure front entrance, a rule that redirects guests away from the side door, and a note to staff saying which entrance each guest used. The staff hallway behind reception may not look like the original guest entrance, so staff check the note instead of guessing.\n\n| Analogy | Azure reality |\n|---|---|\n| Secure front entrance | Custom domain TLS binding |\n| Redirect from side door | HTTPS Only |\n| Minimum lock standard | Minimum TLS version |\n| Reception desk unwraps the visit | TLS termination at App Service load balancers |\n| Note to staff | `X-Forwarded-Proto` or `x-appservice-proto` header |\n\n**Where the analogy breaks down:** The real platform uses HTTP headers and TLS protocol negotiation. A hotel note doesn't provide cryptographic proof and must be handled carefully behind trusted proxies.",
+      "jargon": [
+        {
+          "term": "HTTPS Only",
+          "definition": "An App Service setting that redirects HTTP requests to HTTPS."
+        },
+        {
+          "term": "Minimum TLS version",
+          "definition": "The lowest TLS protocol version the app accepts for inbound client connections."
+        },
+        {
+          "term": "TLS 1.2",
+          "definition": "A modern Transport Layer Security protocol version documented as the default minimum for App Service."
+        },
+        {
+          "term": "TLS 1.3",
+          "definition": "The latest TLS protocol generation listed as supported by App Service security guidance."
+        },
+        {
+          "term": "TLS termination",
+          "definition": "The point where encrypted client TLS is decrypted before being forwarded to the application."
+        },
+        {
+          "term": "SCM site",
+          "definition": "The App Service deployment and management endpoint, often associated with Kudu, that has its own security settings."
+        },
+        {
+          "term": "`X-Forwarded-Proto`",
+          "definition": "An HTTP header commonly used to tell application code the original client protocol before proxy forwarding."
+        },
+        {
+          "term": "`x-appservice-proto`",
+          "definition": "An App Service request header whose value indicates whether the original request protocol was HTTP or HTTPS."
+        }
+      ],
+      "watchOut": "- HTTPS Only should be enabled explicitly; don't assume it is on merely because a certificate exists.\n- Minimum TLS version and HTTPS redirect are separate settings in General settings.\n- For full hardening, check the SCM site's minimum TLS setting as well as the main app setting.\n- Because App Service terminates TLS before the worker, app code should rely on trusted forwarded headers rather than local connection state.",
+      "productionTip": {
+        "official": "Microsoft documents HTTPS Only and Minimum TLS version under App Service General settings. Security guidance states that TLS 1.2 is the default minimum, TLS 1.3 is supported, and TLS termination occurs at network load balancers with forwarded protocol headers available for application logic.",
+        "recommendation": "Turn on HTTPS Only soon after adding a valid binding, then test redirects and callback URLs from external clients. Before raising the minimum to TLS 1.3, review telemetry for old clients and coordinate with API consumers that may have pinned TLS libraries."
+      },
+      "memoryTrick": "**Bind, redirect, require, read**: bind a certificate, redirect with HTTPS Only, require a modern TLS floor, and read the forwarded protocol header. The sequence is a teaching aid, not a deployment script for every architecture.",
+      "examTip": "The exam distinction is between a certificate binding, a redirect setting, a protocol-version setting, and app-code awareness after TLS termination. If an answer says HTTPS Only creates the certificate or TLS 1.0 improves end-to-end encryption, eliminate it. A harder version may add SCM; remember the deployment endpoint can have its own TLS version setting."
+    },
+    "sources": [
+      {
+        "title": "Configure an App Service App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+      },
+      {
+        "title": "Secure Your Domain with TLS/SSL - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+      },
+      {
+        "title": "Secure your Azure App Service deployment - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/overview-security"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.4-06",
+    "objective": "D3.4.4",
+    "type": "single",
+    "difficulty": "applied",
+    "prompt": "You have an App Service app named `billing-tailspin` that calls a partner API. The partner requires the app code to load a public certificate so it can validate the partner endpoint during outbound calls. You don't need to secure a custom domain with this certificate, and the file doesn't include a private key.\n\nWhat should you do?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Create an SNI SSL binding to the partner API hostname by using the `.cer` file"
+      },
+      {
+        "id": "B",
+        "text": "Import the public certificate from Key Vault as a PFX certificate, then enable HTTPS Only"
+      },
+      {
+        "id": "C",
+        "text": "Upload the certificate under Public key certificates (`.cer`), then add its thumbprint to `WEBSITE_LOAD_CERTIFICATES`"
+      },
+      {
+        "id": "D",
+        "text": "Enable client certificate mode Required so App Service validates the partner API certificate automatically"
+      }
+    ],
+    "correct": [
+      "C"
+    ],
+    "assumptions": "Azure public cloud. The certificate is a public `.cer` certificate used by the application as a client when making outbound calls. The app runs in a supported tier for App Service certificate-in-code functionality.",
+    "sections": {
+      "correctAnswer": "**C. Upload the certificate under Public key certificates (`.cer`), then add its thumbprint to `WEBSITE_LOAD_CERTIFICATES`**. App Service supports public certificates in `.cer` format for code use, and the documented way to make added certificates visible to app code is the `WEBSITE_LOAD_CERTIFICATES` app setting.",
+      "technical": "App Service has a certificate path specifically for application code. The certificate article states that public certificates aren't used to secure custom domains, but you can load them into code when you need them to access remote resources. Public certificates are supported in `.cer` format. After upload, a public certificate is accessible only by the app to which it was uploaded, and public certificates must be uploaded to each individual web app that needs access.\n\nUploading the certificate is not the final step for code access. The certificate-in-code article instructs you to copy the certificate thumbprint and add it to the `WEBSITE_LOAD_CERTIFICATES` app setting. You can list comma-separated thumbprints or set the value to `*` to make all added certificates accessible. For Windows-hosted apps, this setting makes specified certificates available in the Windows Current User `My` certificate store. For Linux and Windows containers, App Service exposes certificate files in documented paths such as `/var/ssl/certs` for Linux public certificates.\n\nThe scenario is outbound partner validation, not inbound custom domain TLS. Therefore, SNI or IP-based bindings are irrelevant. HTTPS Only governs incoming HTTP-to-HTTPS redirect for the app and doesn't import a partner certificate. Client certificate mode is for inbound mutual TLS where callers present certificates to your App Service app; it doesn't cause App Service to validate a remote API's server certificate for your outbound code.",
+      "wrongOptions": {
+        "D": "Client certificate mode controls whether incoming clients are asked for certificates. It doesn't validate a remote server certificate when your application makes outbound HTTP calls. Misconception: mutual TLS settings affect both inbound and outbound traffic automatically. Could be correct when external callers must present client certificates to this App Service app.",
+        "A": "An SNI SSL binding secures one of your App Service custom domains; it isn't how your app trusts or loads a partner API certificate for outbound code. Misconception: every certificate task in App Service requires a TLS/SSL binding. Could be correct when the certificate has a private key and is meant to secure a custom hostname mapped to the app.",
+        "B": "Key Vault PFX import is for private certificates that satisfy App Service requirements, and HTTPS Only is an inbound redirect setting. The scenario has a public `.cer` without a private key for code use. Misconception: Key Vault import and HTTPS Only are universal certificate prerequisites. Could be correct when bringing a private PKCS12 certificate from Key Vault to secure a custom domain or use in code."
+      },
+      "plainEnglish": "The certificate in this question is not the kind you attach to your website name. It is more like a reference card your program uses when it talks to another company's API. Upload it as a public key certificate, copy its thumbprint, and tell App Service to load it for the app by setting `WEBSITE_LOAD_CERTIFICATES`. Then your code can read it from the platform's certificate location or store. Binding settings and HTTPS redirects would solve a different problem: users connecting to your app.",
+      "analogy": "A delivery driver carries a list of official partner seals so they can recognize a real warehouse. That list doesn't become the sign on the driver's own office. First the company gives the list to the driver, then tells the driver where to keep it in the vehicle.\n\n| Analogy | Azure reality |\n|---|---|\n| Official partner seal list | Public `.cer` certificate |\n| Driver | App code making outbound calls |\n| Company issues the list | Upload public certificate to the app |\n| Storage location in the vehicle | Certificate store or mounted certificate path |\n| Instruction to carry the list | `WEBSITE_LOAD_CERTIFICATES` app setting |\n\n**Where the analogy breaks down:** Certificate validation depends on cryptographic chains, runtime libraries, and platform stores. A paper list doesn't model thumbprints, DER files, or container certificate paths.",
+      "jargon": [
+        {
+          "term": "Public key certificate",
+          "definition": "A certificate without a private key; App Service supports public certificates in `.cer` format for application code scenarios."
+        },
+        {
+          "term": "`.cer`",
+          "definition": "A certificate file format used for public certificates in the App Service upload workflow."
+        },
+        {
+          "term": "Thumbprint",
+          "definition": "A hash value that identifies a certificate and is used by App Service settings to select certificates."
+        },
+        {
+          "term": "`WEBSITE_LOAD_CERTIFICATES`",
+          "definition": "An App Service app setting that makes specified uploaded certificates available to application code."
+        },
+        {
+          "term": "Outbound call",
+          "definition": "A network request initiated by the app to another service, such as a partner API."
+        },
+        {
+          "term": "Certificate store",
+          "definition": "An operating-system or platform location where certificates are made available to applications."
+        },
+        {
+          "term": "SNI SSL binding",
+          "definition": "An inbound custom domain binding that uses Server Name Indication to select a certificate."
+        },
+        {
+          "term": "Client certificate mode",
+          "definition": "An App Service setting controlling whether incoming callers are asked to provide a client certificate."
+        }
+      ],
+      "watchOut": "- Public certificates uploaded this way don't secure custom domains.\n- Public certificates must be uploaded to each web app that needs them; they aren't automatically shared to unrelated apps.\n- If you list thumbprints explicitly, renewing or replacing the certificate usually means updating the app setting with the new thumbprint.\n- Setting `WEBSITE_LOAD_CERTIFICATES` to `*` is convenient, but it exposes all added certificates to code in that app, so use it deliberately.",
+      "productionTip": {
+        "official": "Microsoft documents public certificate upload in `.cer` format for remote-resource access from application code, and documents `WEBSITE_LOAD_CERTIFICATES` as the app setting that makes selected certificates accessible. The certificate-in-code article also describes platform-specific stores and file paths.",
+        "recommendation": "Prefer listing only required thumbprints instead of `*` for tightly controlled apps, and add a renewal runbook that updates the thumbprint before the partner certificate changes. Validate from the running app instance, not only from a local developer workstation."
+      },
+      "memoryTrick": "For code use, think **upload, thumbprint, load**. This shorthand applies to certificates already added to the app; it doesn't mean a public certificate can be used for a custom domain binding.",
+      "examTip": "When the question says **outbound calls**, **public certificate**, or **application code**, move away from custom domain bindings. The exact App Service clue is `WEBSITE_LOAD_CERTIFICATES`. A harder version may use a private certificate instead; then code may need private certificate paths or stores, but the app setting is still central to making it available."
+    },
+    "sources": [
+      {
+        "title": "Install a TLS/SSL Certificate for Your App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate"
+      },
+      {
+        "title": "Use TLS/SSL Certificates in App Code - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-certificate-in-code"
+      }
+    ],
+    "verified": "2026-10"
+  },
+  {
+    "id": "D3.4.4-07",
+    "objective": "D3.4.4",
+    "type": "single",
+    "difficulty": "advanced",
+    "prompt": "You have an App Service app named `b2b-api-contoso` in a Premium plan. A partner system will call the API over HTTPS and must present a client certificate. You need App Service to request the certificate and pass it to your application so the application can decide whether to accept the partner. You also want to avoid TLS renegotiation limitations for large uploads.\n\nWhat should you configure?",
+    "options": [
+      {
+        "id": "A",
+        "text": "Set Client certificate mode to Optional Interactive User and add an exclusion path for the upload route"
+      },
+      {
+        "id": "B",
+        "text": "Upload the partner's public `.cer` as a custom domain TLS binding so App Service validates callers before code runs"
+      },
+      {
+        "id": "C",
+        "text": "Enable HTTPS Only only; App Service will automatically reject callers that don't have the partner certificate"
+      },
+      {
+        "id": "D",
+        "text": "Set Client certificate mode to Required, remove certificate exclusion paths, and validate the forwarded certificate in application code"
+      }
+    ],
+    "correct": [
+      "D"
+    ],
+    "assumptions": "Azure public cloud. The app already has a server certificate binding for its custom domain. The requirement is inbound mutual TLS client certificate handling for partner requests.",
+    "sections": {
+      "correctAnswer": "**D. Set Client certificate mode to Required, remove certificate exclusion paths, and validate the forwarded certificate in application code**. App Service can require a client certificate and forward it, but the app code must validate it; using Required without exclusion paths avoids the documented TLS renegotiation triggers.",
+      "technical": "Mutual TLS in App Service is configured through incoming client certificates. The portal path is Configuration > General settings, where Client certificate mode can be Required, Optional, or Optional Interactive User. Azure CLI can enable the feature with `az webapp update --set clientCertEnabled=true`, and templates expose properties such as `clientCertEnabled`, `clientCertMode`, and `clientCertExclusionPaths`. The app's plan must be Basic, Standard, Premium, or Isolated for custom TLS/SSL bindings or client certificates.\n\nThe most important boundary is validation responsibility. Microsoft explicitly states that App Service doesn't do anything with the client certificate other than forward it to your app. When enabled, TLS termination happens at the front-end load balancer and App Service injects an `X-ARR-ClientCert` request header containing the client certificate. Your application must parse and validate that certificate according to your rules, such as issuer, subject, thumbprint, expiry, chain, or revocation approach.\n\nThe upload requirement adds a protocol nuance. Certain client certificate configurations require TLS renegotiation: Optional Interactive User mode and any client certificate exclusion path. Microsoft documents that TLS 1.3 and HTTP/2 don't support TLS renegotiation, and configurations that use renegotiation can't support incoming requests with files larger than 100 KB; large POST or PUT requests can fail with 403. To disable renegotiation and negotiate client certificates during the TLS handshake, set the mode to Required or Optional and remove all client certificate exclusion paths. Because the partner must present a certificate, Required is the clearest fit.",
+      "wrongOptions": {
+        "A": "Optional Interactive User and exclusion paths are exactly the settings Microsoft lists as TLS renegotiation triggers. That conflicts with the requirement to avoid renegotiation limits for large uploads. Misconception: optional modes are always safer because they are less strict. Could be correct for a browser-facing app that must avoid certificate prompts on some paths and doesn't have large upload or TLS 1.3/HTTP2 concerns.",
+        "B": "A public `.cer` upload isn't a custom domain server-certificate binding, and App Service doesn't automatically validate inbound client identity based on a partner certificate upload. Misconception: uploading a partner certificate tells the platform whom to trust for mutual TLS. Could be correct when the app code needs the public certificate as a reference for its own validation logic.",
+        "C": "HTTPS Only redirects plain HTTP to HTTPS; it doesn't request or validate a caller's client certificate. Misconception: HTTPS server authentication and mutual client authentication are the same control. Could be correct as an additional setting to prevent clients from using HTTP when the API requires certificates over HTTPS."
+      },
+      "plainEnglish": "Server certificates prove the website to the caller. Client certificates prove the caller to the website. For this API, the partner must show a certificate when it connects. App Service can ask for that certificate and forward it to your app in a header, but your code still decides whether that certificate is trusted. If you add special exception paths or use the interactive optional mode, App Service may need TLS renegotiation, which creates problems for TLS 1.3, HTTP/2, and large uploads. Required mode with no exclusions keeps the certificate negotiation at the original handshake.",
+      "analogy": "A secure loading dock checks driver identity at the gate. The guard asks every driver for an ID card before opening the gate and then hands a copy of the card to the warehouse manager, who verifies whether that driver is on the trusted partner list. If the guard waits until halfway through unloading to ask for ID, large deliveries get awkward and may be rejected.\n\n| Analogy | Azure reality |\n|---|---|\n| Driver ID card | Client certificate |\n| Guard at the gate | App Service TLS front end |\n| Warehouse manager checks trusted list | Application certificate validation logic |\n| Ask at first entry | Certificate negotiation during initial TLS handshake |\n| Ask after some paths are known | TLS renegotiation triggered by exclusions or interactive optional mode |\n\n**Where the analogy breaks down:** Real client certificates are encoded and forwarded in `X-ARR-ClientCert`, and secure validation may include chain building, revocation, and application-specific authorization rules.",
+      "jargon": [
+        {
+          "term": "Mutual TLS",
+          "definition": "A TLS pattern where the server presents a certificate and the client also presents a certificate for identity."
+        },
+        {
+          "term": "Client certificate",
+          "definition": "A certificate presented by the caller to help the receiving app authenticate the caller."
+        },
+        {
+          "term": "Client certificate mode",
+          "definition": "The App Service setting controlling whether incoming requests require, may include, or interactively request client certificates."
+        },
+        {
+          "term": "Required mode",
+          "definition": "A client certificate mode in which all requests must provide a client certificate."
+        },
+        {
+          "term": "Exclusion path",
+          "definition": "A configured URL path that removes the client certificate requirement for matching requests."
+        },
+        {
+          "term": "TLS renegotiation",
+          "definition": "A process that renegotiates TLS parameters after an initial connection; some protocols and App Service scenarios don't support it."
+        },
+        {
+          "term": "`X-ARR-ClientCert`",
+          "definition": "The request header App Service uses to forward the client certificate to application code."
+        },
+        {
+          "term": "HTTP/2",
+          "definition": "A newer HTTP protocol version that Microsoft notes doesn't work with App Service client certificate settings that require TLS renegotiation."
+        }
+      ],
+      "watchOut": "- App Service forwards the client certificate; it doesn't decide that the certificate is trusted for your business process.\n- Client certificates aren't received over plain HTTP, so don't allow HTTP when the application depends on them.\n- Optional Interactive User mode and certificate exclusion paths trigger TLS renegotiation.\n- Renegotiation-based configurations can fail POST or PUT requests larger than 100 KB with 403, according to the mutual TLS article.",
+      "productionTip": {
+        "official": "Microsoft documents Required, Optional, and Optional Interactive User client certificate modes, states that app code must validate the certificate, and says App Service forwards the certificate in the `X-ARR-ClientCert` header. The same article lists the renegotiation triggers and the 100-KB upload limitation.",
+        "recommendation": "Implement explicit certificate validation in code rather than trusting presence of a header alone. For APIs, prefer Required mode with no exclusions, combine it with HTTPS Only, and log certificate subject, issuer, and thumbprint decisions without storing private certificate material."
+      },
+      "memoryTrick": "Mutual TLS in App Service is **request, forward, validate**: the platform requests the client certificate, forwards it, and your app validates it. This is a simplification because the best validation checks depend on your partner trust model.",
+      "examTip": "The key phrases are **partner must present a client certificate**, **app decides whether to accept**, and **avoid renegotiation limitations**. Choose Required mode, no exclusion paths, and application validation. If an option says App Service automatically trusts a `.cer` upload or HTTPS Only does client authentication, it mixes up server TLS with mutual TLS."
+    },
+    "sources": [
+      {
+        "title": "Set Up TLS Mutual Authentication - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/app-service-web-configure-tls-mutual-auth"
+      },
+      {
+        "title": "Secure Your Domain with TLS/SSL - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-ssl-bindings"
+      },
+      {
+        "title": "Configure an App Service App - Azure App Service",
+        "url": "https://learn.microsoft.com/en-us/azure/app-service/configure-common"
+      }
+    ],
+    "verified": "2026-10"
+  }
+]
