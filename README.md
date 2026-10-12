@@ -22,6 +22,10 @@ The build validates the question bank and writes `dist/index.html`. Open that fi
 
 Generated files in `dist/` are not committed; build them locally with `python build.py`.
 
+## Publish with GitHub Pages
+
+The workflow in `.github/workflows/pages.yml` builds and deploys the app on pushes to `main`. The expected site URL is `https://lephcheone-org.github.io/az-104-tracker/`. If the first workflow run cannot enable Pages automatically, set the repository's Pages source to **GitHub Actions** under **Settings > Pages**, then rerun the workflow.
+
 ## Data and credentials
 
 The app has no project backend. Study progress is stored in the browser. Optional cross-device sync uses a private GitHub Gist and a token supplied by the user; that token is stored in the browser's local storage and is not part of this repository. Never commit personal access tokens, passwords, or populated local configuration files.
